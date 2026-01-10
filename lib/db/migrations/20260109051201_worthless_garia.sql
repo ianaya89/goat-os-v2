@@ -1,0 +1,1 @@
+ALTER TABLE "athlete" ALTER COLUMN "organization_id" DROP NOT NULL;

@@ -1,0 +1,613 @@
+@import 'tailwindcss';
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+@source "./**/*.{ts,tsx}";
+@source "../components/**/*.{ts,tsx}";
+@source "../hooks/**/*.{ts,tsx}";
+@source "../lib/**/*.{ts,tsx}";
+@source "../tests/**/*.{ts,tsx}";
+@source "../node_modules/fumadocs-ui/dist/**/*.js";
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Sharp & Bold Design System
+   * Brand Blue: #00237c (rgb 0 35 124)
+   * Neutrals: Slate palette for modern, clean look
+   */
+
+  /* Base colors */
+  --background: #ffffff;
+  --foreground: #0f172a;
+
+  /* Card surfaces */
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+
+  /* Popover surfaces */
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+
+  /* Primary - Brand Blue */
+  --primary: #00237c;
+  --primary-foreground: #ffffff;
+
+  /* Secondary - Subtle backgrounds */
+  --secondary: #f1f5f9;
+  --secondary-foreground: #334155;
+
+  /* Muted - Very subtle backgrounds */
+  --muted: #f8fafc;
+  --muted-foreground: #64748b;
+
+  /* Accent - Hover states */
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+
+  /* Semantic colors */
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --success: #10b981;
+  --success-foreground: #ffffff;
+  --warning: #f59e0b;
+  --warning-foreground: #ffffff;
+
+  /* Borders - More visible */
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --input: #e2e8f0;
+  --ring: #00237c;
+  --input-ring: #00237c;
+
+  /* Charts */
+  --chart-1: #00237c;
+  --chart-2: #06b6d4;
+  --chart-3: #10b981;
+  --chart-4: #f59e0b;
+  --chart-5: #ec4899;
+
+  /* Sharp radius - 6px base instead of 8px */
+  --radius: 0.375rem;
+
+  /* Glass Sidebar - Frosted translucent effect with prominent glow */
+  --sidebar: rgba(255, 255, 255, 0.8);
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #00237c;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(241, 245, 249, 0.9);
+  --sidebar-accent-foreground: #0f172a;
+  --sidebar-border: rgba(0, 35, 124, 0.12);
+  --sidebar-ring: var(--ring);
+  /* Multi-layer glow: ambient + edge + halo */
+  --sidebar-glow:
+    0 0 0 1px rgba(255, 255, 255, 0.8),
+    0 4px 24px rgba(0, 35, 124, 0.12),
+    0 8px 48px rgba(0, 35, 124, 0.18),
+    0 0 100px rgba(0, 35, 124, 0.12);
+  --topbar-glow:
+    0 0 0 1px rgba(255, 255, 255, 0.8),
+    0 4px 20px rgba(0, 35, 124, 0.10),
+    0 8px 40px rgba(0, 35, 124, 0.15),
+    0 0 80px rgba(0, 35, 124, 0.08);
+  /* Inner highlight for glass depth */
+  --glass-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.5);
+
+  /* Marketing tokens - light mode */
+  --marketing-bg: #f8fafc;
+  --marketing-bg-elevated: #ffffff;
+  --marketing-bg-subtle: #f1f5f9;
+
+  --marketing-fg: #0f172a;
+  --marketing-fg-muted: #64748b;
+  --marketing-fg-subtle: #94a3b8;
+
+  --marketing-border: #e2e8f0;
+  --marketing-border-strong: #cbd5e1;
+
+  --marketing-accent: #00237c;
+  --marketing-accent-hover: #001a5c;
+  --marketing-accent-fg: #ffffff;
+
+  --marketing-card: color-mix(in srgb, #00237c, transparent 96%);
+  --marketing-card-hover: color-mix(in srgb, #00237c, transparent 92%);
+}
+
+.dark {
+  /* Sharp & Bold Dark Mode - Slate palette */
+
+  /* Base colors */
+  --background: #0f172a;
+  --foreground: #f8fafc;
+
+  /* Card surfaces */
+  --card: #1e293b;
+  --card-foreground: #f8fafc;
+
+  /* Popover surfaces */
+  --popover: #1e293b;
+  --popover-foreground: #f8fafc;
+
+  /* Primary - Brand Blue lighter for dark mode */
+  --primary: #5b7ec9;
+  --primary-foreground: #ffffff;
+
+  /* Secondary */
+  --secondary: #334155;
+  --secondary-foreground: #f1f5f9;
+
+  /* Muted */
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+
+  /* Accent */
+  --accent: #334155;
+  --accent-foreground: #f8fafc;
+
+  /* Semantic colors */
+  --destructive: #f87171;
+  --destructive-foreground: #0f172a;
+  --success: #22c55e;
+  --success-foreground: #0f172a;
+  --warning: #fbbf24;
+  --warning-foreground: #0f172a;
+
+  /* Borders */
+  --border: #334155;
+  --border-strong: #475569;
+  --input: #334155;
+  --ring: #5b7ec9;
+  --input-ring: #5b7ec9;
+
+  /* Charts */
+  --chart-1: #5b7ec9;
+  --chart-2: #22d3ee;
+  --chart-3: #22c55e;
+  --chart-4: #fbbf24;
+  --chart-5: #f472b6;
+
+  /* Glass Sidebar - Frosted translucent effect with prominent glow (dark) */
+  --sidebar: rgba(15, 23, 42, 0.85);
+  --sidebar-foreground: #f8fafc;
+  --sidebar-primary: #5b7ec9;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(51, 65, 85, 0.9);
+  --sidebar-accent-foreground: #f8fafc;
+  --sidebar-border: rgba(91, 126, 201, 0.2);
+  --sidebar-ring: var(--ring);
+  /* Multi-layer glow: ambient + edge + halo (dark) */
+  --sidebar-glow:
+    0 0 0 1px rgba(91, 126, 201, 0.3),
+    0 4px 24px rgba(91, 126, 201, 0.15),
+    0 8px 48px rgba(91, 126, 201, 0.25),
+    0 0 100px rgba(91, 126, 201, 0.15);
+  --topbar-glow:
+    0 0 0 1px rgba(91, 126, 201, 0.25),
+    0 4px 20px rgba(91, 126, 201, 0.12),
+    0 8px 40px rgba(91, 126, 201, 0.20),
+    0 0 80px rgba(91, 126, 201, 0.10);
+  /* Inner highlight for glass depth (dark) */
+  --glass-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+
+  /* Marketing tokens - dark mode */
+  --marketing-bg: #0f172a;
+  --marketing-bg-elevated: #1e293b;
+  --marketing-bg-subtle: #334155;
+
+  --marketing-fg: #f8fafc;
+  --marketing-fg-muted: #94a3b8;
+  --marketing-fg-subtle: #64748b;
+
+  --marketing-border: #334155;
+  --marketing-border-strong: #475569;
+
+  /* Brand accent in dark mode */
+  --marketing-accent: #5b7ec9;
+  --marketing-accent-hover: #7b9ad9;
+  --marketing-accent-fg: #ffffff;
+
+  /* Cards in dark mode */
+  --marketing-card: #1e293b;
+  --marketing-card-hover: #334155;
+}
+
+@theme inline {
+  /* Geist Sans font as default */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+
+  /* Display font - using Geist for consistency */
+  --font-display: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+
+  /* Letter-spacing for display/headline text */
+  --letter-spacing-display: -0.025em;
+  --letter-spacing-display-tight: -0.04em;
+
+  /* Marketing-specific semantic tokens 
+   * Theme: Slate (Cool, professional blue-grey)
+   * Replacing the previous Olive/Neutral themes for a more technical SaaS look.
+   */
+  --color-marketing-bg: var(--marketing-bg);
+  --color-marketing-bg-elevated: var(--marketing-bg-elevated);
+  --color-marketing-bg-subtle: var(--marketing-bg-subtle);
+  --color-marketing-fg: var(--marketing-fg);
+  --color-marketing-fg-muted: var(--marketing-fg-muted);
+  --color-marketing-fg-subtle: var(--marketing-fg-subtle);
+  --color-marketing-border: var(--marketing-border);
+  --color-marketing-border-strong: var(--marketing-border-strong);
+  --color-marketing-accent: var(--marketing-accent);
+  --color-marketing-accent-hover: var(--marketing-accent-hover);
+  --color-marketing-accent-fg: var(--marketing-accent-fg);
+  --color-marketing-card: var(--marketing-card);
+  --color-marketing-card-hover: var(--marketing-card-hover);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-input-ring: var(--input-ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Sharp radius system - 6px base */
+  --radius-xs: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 1px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 6px);
+  --radius-2xl: calc(var(--radius) + 10px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --animation-accordion-down: accordion-down 0.2s ease-out;
+  --animation-accordion-up: accordion-up 0.2s ease-out;
+  --animate-marquee: marquee var(--duration) infinite linear;
+  --animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
+  --animate-fadeIn: fadeIn 0.3s ease-in-out;
+  --animate-slideIn: slideIn 0.3s ease-in-out;
+
+  @keyframes accordion-down {
+    from { height: 0; }
+    to { height: var(--radix-accordion-content-height); }
+  }
+
+  @keyframes accordion-up {
+    from { height: var(--radix-accordion-content-height); }
+    to { height: 0; }
+  }
+
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(calc(-100% - var(--gap))); }
+  }
+
+  @keyframes marquee-vertical {
+    from { transform: translateY(0); }
+    to { transform: translateY(calc(-100% - var(--gap))); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideIn {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(0); }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-2px); }
+  }
+
+  @keyframes glowPulse {
+    0%, 100% {
+      filter: brightness(1) saturate(1);
+    }
+    50% {
+      filter: brightness(1.05) saturate(1.1);
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-glow-pulse: glowPulse 4s ease-in-out infinite;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply scroll-smooth border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground box-border overscroll-none;
+    /* font-feature-settings: "rlig" 1, "calt" 1; */
+    font-synthesis-weight: none;
+    text-rendering: optimizeLegibility;
+  }
+
+}
+
+@layer utilities {
+  .font-display-headings {
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      @apply font-display text-balance;
+      letter-spacing: var(--letter-spacing-display);
+    }
+  }
+  .min-h-screen {
+    min-height: 100vh;
+  }
+
+  .h-screen {
+    height: 100vh;
+  }
+
+  /* Display tracking utilities */
+  .tracking-display {
+    letter-spacing: var(--letter-spacing-display);
+  }
+  .tracking-display-tight {
+    letter-spacing: var(--letter-spacing-display-tight);
+  }
+}
+
+
+@utility container {
+  margin-inline: auto;
+  padding-inline: 1rem;
+  max-width: 1400px;
+
+  @media (width >= theme(--breakpoint-sm)) {
+    padding-inline: 2rem;
+  }
+}
+
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Radix scroll area viewport fix */
+[data-radix-scroll-area-viewport]>div {
+  min-width: auto !important;
+  display: block !important;
+  height: inherit;
+  width: inherit;
+}
+
+/* Prevent overscroll/bounce effect */
+html,
+body {
+  overscroll-behavior: none;
+}
+
+/* 1Password pixel fix - hide the live region that can cause layout shifts */
+#\31 p-live-region {
+  display: none !important;
+}
+
+/* Fumadocs customizations */
+#nd-page .prose h1 a,
+#nd-page .prose h2 a,
+#nd-page .prose h3 a,
+#nd-page .prose h4 a,
+#nd-page .prose h5 a,
+#nd-page .prose h6 a {
+  @apply no-underline!;
+}
+
+div[role="tablist"].bg-secondary {
+  @apply bg-muted!;
+}
+
+input[cmdk-input] {
+  @apply border-none focus-visible:ring-0;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* FullCalendar Styling */
+.training-session-calendar {
+  /* Base calendar */
+  .fc {
+    --fc-border-color: var(--border);
+    --fc-button-bg-color: transparent;
+    --fc-button-border-color: var(--border);
+    --fc-button-text-color: var(--foreground);
+    --fc-button-hover-bg-color: var(--accent);
+    --fc-button-hover-border-color: var(--border);
+    --fc-button-active-bg-color: var(--primary);
+    --fc-button-active-border-color: var(--primary);
+    --fc-today-bg-color: var(--accent);
+    --fc-neutral-bg-color: var(--muted);
+    --fc-page-bg-color: var(--background);
+    --fc-event-text-color: #ffffff;
+  }
+
+  /* Header toolbar */
+  .fc .fc-toolbar-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--foreground);
+  }
+
+  .fc .fc-button {
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    transition: all 0.15s ease;
+  }
+
+  .fc .fc-button:focus {
+    box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+  }
+
+  .fc .fc-button-active {
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: var(--primary-foreground) !important;
+  }
+
+  /* Day grid */
+  .fc .fc-daygrid-day {
+    transition: background-color 0.15s ease;
+  }
+
+  .fc .fc-daygrid-day:hover {
+    background-color: var(--accent);
+  }
+
+  .fc .fc-daygrid-day-number {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--foreground);
+  }
+
+  .fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+    font-weight: 600;
+    color: var(--primary);
+  }
+
+  /* Events */
+  .fc .fc-event {
+    border-radius: calc(var(--radius) - 2px);
+    padding: 2px 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .fc .fc-event:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .fc .fc-daygrid-event-dot {
+    display: none;
+  }
+
+  /* Time grid (week/day view) */
+  .fc .fc-timegrid-slot {
+    height: 3rem;
+  }
+
+  .fc .fc-timegrid-slot-label {
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+  }
+
+  .fc .fc-timegrid-axis-cushion {
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+  }
+
+  /* Now indicator */
+  .fc .fc-timegrid-now-indicator-line {
+    border-color: var(--destructive);
+  }
+
+  .fc .fc-timegrid-now-indicator-arrow {
+    border-color: var(--destructive);
+    border-top-color: transparent;
+    border-bottom-color: transparent;
+  }
+
+  /* More link */
+  .fc .fc-daygrid-more-link {
+    font-size: 0.75rem;
+    color: var(--primary);
+    font-weight: 500;
+  }
+
+  .fc .fc-daygrid-more-link:hover {
+    color: var(--primary);
+    text-decoration: underline;
+  }
+
+  /* Popover */
+  .fc .fc-popover {
+    background-color: var(--popover);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .fc .fc-popover-header {
+    background-color: var(--muted);
+    padding: 0.5rem;
+    font-weight: 500;
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+
+  /* Weekday headers */
+  .fc .fc-col-header-cell {
+    padding: 0.75rem 0;
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: var(--muted-foreground);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+}

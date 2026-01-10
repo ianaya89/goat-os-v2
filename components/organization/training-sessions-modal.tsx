@@ -1,0 +1,905 @@
+"use client";
+
+import NiceModal, { type NiceModalHocProps } from "@ebay/nice-modal-react";
+import { format } from "date-fns";
+import { CheckIcon, RepeatIcon, XIcon } from "lucide-react";
+import { RecurringSessionForm } from "@/components/organization/recurring-session-form";
+import * as React from "react";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+	Command,
+	CommandEmpty,
+	CommandGroup,
+	CommandInput,
+	CommandItem,
+	CommandList,
+} from "@/components/ui/command";
+import { Field } from "@/components/ui/field";
+import {
+	Form,
+	FormControl,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetFooter,
+	SheetHeader,
+	SheetTitle,
+} from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { UserAvatar } from "@/components/user/user-avatar";
+import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
+import { useZodForm } from "@/hooks/use-zod-form";
+import {
+	TrainingSessionStatus,
+	TrainingSessionStatuses,
+} from "@/lib/db/schema/enums";
+import {
+	type RecurrenceConfig,
+	createRRuleString,
+} from "@/lib/training/rrule-utils";
+import { capitalize, cn } from "@/lib/utils";
+import {
+	createTrainingSessionSchema,
+	updateTrainingSessionSchema,
+} from "@/schemas/organization-training-session-schemas";
+import { trpc } from "@/trpc/client";
+
+interface SessionCoach {
+	id: string;
+	isPrimary: boolean;
+	coach: {
+		id: string;
+		user: {
+			id: string;
+			name: string;
+			image: string | null;
+		} | null;
+	};
+}
+
+interface SessionAthlete {
+	id: string;
+	athlete: {
+		id: string;
+		user: {
+			id: string;
+			name: string;
+			image: string | null;
+		} | null;
+	};
+}
+
+export type TrainingSessionsModalProps = NiceModalHocProps & {
+	session?: {
+		id: string;
+		title: string;
+		description?: string | null;
+		startTime: Date;
+		endTime: Date;
+		status: string;
+		location?: { id: string; name: string } | null;
+		athleteGroup?: { id: string; name: string } | null;
+		coaches: SessionCoach[];
+		athletes: SessionAthlete[];
+		objectives?: string | null;
+		planning?: string | null;
+		postSessionNotes?: string | null;
+		isRecurring?: boolean;
+		rrule?: string | null;
+	};
+};
+
+export const TrainingSessionsModal = NiceModal.create<TrainingSessionsModalProps>(
+	({ session }) => {
+		const modal = useEnhancedModal();
+		const utils = trpc.useUtils();
+		const isEditing = !!session;
+
+		const [selectedCoachIds, setSelectedCoachIds] = React.useState<string[]>(
+			session?.coaches.map((c) => c.coach.id) ?? [],
+		);
+		const [primaryCoachId, setPrimaryCoachId] = React.useState<string | null>(
+			session?.coaches.find((c) => c.isPrimary)?.coach.id ?? null,
+		);
+		const [selectedAthleteIds, setSelectedAthleteIds] = React.useState<
+			string[]
+		>(session?.athletes.map((a) => a.athlete.id) ?? []);
+		const [assignmentType, setAssignmentType] = React.useState<
+			"group" | "athletes"
+		>(session?.athleteGroup ? "group" : "athletes");
+		const [coachPopoverOpen, setCoachPopoverOpen] = React.useState(false);
+		const [athletePopoverOpen, setAthletePopoverOpen] = React.useState(false);
+		const [isRecurring, setIsRecurring] = React.useState(
+			session?.isRecurring ?? false,
+		);
+		const [recurrenceConfig, setRecurrenceConfig] =
+			React.useState<RecurrenceConfig>({
+				frequency: "weekly",
+			});
+
+		// Fetch data for dropdowns
+		const { data: locationsData } =
+			trpc.organization.location.listActive.useQuery();
+		const { data: groupsData } =
+			trpc.organization.athleteGroup.listActive.useQuery();
+		const { data: coachesData } = trpc.organization.coach.list.useQuery({
+			limit: 100,
+			offset: 0,
+		});
+		const { data: athletesData } = trpc.organization.athlete.list.useQuery({
+			limit: 100,
+			offset: 0,
+		});
+
+		const locations = locationsData ?? [];
+		const groups = groupsData ?? [];
+		const coaches = coachesData?.coaches ?? [];
+		const athletes = athletesData?.athletes ?? [];
+
+		const createSessionMutation =
+			trpc.organization.trainingSession.create.useMutation({
+				onSuccess: () => {
+					toast.success("Session created successfully");
+					utils.organization.trainingSession.list.invalidate();
+					modal.handleClose();
+				},
+				onError: (error) => {
+					toast.error(error.message || "Failed to create session");
+				},
+			});
+
+		const updateSessionMutation =
+			trpc.organization.trainingSession.update.useMutation({
+				onSuccess: () => {
+					toast.success("Session updated successfully");
+					utils.organization.trainingSession.list.invalidate();
+				},
+				onError: (error) => {
+					toast.error(error.message || "Failed to update session");
+				},
+			});
+
+		const updateCoachesMutation =
+			trpc.organization.trainingSession.updateCoaches.useMutation({
+				onError: (error) => {
+					toast.error(error.message || "Failed to update coaches");
+				},
+			});
+
+		const updateAthletesMutation =
+			trpc.organization.trainingSession.updateAthletes.useMutation({
+				onSuccess: () => {
+					utils.organization.trainingSession.list.invalidate();
+					modal.handleClose();
+				},
+				onError: (error) => {
+					toast.error(error.message || "Failed to update athletes");
+				},
+			});
+
+		const formatDateTimeLocal = (date: Date): string => {
+			return format(date, "yyyy-MM-dd'T'HH:mm");
+		};
+
+		const form = useZodForm({
+			schema: isEditing ? updateTrainingSessionSchema : createTrainingSessionSchema,
+			defaultValues: isEditing
+				? {
+						id: session.id,
+						title: session.title,
+						description: session.description ?? "",
+						startTime: session.startTime,
+						endTime: session.endTime,
+						status: session.status as TrainingSessionStatus,
+						locationId: session.location?.id ?? null,
+						athleteGroupId: session.athleteGroup?.id ?? null,
+						objectives: session.objectives ?? "",
+						planning: session.planning ?? "",
+						postSessionNotes: session.postSessionNotes ?? "",
+					}
+				: {
+						title: "",
+						description: "",
+						startTime: new Date(),
+						endTime: new Date(Date.now() + 60 * 60 * 1000), // +1 hour
+						status: TrainingSessionStatus.pending,
+						locationId: null,
+						athleteGroupId: null,
+						athleteIds: [],
+						coachIds: [],
+						objectives: "",
+						planning: "",
+					},
+		});
+
+		const onSubmit = form.handleSubmit(async (data) => {
+			if (isEditing) {
+				// Update session info
+				await updateSessionMutation.mutateAsync(
+					data as Parameters<typeof updateSessionMutation.mutateAsync>[0],
+				);
+				// Update coaches
+				await updateCoachesMutation.mutateAsync({
+					sessionId: session.id,
+					coachIds: selectedCoachIds,
+					primaryCoachId: primaryCoachId ?? undefined,
+				});
+				// Update athletes (only if using individual athletes, not group)
+				if (assignmentType === "athletes") {
+					await updateAthletesMutation.mutateAsync({
+						sessionId: session.id,
+						athleteIds: selectedAthleteIds,
+					});
+				} else {
+					modal.handleClose();
+				}
+			} else {
+				// Generate rrule string if recurring
+				const rrule = isRecurring
+					? createRRuleString(
+							new Date(data.startTime as Date),
+							recurrenceConfig,
+						)
+					: undefined;
+
+				createSessionMutation.mutate({
+					...(data as Parameters<typeof createSessionMutation.mutate>[0]),
+					coachIds: selectedCoachIds,
+					primaryCoachId: primaryCoachId ?? undefined,
+					athleteIds:
+						assignmentType === "athletes" ? selectedAthleteIds : undefined,
+					athleteGroupId:
+						assignmentType === "group"
+							? (data as { athleteGroupId?: string | null }).athleteGroupId
+							: null,
+					isRecurring,
+					rrule,
+				});
+			}
+		});
+
+		const isPending =
+			createSessionMutation.isPending ||
+			updateSessionMutation.isPending ||
+			updateCoachesMutation.isPending ||
+			updateAthletesMutation.isPending;
+
+		const toggleCoach = (coachId: string) => {
+			setSelectedCoachIds((prev) => {
+				if (prev.includes(coachId)) {
+					// If removing and this was primary, clear primary
+					if (primaryCoachId === coachId) {
+						setPrimaryCoachId(null);
+					}
+					return prev.filter((id) => id !== coachId);
+				}
+				return [...prev, coachId];
+			});
+		};
+
+		const toggleAthlete = (athleteId: string) => {
+			setSelectedAthleteIds((prev) =>
+				prev.includes(athleteId)
+					? prev.filter((id) => id !== athleteId)
+					: [...prev, athleteId],
+			);
+		};
+
+		const selectedCoaches = coaches.filter((c) =>
+			selectedCoachIds.includes(c.id),
+		);
+		const selectedAthletes = athletes.filter((a) =>
+			selectedAthleteIds.includes(a.id),
+		);
+
+		return (
+			<Sheet
+				open={modal.visible}
+				onOpenChange={(open) => !open && modal.handleClose()}
+			>
+				<SheetContent
+					className="sm:max-w-xl"
+					onAnimationEndCapture={modal.handleAnimationEndCapture}
+				>
+					<SheetHeader>
+						<SheetTitle>
+							{isEditing ? "Edit Session" : "Create Session"}
+						</SheetTitle>
+						<SheetDescription className="sr-only">
+							{isEditing
+								? "Update the session information below."
+								: "Fill in the details to create a new training session."}
+						</SheetDescription>
+					</SheetHeader>
+
+					<Form {...form}>
+						<form
+							onSubmit={onSubmit}
+							className="flex flex-1 flex-col overflow-hidden"
+						>
+							<ScrollArea className="flex-1">
+								<Tabs defaultValue="basic" className="w-full">
+									<TabsList className="mx-6 mt-4 grid w-auto grid-cols-4">
+										<TabsTrigger value="basic">Basic</TabsTrigger>
+										<TabsTrigger value="assignment">Assignment</TabsTrigger>
+										<TabsTrigger value="recurring" disabled={isEditing}>
+											<RepeatIcon className="mr-1 size-3" />
+											Repeat
+										</TabsTrigger>
+										<TabsTrigger value="content">Content</TabsTrigger>
+									</TabsList>
+
+									<TabsContent value="basic" className="space-y-4 px-6 py-4">
+										<FormField
+											control={form.control}
+											name="title"
+											render={({ field }) => (
+												<FormItem asChild>
+													<Field>
+														<FormLabel>Title</FormLabel>
+														<FormControl>
+															<Input
+																placeholder="e.g., Morning Training"
+																autoComplete="off"
+																{...field}
+															/>
+														</FormControl>
+														<FormMessage />
+													</Field>
+												</FormItem>
+											)}
+										/>
+
+										<FormField
+											control={form.control}
+											name="description"
+											render={({ field }) => (
+												<FormItem asChild>
+													<Field>
+														<FormLabel>Description</FormLabel>
+														<FormControl>
+															<Textarea
+																placeholder="Session description..."
+																className="resize-none"
+																rows={2}
+																{...field}
+																value={field.value ?? ""}
+															/>
+														</FormControl>
+														<FormMessage />
+													</Field>
+												</FormItem>
+											)}
+										/>
+
+										<div className="grid grid-cols-2 gap-4">
+											<FormField
+												control={form.control}
+												name="startTime"
+												render={({ field }) => (
+													<FormItem asChild>
+														<Field>
+															<FormLabel>Start Time</FormLabel>
+															<FormControl>
+																<Input
+																	type="datetime-local"
+																	{...field}
+																	value={
+																		field.value
+																			? formatDateTimeLocal(new Date(field.value as string | number | Date))
+																			: ""
+																	}
+																	onChange={(e) =>
+																		field.onChange(new Date(e.target.value))
+																	}
+																/>
+															</FormControl>
+															<FormMessage />
+														</Field>
+													</FormItem>
+												)}
+											/>
+
+											<FormField
+												control={form.control}
+												name="endTime"
+												render={({ field }) => (
+													<FormItem asChild>
+														<Field>
+															<FormLabel>End Time</FormLabel>
+															<FormControl>
+																<Input
+																	type="datetime-local"
+																	{...field}
+																	value={
+																		field.value
+																			? formatDateTimeLocal(new Date(field.value as string | number | Date))
+																			: ""
+																	}
+																	onChange={(e) =>
+																		field.onChange(new Date(e.target.value))
+																	}
+																/>
+															</FormControl>
+															<FormMessage />
+														</Field>
+													</FormItem>
+												)}
+											/>
+										</div>
+
+										<FormField
+											control={form.control}
+											name="locationId"
+											render={({ field }) => (
+												<FormItem asChild>
+													<Field>
+														<FormLabel>Location</FormLabel>
+														<Select
+															onValueChange={(value) =>
+																field.onChange(value === "none" ? null : value)
+															}
+															value={field.value ?? "none"}
+														>
+															<FormControl>
+																<SelectTrigger className="w-full">
+																	<SelectValue placeholder="Select location" />
+																</SelectTrigger>
+															</FormControl>
+															<SelectContent>
+																<SelectItem value="none">
+																	No location
+																</SelectItem>
+																{locations.map((location) => (
+																	<SelectItem
+																		key={location.id}
+																		value={location.id}
+																	>
+																		{location.name}
+																	</SelectItem>
+																))}
+															</SelectContent>
+														</Select>
+														<FormMessage />
+													</Field>
+												</FormItem>
+											)}
+										/>
+
+										<FormField
+											control={form.control}
+											name="status"
+											render={({ field }) => (
+												<FormItem asChild>
+													<Field>
+														<FormLabel>Status</FormLabel>
+														<Select
+															onValueChange={field.onChange}
+															value={field.value}
+														>
+															<FormControl>
+																<SelectTrigger className="w-full">
+																	<SelectValue placeholder="Select status" />
+																</SelectTrigger>
+															</FormControl>
+															<SelectContent>
+																{TrainingSessionStatuses.map((status) => (
+																	<SelectItem key={status} value={status}>
+																		{capitalize(status)}
+																	</SelectItem>
+																))}
+															</SelectContent>
+														</Select>
+														<FormMessage />
+													</Field>
+												</FormItem>
+											)}
+										/>
+									</TabsContent>
+
+									<TabsContent
+										value="assignment"
+										className="space-y-4 px-6 py-4"
+									>
+										{/* Coaches */}
+										<Field>
+											<FormLabel>Coaches</FormLabel>
+											<Popover
+												open={coachPopoverOpen}
+												onOpenChange={setCoachPopoverOpen}
+											>
+												<PopoverTrigger asChild>
+													<Button
+														variant="outline"
+														className="w-full justify-start font-normal"
+													>
+														{selectedCoachIds.length > 0
+															? `${selectedCoachIds.length} coach${selectedCoachIds.length > 1 ? "es" : ""} selected`
+															: "Select coaches..."}
+													</Button>
+												</PopoverTrigger>
+												<PopoverContent className="w-[300px] p-0" align="start">
+													<Command>
+														<CommandInput placeholder="Search coaches..." />
+														<CommandList>
+															{coaches.length === 0 ? (
+																<div className="px-4 py-6 text-center text-muted-foreground text-sm">
+																	No coaches available. Create a coach first.
+																</div>
+															) : (
+																<>
+																	<CommandEmpty>No coaches found.</CommandEmpty>
+																	<CommandGroup>
+																		{coaches.map((coach) => {
+																			const isSelected = selectedCoachIds.includes(
+																				coach.id,
+																			);
+																			return (
+																				<CommandItem
+																					key={coach.id}
+																					value={coach.user?.name ?? coach.id}
+																					onSelect={() => toggleCoach(coach.id)}
+																				>
+																					<div className="flex items-center gap-2">
+																						<div
+																							className={cn(
+																								"flex size-4 items-center justify-center rounded-sm border",
+																								isSelected
+																									? "border-primary bg-primary text-primary-foreground"
+																									: "border-muted-foreground",
+																							)}
+																						>
+																							{isSelected && (
+																								<CheckIcon className="size-3" />
+																							)}
+																						</div>
+																						<UserAvatar
+																							className="size-6"
+																							name={coach.user?.name ?? ""}
+																							src={coach.user?.image ?? undefined}
+																						/>
+																						<span className="truncate">
+																							{coach.user?.name ?? "Unknown"}
+																						</span>
+																					</div>
+																				</CommandItem>
+																			);
+																		})}
+																	</CommandGroup>
+																</>
+															)}
+														</CommandList>
+													</Command>
+												</PopoverContent>
+											</Popover>
+
+											{selectedCoaches.length > 0 && (
+												<div className="mt-2 space-y-2">
+													{selectedCoaches.map((coach) => (
+														<div
+															key={coach.id}
+															className="flex items-center justify-between rounded-md border px-3 py-2"
+														>
+															<div className="flex items-center gap-2">
+																<UserAvatar
+																	className="size-6"
+																	name={coach.user?.name ?? ""}
+																	src={coach.user?.image ?? undefined}
+																/>
+																<span className="text-sm">
+																	{coach.user?.name ?? "Unknown"}
+																</span>
+																{primaryCoachId === coach.id && (
+																	<Badge variant="secondary" className="text-xs">
+																		Primary
+																	</Badge>
+																)}
+															</div>
+															<div className="flex items-center gap-1">
+																{primaryCoachId !== coach.id && (
+																	<Button
+																		type="button"
+																		variant="ghost"
+																		size="sm"
+																		onClick={() => setPrimaryCoachId(coach.id)}
+																	>
+																		Set Primary
+																	</Button>
+																)}
+																<Button
+																	type="button"
+																	variant="ghost"
+																	size="icon"
+																	className="size-6"
+																	onClick={() => toggleCoach(coach.id)}
+																>
+																	<XIcon className="size-4" />
+																</Button>
+															</div>
+														</div>
+													))}
+												</div>
+											)}
+										</Field>
+
+										{/* Athletes assignment type */}
+										<Field>
+											<FormLabel>Assign Athletes By</FormLabel>
+											<Select
+												value={assignmentType}
+												onValueChange={(value: "group" | "athletes") =>
+													setAssignmentType(value)
+												}
+											>
+												<SelectTrigger className="w-full">
+													<SelectValue />
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value="group">Athlete Group</SelectItem>
+													<SelectItem value="athletes">
+														Individual Athletes
+													</SelectItem>
+												</SelectContent>
+											</Select>
+										</Field>
+
+										{assignmentType === "group" ? (
+											<FormField
+												control={form.control}
+												name="athleteGroupId"
+												render={({ field }) => (
+													<FormItem asChild>
+														<Field>
+															<FormLabel>Athlete Group</FormLabel>
+															<Select
+																onValueChange={(value) =>
+																	field.onChange(
+																		value === "none" ? null : value,
+																	)
+																}
+																value={field.value ?? "none"}
+															>
+																<FormControl>
+																	<SelectTrigger className="w-full">
+																		<SelectValue placeholder="Select group" />
+																	</SelectTrigger>
+																</FormControl>
+																<SelectContent>
+																	<SelectItem value="none">No group</SelectItem>
+																	{groups.map((group) => (
+																		<SelectItem key={group.id} value={group.id}>
+																			{group.name} ({group.memberCount} members)
+																		</SelectItem>
+																	))}
+																</SelectContent>
+															</Select>
+															<FormMessage />
+														</Field>
+													</FormItem>
+												)}
+											/>
+										) : (
+											<Field>
+												<FormLabel>Athletes</FormLabel>
+												<Popover
+													open={athletePopoverOpen}
+													onOpenChange={setAthletePopoverOpen}
+												>
+													<PopoverTrigger asChild>
+														<Button
+															variant="outline"
+															className="w-full justify-start font-normal"
+														>
+															{selectedAthleteIds.length > 0
+																? `${selectedAthleteIds.length} athlete${selectedAthleteIds.length > 1 ? "s" : ""} selected`
+																: "Select athletes..."}
+														</Button>
+													</PopoverTrigger>
+													<PopoverContent
+														className="w-[300px] p-0"
+														align="start"
+													>
+														<Command>
+															<CommandInput placeholder="Search athletes..." />
+															<CommandList>
+																{athletes.length === 0 ? (
+																	<div className="px-4 py-6 text-center text-muted-foreground text-sm">
+																		No athletes available. Create an athlete first.
+																	</div>
+																) : (
+																	<>
+																		<CommandEmpty>No athletes found.</CommandEmpty>
+																		<CommandGroup>
+																			{athletes.map((athlete) => {
+																				const isSelected = selectedAthleteIds.includes(
+																					athlete.id,
+																				);
+																				return (
+																					<CommandItem
+																						key={athlete.id}
+																						value={athlete.user?.name ?? athlete.id}
+																						onSelect={() =>
+																							toggleAthlete(athlete.id)
+																						}
+																					>
+																						<div className="flex items-center gap-2">
+																							<div
+																								className={cn(
+																									"flex size-4 items-center justify-center rounded-sm border",
+																									isSelected
+																										? "border-primary bg-primary text-primary-foreground"
+																										: "border-muted-foreground",
+																								)}
+																							>
+																								{isSelected && (
+																									<CheckIcon className="size-3" />
+																								)}
+																							</div>
+																							<UserAvatar
+																								className="size-6"
+																								name={athlete.user?.name ?? ""}
+																								src={athlete.user?.image ?? undefined}
+																							/>
+																							<span className="truncate">
+																								{athlete.user?.name ?? "Unknown"}
+																							</span>
+																						</div>
+																					</CommandItem>
+																				);
+																			})}
+																		</CommandGroup>
+																	</>
+																)}
+															</CommandList>
+														</Command>
+													</PopoverContent>
+												</Popover>
+
+												{selectedAthletes.length > 0 && (
+													<div className="mt-2 flex flex-wrap gap-1">
+														{selectedAthletes.map((athlete) => (
+															<Badge
+																key={athlete.id}
+																variant="secondary"
+																className="gap-1"
+															>
+																{athlete.user?.name ?? "Unknown"}
+																<button
+																	type="button"
+																	onClick={() => toggleAthlete(athlete.id)}
+																	className="ml-1 rounded-full hover:bg-muted-foreground/20"
+																>
+																	<XIcon className="size-3" />
+																</button>
+															</Badge>
+														))}
+													</div>
+												)}
+											</Field>
+										)}
+									</TabsContent>
+
+									<TabsContent value="recurring" className="px-6 py-4">
+										<RecurringSessionForm
+											isRecurring={isRecurring}
+											onIsRecurringChange={setIsRecurring}
+											recurrenceConfig={recurrenceConfig}
+											onRecurrenceConfigChange={setRecurrenceConfig}
+										/>
+									</TabsContent>
+
+									<TabsContent value="content" className="space-y-4 px-6 py-4">
+										<FormField
+											control={form.control}
+											name="objectives"
+											render={({ field }) => (
+												<FormItem asChild>
+													<Field>
+														<FormLabel>Objectives</FormLabel>
+														<FormControl>
+															<Textarea
+																placeholder="Training objectives..."
+																className="resize-none"
+																rows={3}
+																{...field}
+																value={field.value ?? ""}
+															/>
+														</FormControl>
+														<FormMessage />
+													</Field>
+												</FormItem>
+											)}
+										/>
+
+										<FormField
+											control={form.control}
+											name="planning"
+											render={({ field }) => (
+												<FormItem asChild>
+													<Field>
+														<FormLabel>Planning</FormLabel>
+														<FormControl>
+															<Textarea
+																placeholder="Session planning and activities..."
+																className="resize-none"
+																rows={4}
+																{...field}
+																value={field.value ?? ""}
+															/>
+														</FormControl>
+														<FormMessage />
+													</Field>
+												</FormItem>
+											)}
+										/>
+
+										{isEditing && (
+											<FormField
+												control={form.control}
+												name="postSessionNotes"
+												render={({ field }) => (
+													<FormItem asChild>
+														<Field>
+															<FormLabel>Post-Session Notes</FormLabel>
+															<FormControl>
+																<Textarea
+																	placeholder="Notes after the session..."
+																	className="resize-none"
+																	rows={3}
+																	{...field}
+																	value={field.value ?? ""}
+																/>
+															</FormControl>
+															<FormMessage />
+														</Field>
+													</FormItem>
+												)}
+											/>
+										)}
+									</TabsContent>
+								</Tabs>
+							</ScrollArea>
+
+							<SheetFooter className="flex-row justify-end gap-2 border-t">
+								<Button
+									type="button"
+									variant="outline"
+									onClick={modal.handleClose}
+									disabled={isPending}
+								>
+									Cancel
+								</Button>
+								<Button type="submit" disabled={isPending} loading={isPending}>
+									{isEditing ? "Update Session" : "Create Session"}
+								</Button>
+							</SheetFooter>
+						</form>
+					</Form>
+				</SheetContent>
+			</Sheet>
+		);
+	},
+);
