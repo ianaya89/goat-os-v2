@@ -104,6 +104,11 @@ export function OrganizationMenuItems(): React.JSX.Element {
 			href: `${basePath}/age-categories`,
 			icon: TagsIcon,
 		},
+		{
+			label: "Lista de Espera",
+			href: `${basePath}/waitlist`,
+			icon: ClipboardListIcon,
+		},
 	];
 
 	// Add coach sessions if user is a coach

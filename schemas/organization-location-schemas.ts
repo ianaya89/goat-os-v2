@@ -24,6 +24,9 @@ export const listLocationsSchema = z.object({
 		.optional(),
 });
 
+// Hex color validation regex
+const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+
 // Create location
 export const createLocationSchema = z.object({
 	name: z
@@ -38,6 +41,7 @@ export const createLocationSchema = z.object({
 	postalCode: z.string().trim().max(20, "Postal code is too long").optional(),
 	capacity: z.number().int().min(1).max(100000).optional(),
 	notes: z.string().trim().max(2000, "Notes is too long").optional(),
+	color: z.string().regex(hexColorRegex, "Invalid color format").optional(),
 	isActive: z.boolean().default(true),
 });
 
@@ -72,6 +76,11 @@ export const updateLocationSchema = z.object({
 		.nullable(),
 	capacity: z.number().int().min(1).max(100000).optional().nullable(),
 	notes: z.string().trim().max(2000, "Notes is too long").optional().nullable(),
+	color: z
+		.string()
+		.regex(hexColorRegex, "Invalid color format")
+		.optional()
+		.nullable(),
 	isActive: z.boolean().optional(),
 });
 
@@ -96,7 +105,9 @@ export type ListLocationsInput = z.infer<typeof listLocationsSchema>;
 export type CreateLocationInput = z.infer<typeof createLocationSchema>;
 export type UpdateLocationInput = z.infer<typeof updateLocationSchema>;
 export type DeleteLocationInput = z.infer<typeof deleteLocationSchema>;
-export type BulkDeleteLocationsInput = z.infer<typeof bulkDeleteLocationsSchema>;
+export type BulkDeleteLocationsInput = z.infer<
+	typeof bulkDeleteLocationsSchema
+>;
 export type BulkUpdateLocationsActiveInput = z.infer<
 	typeof bulkUpdateLocationsActiveSchema
 >;

@@ -2,19 +2,19 @@ import type { TrainingSessionStatus } from "@/lib/db/schema/enums";
 
 /**
  * Predefined color palette for locations
- * These colors are chosen to be visually distinct and accessible
+ * Muted, balanced pastel colors that are visually distinct and professional
  */
 export const LOCATION_COLOR_PALETTE = [
-	"#3b82f6", // Blue
-	"#22c55e", // Green
-	"#f97316", // Orange
-	"#a855f7", // Purple
-	"#ec4899", // Pink
-	"#14b8a6", // Teal
-	"#f59e0b", // Amber
-	"#6366f1", // Indigo
-	"#84cc16", // Lime
-	"#ef4444", // Red
+	"#a8c5e2", // Dusty Blue
+	"#a3d9c8", // Sage Green
+	"#f0c9a6", // Warm Sand
+	"#c9b8d9", // Soft Lavender
+	"#e8b4b8", // Dusty Rose
+	"#9dd1d1", // Muted Teal
+	"#e5d4a1", // Soft Gold
+	"#b8c4d9", // Steel Blue
+	"#c8d9a8", // Sage Lime
+	"#d9b8a8", // Warm Taupe
 ] as const;
 
 /**

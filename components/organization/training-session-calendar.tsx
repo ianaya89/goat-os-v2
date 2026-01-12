@@ -12,7 +12,13 @@ import interactionPlugin from "@fullcalendar/interaction";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import { addMonths, endOfMonth, startOfMonth } from "date-fns";
-import { UsersIcon } from "lucide-react";
+import {
+	CheckCircle2Icon,
+	CircleDashedIcon,
+	CircleIcon,
+	UsersIcon,
+	XCircleIcon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { TrainingSessionsModal } from "@/components/organization/training-sessions-modal";
@@ -113,12 +119,7 @@ export function TrainingSessionCalendar() {
 				start: session.startTime,
 				end: session.endTime,
 				backgroundColor: locationColor,
-				borderColor:
-					session.status === "cancelled"
-						? "#ef4444"
-						: session.status === "completed"
-							? "#22c55e"
-							: locationColor,
+				borderColor: locationColor,
 				classNames: [
 					session.status === "cancelled" ? "opacity-60" : "",
 					session.status === "pending" ? "border-dashed" : "",
@@ -341,23 +342,72 @@ export function TrainingSessionCalendar() {
 							const isDetailedView =
 								viewType === "timeGridWeek" || viewType === "timeGridDay";
 
+							// Status icon helper
+							const StatusIcon = () => {
+								switch (status) {
+									case "completed":
+										return (
+											<CheckCircle2Icon className="size-3 text-green-700" />
+										);
+									case "cancelled":
+										return <XCircleIcon className="size-3 text-red-600" />;
+									case "pending":
+										return (
+											<CircleDashedIcon className="size-3 text-amber-600" />
+										);
+									default:
+										// "confirmed" or any other status
+										return <CircleIcon className="size-3 text-blue-600" />;
+								}
+							};
+
 							// For month view - compact display
 							if (!isDetailedView) {
 								return (
 									<div
-										className={`overflow-hidden p-1 ${isCancelled ? "line-through" : ""}`}
+										className={`overflow-hidden p-1 ${isCancelled ? "line-through opacity-60" : ""}`}
 									>
-										<div className="truncate font-medium text-xs">
-											{eventInfo.timeText} - {eventInfo.event.title}
+										<div className="flex items-center gap-1">
+											<StatusIcon />
+											<span className="truncate font-medium text-xs">
+												{eventInfo.timeText} - {eventInfo.event.title}
+											</span>
 										</div>
 										{location && (
-											<div className="truncate text-[10px] opacity-80">
+											<div className="truncate text-[10px] opacity-80 ml-4">
 												{location}
 											</div>
 										)}
 									</div>
 								);
 							}
+
+							// Status badge colors for day/week views
+							const statusBadgeColors: Record<
+								string,
+								{ bg: string; text: string; label: string }
+							> = {
+								pending: {
+									bg: "bg-amber-100",
+									text: "text-amber-700",
+									label: "Pendiente",
+								},
+								confirmed: {
+									bg: "bg-blue-100",
+									text: "text-blue-700",
+									label: "Confirmado",
+								},
+								completed: {
+									bg: "bg-green-100",
+									text: "text-green-700",
+									label: "Completado",
+								},
+								cancelled: {
+									bg: "bg-red-100",
+									text: "text-red-700",
+									label: "Cancelado",
+								},
+							};
 
 							// For day/week views - detailed display
 							const athletesList = athletes as {
@@ -369,15 +419,34 @@ export function TrainingSessionCalendar() {
 								| { id: string; name: string; image: string | null }
 								| undefined;
 
+							const defaultBadge = {
+								bg: "bg-blue-100",
+								text: "text-blue-700",
+								label: "Confirmado",
+							};
+							const badgeStyle =
+								statusBadgeColors[status as keyof typeof statusBadgeColors] ??
+								defaultBadge;
+
 							return (
 								<div
 									className={`overflow-hidden p-1.5 h-full ${isCancelled ? "opacity-60" : ""}`}
 								>
-									{/* Title */}
+									{/* Status badge */}
 									<div
-										className={`truncate font-semibold text-xs ${isCancelled ? "line-through" : ""}`}
+										className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-medium mb-1 ${badgeStyle.bg} ${badgeStyle.text}`}
 									>
-										{eventInfo.event.title}
+										<StatusIcon />
+										<span>{badgeStyle.label}</span>
+									</div>
+
+									{/* Title */}
+									<div className="flex items-center gap-1">
+										<span
+											className={`truncate font-semibold text-xs ${isCancelled ? "line-through" : ""}`}
+										>
+											{eventInfo.event.title}
+										</span>
 									</div>
 
 									{/* Location */}
@@ -449,15 +518,19 @@ export function TrainingSessionCalendar() {
 				<div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-muted-foreground border-t pt-3">
 					<span className="font-medium">Status:</span>
 					<div className="flex items-center gap-1.5">
-						<div className="size-3 rounded border-2 border-dashed border-gray-400" />
+						<CircleDashedIcon className="size-3.5 text-amber-600" />
 						<span>Pending</span>
 					</div>
 					<div className="flex items-center gap-1.5">
-						<div className="size-3 rounded border-2 border-green-500 bg-green-500/20" />
+						<CircleIcon className="size-3.5 text-blue-600" />
+						<span>Confirmed</span>
+					</div>
+					<div className="flex items-center gap-1.5">
+						<CheckCircle2Icon className="size-3.5 text-green-700" />
 						<span>Completed</span>
 					</div>
 					<div className="flex items-center gap-1.5">
-						<div className="size-3 rounded border-2 border-red-500 bg-red-500/20 opacity-60" />
+						<XCircleIcon className="size-3.5 text-red-600" />
 						<span>Cancelled</span>
 					</div>
 				</div>

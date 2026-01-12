@@ -533,7 +533,17 @@ input[cmdk-input] {
     box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
   }
 
-  .fc .fc-button-active {
+  /* View switcher active state - ensure primary color */
+  .fc .fc-button-active,
+  .fc .fc-button.fc-button-active,
+  .fc .fc-button-group .fc-button-active {
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: var(--primary-foreground) !important;
+  }
+
+  /* Pressed state for view buttons */
+  .fc .fc-button[aria-pressed="true"] {
     background-color: var(--primary) !important;
     border-color: var(--primary) !important;
     color: var(--primary-foreground) !important;

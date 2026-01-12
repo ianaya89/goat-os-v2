@@ -1,6 +1,7 @@
 "use client";
 
 import NiceModal, { type NiceModalHocProps } from "@ebay/nice-modal-react";
+import { CheckIcon } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,8 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 import { useZodForm } from "@/hooks/use-zod-form";
+import { cn } from "@/lib/utils";
+import { LOCATION_COLOR_PALETTE } from "@/lib/utils/location-colors";
 import {
 	createLocationSchema,
 	updateLocationSchema,
@@ -44,6 +47,7 @@ export type LocationsModalProps = NiceModalHocProps & {
 		postalCode?: string | null;
 		capacity?: number | null;
 		notes?: string | null;
+		color?: string | null;
 		isActive: boolean;
 	};
 };
@@ -93,6 +97,7 @@ export const LocationsModal = NiceModal.create<LocationsModalProps>(
 						postalCode: location.postalCode ?? "",
 						capacity: location.capacity ?? undefined,
 						notes: location.notes ?? "",
+						color: location.color ?? undefined,
 						isActive: location.isActive,
 					}
 				: {
@@ -104,6 +109,7 @@ export const LocationsModal = NiceModal.create<LocationsModalProps>(
 						postalCode: "",
 						capacity: undefined,
 						notes: "",
+						color: undefined,
 						isActive: true,
 					},
 		});
@@ -322,6 +328,81 @@ export const LocationsModal = NiceModal.create<LocationsModalProps>(
 															{...field}
 															value={field.value ?? ""}
 														/>
+													</FormControl>
+													<FormMessage />
+												</Field>
+											</FormItem>
+										)}
+									/>
+
+									<FormField
+										control={form.control}
+										name="color"
+										render={({ field }) => (
+											<FormItem asChild>
+												<Field>
+													<FormLabel>Calendar Color</FormLabel>
+													<FormControl>
+														<div className="space-y-3">
+															{/* Preset colors */}
+															<div className="flex flex-wrap gap-2">
+																{LOCATION_COLOR_PALETTE.map((color) => (
+																	<button
+																		key={color}
+																		type="button"
+																		className={cn(
+																			"size-8 rounded-md border-2 transition-all hover:scale-110",
+																			field.value === color
+																				? "border-foreground ring-2 ring-offset-2 ring-foreground"
+																				: "border-transparent",
+																		)}
+																		style={{ backgroundColor: color }}
+																		onClick={() => field.onChange(color)}
+																		title={color}
+																	>
+																		{field.value === color && (
+																			<CheckIcon className="size-4 mx-auto text-foreground/70" />
+																		)}
+																	</button>
+																))}
+															</div>
+															{/* Custom color input */}
+															<div className="flex items-center gap-2">
+																<Input
+																	type="color"
+																	className="size-8 p-0.5 cursor-pointer"
+																	value={field.value || "#a8c5e2"}
+																	onChange={(e) =>
+																		field.onChange(e.target.value)
+																	}
+																/>
+																<Input
+																	type="text"
+																	placeholder="#a8c5e2"
+																	className="flex-1 font-mono text-sm"
+																	value={field.value ?? ""}
+																	onChange={(e) => {
+																		const val = e.target.value;
+																		if (
+																			val === "" ||
+																			val.match(/^#[0-9A-Fa-f]{0,6}$/)
+																		) {
+																			field.onChange(val || undefined);
+																		}
+																	}}
+																/>
+																{field.value && (
+																	<Button
+																		type="button"
+																		variant="ghost"
+																		size="sm"
+																		onClick={() => field.onChange(undefined)}
+																	>
+																		Clear
+																	</Button>
+																)}
+															</div>
+														</div>
 													</FormControl>
 													<FormMessage />
 												</Field>

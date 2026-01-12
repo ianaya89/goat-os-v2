@@ -81,7 +81,7 @@ export function TrainingSessionsView() {
 					<ToggleGroupItem
 						value="table"
 						aria-label="Table view"
-						className="data-[state=on]:bg-background"
+						className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
 					>
 						<ListIcon className="size-4" />
 						<span className="ml-2 hidden sm:inline">Table</span>
@@ -89,7 +89,7 @@ export function TrainingSessionsView() {
 					<ToggleGroupItem
 						value="calendar"
 						aria-label="Calendar view"
-						className="data-[state=on]:bg-background"
+						className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
 					>
 						<CalendarIcon className="size-4" />
 						<span className="ml-2 hidden sm:inline">Calendar</span>

@@ -327,6 +327,49 @@ export const CashMovementReferenceTypes = Object.values(
 	CashMovementReferenceType,
 );
 
+// Waitlist entry status enum
+export const WaitlistEntryStatus = {
+	waiting: "waiting",
+	assigned: "assigned",
+	cancelled: "cancelled",
+	expired: "expired",
+} as const;
+export type WaitlistEntryStatus =
+	(typeof WaitlistEntryStatus)[keyof typeof WaitlistEntryStatus];
+export const WaitlistEntryStatuses = Object.values(WaitlistEntryStatus);
+
+// Waitlist priority enum
+export const WaitlistPriority = {
+	high: "high",
+	medium: "medium",
+	low: "low",
+} as const;
+export type WaitlistPriority =
+	(typeof WaitlistPriority)[keyof typeof WaitlistPriority];
+export const WaitlistPriorities = Object.values(WaitlistPriority);
+
+// Waitlist reference type enum (for polymorphic reference)
+export const WaitlistReferenceType = {
+	schedule: "schedule",
+	athleteGroup: "athlete_group",
+} as const;
+export type WaitlistReferenceType =
+	(typeof WaitlistReferenceType)[keyof typeof WaitlistReferenceType];
+export const WaitlistReferenceTypes = Object.values(WaitlistReferenceType);
+
+// Days of week enum for waitlist schedules
+export const DayOfWeek = {
+	monday: "monday",
+	tuesday: "tuesday",
+	wednesday: "wednesday",
+	thursday: "thursday",
+	friday: "friday",
+	saturday: "saturday",
+	sunday: "sunday",
+} as const;
+export type DayOfWeek = (typeof DayOfWeek)[keyof typeof DayOfWeek];
+export const DaysOfWeek = Object.values(DayOfWeek);
+
 export function enumToPgEnum<T extends Record<string, string>>(myEnum: T) {
 	return Object.values(myEnum).map((value) => value) as [
 		T[keyof T],

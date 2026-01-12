@@ -40,6 +40,9 @@ import {
 	TrainingPaymentStatus,
 	TrainingSessionStatus,
 	UserRole,
+	WaitlistEntryStatus,
+	WaitlistPriority,
+	WaitlistReferenceType,
 } from "./enums";
 
 export const accountTable = pgTable(
@@ -2240,5 +2243,113 @@ export const cashMovementTable = pgTable(
 			table.referenceId,
 		),
 		index("cash_movement_created_idx").on(table.createdAt),
+	],
+);
+
+// ============================================================================
+// WAITLIST TABLE
+// ============================================================================
+
+/**
+ * Waitlist entry table - stores athletes waiting for spots in sessions or groups
+ * Supports polymorphic references to training sessions or athlete groups
+ */
+export const waitlistEntryTable = pgTable(
+	"waitlist_entry",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizationTable.id, { onDelete: "cascade" }),
+
+		// Athlete reference
+		athleteId: uuid("athlete_id")
+			.notNull()
+			.references(() => athleteTable.id, { onDelete: "cascade" }),
+
+		// Polymorphic reference type
+		referenceType: text("reference_type", {
+			enum: enumToPgEnum(WaitlistReferenceType),
+		})
+			.$type<WaitlistReferenceType>()
+			.notNull(),
+
+		// References (one must be non-null based on referenceType)
+		trainingSessionId: uuid("training_session_id").references(
+			() => trainingSessionTable.id,
+			{ onDelete: "cascade" },
+		),
+		athleteGroupId: uuid("athlete_group_id").references(
+			() => athleteGroupTable.id,
+			{ onDelete: "cascade" },
+		),
+
+		// Priority
+		priority: text("priority", { enum: enumToPgEnum(WaitlistPriority) })
+			.$type<WaitlistPriority>()
+			.notNull()
+			.default(WaitlistPriority.medium),
+
+		// Status
+		status: text("status", { enum: enumToPgEnum(WaitlistEntryStatus) })
+			.$type<WaitlistEntryStatus>()
+			.notNull()
+			.default(WaitlistEntryStatus.waiting),
+
+		// Reason and notes
+		reason: text("reason"), // Why the athlete is on waitlist
+		notes: text("notes"), // Admin notes
+
+		// Position in queue (for ordering)
+		position: integer("position"),
+
+		// Assignment tracking
+		assignedAt: timestamp("assigned_at", { withTimezone: true }),
+		assignedBy: uuid("assigned_by").references(() => userTable.id, {
+			onDelete: "set null",
+		}),
+
+		// Expiration (optional)
+		expiresAt: timestamp("expires_at", { withTimezone: true }),
+
+		// Audit
+		createdBy: uuid("created_by").references(() => userTable.id, {
+			onDelete: "set null",
+		}),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => [
+		index("waitlist_entry_org_idx").on(table.organizationId),
+		index("waitlist_entry_athlete_idx").on(table.athleteId),
+		index("waitlist_entry_status_idx").on(table.status),
+		index("waitlist_entry_priority_idx").on(table.priority),
+		index("waitlist_entry_reference_type_idx").on(table.referenceType),
+		index("waitlist_entry_training_session_idx").on(table.trainingSessionId),
+		index("waitlist_entry_athlete_group_idx").on(table.athleteGroupId),
+		index("waitlist_entry_position_idx").on(table.position),
+		// Composite indexes for common queries
+		index("waitlist_entry_org_status_idx").on(
+			table.organizationId,
+			table.status,
+		),
+		index("waitlist_entry_org_type_status_idx").on(
+			table.organizationId,
+			table.referenceType,
+			table.status,
+		),
+		// Check constraint: ensure correct reference based on type
+		check(
+			"waitlist_entry_valid_reference",
+			sql`
+				(${table.referenceType} = 'training_session' AND ${table.trainingSessionId} IS NOT NULL AND ${table.athleteGroupId} IS NULL) OR
+				(${table.referenceType} = 'athlete_group' AND ${table.athleteGroupId} IS NOT NULL AND ${table.trainingSessionId} IS NULL)
+			`,
+		),
 	],
 );

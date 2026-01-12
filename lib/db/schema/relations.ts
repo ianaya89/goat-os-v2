@@ -44,6 +44,7 @@ import {
 	trainingSessionTable,
 	twoFactorTable,
 	userTable,
+	waitlistEntryTable,
 } from "./tables";
 
 export const accountRelations = relations(accountTable, ({ one }) => ({
@@ -93,6 +94,7 @@ export const organizationRelations = relations(
 		athleteGroups: many(athleteGroupTable),
 		trainingSessions: many(trainingSessionTable),
 		trainingPayments: many(trainingPaymentTable),
+		waitlistEntries: many(waitlistEntryTable),
 		// Sports events relations
 		ageCategories: many(ageCategoryTable),
 		sportsEvents: many(sportsEventTable),
@@ -260,6 +262,7 @@ export const athleteRelations = relations(athleteTable, ({ one, many }) => ({
 	attendances: many(attendanceTable),
 	trainingPayments: many(trainingPaymentTable),
 	evaluations: many(athleteEvaluationTable),
+	waitlistEntries: many(waitlistEntryTable),
 	// Scouting profile relations
 	physicalMetrics: many(athletePhysicalMetricsTable),
 	fitnessTests: many(athleteFitnessTestTable),
@@ -300,6 +303,7 @@ export const athleteGroupRelations = relations(
 		}),
 		members: many(athleteGroupMemberTable),
 		trainingSessions: many(trainingSessionTable),
+		waitlistEntries: many(waitlistEntryTable),
 	}),
 );
 
@@ -353,6 +357,7 @@ export const trainingSessionRelations = relations(
 		evaluations: many(athleteEvaluationTable),
 		exceptions: many(recurringSessionExceptionTable),
 		feedback: many(athleteSessionFeedbackTable),
+		waitlistEntries: many(waitlistEntryTable),
 	}),
 );
 
@@ -736,6 +741,43 @@ export const cashMovementRelations = relations(
 		recordedByUser: one(userTable, {
 			fields: [cashMovementTable.recordedBy],
 			references: [userTable.id],
+		}),
+	}),
+);
+
+// ============================================================================
+// WAITLIST RELATIONS
+// ============================================================================
+
+// Waitlist Entry relations
+export const waitlistEntryRelations = relations(
+	waitlistEntryTable,
+	({ one }) => ({
+		organization: one(organizationTable, {
+			fields: [waitlistEntryTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		athlete: one(athleteTable, {
+			fields: [waitlistEntryTable.athleteId],
+			references: [athleteTable.id],
+		}),
+		trainingSession: one(trainingSessionTable, {
+			fields: [waitlistEntryTable.trainingSessionId],
+			references: [trainingSessionTable.id],
+		}),
+		athleteGroup: one(athleteGroupTable, {
+			fields: [waitlistEntryTable.athleteGroupId],
+			references: [athleteGroupTable.id],
+		}),
+		createdByUser: one(userTable, {
+			fields: [waitlistEntryTable.createdBy],
+			references: [userTable.id],
+			relationName: "waitlistCreatedBy",
+		}),
+		assignedByUser: one(userTable, {
+			fields: [waitlistEntryTable.assignedBy],
+			references: [userTable.id],
+			relationName: "waitlistAssignedBy",
 		}),
 	}),
 );
