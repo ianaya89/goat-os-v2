@@ -19,11 +19,15 @@ import { organizationAthleteGroupRouter } from "@/trpc/routers/organization/orga
 import { organizationAthleteRouter } from "@/trpc/routers/organization/organization-athlete-router";
 import { organizationAthleteWellnessRouter } from "@/trpc/routers/organization/organization-athlete-wellness-router";
 import { organizationAttendanceRouter } from "@/trpc/routers/organization/organization-attendance-router";
-import { organizationSessionFeedbackRouter } from "@/trpc/routers/organization/organization-session-feedback-router";
+import { organizationCashRegisterRouter } from "@/trpc/routers/organization/organization-cash-register-router";
 import { organizationCoachRouter } from "@/trpc/routers/organization/organization-coach-router";
 import { organizationCreditRouter } from "@/trpc/routers/organization/organization-credit-router";
 import { organizationDashboardRouter } from "@/trpc/routers/organization/organization-dashboard-router";
+import { organizationExpenseRouter } from "@/trpc/routers/organization/organization-expense-router";
 import { organizationLocationRouter } from "@/trpc/routers/organization/organization-location-router";
+import { organizationNotificationRouter } from "@/trpc/routers/organization/organization-notification-router";
+import { organizationReportsRouter } from "@/trpc/routers/organization/organization-reports-router";
+import { organizationSessionFeedbackRouter } from "@/trpc/routers/organization/organization-session-feedback-router";
 import { organizationSportsEventRouter } from "@/trpc/routers/organization/organization-sports-event-router";
 import { organizationSubscriptionRouter } from "@/trpc/routers/organization/organization-subscription-router";
 import { organizationTrainingPaymentRouter } from "@/trpc/routers/organization/organization-training-payment-router";
@@ -151,5 +155,9 @@ export const organizationRouter = createTRPCRouter({
 	subscription: organizationSubscriptionRouter,
 	trainingPayment: organizationTrainingPaymentRouter,
 	trainingSession: organizationTrainingSessionRouter,
+	notification: organizationNotificationRouter,
 	user: organizationUserRouter,
+	expense: organizationExpenseRouter,
+	cashRegister: organizationCashRegisterRouter,
+	reports: organizationReportsRouter,
 });

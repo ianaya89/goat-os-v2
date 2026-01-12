@@ -12,7 +12,9 @@ import {
 	or,
 	type SQL,
 } from "drizzle-orm";
+import { z } from "zod/v4";
 import { db } from "@/lib/db";
+import { TrainingSessionStatus } from "@/lib/db/schema/enums";
 import {
 	athleteEvaluationTable,
 	athleteGroupMemberTable,
@@ -25,7 +27,6 @@ import {
 	trainingSessionCoachTable,
 	trainingSessionTable,
 } from "@/lib/db/schema/tables";
-import { TrainingSessionStatus } from "@/lib/db/schema/enums";
 import {
 	bulkDeleteTrainingSessionsSchema,
 	bulkUpdateTrainingSessionsStatusSchema,
@@ -158,7 +159,12 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 							},
 						},
 						payments: {
-							columns: { id: true, status: true, amount: true, paidAmount: true },
+							columns: {
+								id: true,
+								status: true,
+								amount: true,
+								paidAmount: true,
+							},
 						},
 					},
 				}),
@@ -230,7 +236,12 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 									athlete: {
 										with: {
 											user: {
-												columns: { id: true, name: true, email: true, image: true },
+												columns: {
+													id: true,
+													name: true,
+													email: true,
+													image: true,
+												},
 											},
 										},
 									},
@@ -313,38 +324,9 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 				}
 			}
 
-			// Create the session
-			const [session] = await db
-				.insert(trainingSessionTable)
-				.values({
-					organizationId: ctx.organization.id,
-					createdBy: ctx.user.id,
-					athleteGroupId: athleteGroupId ?? null,
-					...sessionData,
-				})
-				.returning();
-
-			if (!session) {
-				throw new TRPCError({
-					code: "INTERNAL_SERVER_ERROR",
-					message: "Failed to create training session",
-				});
-			}
-
-			// Assign coaches (if any provided)
-			if (coachIds && coachIds.length > 0) {
-				await db.insert(trainingSessionCoachTable).values(
-					coachIds.map((coachId) => ({
-						sessionId: session.id,
-						coachId,
-						isPrimary: primaryCoachId ? coachId === primaryCoachId : coachIds[0] === coachId,
-					})),
-				);
-			}
-
-			// Assign individual athletes if provided (and no group)
+			// Verify athletes belong to organization (if any provided and no group)
+			let validAthleteIds: string[] = [];
 			if (!athleteGroupId && athleteIds && athleteIds.length > 0) {
-				// Verify athletes belong to organization
 				const athletes = await db.query.athleteTable.findMany({
 					where: and(
 						inArray(athleteTable.id, athleteIds),
@@ -353,17 +335,61 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 					columns: { id: true },
 				});
 
-				const validAthleteIds = athletes.map((a) => a.id);
+				if (athletes.length !== athleteIds.length) {
+					throw new TRPCError({
+						code: "BAD_REQUEST",
+						message: "One or more athletes not found in this organization",
+					});
+				}
 
+				validAthleteIds = athletes.map((a) => a.id);
+			}
+
+			// Use transaction to ensure atomicity of session creation with coaches and athletes
+			const session = await db.transaction(async (tx) => {
+				// Create the session
+				const [newSession] = await tx
+					.insert(trainingSessionTable)
+					.values({
+						organizationId: ctx.organization.id,
+						createdBy: ctx.user.id,
+						athleteGroupId: athleteGroupId ?? null,
+						...sessionData,
+					})
+					.returning();
+
+				if (!newSession) {
+					throw new TRPCError({
+						code: "INTERNAL_SERVER_ERROR",
+						message: "Failed to create training session",
+					});
+				}
+
+				// Assign coaches (if any provided)
+				if (coachIds && coachIds.length > 0) {
+					await tx.insert(trainingSessionCoachTable).values(
+						coachIds.map((coachId) => ({
+							sessionId: newSession.id,
+							coachId,
+							isPrimary: primaryCoachId
+								? coachId === primaryCoachId
+								: coachIds[0] === coachId,
+						})),
+					);
+				}
+
+				// Assign individual athletes if provided (and no group)
 				if (validAthleteIds.length > 0) {
-					await db.insert(trainingSessionAthleteTable).values(
+					await tx.insert(trainingSessionAthleteTable).values(
 						validAthleteIds.map((athleteId) => ({
-							sessionId: session.id,
+							sessionId: newSession.id,
 							athleteId,
 						})),
 					);
 				}
-			}
+
+				return newSession;
+			});
 
 			return session;
 		}),
@@ -673,14 +699,24 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 				});
 			}
 
-			// Copy coaches from recurring session
-			const coaches = await db.query.trainingSessionCoachTable.findMany({
+			// Copy coaches from recurring session (verify they belong to org)
+			const sessionCoaches = await db.query.trainingSessionCoachTable.findMany({
 				where: eq(trainingSessionCoachTable.sessionId, recurringSessionId),
+				with: {
+					coach: {
+						columns: { id: true, organizationId: true },
+					},
+				},
 			});
 
-			if (coaches.length > 0) {
+			// Filter to only coaches that belong to this organization
+			const validCoaches = sessionCoaches.filter(
+				(c) => c.coach.organizationId === ctx.organization.id,
+			);
+
+			if (validCoaches.length > 0) {
 				await db.insert(trainingSessionCoachTable).values(
-					coaches.map((c) => ({
+					validCoaches.map((c) => ({
 						sessionId: replacementSession.id,
 						coachId: c.coachId,
 						isPrimary: c.isPrimary,
@@ -688,14 +724,25 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 				);
 			}
 
-			// Copy athletes from recurring session
-			const athletes = await db.query.trainingSessionAthleteTable.findMany({
-				where: eq(trainingSessionAthleteTable.sessionId, recurringSessionId),
-			});
+			// Copy athletes from recurring session (verify they belong to org)
+			const sessionAthletes =
+				await db.query.trainingSessionAthleteTable.findMany({
+					where: eq(trainingSessionAthleteTable.sessionId, recurringSessionId),
+					with: {
+						athlete: {
+							columns: { id: true, organizationId: true },
+						},
+					},
+				});
 
-			if (athletes.length > 0) {
+			// Filter to only athletes that belong to this organization
+			const validAthletes = sessionAthletes.filter(
+				(a) => a.athlete.organizationId === ctx.organization.id,
+			);
+
+			if (validAthletes.length > 0) {
 				await db.insert(trainingSessionAthleteTable).values(
-					athletes.map((a) => ({
+					validAthletes.map((a) => ({
 						sessionId: replacementSession.id,
 						athleteId: a.athleteId,
 					})),
@@ -783,7 +830,9 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 									with: {
 										athlete: {
 											with: {
-												user: { columns: { id: true, name: true, image: true } },
+												user: {
+													columns: { id: true, name: true, image: true },
+												},
 											},
 										},
 									},
@@ -936,5 +985,362 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 			]);
 
 			return { sessions, total: countResult[0]?.count ?? 0, athlete };
+		}),
+
+	// Send daily summary to coaches
+	sendDailySummary: protectedOrganizationProcedure
+		.input(
+			z
+				.object({
+					date: z.iso.date().optional(), // ISO date string (YYYY-MM-DD), defaults to tomorrow
+				})
+				.optional(),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const { format, startOfDay, endOfDay, addDays } = await import(
+				"date-fns"
+			);
+			const { sendNotification } = await import("@/trigger/notifications");
+			const { appConfig } = await import("@/config/app.config");
+
+			// Determine target date (default to tomorrow)
+			let targetDate: Date;
+			if (input?.date) {
+				targetDate = new Date(input.date);
+			} else {
+				targetDate = addDays(new Date(), 1);
+			}
+
+			const dayStart = startOfDay(targetDate);
+			const dayEnd = endOfDay(targetDate);
+
+			// Get all sessions for the target date
+			const sessions = await db.query.trainingSessionTable.findMany({
+				where: and(
+					eq(trainingSessionTable.organizationId, ctx.organization.id),
+					gte(trainingSessionTable.startTime, dayStart),
+					lte(trainingSessionTable.startTime, dayEnd),
+					eq(trainingSessionTable.isRecurring, false),
+					// Exclude cancelled sessions
+					or(
+						eq(trainingSessionTable.status, TrainingSessionStatus.pending),
+						eq(trainingSessionTable.status, TrainingSessionStatus.confirmed),
+					),
+				),
+				orderBy: asc(trainingSessionTable.startTime),
+				with: {
+					location: { columns: { id: true, name: true } },
+					athleteGroup: {
+						columns: { id: true, name: true },
+						with: {
+							members: { columns: { athleteId: true } },
+						},
+					},
+					coaches: {
+						with: {
+							coach: {
+								with: {
+									user: { columns: { id: true, name: true, email: true } },
+								},
+							},
+						},
+					},
+					athletes: { columns: { athleteId: true } },
+				},
+			});
+
+			if (sessions.length === 0) {
+				return {
+					success: true,
+					sent: 0,
+					message: "No sessions scheduled for the specified date",
+				};
+			}
+
+			// Get all unique coaches from all sessions
+			const coachMap = new Map<
+				string,
+				{ id: string; name: string; email: string }
+			>();
+			for (const session of sessions) {
+				for (const sc of session.coaches) {
+					if (sc.coach.user?.email) {
+						coachMap.set(sc.coach.id, {
+							id: sc.coach.id,
+							name: sc.coach.user.name ?? "Coach",
+							email: sc.coach.user.email,
+						});
+					}
+				}
+			}
+
+			const coaches = Array.from(coachMap.values());
+
+			if (coaches.length === 0) {
+				return {
+					success: true,
+					sent: 0,
+					message: "No coaches with email addresses found",
+				};
+			}
+
+			// Format sessions for email
+			const formattedSessions = sessions.map((session) => {
+				const athleteCount = session.athleteGroup?.members
+					? session.athleteGroup.members.length
+					: session.athletes.length;
+
+				return {
+					title: session.title,
+					time: `${format(new Date(session.startTime), "h:mm a")} - ${format(new Date(session.endTime), "h:mm a")}`,
+					location: session.location?.name ?? "TBD",
+					coaches: session.coaches.map((c) => c.coach.user?.name ?? "Coach"),
+					athleteCount,
+					groupName: session.athleteGroup?.name,
+				};
+			});
+
+			// Calculate totals
+			const totalAthletes = formattedSessions.reduce(
+				(sum, s) => sum + s.athleteCount,
+				0,
+			);
+
+			const summaryDate = format(targetDate, "EEEE, MMMM d, yyyy");
+
+			// Send to all coaches via Trigger.dev
+			const notifications = coaches.map((coach) =>
+				sendNotification.trigger({
+					payload: {
+						channel: "email" as const,
+						to: { email: coach.email, name: coach.name },
+						template: "daily-session-summary" as const,
+						data: {
+							appName: appConfig.appName,
+							recipientName: coach.name,
+							organizationName: ctx.organization.name,
+							summaryDate,
+							sessions: formattedSessions,
+							totalSessions: sessions.length,
+							totalAthletes,
+						},
+					},
+					organizationId: ctx.organization.id,
+					triggeredBy: ctx.user.id,
+				}),
+			);
+
+			const results = await Promise.allSettled(notifications);
+			const successful = results.filter((r) => r.status === "fulfilled").length;
+			const failed = results.filter((r) => r.status === "rejected").length;
+
+			return {
+				success: true,
+				sent: successful,
+				failed,
+				totalCoaches: coaches.length,
+				totalSessions: sessions.length,
+				date: summaryDate,
+			};
+		}),
+
+	// Send reminder notifications to athletes for a session
+	sendReminder: protectedOrganizationProcedure
+		.input(
+			deleteTrainingSessionSchema.extend({
+				channel: z
+					.enum(["email", "sms", "whatsapp"])
+					.default("email")
+					.optional(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			const { format } = await import("date-fns");
+			const { sendNotification } = await import("@/trigger/notifications");
+			const { appConfig } = await import("@/config/app.config");
+			const { generateConfirmationUrl } = await import(
+				"@/lib/notifications/confirmation-token"
+			);
+			const { getBaseUrl } = await import("@/lib/utils");
+
+			const channel = input.channel ?? "email";
+
+			// Get the session with all related data
+			const session = await db.query.trainingSessionTable.findFirst({
+				where: and(
+					eq(trainingSessionTable.id, input.id),
+					eq(trainingSessionTable.organizationId, ctx.organization.id),
+				),
+				with: {
+					location: { columns: { id: true, name: true } },
+					athleteGroup: {
+						with: {
+							members: {
+								with: {
+									athlete: {
+										columns: { id: true, phone: true },
+										with: {
+											user: {
+												columns: { id: true, name: true, email: true },
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					coaches: {
+						with: {
+							coach: {
+								with: {
+									user: { columns: { id: true, name: true } },
+								},
+							},
+						},
+					},
+					athletes: {
+						with: {
+							athlete: {
+								columns: { id: true, phone: true },
+								with: {
+									user: { columns: { id: true, name: true, email: true } },
+								},
+							},
+						},
+					},
+				},
+			});
+
+			if (!session) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Session not found",
+				});
+			}
+
+			// Check if session is in the future
+			if (new Date(session.startTime) <= new Date()) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Cannot send reminder for past or ongoing sessions",
+				});
+			}
+
+			// Check if session is cancelled
+			if (session.status === TrainingSessionStatus.cancelled) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Cannot send reminder for cancelled sessions",
+				});
+			}
+
+			// Get athletes list with contact info
+			const allAthletes = session.athleteGroup?.members
+				? session.athleteGroup.members.map((m) => ({
+						id: m.athlete.id,
+						name: m.athlete.user?.name ?? "Athlete",
+						email: m.athlete.user?.email ?? null,
+						phone: m.athlete.phone ?? null,
+					}))
+				: session.athletes.map((a) => ({
+						id: a.athlete.id,
+						name: a.athlete.user?.name ?? "Athlete",
+						email: a.athlete.user?.email ?? null,
+						phone: a.athlete.phone ?? null,
+					}));
+
+			// Filter athletes based on channel
+			const athletes =
+				channel === "email"
+					? allAthletes.filter((a) => a.email)
+					: allAthletes.filter((a) => a.phone);
+
+			if (athletes.length === 0) {
+				const contactType =
+					channel === "email" ? "email addresses" : "phone numbers";
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: `No athletes with ${contactType} found for this session`,
+				});
+			}
+
+			// Get primary coach name
+			const primaryCoach = session.coaches.find((c) => c.isPrimary);
+			const coachName =
+				primaryCoach?.coach.user?.name ??
+				session.coaches[0]?.coach.user?.name ??
+				"Your Coach";
+
+			// Format session details
+			const sessionDate = format(
+				new Date(session.startTime),
+				"EEEE, MMMM d, yyyy",
+			);
+			const shortDate = format(new Date(session.startTime), "MMM d");
+			const sessionTime = `${format(new Date(session.startTime), "h:mm a")} - ${format(new Date(session.endTime), "h:mm a")}`;
+			const shortTime = format(new Date(session.startTime), "h:mm a");
+			const locationName = session.location?.name ?? "TBD";
+			const baseUrl = getBaseUrl();
+
+			// Send notifications via Trigger.dev for reliability
+			const notifications = athletes.map((athlete) => {
+				const confirmationUrl = generateConfirmationUrl(
+					baseUrl,
+					session.id,
+					athlete.id,
+				);
+
+				if (channel === "email") {
+					return sendNotification.trigger({
+						payload: {
+							channel: "email" as const,
+							to: { email: athlete.email!, name: athlete.name },
+							template: "training-session-reminder" as const,
+							data: {
+								appName: appConfig.appName,
+								athleteName: athlete.name,
+								sessionTitle: session.title,
+								sessionDate,
+								sessionTime,
+								location: locationName,
+								coachName,
+								organizationName: ctx.organization.name,
+								confirmationUrl,
+							},
+						},
+						organizationId: ctx.organization.id,
+						triggeredBy: ctx.user.id,
+					});
+				}
+
+				// SMS or WhatsApp
+				return sendNotification.trigger({
+					payload: {
+						channel: channel as "sms" | "whatsapp",
+						to: { phone: athlete.phone!, name: athlete.name },
+						template: "training-session-reminder" as const,
+						data: {
+							sessionTitle: session.title,
+							date: shortDate,
+							time: shortTime,
+							confirmationUrl,
+						},
+					},
+					organizationId: ctx.organization.id,
+					triggeredBy: ctx.user.id,
+				});
+			});
+
+			const results = await Promise.allSettled(notifications);
+			const successful = results.filter((r) => r.status === "fulfilled").length;
+			const failed = results.filter((r) => r.status === "rejected").length;
+
+			return {
+				success: true,
+				channel,
+				sent: successful,
+				failed,
+				total: athletes.length,
+			};
 		}),
 });

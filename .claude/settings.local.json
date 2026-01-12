@@ -1,28 +1,37 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(npm install:*)",
-      "Bash(rm:*)",
-      "Bash(find:*)",
-      "Bash(npm cache clean:*)",
-      "Bash(ls:*)",
-      "Bash(npm run typecheck:*)",
-      "Bash(npm run lint)",
-      "Bash(npm run db:generate:*)",
-      "Bash(cat:*)",
-      "Bash(npm run lint:*)",
-      "Bash(npm run db:migrate:*)",
-      "Bash(grep:*)",
-      "Bash(npm run build:*)",
-      "Bash(npx tsc:*)",
-      "Bash(lsof:*)",
-      "Bash(xargs cat:*)",
-      "Bash(yes:*)",
-      "Bash(npx drizzle-kit:*)",
-      "Bash(npm run db:push:*)",
-      "Bash(printf:*)",
-      "Bash(expect:*)",
-      "Bash(npx biome lint:*)"
-    ]
-  }
+	"permissions": {
+		"allow": [
+			"Bash(npm install:*)",
+			"Bash(rm:*)",
+			"Bash(find:*)",
+			"Bash(npm cache clean:*)",
+			"Bash(ls:*)",
+			"Bash(npm run typecheck:*)",
+			"Bash(npm run lint)",
+			"Bash(npm run db:generate:*)",
+			"Bash(cat:*)",
+			"Bash(npm run lint:*)",
+			"Bash(npm run db:migrate:*)",
+			"Bash(grep:*)",
+			"Bash(npm run build:*)",
+			"Bash(npx tsc:*)",
+			"Bash(lsof:*)",
+			"Bash(xargs cat:*)",
+			"Bash(yes:*)",
+			"Bash(npx drizzle-kit:*)",
+			"Bash(npm run db:push:*)",
+			"Bash(printf:*)",
+			"Bash(expect:*)",
+			"Bash(npx biome lint:*)",
+			"WebFetch(domain:www.sent.dm)",
+			"WebFetch(domain:trigger.dev)",
+			"WebFetch(domain:docs.sent.dm)",
+			"WebSearch",
+			"Bash(pnpm install:*)",
+			"Bash(pnpm dev:*)",
+			"Bash(pnpm add:*)",
+			"Bash(npm run dev:*)",
+			"Bash(pkill:*)"
+		]
+	}
 }

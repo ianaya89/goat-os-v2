@@ -13,6 +13,7 @@ const nextConfig: NextConfig = {
 		optimizePackageImports: ["recharts", "lucide-react", "date-fns"],
 	},
 	turbopack: {
+		root: import.meta.dirname,
 		resolveExtensions: [".ts", ".tsx", ".js", ".jsx"],
 	},
 	logging: {

@@ -92,6 +92,10 @@
     0 0 80px rgba(0, 35, 124, 0.08);
   /* Inner highlight for glass depth */
   --glass-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.5);
+  /* Shimmer effect colors - light mode (subtle blue tint) */
+  --shimmer-start: rgba(0, 35, 124, 0.03);
+  --shimmer-mid: rgba(0, 35, 124, 0.08);
+  --shimmer-peak: rgba(0, 35, 124, 0.12);
 
   /* Marketing tokens - light mode */
   --marketing-bg: #f8fafc;
@@ -188,6 +192,10 @@
     0 0 80px rgba(91, 126, 201, 0.10);
   /* Inner highlight for glass depth (dark) */
   --glass-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  /* Shimmer effect colors - dark mode (very subtle white) */
+  --shimmer-start: rgba(255, 255, 255, 0.01);
+  --shimmer-mid: rgba(255, 255, 255, 0.04);
+  --shimmer-peak: rgba(255, 255, 255, 0.06);
 
   /* Marketing tokens - dark mode */
   --marketing-bg: #0f172a;
@@ -348,6 +356,27 @@
 
   --animate-float: float 6s ease-in-out infinite;
   --animate-glow-pulse: glowPulse 4s ease-in-out infinite;
+}
+
+/* Shimmer overlay effect - uses CSS variables for theme-aware intensity */
+.shimmer-overlay::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    var(--shimmer-start) 43%,
+    var(--shimmer-mid) 47%,
+    var(--shimmer-peak) 50%,
+    var(--shimmer-mid) 53%,
+    var(--shimmer-start) 57%,
+    transparent 60%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 12s ease-in-out infinite;
 }
 
 @layer base {

@@ -437,7 +437,7 @@ function Sidebar({
 					data-sidebar="sidebar"
 					data-slot="sidebar-inner"
 					// Floating glass effect: backdrop blur, multi-layer glow, gradient highlight, shimmer
-					className="relative flex h-full w-full flex-col bg-sidebar backdrop-blur-xl border-r border-sidebar-border/50 group-data-[variant=floating]:overflow-hidden group-data-[variant=floating]:rounded-2xl group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow-[var(--sidebar-glow),var(--glass-highlight)] group-data-[variant=floating]:border-r-0 group-data-[variant=floating]:animate-[float_6s_ease-in-out_infinite,glowPulse_4s_ease-in-out_infinite] group-data-[variant=floating]:before:pointer-events-none group-data-[variant=floating]:before:absolute group-data-[variant=floating]:before:inset-0 group-data-[variant=floating]:before:rounded-2xl group-data-[variant=floating]:before:bg-[linear-gradient(105deg,transparent_40%,rgba(255,255,255,0.3)_45%,rgba(255,255,255,0.5)_50%,rgba(255,255,255,0.3)_55%,transparent_60%)] group-data-[variant=floating]:before:bg-[length:200%_100%] group-data-[variant=floating]:before:animate-[shimmer_8s_ease-in-out_infinite]"
+					className="relative flex h-full w-full flex-col bg-sidebar backdrop-blur-xl border-r border-sidebar-border/50 group-data-[variant=floating]:overflow-hidden group-data-[variant=floating]:rounded-2xl group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow-[var(--sidebar-glow),var(--glass-highlight)] group-data-[variant=floating]:border-r-0 group-data-[variant=floating]:animate-[float_6s_ease-in-out_infinite,glowPulse_4s_ease-in-out_infinite] group-data-[variant=floating]:shimmer-overlay"
 				>
 					{children}
 				</div>
@@ -786,7 +786,8 @@ const sidebarMenuButtonVariants = cva(
 	{
 		variants: {
 			variant: {
-				default: "hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground",
+				default:
+					"hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground",
 				outline:
 					"bg-background/50 backdrop-blur-sm shadow-[0_0_0_1px_var(--sidebar-border)] hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_var(--sidebar-accent)]",
 			},

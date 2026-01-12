@@ -56,7 +56,7 @@ function PagePrimaryBar({
 		<div
 			// Floating topbar: glass effect with multi-layer glow, shimmer highlight
 			className={cn(
-				"relative mx-3 mt-3 flex h-14 flex-row items-center gap-3 overflow-hidden rounded-2xl border border-sidebar-border bg-background/80 backdrop-blur-xl px-4 shadow-[var(--topbar-glow),var(--glass-highlight)] animate-[float_6s_ease-in-out_infinite_0.5s,glowPulse_4s_ease-in-out_infinite_1s] before:pointer-events-none before:absolute before:inset-0 before:rounded-2xl before:bg-[linear-gradient(105deg,transparent_40%,rgba(255,255,255,0.25)_45%,rgba(255,255,255,0.4)_50%,rgba(255,255,255,0.25)_55%,transparent_60%)] before:bg-[length:200%_100%] before:animate-[shimmer_10s_ease-in-out_infinite_2s]",
+				"shimmer-overlay relative mx-3 mt-3 flex h-14 flex-row items-center gap-3 overflow-hidden rounded-2xl border border-sidebar-border bg-background/80 backdrop-blur-xl px-4 shadow-[var(--topbar-glow),var(--glass-highlight)] animate-[float_6s_ease-in-out_infinite_0.5s,glowPulse_4s_ease-in-out_infinite_1s]",
 				className,
 			)}
 			{...other}

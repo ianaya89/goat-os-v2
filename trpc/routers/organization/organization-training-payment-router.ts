@@ -12,13 +12,17 @@ import {
 	or,
 	type SQL,
 } from "drizzle-orm";
+import { createCashMovementIfCash } from "@/lib/cash-register-helpers";
 import { db } from "@/lib/db";
+import {
+	CashMovementReferenceType,
+	TrainingPaymentStatus,
+} from "@/lib/db/schema/enums";
 import {
 	athleteTable,
 	trainingPaymentTable,
 	trainingSessionTable,
 } from "@/lib/db/schema/tables";
-import { TrainingPaymentStatus } from "@/lib/db/schema/enums";
 import {
 	bulkDeleteTrainingPaymentsSchema,
 	bulkUpdateTrainingPaymentsStatusSchema,
@@ -58,9 +62,15 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 			}
 
 			// Payment method filter
-			if (input.filters?.paymentMethod && input.filters.paymentMethod.length > 0) {
+			if (
+				input.filters?.paymentMethod &&
+				input.filters.paymentMethod.length > 0
+			) {
 				conditions.push(
-					inArray(trainingPaymentTable.paymentMethod, input.filters.paymentMethod),
+					inArray(
+						trainingPaymentTable.paymentMethod,
+						input.filters.paymentMethod,
+					),
 				);
 			}
 
@@ -354,6 +364,13 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 					eq(trainingPaymentTable.id, id),
 					eq(trainingPaymentTable.organizationId, ctx.organization.id),
 				),
+				with: {
+					athlete: {
+						with: {
+							user: { columns: { name: true } },
+						},
+					},
+				},
 			});
 
 			if (!payment) {
@@ -382,6 +399,18 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 				})
 				.where(eq(trainingPaymentTable.id, id))
 				.returning();
+
+			// Create cash movement if payment is in cash
+			const athleteName = payment.athlete?.user?.name ?? "Atleta";
+			await createCashMovementIfCash({
+				organizationId: ctx.organization.id,
+				paymentMethod: data.paymentMethod,
+				amount: data.paidAmount,
+				description: `Pago de entrenamiento - ${athleteName}`,
+				referenceType: CashMovementReferenceType.trainingPayment,
+				referenceId: id,
+				recordedBy: ctx.user.id,
+			});
 
 			return updatedPayment;
 		}),

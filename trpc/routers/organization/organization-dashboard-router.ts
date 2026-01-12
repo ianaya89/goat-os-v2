@@ -1,4 +1,4 @@
-import { and, count, eq, gte, lte, sql } from "drizzle-orm";
+import { and, count, eq, gte, lte, sql, sum } from "drizzle-orm";
 import {
 	athleteGroupTable,
 	athleteTable,
@@ -11,9 +11,41 @@ import {
 	AthleteStatus,
 	AttendanceStatus,
 	CoachStatus,
+	TrainingPaymentStatus,
 	TrainingSessionStatus,
 } from "@/lib/db/schema";
+import { trainingPaymentTable } from "@/lib/db/schema/tables";
 import { createTRPCRouter, protectedOrganizationProcedure } from "@/trpc/init";
+
+// Helper functions for date ranges
+function getStartOfDay(date: Date): Date {
+	const d = new Date(date);
+	d.setHours(0, 0, 0, 0);
+	return d;
+}
+
+function getEndOfDay(date: Date): Date {
+	const d = new Date(date);
+	d.setHours(23, 59, 59, 999);
+	return d;
+}
+
+function getStartOfWeek(date: Date): Date {
+	const d = new Date(date);
+	const day = d.getDay();
+	const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday as start
+	d.setDate(diff);
+	d.setHours(0, 0, 0, 0);
+	return d;
+}
+
+function getEndOfWeek(date: Date): Date {
+	const start = getStartOfWeek(date);
+	const d = new Date(start);
+	d.setDate(d.getDate() + 6);
+	d.setHours(23, 59, 59, 999);
+	return d;
+}
 
 export const organizationDashboardRouter = createTRPCRouter({
 	getStats: protectedOrganizationProcedure.query(async ({ ctx }) => {
@@ -315,6 +347,326 @@ export const organizationDashboardRouter = createTRPCRouter({
 			.limit(5);
 
 		return sessions;
+	}),
+
+	// Daily activity summary for the new dashboard
+	getDailyActivity: protectedOrganizationProcedure.query(async ({ ctx }) => {
+		const organizationId = ctx.organization.id;
+		const today = new Date();
+		const dayStart = getStartOfDay(today);
+		const dayEnd = getEndOfDay(today);
+
+		// Get all data in parallel
+		const [
+			todaySessions,
+			todayAttendance,
+			todayPayments,
+			totalSessionsToday,
+			completedSessionsToday,
+		] = await Promise.all([
+			// Today's sessions with details
+			db.query.trainingSessionTable.findMany({
+				where: and(
+					eq(trainingSessionTable.organizationId, organizationId),
+					gte(trainingSessionTable.startTime, dayStart),
+					lte(trainingSessionTable.startTime, dayEnd),
+					eq(trainingSessionTable.isRecurring, false),
+				),
+				with: {
+					location: { columns: { id: true, name: true } },
+					coaches: {
+						with: {
+							coach: {
+								with: {
+									user: { columns: { id: true, name: true } },
+								},
+							},
+						},
+					},
+				},
+				orderBy: trainingSessionTable.startTime,
+			}),
+
+			// Today's attendance stats
+			db
+				.select({
+					status: attendanceTable.status,
+					count: count(),
+				})
+				.from(attendanceTable)
+				.innerJoin(
+					trainingSessionTable,
+					eq(attendanceTable.sessionId, trainingSessionTable.id),
+				)
+				.where(
+					and(
+						eq(trainingSessionTable.organizationId, organizationId),
+						gte(trainingSessionTable.startTime, dayStart),
+						lte(trainingSessionTable.startTime, dayEnd),
+						eq(trainingSessionTable.isRecurring, false),
+					),
+				)
+				.groupBy(attendanceTable.status),
+
+			// Today's payments
+			db
+				.select({
+					totalAmount: sum(trainingPaymentTable.paidAmount),
+					paymentCount: count(),
+				})
+				.from(trainingPaymentTable)
+				.where(
+					and(
+						eq(trainingPaymentTable.organizationId, organizationId),
+						eq(trainingPaymentTable.status, TrainingPaymentStatus.paid),
+						gte(trainingPaymentTable.paymentDate, dayStart),
+						lte(trainingPaymentTable.paymentDate, dayEnd),
+					),
+				),
+
+			// Total sessions count
+			db
+				.select({ count: count() })
+				.from(trainingSessionTable)
+				.where(
+					and(
+						eq(trainingSessionTable.organizationId, organizationId),
+						gte(trainingSessionTable.startTime, dayStart),
+						lte(trainingSessionTable.startTime, dayEnd),
+						eq(trainingSessionTable.isRecurring, false),
+					),
+				)
+				.then((r) => r[0]?.count ?? 0),
+
+			// Completed sessions count
+			db
+				.select({ count: count() })
+				.from(trainingSessionTable)
+				.where(
+					and(
+						eq(trainingSessionTable.organizationId, organizationId),
+						gte(trainingSessionTable.startTime, dayStart),
+						lte(trainingSessionTable.startTime, dayEnd),
+						eq(trainingSessionTable.isRecurring, false),
+						eq(trainingSessionTable.status, TrainingSessionStatus.completed),
+					),
+				)
+				.then((r) => r[0]?.count ?? 0),
+		]);
+
+		// Process attendance stats
+		const attendanceStats = {
+			present: 0,
+			absent: 0,
+			late: 0,
+			excused: 0,
+			total: 0,
+		};
+
+		for (const record of todayAttendance) {
+			const cnt = Number(record.count);
+			attendanceStats.total += cnt;
+			switch (record.status) {
+				case AttendanceStatus.present:
+					attendanceStats.present = cnt;
+					break;
+				case AttendanceStatus.absent:
+					attendanceStats.absent = cnt;
+					break;
+				case AttendanceStatus.late:
+					attendanceStats.late = cnt;
+					break;
+				case AttendanceStatus.excused:
+					attendanceStats.excused = cnt;
+					break;
+			}
+		}
+
+		const attendanceRate =
+			attendanceStats.total > 0
+				? ((attendanceStats.present + attendanceStats.late) /
+						attendanceStats.total) *
+					100
+				: 0;
+
+		return {
+			date: today,
+			sessions: {
+				total: totalSessionsToday,
+				completed: completedSessionsToday,
+				pending: totalSessionsToday - completedSessionsToday,
+				list: todaySessions,
+			},
+			attendance: {
+				...attendanceStats,
+				rate: Math.round(attendanceRate * 10) / 10,
+			},
+			income: {
+				total: Number(todayPayments[0]?.totalAmount ?? 0),
+				count: Number(todayPayments[0]?.paymentCount ?? 0),
+			},
+		};
+	}),
+
+	// Weekly activity summary
+	getWeeklyActivity: protectedOrganizationProcedure.query(async ({ ctx }) => {
+		const organizationId = ctx.organization.id;
+		const today = new Date();
+		const weekStart = getStartOfWeek(today);
+		const weekEnd = getEndOfWeek(today);
+
+		// Get all data in parallel
+		const [weekSessions, weekAttendance, weekPayments, dailySessionCounts] =
+			await Promise.all([
+				// Week's sessions summary
+				db
+					.select({
+						status: trainingSessionTable.status,
+						count: count(),
+					})
+					.from(trainingSessionTable)
+					.where(
+						and(
+							eq(trainingSessionTable.organizationId, organizationId),
+							gte(trainingSessionTable.startTime, weekStart),
+							lte(trainingSessionTable.startTime, weekEnd),
+							eq(trainingSessionTable.isRecurring, false),
+						),
+					)
+					.groupBy(trainingSessionTable.status),
+
+				// Week's attendance stats
+				db
+					.select({
+						status: attendanceTable.status,
+						count: count(),
+					})
+					.from(attendanceTable)
+					.innerJoin(
+						trainingSessionTable,
+						eq(attendanceTable.sessionId, trainingSessionTable.id),
+					)
+					.where(
+						and(
+							eq(trainingSessionTable.organizationId, organizationId),
+							gte(trainingSessionTable.startTime, weekStart),
+							lte(trainingSessionTable.startTime, weekEnd),
+							eq(trainingSessionTable.isRecurring, false),
+						),
+					)
+					.groupBy(attendanceTable.status),
+
+				// Week's payments
+				db
+					.select({
+						totalAmount: sum(trainingPaymentTable.paidAmount),
+						paymentCount: count(),
+					})
+					.from(trainingPaymentTable)
+					.where(
+						and(
+							eq(trainingPaymentTable.organizationId, organizationId),
+							eq(trainingPaymentTable.status, TrainingPaymentStatus.paid),
+							gte(trainingPaymentTable.paymentDate, weekStart),
+							lte(trainingPaymentTable.paymentDate, weekEnd),
+						),
+					),
+
+				// Sessions by day of week
+				db
+					.select({
+						day: sql<string>`DATE(${trainingSessionTable.startTime})`.as("day"),
+						count: count(),
+					})
+					.from(trainingSessionTable)
+					.where(
+						and(
+							eq(trainingSessionTable.organizationId, organizationId),
+							gte(trainingSessionTable.startTime, weekStart),
+							lte(trainingSessionTable.startTime, weekEnd),
+							eq(trainingSessionTable.isRecurring, false),
+						),
+					)
+					.groupBy(sql`DATE(${trainingSessionTable.startTime})`),
+			]);
+
+		// Process session stats
+		const sessionStats = {
+			total: 0,
+			completed: 0,
+			pending: 0,
+			cancelled: 0,
+		};
+
+		for (const record of weekSessions) {
+			const cnt = Number(record.count);
+			sessionStats.total += cnt;
+			switch (record.status) {
+				case TrainingSessionStatus.completed:
+					sessionStats.completed = cnt;
+					break;
+				case TrainingSessionStatus.cancelled:
+					sessionStats.cancelled = cnt;
+					break;
+				default:
+					sessionStats.pending += cnt;
+			}
+		}
+
+		// Process attendance stats
+		const attendanceStats = {
+			present: 0,
+			absent: 0,
+			late: 0,
+			excused: 0,
+			total: 0,
+		};
+
+		for (const record of weekAttendance) {
+			const cnt = Number(record.count);
+			attendanceStats.total += cnt;
+			switch (record.status) {
+				case AttendanceStatus.present:
+					attendanceStats.present = cnt;
+					break;
+				case AttendanceStatus.absent:
+					attendanceStats.absent = cnt;
+					break;
+				case AttendanceStatus.late:
+					attendanceStats.late = cnt;
+					break;
+				case AttendanceStatus.excused:
+					attendanceStats.excused = cnt;
+					break;
+			}
+		}
+
+		const attendanceRate =
+			attendanceStats.total > 0
+				? ((attendanceStats.present + attendanceStats.late) /
+						attendanceStats.total) *
+					100
+				: 0;
+
+		// Build daily breakdown
+		const dailyBreakdown = dailySessionCounts.map((d) => ({
+			date: d.day,
+			sessions: Number(d.count),
+		}));
+
+		return {
+			period: { from: weekStart, to: weekEnd },
+			sessions: sessionStats,
+			attendance: {
+				...attendanceStats,
+				rate: Math.round(attendanceRate * 10) / 10,
+			},
+			income: {
+				total: Number(weekPayments[0]?.totalAmount ?? 0),
+				count: Number(weekPayments[0]?.paymentCount ?? 0),
+			},
+			dailyBreakdown,
+		};
 	}),
 });
 

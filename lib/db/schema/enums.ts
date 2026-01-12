@@ -285,6 +285,48 @@ export type EventPaymentStatus =
 	(typeof EventPaymentStatus)[keyof typeof EventPaymentStatus];
 export const EventPaymentStatuses = Object.values(EventPaymentStatus);
 
+// Expense category type enum
+export const ExpenseCategoryType = {
+	operational: "operational", // Rent, utilities, equipment, materials
+	personnel: "personnel", // Salaries, commissions, bonuses
+	other: "other",
+} as const;
+export type ExpenseCategoryType =
+	(typeof ExpenseCategoryType)[keyof typeof ExpenseCategoryType];
+export const ExpenseCategoryTypes = Object.values(ExpenseCategoryType);
+
+// Cash register status enum
+export const CashRegisterStatus = {
+	open: "open",
+	closed: "closed",
+} as const;
+export type CashRegisterStatus =
+	(typeof CashRegisterStatus)[keyof typeof CashRegisterStatus];
+export const CashRegisterStatuses = Object.values(CashRegisterStatus);
+
+// Cash movement type enum
+export const CashMovementType = {
+	income: "income",
+	expense: "expense",
+	adjustment: "adjustment",
+} as const;
+export type CashMovementType =
+	(typeof CashMovementType)[keyof typeof CashMovementType];
+export const CashMovementTypes = Object.values(CashMovementType);
+
+// Cash movement reference type enum
+export const CashMovementReferenceType = {
+	trainingPayment: "training_payment",
+	eventPayment: "event_payment",
+	expense: "expense",
+	manual: "manual",
+} as const;
+export type CashMovementReferenceType =
+	(typeof CashMovementReferenceType)[keyof typeof CashMovementReferenceType];
+export const CashMovementReferenceTypes = Object.values(
+	CashMovementReferenceType,
+);
+
 export function enumToPgEnum<T extends Record<string, string>>(myEnum: T) {
 	return Object.values(myEnum).map((value) => value) as [
 		T[keyof T],

@@ -15,13 +15,19 @@ import {
 import { nanoid } from "nanoid";
 import { appConfig } from "@/config/app.config";
 import { db } from "@/lib/db";
+import { MemberRole, TrainingSessionStatus } from "@/lib/db/schema/enums";
 import {
 	accountTable,
+	athleteEvaluationTable,
+	athleteGroupMemberTable,
+	athleteGroupTable,
 	coachTable,
 	memberTable,
+	trainingSessionAthleteTable,
+	trainingSessionCoachTable,
+	trainingSessionTable,
 	userTable,
 } from "@/lib/db/schema/tables";
-import { MemberRole } from "@/lib/db/schema/enums";
 import { sendCoachWelcomeEmail } from "@/lib/email";
 import { logger } from "@/lib/logger";
 import { getBaseUrl } from "@/lib/utils";
@@ -180,6 +186,210 @@ export const organizationCoachRouter = createTRPCRouter({
 			}
 
 			return coach;
+		}),
+
+	getProfile: protectedOrganizationProcedure
+		.input(deleteCoachSchema)
+		.query(async ({ ctx, input }) => {
+			// Get coach with user details
+			const coach = await db.query.coachTable.findFirst({
+				where: and(
+					eq(coachTable.id, input.id),
+					eq(coachTable.organizationId, ctx.organization.id),
+				),
+				with: {
+					user: {
+						columns: {
+							id: true,
+							name: true,
+							email: true,
+							image: true,
+						},
+					},
+				},
+			});
+
+			if (!coach) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Coach not found",
+				});
+			}
+
+			// Run independent queries in parallel for better performance
+			const [coachSessions, evaluations] = await Promise.all([
+				// Get sessions assigned to this coach
+				db.query.trainingSessionCoachTable.findMany({
+					where: eq(trainingSessionCoachTable.coachId, coach.id),
+					with: {
+						session: {
+							with: {
+								location: { columns: { id: true, name: true } },
+								athleteGroup: { columns: { id: true, name: true } },
+								athletes: {
+									with: {
+										athlete: {
+											with: {
+												user: {
+													columns: { id: true, name: true, image: true },
+												},
+											},
+										},
+									},
+								},
+								coaches: {
+									with: {
+										coach: {
+											with: {
+												user: {
+													columns: { id: true, name: true, image: true },
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}),
+				// Get evaluations made by this coach
+				db.query.athleteEvaluationTable.findMany({
+					where: eq(athleteEvaluationTable.evaluatedBy, coach.userId ?? ""),
+					orderBy: desc(athleteEvaluationTable.createdAt),
+					limit: 50,
+					with: {
+						athlete: {
+							with: {
+								user: { columns: { id: true, name: true, image: true } },
+							},
+						},
+						session: {
+							columns: { id: true, title: true, startTime: true },
+						},
+					},
+				}),
+			]);
+
+			const sessions = coachSessions
+				.map((cs) => ({
+					...cs.session,
+					isPrimary: cs.isPrimary,
+				}))
+				.filter((s) => !s.isRecurring)
+				.sort(
+					(a, b) =>
+						new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
+				);
+
+			// Get unique athletes from all sessions
+			const athleteMap = new Map<
+				string,
+				{
+					id: string;
+					name: string;
+					image: string | null;
+					sessionCount: number;
+				}
+			>();
+
+			for (const session of sessions) {
+				// From direct assignments
+				for (const sa of session.athletes) {
+					const athlete = sa.athlete;
+					const existing = athleteMap.get(athlete.id);
+					if (existing) {
+						existing.sessionCount++;
+					} else {
+						athleteMap.set(athlete.id, {
+							id: athlete.id,
+							name: athlete.user?.name ?? "Unknown",
+							image: athlete.user?.image ?? null,
+							sessionCount: 1,
+						});
+					}
+				}
+			}
+
+			// Also get athletes from groups that coach has trained
+			const groupIds = [
+				...new Set(
+					sessions
+						.filter((s) => s.athleteGroupId)
+						.map((s) => s.athleteGroupId!),
+				),
+			];
+
+			if (groupIds.length > 0) {
+				const groupMembers = await db.query.athleteGroupMemberTable.findMany({
+					where: inArray(athleteGroupMemberTable.groupId, groupIds),
+					with: {
+						athlete: {
+							with: {
+								user: { columns: { id: true, name: true, image: true } },
+							},
+						},
+					},
+				});
+
+				for (const gm of groupMembers) {
+					const athlete = gm.athlete;
+					if (!athleteMap.has(athlete.id)) {
+						athleteMap.set(athlete.id, {
+							id: athlete.id,
+							name: athlete.user?.name ?? "Unknown",
+							image: athlete.user?.image ?? null,
+							sessionCount: 0,
+						});
+					}
+				}
+			}
+
+			const athletes = Array.from(athleteMap.values()).sort(
+				(a, b) => b.sessionCount - a.sessionCount,
+			);
+
+			// Calculate stats
+			const now = new Date();
+			const totalSessions = sessions.length;
+			const completedSessions = sessions.filter(
+				(s) => s.status === TrainingSessionStatus.completed,
+			).length;
+			const upcomingSessions = sessions.filter(
+				(s) =>
+					new Date(s.startTime) > now &&
+					s.status !== TrainingSessionStatus.cancelled,
+			).length;
+			const primarySessions = sessions.filter((s) => s.isPrimary).length;
+
+			// Average ratings given
+			const ratingsGiven = evaluations.filter(
+				(e) => e.performanceRating !== null,
+			);
+			const avgRating =
+				ratingsGiven.length > 0
+					? ratingsGiven.reduce(
+							(sum, e) => sum + (e.performanceRating ?? 0),
+							0,
+						) / ratingsGiven.length
+					: 0;
+
+			const stats = {
+				totalSessions,
+				completedSessions,
+				upcomingSessions,
+				primarySessions,
+				totalAthletes: athletes.length,
+				evaluationsGiven: evaluations.length,
+				avgRatingGiven: Math.round(avgRating * 10) / 10,
+			};
+
+			return {
+				coach,
+				sessions,
+				athletes,
+				evaluations,
+				stats,
+			};
 		}),
 
 	create: protectedOrganizationProcedure

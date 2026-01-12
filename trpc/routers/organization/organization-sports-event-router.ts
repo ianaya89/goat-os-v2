@@ -11,17 +11,17 @@ import {
 	isNull,
 	lte,
 	or,
-	sql,
 	type SQL,
+	sql,
 } from "drizzle-orm";
+import { createCashMovementIfCash } from "@/lib/cash-register-helpers";
 import { db } from "@/lib/db";
-import { env } from "@/lib/env";
 import {
-	deleteObject,
-	generateStorageKey,
-	getSignedUploadUrl,
-	getSignedUrl,
-} from "@/lib/storage";
+	CashMovementReferenceType,
+	EventPaymentStatus,
+	EventRegistrationStatus,
+	PricingTierType,
+} from "@/lib/db/schema/enums";
 import {
 	ageCategoryTable,
 	eventAgeCategoryTable,
@@ -31,11 +31,13 @@ import {
 	eventRegistrationTable,
 	sportsEventTable,
 } from "@/lib/db/schema/tables";
+import { env } from "@/lib/env";
 import {
-	EventPaymentStatus,
-	EventRegistrationStatus,
-	PricingTierType,
-} from "@/lib/db/schema/enums";
+	deleteObject,
+	generateStorageKey,
+	getSignedUploadUrl,
+	getSignedUrl,
+} from "@/lib/storage";
 import {
 	assignEventCoachSchema,
 	bulkUpdateRegistrationStatusSchema,
@@ -125,7 +127,11 @@ async function calculateRegistrationPrice(
 	if (applicableTiers.length === 0) {
 		const baseTier = tiers[0];
 		if (baseTier) {
-			return { price: baseTier.price, tierId: baseTier.id, tierName: baseTier.name };
+			return {
+				price: baseTier.price,
+				tierId: baseTier.id,
+				tierName: baseTier.name,
+			};
 		}
 		throw new TRPCError({
 			code: "BAD_REQUEST",
@@ -162,7 +168,9 @@ export const organizationSportsEventRouter = createTRPCRouter({
 	listAgeCategories: protectedOrganizationProcedure
 		.input(listAgeCategoriesSchema)
 		.query(async ({ ctx, input }) => {
-			const conditions = [eq(ageCategoryTable.organizationId, ctx.organization.id)];
+			const conditions = [
+				eq(ageCategoryTable.organizationId, ctx.organization.id),
+			];
 
 			if (!input.includeInactive) {
 				conditions.push(eq(ageCategoryTable.isActive, true));
@@ -277,7 +285,9 @@ export const organizationSportsEventRouter = createTRPCRouter({
 				conditions.push(
 					gte(sportsEventTable.startDate, input.filters.dateRange.from),
 				);
-				conditions.push(lte(sportsEventTable.endDate, input.filters.dateRange.to));
+				conditions.push(
+					lte(sportsEventTable.endDate, input.filters.dateRange.to),
+				);
 			}
 
 			const whereCondition = and(...conditions);
@@ -378,7 +388,8 @@ export const organizationSportsEventRouter = createTRPCRouter({
 	create: protectedOrganizationProcedure
 		.input(createSportsEventSchema)
 		.mutation(async ({ ctx, input }) => {
-			const { ageCategoryIds, coachIds, acceptedPaymentMethods, ...eventData } = input;
+			const { ageCategoryIds, coachIds, acceptedPaymentMethods, ...eventData } =
+				input;
 
 			// Check slug uniqueness
 			const existingSlug = await db.query.sportsEventTable.findFirst({
@@ -716,7 +727,9 @@ export const organizationSportsEventRouter = createTRPCRouter({
 				});
 			}
 
-			const conditions: SQL[] = [eq(eventPricingTierTable.eventId, input.eventId)];
+			const conditions: SQL[] = [
+				eq(eventPricingTierTable.eventId, input.eventId),
+			];
 
 			if (!input.includeInactive) {
 				conditions.push(eq(eventPricingTierTable.isActive, true));
@@ -926,7 +939,9 @@ export const organizationSportsEventRouter = createTRPCRouter({
 					orderByColumn = sortDirection(eventRegistrationTable.registeredAt);
 					break;
 				default:
-					orderByColumn = sortDirection(eventRegistrationTable.registrationNumber);
+					orderByColumn = sortDirection(
+						eventRegistrationTable.registrationNumber,
+					);
 					break;
 			}
 
@@ -1265,10 +1280,15 @@ export const organizationSportsEventRouter = createTRPCRouter({
 			}
 
 			if (input.filters?.status && input.filters.status.length > 0) {
-				conditions.push(inArray(eventPaymentTable.status, input.filters.status));
+				conditions.push(
+					inArray(eventPaymentTable.status, input.filters.status),
+				);
 			}
 
-			if (input.filters?.paymentMethod && input.filters.paymentMethod.length > 0) {
+			if (
+				input.filters?.paymentMethod &&
+				input.filters.paymentMethod.length > 0
+			) {
 				conditions.push(
 					inArray(eventPaymentTable.paymentMethod, input.filters.paymentMethod),
 				);
@@ -1310,6 +1330,9 @@ export const organizationSportsEventRouter = createTRPCRouter({
 					eq(eventRegistrationTable.id, input.registrationId),
 					eq(eventRegistrationTable.organizationId, ctx.organization.id),
 				),
+				with: {
+					event: { columns: { title: true } },
+				},
 			});
 
 			if (!registration) {
@@ -1353,6 +1376,21 @@ export const organizationSportsEventRouter = createTRPCRouter({
 							: registration.confirmedAt,
 				})
 				.where(eq(eventRegistrationTable.id, input.registrationId));
+
+			// Create cash movement if payment is in cash
+			if (payment) {
+				const eventTitle = registration.event?.title ?? "Evento";
+				const registrantName = registration.registrantName ?? "Participante";
+				await createCashMovementIfCash({
+					organizationId: ctx.organization.id,
+					paymentMethod: input.paymentMethod,
+					amount: input.amount,
+					description: `Pago de evento "${eventTitle}" - ${registrantName}`,
+					referenceType: CashMovementReferenceType.eventPayment,
+					referenceId: payment.id,
+					recordedBy: ctx.user.id,
+				});
+			}
 
 			return payment;
 		}),

@@ -15,15 +15,19 @@ import {
 	AthleteStatus,
 	AttendanceStatus,
 	BillingInterval,
+	CashMovementReferenceType,
+	CashMovementType,
+	CashRegisterStatus,
 	CoachStatus,
 	CreditTransactionType,
 	DominantSide,
-	enumToPgEnum,
 	EventPaymentMethod,
 	EventPaymentStatus,
 	EventRegistrationStatus,
 	EventStatus,
 	EventType,
+	ExpenseCategoryType,
+	enumToPgEnum,
 	FitnessTestType,
 	InvitationStatus,
 	MemberRole,
@@ -148,6 +152,9 @@ export const organizationTable = pgTable(
 		logo: text("logo"),
 		metadata: text("metadata"),
 		stripeCustomerId: text("stripe_customer_id"),
+		timezone: text("timezone")
+			.notNull()
+			.default("America/Argentina/Buenos_Aires"),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.notNull()
 			.defaultNow(),
@@ -685,7 +692,6 @@ export const aiChatTable = pgTable(
 	],
 );
 
-
 // ============================================================================
 // COACH TABLE
 // ============================================================================
@@ -770,10 +776,15 @@ export const athleteTable = pgTable(
 		// Physical attributes
 		height: integer("height"), // Height in centimeters
 		weight: integer("weight"), // Weight in grams (e.g., 72500 = 72.5kg)
-		dominantFoot: text("dominant_foot", { enum: enumToPgEnum(DominantSide) })
-			.$type<DominantSide>(),
-		dominantHand: text("dominant_hand", { enum: enumToPgEnum(DominantSide) })
-			.$type<DominantSide>(),
+		dominantFoot: text("dominant_foot", {
+			enum: enumToPgEnum(DominantSide),
+		}).$type<DominantSide>(),
+		dominantHand: text("dominant_hand", {
+			enum: enumToPgEnum(DominantSide),
+		}).$type<DominantSide>(),
+
+		// Contact information
+		phone: text("phone"), // Phone number in E.164 format for SMS/WhatsApp notifications
 
 		// Profile information
 		nationality: text("nationality"),
@@ -803,7 +814,10 @@ export const athleteTable = pgTable(
 		// Composite index for common query: athletes by organization and status
 		index("athlete_org_status_idx").on(table.organizationId, table.status),
 		// Unique constraint: one athlete per user per organization
-		uniqueIndex("athlete_org_user_unique").on(table.organizationId, table.userId),
+		uniqueIndex("athlete_org_user_unique").on(
+			table.organizationId,
+			table.userId,
+		),
 	],
 );
 
@@ -902,7 +916,10 @@ export const athleteGroupMemberTable = pgTable(
 	(table) => [
 		index("athlete_group_member_group_id_idx").on(table.groupId),
 		index("athlete_group_member_athlete_id_idx").on(table.athleteId),
-		uniqueIndex("athlete_group_member_unique").on(table.groupId, table.athleteId),
+		uniqueIndex("athlete_group_member_unique").on(
+			table.groupId,
+			table.athleteId,
+		),
 	],
 );
 
@@ -986,6 +1003,11 @@ export const trainingSessionTable = pgTable(
 			table.startTime,
 			table.endTime,
 		),
+		// Index for filtering by creator (coach sessions)
+		index("training_session_org_created_by_idx").on(
+			table.organizationId,
+			table.createdBy,
+		),
 		// Check constraint: endTime > startTime
 		check(
 			"training_session_valid_time_range",
@@ -1015,7 +1037,10 @@ export const trainingSessionCoachTable = pgTable(
 	(table) => [
 		index("training_session_coach_session_id_idx").on(table.sessionId),
 		index("training_session_coach_coach_id_idx").on(table.coachId),
-		uniqueIndex("training_session_coach_unique").on(table.sessionId, table.coachId),
+		uniqueIndex("training_session_coach_unique").on(
+			table.sessionId,
+			table.coachId,
+		),
 	],
 );
 
@@ -1057,7 +1082,9 @@ export const recurringSessionExceptionTable = pgTable(
 		recurringSessionId: uuid("recurring_session_id")
 			.notNull()
 			.references(() => trainingSessionTable.id, { onDelete: "cascade" }),
-		exceptionDate: timestamp("exception_date", { withTimezone: true }).notNull(),
+		exceptionDate: timestamp("exception_date", {
+			withTimezone: true,
+		}).notNull(),
 		// If replacementSessionId is set, this occurrence was modified (not deleted)
 		// If null, this occurrence was cancelled/deleted
 		replacementSessionId: uuid("replacement_session_id").references(
@@ -1188,7 +1215,9 @@ export const trainingPaymentTable = pgTable(
 		index("training_payment_athlete_id_idx").on(table.athleteId),
 		index("training_payment_status_idx").on(table.status),
 		index("training_payment_payment_date_idx").on(table.paymentDate),
-		index("training_payment_mercado_pago_id_idx").on(table.mercadoPagoPaymentId),
+		index("training_payment_mercado_pago_id_idx").on(
+			table.mercadoPagoPaymentId,
+		),
 		// Composite for common queries
 		index("training_payment_org_status_idx").on(
 			table.organizationId,
@@ -1198,6 +1227,17 @@ export const trainingPaymentTable = pgTable(
 			table.organizationId,
 			table.athleteId,
 		),
+		// Composite index for payment reconciliation
+		index("training_payment_org_athlete_date_idx").on(
+			table.organizationId,
+			table.athleteId,
+			table.paymentDate,
+		),
+		// Unique constraint to prevent duplicate payments per session/athlete
+		// Only applies when sessionId is not null
+		uniqueIndex("training_payment_session_athlete_unique")
+			.on(table.sessionId, table.athleteId)
+			.where(sql`${table.sessionId} IS NOT NULL`),
 	],
 );
 
@@ -1244,6 +1284,17 @@ export const athleteEvaluationTable = pgTable(
 	(table) => [
 		index("athlete_evaluation_session_id_idx").on(table.sessionId),
 		index("athlete_evaluation_athlete_id_idx").on(table.athleteId),
+		index("athlete_evaluation_evaluated_by_idx").on(table.evaluatedBy),
+		// Composite index for coach evaluation history queries
+		index("athlete_evaluation_evaluator_created_idx").on(
+			table.evaluatedBy,
+			table.createdAt,
+		),
+		// Composite index for athlete evaluation history queries
+		index("athlete_evaluation_athlete_created_idx").on(
+			table.athleteId,
+			table.createdAt,
+		),
 		uniqueIndex("athlete_evaluation_session_athlete_unique").on(
 			table.sessionId,
 			table.athleteId,
@@ -1845,7 +1896,10 @@ export const eventRegistrationTable = pgTable(
 			table.waitlistPosition,
 		),
 		// Composite indexes
-		index("event_registration_event_status_idx").on(table.eventId, table.status),
+		index("event_registration_event_status_idx").on(
+			table.eventId,
+			table.status,
+		),
 		index("event_registration_org_event_idx").on(
 			table.organizationId,
 			table.eventId,
@@ -1971,5 +2025,207 @@ export const eventCoachTable = pgTable(
 		index("event_coach_event_id_idx").on(table.eventId),
 		index("event_coach_coach_id_idx").on(table.coachId),
 		uniqueIndex("event_coach_unique").on(table.eventId, table.coachId),
+	],
+);
+
+// ============================================================================
+// EXPENSE & CASH REGISTER TABLES
+// ============================================================================
+
+/**
+ * Expense categories - configurable expense types per organization
+ */
+export const expenseCategoryTable = pgTable(
+	"expense_category",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizationTable.id, { onDelete: "cascade" }),
+		name: text("name").notNull(),
+		description: text("description"),
+		type: text("type", { enum: enumToPgEnum(ExpenseCategoryType) })
+			.$type<ExpenseCategoryType>()
+			.notNull()
+			.default(ExpenseCategoryType.operational),
+		isActive: boolean("is_active").notNull().default(true),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => [
+		index("expense_category_org_idx").on(table.organizationId),
+		index("expense_category_type_idx").on(table.type),
+		uniqueIndex("expense_category_org_name_unique").on(
+			table.organizationId,
+			table.name,
+		),
+	],
+);
+
+/**
+ * Expenses - track all organization expenses
+ */
+export const expenseTable = pgTable(
+	"expense",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizationTable.id, { onDelete: "cascade" }),
+		categoryId: uuid("category_id").references(() => expenseCategoryTable.id, {
+			onDelete: "set null",
+		}),
+
+		// Amount in smallest currency unit (centavos)
+		amount: integer("amount").notNull(),
+		currency: text("currency").notNull().default("ARS"),
+
+		description: text("description").notNull(),
+		expenseDate: timestamp("expense_date", { withTimezone: true }).notNull(),
+		paymentMethod: text("payment_method", {
+			enum: enumToPgEnum(TrainingPaymentMethod),
+		})
+			.$type<TrainingPaymentMethod>()
+			.notNull()
+			.default(TrainingPaymentMethod.cash),
+
+		// Receipt tracking
+		receiptNumber: text("receipt_number"),
+		receiptImageKey: text("receipt_image_key"), // S3 key
+
+		// Vendor/Supplier info
+		vendor: text("vendor"),
+		notes: text("notes"),
+
+		// Audit
+		recordedBy: uuid("recorded_by").references(() => userTable.id, {
+			onDelete: "set null",
+		}),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => [
+		index("expense_org_idx").on(table.organizationId),
+		index("expense_category_idx").on(table.categoryId),
+		index("expense_date_idx").on(table.expenseDate),
+		index("expense_payment_method_idx").on(table.paymentMethod),
+		index("expense_org_date_idx").on(table.organizationId, table.expenseDate),
+	],
+);
+
+/**
+ * Cash register - daily cash control with opening/closing
+ */
+export const cashRegisterTable = pgTable(
+	"cash_register",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizationTable.id, { onDelete: "cascade" }),
+
+		// Date for this cash register (one per day per org)
+		date: timestamp("date", { withTimezone: true }).notNull(),
+
+		// Balances in smallest currency unit (centavos)
+		openingBalance: integer("opening_balance").notNull().default(0),
+		closingBalance: integer("closing_balance"),
+
+		status: text("status", { enum: enumToPgEnum(CashRegisterStatus) })
+			.$type<CashRegisterStatus>()
+			.notNull()
+			.default(CashRegisterStatus.open),
+
+		// Who opened/closed
+		openedBy: uuid("opened_by").references(() => userTable.id, {
+			onDelete: "set null",
+		}),
+		closedBy: uuid("closed_by").references(() => userTable.id, {
+			onDelete: "set null",
+		}),
+		openedAt: timestamp("opened_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		closedAt: timestamp("closed_at", { withTimezone: true }),
+
+		notes: text("notes"),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => [
+		index("cash_register_org_idx").on(table.organizationId),
+		index("cash_register_date_idx").on(table.date),
+		index("cash_register_status_idx").on(table.status),
+		// Only one open cash register per org per day
+		uniqueIndex("cash_register_org_date_unique").on(
+			table.organizationId,
+			table.date,
+		),
+	],
+);
+
+/**
+ * Cash movements - individual transactions in the cash register
+ */
+export const cashMovementTable = pgTable(
+	"cash_movement",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		cashRegisterId: uuid("cash_register_id")
+			.notNull()
+			.references(() => cashRegisterTable.id, { onDelete: "cascade" }),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizationTable.id, { onDelete: "cascade" }),
+
+		// Movement type and amount (positive for income, negative for expense)
+		type: text("type", { enum: enumToPgEnum(CashMovementType) })
+			.$type<CashMovementType>()
+			.notNull(),
+		amount: integer("amount").notNull(), // Always positive, type determines direction
+
+		description: text("description").notNull(),
+
+		// Reference to source record (payment or expense)
+		referenceType: text("reference_type", {
+			enum: enumToPgEnum(CashMovementReferenceType),
+		})
+			.$type<CashMovementReferenceType>()
+			.notNull()
+			.default(CashMovementReferenceType.manual),
+		referenceId: uuid("reference_id"), // ID of related payment/expense
+
+		// Audit
+		recordedBy: uuid("recorded_by").references(() => userTable.id, {
+			onDelete: "set null",
+		}),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+	},
+	(table) => [
+		index("cash_movement_register_idx").on(table.cashRegisterId),
+		index("cash_movement_org_idx").on(table.organizationId),
+		index("cash_movement_type_idx").on(table.type),
+		index("cash_movement_reference_idx").on(
+			table.referenceType,
+			table.referenceId,
+		),
+		index("cash_movement_created_idx").on(table.createdAt),
 	],
 );

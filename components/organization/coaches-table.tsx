@@ -7,7 +7,8 @@ import type {
 	SortingState,
 } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { MoreHorizontalIcon, PlusIcon } from "lucide-react";
+import { MoreHorizontalIcon, PlusIcon, UserIcon } from "lucide-react";
+import Link from "next/link";
 import {
 	parseAsArrayOf,
 	parseAsInteger,
@@ -220,19 +221,22 @@ export function CoachesTable(): React.JSX.Element {
 			cell: ({ row }) => {
 				const name = row.original.user?.name ?? "Unknown";
 				return (
-					<div className="flex max-w-[200px] items-center gap-2">
+					<Link
+						href={`/dashboard/organization/coaches/${row.original.id}`}
+						className="flex max-w-[200px] items-center gap-2 hover:opacity-80"
+					>
 						<UserAvatar
 							className="size-6 shrink-0"
 							name={name}
 							src={row.original.user?.image ?? undefined}
 						/>
 						<span
-							className="truncate font-medium text-foreground"
+							className="truncate font-medium text-foreground hover:underline"
 							title={name}
 						>
 							{name}
 						</span>
-					</div>
+					</Link>
 				);
 			},
 		},
@@ -309,6 +313,14 @@ export function CoachesTable(): React.JSX.Element {
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
+							<DropdownMenuItem asChild>
+								<Link
+									href={`/dashboard/organization/coaches/${row.original.id}`}
+								>
+									<UserIcon className="mr-2 size-4" />
+									View Profile
+								</Link>
+							</DropdownMenuItem>
 							<DropdownMenuItem
 								onClick={() => {
 									NiceModal.show(CoachesModal, { coach: row.original });

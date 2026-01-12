@@ -9,11 +9,13 @@ import {
 	athleteGroupMemberTable,
 	athleteGroupTable,
 	athletePhysicalMetricsTable,
+	athleteSessionFeedbackTable,
 	athleteTable,
 	athleteWellnessSurveyTable,
-	athleteSessionFeedbackTable,
 	attendanceTable,
 	billingEventTable,
+	cashMovementTable,
+	cashRegisterTable,
 	coachTable,
 	creditBalanceTable,
 	creditDeductionFailureTable,
@@ -23,6 +25,8 @@ import {
 	eventPaymentTable,
 	eventPricingTierTable,
 	eventRegistrationTable,
+	expenseCategoryTable,
+	expenseTable,
 	invitationTable,
 	locationTable,
 	memberTable,
@@ -331,7 +335,9 @@ export const trainingSessionRelations = relations(
 			references: [trainingSessionTable.id],
 			relationName: "recurringInstances",
 		}),
-		instances: many(trainingSessionTable, { relationName: "recurringInstances" }),
+		instances: many(trainingSessionTable, {
+			relationName: "recurringInstances",
+		}),
 		createdByUser: one(userTable, {
 			fields: [trainingSessionTable.createdBy],
 			references: [userTable.id],
@@ -656,3 +662,76 @@ export const eventCoachRelations = relations(eventCoachTable, ({ one }) => ({
 		references: [coachTable.id],
 	}),
 }));
+
+// ============================================================================
+// EXPENSE & CASH REGISTER RELATIONS
+// ============================================================================
+
+// Expense Category relations
+export const expenseCategoryRelations = relations(
+	expenseCategoryTable,
+	({ one, many }) => ({
+		organization: one(organizationTable, {
+			fields: [expenseCategoryTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		expenses: many(expenseTable),
+	}),
+);
+
+// Expense relations
+export const expenseRelations = relations(expenseTable, ({ one }) => ({
+	organization: one(organizationTable, {
+		fields: [expenseTable.organizationId],
+		references: [organizationTable.id],
+	}),
+	category: one(expenseCategoryTable, {
+		fields: [expenseTable.categoryId],
+		references: [expenseCategoryTable.id],
+	}),
+	recordedByUser: one(userTable, {
+		fields: [expenseTable.recordedBy],
+		references: [userTable.id],
+	}),
+}));
+
+// Cash Register relations
+export const cashRegisterRelations = relations(
+	cashRegisterTable,
+	({ one, many }) => ({
+		organization: one(organizationTable, {
+			fields: [cashRegisterTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		openedByUser: one(userTable, {
+			fields: [cashRegisterTable.openedBy],
+			references: [userTable.id],
+			relationName: "openedByUser",
+		}),
+		closedByUser: one(userTable, {
+			fields: [cashRegisterTable.closedBy],
+			references: [userTable.id],
+			relationName: "closedByUser",
+		}),
+		movements: many(cashMovementTable),
+	}),
+);
+
+// Cash Movement relations
+export const cashMovementRelations = relations(
+	cashMovementTable,
+	({ one }) => ({
+		cashRegister: one(cashRegisterTable, {
+			fields: [cashMovementTable.cashRegisterId],
+			references: [cashRegisterTable.id],
+		}),
+		organization: one(organizationTable, {
+			fields: [cashMovementTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		recordedByUser: one(userTable, {
+			fields: [cashMovementTable.recordedBy],
+			references: [userTable.id],
+		}),
+	}),
+);

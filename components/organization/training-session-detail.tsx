@@ -1,16 +1,21 @@
 "use client";
 
-import { format } from "date-fns";
 import NiceModal from "@ebay/nice-modal-react";
+import { format } from "date-fns";
 import {
 	ArrowLeftIcon,
+	BellIcon,
 	CalendarIcon,
 	CheckCircleIcon,
+	ChevronDownIcon,
 	ClockIcon,
 	EditIcon,
+	MailIcon,
 	MapPinIcon,
-	UsersIcon,
+	MessageSquareIcon,
+	PhoneIcon,
 	UserIcon,
+	UsersIcon,
 } from "lucide-react";
 import Link from "next/link";
 import * as React from "react";
@@ -22,11 +27,15 @@ import { TrainingSessionsModal } from "@/components/organization/training-sessio
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-	Textarea,
-} from "@/components/ui/textarea";
+import { Textarea } from "@/components/ui/textarea";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { TrainingSessionStatus } from "@/lib/db/schema/enums";
 import { capitalize, cn } from "@/lib/utils";
@@ -39,7 +48,8 @@ interface TrainingSessionDetailProps {
 const statusColors: Record<string, string> = {
 	pending: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100",
 	confirmed: "bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100",
-	completed: "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100",
+	completed:
+		"bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100",
 	cancelled: "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100",
 };
 
@@ -50,8 +60,11 @@ export function TrainingSessionDetail({
 	const [postNotes, setPostNotes] = React.useState("");
 	const [isCompletingSession, setIsCompletingSession] = React.useState(false);
 
-	const { data: session, isLoading, error } =
-		trpc.organization.trainingSession.get.useQuery({ id: sessionId });
+	const {
+		data: session,
+		isLoading,
+		error,
+	} = trpc.organization.trainingSession.get.useQuery({ id: sessionId });
 
 	const completeMutation =
 		trpc.organization.trainingSession.complete.useMutation({
@@ -62,6 +75,18 @@ export function TrainingSessionDetail({
 			},
 			onError: (error) => {
 				toast.error(error.message || "Failed to complete session");
+			},
+		});
+
+	const sendReminderMutation =
+		trpc.organization.trainingSession.sendReminder.useMutation({
+			onSuccess: (data) => {
+				toast.success(
+					`Reminder sent to ${data.sent} athlete${data.sent !== 1 ? "s" : ""}`,
+				);
+			},
+			onError: (error) => {
+				toast.error(error.message || "Failed to send reminder");
 			},
 		});
 
@@ -82,6 +107,10 @@ export function TrainingSessionDetail({
 			id: sessionId,
 			postSessionNotes: postNotes || undefined,
 		});
+	};
+
+	const handleSendReminder = (channel: "email" | "sms" | "whatsapp") => {
+		sendReminderMutation.mutate({ id: sessionId, channel });
 	};
 
 	if (isLoading) {
@@ -140,6 +169,9 @@ export function TrainingSessionDetail({
 
 	const isCompleted = session.status === TrainingSessionStatus.completed;
 	const isCancelled = session.status === TrainingSessionStatus.cancelled;
+	const isFutureSession = new Date(session.startTime) > new Date();
+	const canSendReminder =
+		isFutureSession && !isCancelled && athletes.length > 0;
 
 	return (
 		<div className="space-y-6">
@@ -154,7 +186,9 @@ export function TrainingSessionDetail({
 					<div>
 						<div className="flex items-center gap-3">
 							<h1 className="font-bold text-2xl">{session.title}</h1>
-							<Badge className={cn("border-none", statusColors[session.status])}>
+							<Badge
+								className={cn("border-none", statusColors[session.status])}
+							>
 								{capitalize(session.status)}
 							</Badge>
 						</div>
@@ -166,6 +200,38 @@ export function TrainingSessionDetail({
 					</div>
 				</div>
 				<div className="flex gap-2">
+					{canSendReminder && (
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<Button
+									variant="outline"
+									disabled={sendReminderMutation.isPending}
+								>
+									<BellIcon className="mr-2 size-4" />
+									{sendReminderMutation.isPending
+										? "Sending..."
+										: "Send Reminder"}
+									<ChevronDownIcon className="ml-2 size-4" />
+								</Button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent align="end">
+								<DropdownMenuItem onClick={() => handleSendReminder("email")}>
+									<MailIcon className="mr-2 size-4" />
+									Send via Email
+								</DropdownMenuItem>
+								<DropdownMenuItem onClick={() => handleSendReminder("sms")}>
+									<PhoneIcon className="mr-2 size-4" />
+									Send via SMS
+								</DropdownMenuItem>
+								<DropdownMenuItem
+									onClick={() => handleSendReminder("whatsapp")}
+								>
+									<MessageSquareIcon className="mr-2 size-4" />
+									Send via WhatsApp
+								</DropdownMenuItem>
+							</DropdownMenuContent>
+						</DropdownMenu>
+					)}
 					<Button onClick={handleEdit} variant="outline">
 						<EditIcon className="mr-2 size-4" />
 						Edit
@@ -190,10 +256,7 @@ export function TrainingSessionDetail({
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="space-y-2">
-							<label
-								htmlFor="post-notes"
-								className="font-medium text-sm"
-							>
+							<label htmlFor="post-notes" className="font-medium text-sm">
 								Post-Session Notes (optional)
 							</label>
 							<Textarea
@@ -348,7 +411,9 @@ export function TrainingSessionDetail({
 								<CardTitle className="text-base">Planning</CardTitle>
 							</CardHeader>
 							<CardContent>
-								<p className="whitespace-pre-wrap text-sm">{session.planning}</p>
+								<p className="whitespace-pre-wrap text-sm">
+									{session.planning}
+								</p>
 							</CardContent>
 						</Card>
 					)}

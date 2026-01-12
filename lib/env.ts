@@ -29,6 +29,13 @@ export const env = createEnv({
 		EMAIL_FROM: z.string().optional(),
 		RESEND_API_KEY: z.string().optional(),
 
+		// Sent.dm - SMS and WhatsApp messaging
+		SENT_DM_SENDER_ID: z.string().optional(),
+		SENT_DM_API_KEY: z.string().optional(),
+
+		// Trigger.dev - Background jobs
+		TRIGGER_SECRET_KEY: z.string().optional(),
+
 		// Monitoring / Sentry
 		SENTRY_ORG: z.string().optional(),
 		SENTRY_PROJECT: z.string().optional(),
@@ -116,6 +123,9 @@ export const env = createEnv({
 		DATABASE_URL: process.env.DATABASE_URL,
 		EMAIL_FROM: process.env.EMAIL_FROM,
 		RESEND_API_KEY: process.env.RESEND_API_KEY,
+		SENT_DM_SENDER_ID: process.env.SENT_DM_SENDER_ID,
+		SENT_DM_API_KEY: process.env.SENT_DM_API_KEY,
+		TRIGGER_SECRET_KEY: process.env.TRIGGER_SECRET_KEY,
 		SENTRY_ORG: process.env.SENTRY_ORG,
 		SENTRY_PROJECT: process.env.SENTRY_PROJECT,
 		SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN,

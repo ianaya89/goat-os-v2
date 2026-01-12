@@ -15,6 +15,7 @@ import {
 import { nanoid } from "nanoid";
 import { appConfig } from "@/config/app.config";
 import { db } from "@/lib/db";
+import { AttendanceStatus, MemberRole } from "@/lib/db/schema/enums";
 import {
 	accountTable,
 	athleteCareerHistoryTable,
@@ -30,7 +31,6 @@ import {
 	trainingSessionTable,
 	userTable,
 } from "@/lib/db/schema/tables";
-import { AttendanceStatus, MemberRole } from "@/lib/db/schema/enums";
 import { sendAthleteWelcomeEmail } from "@/lib/email";
 import { logger } from "@/lib/logger";
 import { getBaseUrl } from "@/lib/utils";
@@ -239,25 +239,81 @@ export const organizationAthleteRouter = createTRPCRouter({
 				});
 			}
 
-			// Get athlete groups
-			const groupMemberships = await db.query.athleteGroupMemberTable.findMany({
-				where: eq(athleteGroupMemberTable.athleteId, athlete.id),
-				with: {
-					group: {
-						columns: { id: true, name: true },
+			// Run independent queries in parallel for better performance
+			const [
+				groupMemberships,
+				directSessions,
+				evaluations,
+				physicalMetrics,
+				fitnessTests,
+				careerHistory,
+				wellnessSurveys,
+			] = await Promise.all([
+				// Get athlete groups
+				db.query.athleteGroupMemberTable.findMany({
+					where: eq(athleteGroupMemberTable.athleteId, athlete.id),
+					with: {
+						group: {
+							columns: { id: true, name: true },
+						},
 					},
-				},
-			});
-
-			// Get direct session assignments
-			const directSessions =
-				await db.query.trainingSessionAthleteTable.findMany({
+				}),
+				// Get direct session assignments
+				db.query.trainingSessionAthleteTable.findMany({
 					where: eq(trainingSessionAthleteTable.athleteId, athlete.id),
 					columns: { sessionId: true },
-				});
+				}),
+				// Get all evaluations for this athlete
+				db.query.athleteEvaluationTable.findMany({
+					where: eq(athleteEvaluationTable.athleteId, athlete.id),
+					orderBy: desc(athleteEvaluationTable.createdAt),
+					with: {
+						session: {
+							columns: { id: true, title: true, startTime: true },
+						},
+						evaluatedByUser: {
+							columns: { id: true, name: true, image: true },
+						},
+					},
+				}),
+				// Get physical metrics (last 10)
+				db.query.athletePhysicalMetricsTable.findMany({
+					where: eq(athletePhysicalMetricsTable.athleteId, athlete.id),
+					orderBy: desc(athletePhysicalMetricsTable.measuredAt),
+					limit: 10,
+					with: {
+						recordedByUser: {
+							columns: { id: true, name: true },
+						},
+					},
+				}),
+				// Get fitness tests (last 20)
+				db.query.athleteFitnessTestTable.findMany({
+					where: eq(athleteFitnessTestTable.athleteId, athlete.id),
+					orderBy: desc(athleteFitnessTestTable.testDate),
+					limit: 20,
+					with: {
+						evaluatedByUser: {
+							columns: { id: true, name: true },
+						},
+					},
+				}),
+				// Get career history
+				db.query.athleteCareerHistoryTable.findMany({
+					where: eq(athleteCareerHistoryTable.athleteId, athlete.id),
+					orderBy: desc(athleteCareerHistoryTable.startDate),
+				}),
+				// Get wellness surveys (last 30)
+				db.query.athleteWellnessSurveyTable.findMany({
+					where: eq(athleteWellnessSurveyTable.athleteId, athlete.id),
+					orderBy: desc(athleteWellnessSurveyTable.surveyDate),
+					limit: 30,
+				}),
+			]);
+
 			const directSessionIds = directSessions.map((s) => s.sessionId);
 
-			// Get sessions from groups
+			// Get sessions from groups (depends on groupMemberships)
 			const groupIds = groupMemberships.map((gm) => gm.groupId);
 			let groupSessionIds: string[] = [];
 			if (groupIds.length > 0) {
@@ -317,30 +373,24 @@ export const organizationAthleteRouter = createTRPCRouter({
 				});
 			}
 
-			// Get all attendance records for this athlete
-			const attendanceRecords = await db.query.attendanceTable.findMany({
-				where: eq(attendanceTable.athleteId, athlete.id),
-				orderBy: desc(attendanceTable.createdAt),
-				with: {
-					session: {
-						columns: { id: true, title: true, startTime: true },
-					},
-				},
-			});
-
-			// Get all evaluations for this athlete
-			const evaluations = await db.query.athleteEvaluationTable.findMany({
-				where: eq(athleteEvaluationTable.athleteId, athlete.id),
-				orderBy: desc(athleteEvaluationTable.createdAt),
-				with: {
-					session: {
-						columns: { id: true, title: true, startTime: true },
-					},
-					evaluatedByUser: {
-						columns: { id: true, name: true, image: true },
-					},
-				},
-			});
+			// Get all attendance records for this athlete (filtered by organization via session)
+			// Only include attendance for sessions that belong to this organization
+			const orgSessionIds = sessions.map((s) => s.id);
+			const attendanceRecords =
+				orgSessionIds.length > 0
+					? await db.query.attendanceTable.findMany({
+							where: and(
+								eq(attendanceTable.athleteId, athlete.id),
+								inArray(attendanceTable.sessionId, orgSessionIds),
+							),
+							orderBy: desc(attendanceTable.createdAt),
+							with: {
+								session: {
+									columns: { id: true, title: true, startTime: true },
+								},
+							},
+						})
+					: [];
 
 			// Calculate stats
 			const totalSessions = sessions.length;
@@ -372,69 +422,37 @@ export const organizationAthleteRouter = createTRPCRouter({
 					? ((presentCount + lateCount) / attendanceRecords.length) * 100
 					: 0;
 
-			// Calculate average ratings
-			let avgPerformance = 0;
-			let avgAttitude = 0;
-			let avgPhysicalFitness = 0;
-			let ratingCount = 0;
+			// Calculate average ratings (each with its own counter)
+			let performanceSum = 0;
+			let performanceCount = 0;
+			let attitudeSum = 0;
+			let attitudeCount = 0;
+			let physicalFitnessSum = 0;
+			let physicalFitnessCount = 0;
 
 			for (const evaluation of evaluations) {
 				if (evaluation.performanceRating) {
-					avgPerformance += evaluation.performanceRating;
-					ratingCount++;
+					performanceSum += evaluation.performanceRating;
+					performanceCount++;
 				}
 				if (evaluation.attitudeRating) {
-					avgAttitude += evaluation.attitudeRating;
+					attitudeSum += evaluation.attitudeRating;
+					attitudeCount++;
 				}
 				if (evaluation.physicalFitnessRating) {
-					avgPhysicalFitness += evaluation.physicalFitnessRating;
+					physicalFitnessSum += evaluation.physicalFitnessRating;
+					physicalFitnessCount++;
 				}
 			}
 
-			if (ratingCount > 0) {
-				avgPerformance /= ratingCount;
-				avgAttitude /= ratingCount;
-				avgPhysicalFitness /= ratingCount;
-			}
-
-			// Get physical metrics (last 10)
-			const physicalMetrics =
-				await db.query.athletePhysicalMetricsTable.findMany({
-					where: eq(athletePhysicalMetricsTable.athleteId, athlete.id),
-					orderBy: desc(athletePhysicalMetricsTable.measuredAt),
-					limit: 10,
-					with: {
-						recordedByUser: {
-							columns: { id: true, name: true },
-						},
-					},
-				});
-
-			// Get fitness tests (last 20)
-			const fitnessTests = await db.query.athleteFitnessTestTable.findMany({
-				where: eq(athleteFitnessTestTable.athleteId, athlete.id),
-				orderBy: desc(athleteFitnessTestTable.testDate),
-				limit: 20,
-				with: {
-					evaluatedByUser: {
-						columns: { id: true, name: true },
-					},
-				},
-			});
-
-			// Get career history
-			const careerHistory = await db.query.athleteCareerHistoryTable.findMany({
-				where: eq(athleteCareerHistoryTable.athleteId, athlete.id),
-				orderBy: desc(athleteCareerHistoryTable.startDate),
-			});
-
-			// Get wellness surveys (last 30)
-			const wellnessSurveys =
-				await db.query.athleteWellnessSurveyTable.findMany({
-					where: eq(athleteWellnessSurveyTable.athleteId, athlete.id),
-					orderBy: desc(athleteWellnessSurveyTable.surveyDate),
-					limit: 30,
-				});
+			const avgPerformance =
+				performanceCount > 0 ? performanceSum / performanceCount : 0;
+			const avgAttitude = attitudeCount > 0 ? attitudeSum / attitudeCount : 0;
+			const avgPhysicalFitness =
+				physicalFitnessCount > 0
+					? physicalFitnessSum / physicalFitnessCount
+					: 0;
+			const ratingCount = evaluations.length;
 
 			return {
 				athlete,

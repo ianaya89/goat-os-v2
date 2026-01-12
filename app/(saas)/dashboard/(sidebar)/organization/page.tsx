@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import type * as React from "react";
-import { DashboardDemo } from "@/components/dashboard/dashboard-demo";
+import { OrganizationDashboard } from "@/components/organization/dashboard/organization-dashboard";
 import {
 	Page,
 	PageBody,
@@ -53,7 +53,7 @@ export default async function DashboardPage(): Promise<React.JSX.Element> {
 						<div>
 							<PageTitle>Dashboard</PageTitle>
 						</div>
-						<DashboardDemo />
+						<OrganizationDashboard />
 					</div>
 				</div>
 			</PageBody>

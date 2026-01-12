@@ -2,9 +2,10 @@
 
 import {
 	BanknoteIcon,
+	BarChart3Icon,
 	BotIcon,
-	CalendarIcon,
 	CalendarDaysIcon,
+	CalendarIcon,
 	ChevronRight,
 	ClipboardListIcon,
 	CoinsIcon,
@@ -12,12 +13,14 @@ import {
 	LayoutDashboardIcon,
 	MapPinIcon,
 	MedalIcon,
+	ReceiptIcon,
 	SettingsIcon,
 	TagsIcon,
 	UserCheckIcon,
 	UserIcon,
 	UsersIcon,
 	UsersRoundIcon,
+	WalletIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -140,6 +143,21 @@ export function OrganizationMenuItems(): React.JSX.Element {
 			label: "Payments",
 			href: `${basePath}/payments`,
 			icon: BanknoteIcon,
+		},
+		{
+			label: "Expenses",
+			href: `${basePath}/expenses`,
+			icon: ReceiptIcon,
+		},
+		{
+			label: "Cash Register",
+			href: `${basePath}/cash-register`,
+			icon: WalletIcon,
+		},
+		{
+			label: "Reports",
+			href: `${basePath}/reports`,
+			icon: BarChart3Icon,
 		},
 		{
 			label: "Users",

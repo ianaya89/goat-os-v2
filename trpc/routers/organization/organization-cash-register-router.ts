@@ -1,0 +1,344 @@
+import { TRPCError } from "@trpc/server";
+import { and, asc, count, desc, eq, gte, lte, sql, sum } from "drizzle-orm";
+import { db } from "@/lib/db";
+import {
+	CashMovementType,
+	CashRegisterStatus,
+	TrainingPaymentStatus,
+} from "@/lib/db/schema/enums";
+import {
+	cashMovementTable,
+	cashRegisterTable,
+	trainingPaymentTable,
+} from "@/lib/db/schema/tables";
+import {
+	addManualMovementSchema,
+	closeCashRegisterSchema,
+	getCashMovementsSchema,
+	getCashRegisterHistorySchema,
+	getDailySummarySchema,
+	openCashRegisterSchema,
+} from "@/schemas/organization-cash-register-schemas";
+import { createTRPCRouter, protectedOrganizationProcedure } from "@/trpc/init";
+
+// Helper to get start of day in org timezone
+function getStartOfDay(date: Date): Date {
+	const d = new Date(date);
+	d.setHours(0, 0, 0, 0);
+	return d;
+}
+
+function getEndOfDay(date: Date): Date {
+	const d = new Date(date);
+	d.setHours(23, 59, 59, 999);
+	return d;
+}
+
+export const organizationCashRegisterRouter = createTRPCRouter({
+	// Get current (today's) cash register
+	getCurrent: protectedOrganizationProcedure.query(async ({ ctx }) => {
+		const today = getStartOfDay(new Date());
+
+		const cashRegister = await db.query.cashRegisterTable.findFirst({
+			where: and(
+				eq(cashRegisterTable.organizationId, ctx.organization.id),
+				eq(cashRegisterTable.date, today),
+			),
+			with: {
+				openedByUser: { columns: { id: true, name: true } },
+				closedByUser: { columns: { id: true, name: true } },
+			},
+		});
+
+		return cashRegister;
+	}),
+
+	// Open cash register for today
+	open: protectedOrganizationProcedure
+		.input(openCashRegisterSchema)
+		.mutation(async ({ ctx, input }) => {
+			const today = getStartOfDay(new Date());
+
+			// Check if already exists
+			const existing = await db.query.cashRegisterTable.findFirst({
+				where: and(
+					eq(cashRegisterTable.organizationId, ctx.organization.id),
+					eq(cashRegisterTable.date, today),
+				),
+			});
+
+			if (existing) {
+				throw new TRPCError({
+					code: "CONFLICT",
+					message: "Cash register for today already exists",
+				});
+			}
+
+			const [cashRegister] = await db
+				.insert(cashRegisterTable)
+				.values({
+					organizationId: ctx.organization.id,
+					date: today,
+					openingBalance: input.openingBalance,
+					status: CashRegisterStatus.open,
+					openedBy: ctx.user.id,
+					notes: input.notes,
+				})
+				.returning();
+
+			return cashRegister;
+		}),
+
+	// Close cash register
+	close: protectedOrganizationProcedure
+		.input(closeCashRegisterSchema)
+		.mutation(async ({ ctx, input }) => {
+			const cashRegister = await db.query.cashRegisterTable.findFirst({
+				where: and(
+					eq(cashRegisterTable.id, input.id),
+					eq(cashRegisterTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!cashRegister) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Cash register not found",
+				});
+			}
+
+			if (cashRegister.status === CashRegisterStatus.closed) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Cash register is already closed",
+				});
+			}
+
+			const [updated] = await db
+				.update(cashRegisterTable)
+				.set({
+					status: CashRegisterStatus.closed,
+					closingBalance: input.closingBalance,
+					closedBy: ctx.user.id,
+					closedAt: new Date(),
+					notes: input.notes ?? cashRegister.notes,
+				})
+				.where(eq(cashRegisterTable.id, input.id))
+				.returning();
+
+			return updated;
+		}),
+
+	// Get cash register history
+	getHistory: protectedOrganizationProcedure
+		.input(getCashRegisterHistorySchema)
+		.query(async ({ ctx, input }) => {
+			const conditions = [
+				eq(cashRegisterTable.organizationId, ctx.organization.id),
+			];
+
+			if (input.status) {
+				conditions.push(eq(cashRegisterTable.status, input.status));
+			}
+
+			if (input.dateRange) {
+				conditions.push(
+					and(
+						gte(cashRegisterTable.date, input.dateRange.from),
+						lte(cashRegisterTable.date, input.dateRange.to),
+					)!,
+				);
+			}
+
+			const whereCondition = and(...conditions);
+
+			const [registers, countResult] = await Promise.all([
+				db.query.cashRegisterTable.findMany({
+					where: whereCondition,
+					limit: input.limit,
+					offset: input.offset,
+					orderBy: desc(cashRegisterTable.date),
+					with: {
+						openedByUser: { columns: { id: true, name: true } },
+						closedByUser: { columns: { id: true, name: true } },
+					},
+				}),
+				db
+					.select({ count: count() })
+					.from(cashRegisterTable)
+					.where(whereCondition),
+			]);
+
+			return { registers, total: countResult[0]?.count ?? 0 };
+		}),
+
+	// Get movements for a cash register
+	getMovements: protectedOrganizationProcedure
+		.input(getCashMovementsSchema)
+		.query(async ({ ctx, input }) => {
+			const conditions = [
+				eq(cashMovementTable.cashRegisterId, input.cashRegisterId),
+				eq(cashMovementTable.organizationId, ctx.organization.id),
+			];
+
+			if (input.type) {
+				conditions.push(eq(cashMovementTable.type, input.type));
+			}
+
+			const whereCondition = and(...conditions);
+
+			const [movements, countResult] = await Promise.all([
+				db.query.cashMovementTable.findMany({
+					where: whereCondition,
+					limit: input.limit,
+					offset: input.offset,
+					orderBy: desc(cashMovementTable.createdAt),
+					with: {
+						recordedByUser: { columns: { id: true, name: true } },
+					},
+				}),
+				db
+					.select({ count: count() })
+					.from(cashMovementTable)
+					.where(whereCondition),
+			]);
+
+			return { movements, total: countResult[0]?.count ?? 0 };
+		}),
+
+	// Add manual movement
+	addManualMovement: protectedOrganizationProcedure
+		.input(addManualMovementSchema)
+		.mutation(async ({ ctx, input }) => {
+			const today = getStartOfDay(new Date());
+
+			// Get or create today's cash register
+			const cashRegister = await db.query.cashRegisterTable.findFirst({
+				where: and(
+					eq(cashRegisterTable.organizationId, ctx.organization.id),
+					eq(cashRegisterTable.date, today),
+				),
+			});
+
+			if (!cashRegister) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message:
+						"No cash register open for today. Please open the cash register first.",
+				});
+			}
+
+			if (cashRegister.status === CashRegisterStatus.closed) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Cash register is closed. Cannot add movements.",
+				});
+			}
+
+			const [movement] = await db
+				.insert(cashMovementTable)
+				.values({
+					cashRegisterId: cashRegister.id,
+					organizationId: ctx.organization.id,
+					type: input.type,
+					amount: input.amount,
+					description: input.description,
+					referenceType: "manual",
+					recordedBy: ctx.user.id,
+				})
+				.returning();
+
+			return movement;
+		}),
+
+	// Get daily summary
+	getDailySummary: protectedOrganizationProcedure
+		.input(getDailySummarySchema)
+		.query(async ({ ctx, input }) => {
+			const targetDate = input.date
+				? getStartOfDay(input.date)
+				: getStartOfDay(new Date());
+			const dayEnd = getEndOfDay(targetDate);
+
+			// Get cash register for the day
+			const cashRegister = await db.query.cashRegisterTable.findFirst({
+				where: and(
+					eq(cashRegisterTable.organizationId, ctx.organization.id),
+					eq(cashRegisterTable.date, targetDate),
+				),
+			});
+
+			// Get movements for the day
+			const movementStats = cashRegister
+				? await db
+						.select({
+							type: cashMovementTable.type,
+							total: sum(cashMovementTable.amount),
+							count: count(),
+						})
+						.from(cashMovementTable)
+						.where(eq(cashMovementTable.cashRegisterId, cashRegister.id))
+						.groupBy(cashMovementTable.type)
+				: [];
+
+			// Get payments received today (cash payments)
+			const paymentsToday = await db
+				.select({
+					total: sum(trainingPaymentTable.paidAmount),
+					count: count(),
+				})
+				.from(trainingPaymentTable)
+				.where(
+					and(
+						eq(trainingPaymentTable.organizationId, ctx.organization.id),
+						eq(trainingPaymentTable.status, TrainingPaymentStatus.paid),
+						gte(trainingPaymentTable.paymentDate, targetDate),
+						lte(trainingPaymentTable.paymentDate, dayEnd),
+					),
+				);
+
+			const incomeMovements = movementStats.find(
+				(m) => m.type === CashMovementType.income,
+			);
+			const expenseMovements = movementStats.find(
+				(m) => m.type === CashMovementType.expense,
+			);
+			const adjustmentMovements = movementStats.find(
+				(m) => m.type === CashMovementType.adjustment,
+			);
+
+			return {
+				date: targetDate,
+				cashRegister: cashRegister
+					? {
+							id: cashRegister.id,
+							status: cashRegister.status,
+							openingBalance: cashRegister.openingBalance,
+							closingBalance: cashRegister.closingBalance,
+						}
+					: null,
+				movements: {
+					income: {
+						total: Number(incomeMovements?.total ?? 0),
+						count: Number(incomeMovements?.count ?? 0),
+					},
+					expense: {
+						total: Number(expenseMovements?.total ?? 0),
+						count: Number(expenseMovements?.count ?? 0),
+					},
+					adjustment: {
+						total: Number(adjustmentMovements?.total ?? 0),
+						count: Number(adjustmentMovements?.count ?? 0),
+					},
+				},
+				paymentsReceived: {
+					total: Number(paymentsToday[0]?.total ?? 0),
+					count: Number(paymentsToday[0]?.count ?? 0),
+				},
+				netCashFlow:
+					Number(incomeMovements?.total ?? 0) -
+					Number(expenseMovements?.total ?? 0) +
+					Number(adjustmentMovements?.total ?? 0),
+			};
+		}),
+});
