@@ -31,7 +31,11 @@
 			"Bash(pnpm dev:*)",
 			"Bash(pnpm add:*)",
 			"Bash(npm run dev:*)",
-			"Bash(pkill:*)"
+			"Bash(pkill:*)",
+			"Bash(npx tsx:*)",
+			"Bash(npm run with-dev-env:*)",
+			"Bash(npm run db:seed:*)",
+			"Bash(npm run db:reset:*)"
 		]
 	}
 }

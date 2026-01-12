@@ -33,25 +33,26 @@ export function StatsSection() {
 	];
 
 	return (
-		<section id="stats" className="py-16">
-			<div className="mx-auto flex max-w-2xl flex-col gap-10 px-6 md:max-w-3xl lg:max-w-7xl lg:gap-16 lg:px-10">
+		<section id="stats" className="py-20">
+			<div className="mx-auto flex max-w-2xl flex-col gap-12 px-6 md:max-w-3xl lg:max-w-7xl lg:gap-16 lg:px-10">
 				{/* Header */}
 				<div className="flex max-w-2xl flex-col gap-6">
-					<div className="flex flex-col gap-2">
-						<div className="text-sm font-semibold leading-7 text-marketing-fg-muted">
+					<div className="flex flex-col gap-3">
+						<span className="inline-flex items-center gap-2 text-sm font-semibold text-marketing-accent uppercase tracking-wider">
+							<span className="h-px w-8 bg-marketing-accent" />
 							En numeros
-						</div>
+						</span>
 						<h2
 							className={cn(
-								"text-pretty font-display text-[2rem] leading-10 tracking-tight",
+								"text-pretty font-display text-[2rem] leading-tight tracking-tight",
 								"text-marketing-fg",
-								"sm:text-5xl sm:leading-14",
+								"sm:text-5xl sm:leading-[1.15]",
 							)}
 						>
 							La plataforma elegida por los mejores
 						</h2>
 					</div>
-					<div className="text-base leading-7 text-marketing-fg-muted text-pretty">
+					<div className="text-lg leading-relaxed text-marketing-fg-muted text-pretty">
 						<p>
 							Equipos de elite alrededor del mundo confian en GOAT OS para
 							llevar su rendimiento al siguiente nivel.
@@ -60,19 +61,25 @@ export function StatsSection() {
 				</div>
 
 				{/* Stats Grid */}
-				<div className="grid grid-cols-2 gap-6 lg:grid-cols-4 lg:gap-8">
-					{stats.map((stat) => (
+				<div className="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-6">
+					{stats.map((stat, index) => (
 						<div
 							key={stat.label}
-							className="relative rounded-lg bg-marketing-card p-6"
+							className={cn(
+								"group relative rounded-xl bg-marketing-card p-6 lg:p-8",
+								"hover:bg-marketing-card-hover transition-all duration-500",
+								"hover:shadow-lg hover:shadow-marketing-accent/5",
+								"animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both",
+							)}
+							style={{ animationDelay: `${index * 100}ms` }}
 						>
-							<div className="text-3xl font-semibold tracking-tight text-marketing-fg sm:text-4xl">
+							<div className="text-4xl font-bold tracking-tight text-marketing-accent sm:text-5xl">
 								{stat.value}
 							</div>
-							<div className="mt-2 text-sm font-medium text-marketing-fg">
+							<div className="mt-3 text-base font-semibold text-marketing-fg">
 								{stat.label}
 							</div>
-							<p className="mt-1 text-sm text-marketing-fg-muted">
+							<p className="mt-1 text-sm text-marketing-fg-muted leading-relaxed">
 								{stat.description}
 							</p>
 						</div>

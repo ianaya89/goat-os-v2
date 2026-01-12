@@ -33,6 +33,9 @@
 		"db:migrate": "drizzle-kit migrate --config=drizzle.config.ts",
 		"db:push": "drizzle-kit push --config=drizzle.config.ts",
 		"db:studio": "drizzle-kit studio --config=drizzle.config.ts",
+		"db:cli": "npm run with-dev-env -- tsx scripts/cli/index.ts",
+		"db:seed": "npm run with-dev-env -- tsx scripts/cli/seed-direct.ts",
+		"db:reset": "npm run with-dev-env -- tsx scripts/cli/reset-direct.ts",
 		"docker:up": "docker compose up -d",
 		"docker:down": "docker compose down",
 		"docker:logs": "docker compose logs -f",
@@ -163,6 +166,7 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.3.10",
+		"@clack/prompts": "^0.11.0",
 		"@next/bundle-analyzer": "16.1.1",
 		"@playwright/test": "1.57.0",
 		"@tailwindcss/postcss": "4.1.18",
@@ -182,6 +186,7 @@
 		"postcss": "8.5.6",
 		"tailwindcss": "4.1.18",
 		"testcontainers": "11.10.0",
+		"tsx": "^4.21.0",
 		"typescript": "5.9.3",
 		"vite-tsconfig-paths": "6.0.3",
 		"vitest": "4.0.16"

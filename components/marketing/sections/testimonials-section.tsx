@@ -10,14 +10,30 @@ interface Testimonial {
 	avatar: string;
 }
 
-function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
+function TestimonialCard({
+	testimonial,
+	index,
+}: {
+	testimonial: Testimonial;
+	index: number;
+}) {
 	return (
-		<figure className="flex flex-col justify-between gap-10 rounded-md bg-marketing-card p-6 text-sm">
+		<figure
+			className={cn(
+				"flex flex-col justify-between gap-8 rounded-xl bg-marketing-card p-6 lg:p-8",
+				"hover:bg-marketing-card-hover transition-all duration-500",
+				"hover:shadow-lg hover:shadow-marketing-accent/5",
+				"animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both",
+			)}
+			style={{ animationDelay: `${index * 100}ms` }}
+		>
 			<blockquote className="flex flex-col gap-4">
-				<p>"{testimonial.quote}"</p>
+				<p className="text-base leading-relaxed text-marketing-fg italic">
+					"{testimonial.quote}"
+				</p>
 			</blockquote>
 			<figcaption className="flex items-center gap-4">
-				<div className="flex size-12 overflow-hidden rounded-full outline -outline-offset-1 outline-black/5 dark:outline-white/5">
+				<div className="flex size-12 overflow-hidden rounded-full ring-2 ring-marketing-accent/20">
 					<img
 						src={testimonial.avatar}
 						alt={testimonial.name}
@@ -28,8 +44,8 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
 				</div>
 				<div>
 					<p className="font-semibold text-marketing-fg">{testimonial.name}</p>
-					<p className="text-marketing-fg-muted">
-						{testimonial.role} at {testimonial.company}
+					<p className="text-sm text-marketing-fg-muted">
+						{testimonial.role} en {testimonial.company}
 					</p>
 				</div>
 			</figcaption>
@@ -90,22 +106,26 @@ export function TestimonialsSection() {
 	];
 
 	return (
-		<section id="testimonials" className="py-16">
-			<div className="mx-auto flex max-w-2xl flex-col gap-10 px-6 md:max-w-3xl lg:max-w-7xl lg:gap-16 lg:px-10">
+		<section id="testimonials" className="py-20">
+			<div className="mx-auto flex max-w-2xl flex-col gap-12 px-6 md:max-w-3xl lg:max-w-7xl lg:gap-16 lg:px-10">
 				{/* Header */}
 				<div className="flex max-w-2xl flex-col gap-6">
-					<div className="flex flex-col gap-2">
+					<div className="flex flex-col gap-3">
+						<span className="inline-flex items-center gap-2 text-sm font-semibold text-marketing-accent uppercase tracking-wider">
+							<span className="h-px w-8 bg-marketing-accent" />
+							Testimonios
+						</span>
 						<h2
 							className={cn(
-								"text-pretty font-display text-[2rem] leading-10 tracking-tight",
+								"text-pretty font-display text-[2rem] leading-tight tracking-tight",
 								"text-marketing-fg",
-								"sm:text-5xl sm:leading-14",
+								"sm:text-5xl sm:leading-[1.15]",
 							)}
 						>
 							Lo que dicen los profesionales
 						</h2>
 					</div>
-					<div className="text-base leading-7 text-marketing-fg-muted text-pretty">
+					<div className="text-lg leading-relaxed text-marketing-fg-muted text-pretty">
 						<p>
 							Entrenadores, preparadores fisicos y directores tecnicos comparten
 							su experiencia con GOAT OS.
@@ -115,11 +135,12 @@ export function TestimonialsSection() {
 
 				{/* Testimonials Grid */}
 				<div>
-					<div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-						{testimonials.map((testimonial) => (
+					<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+						{testimonials.map((testimonial, index) => (
 							<TestimonialCard
 								key={testimonial.name}
 								testimonial={testimonial}
+								index={index}
 							/>
 						))}
 					</div>

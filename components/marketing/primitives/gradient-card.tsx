@@ -22,26 +22,26 @@ interface GradientCardProps {
 	rounded?: "sm" | "md" | "lg" | "xl" | "2xl";
 }
 
-// Gradient colors for light and dark modes
+// Gradient colors for light and dark modes - Sports-inspired vibrant palette
 const gradientColors: Record<
 	GradientColor,
 	{ light: { from: string; to: string }; dark: { from: string; to: string } }
 > = {
 	green: {
-		light: { from: "#9ca88f", to: "#596352" },
-		dark: { from: "#333a2b", to: "#26361b" },
+		light: { from: "#10b981", to: "#059669" },
+		dark: { from: "#064e3b", to: "#022c22" },
 	},
 	blue: {
-		light: { from: "#637c86", to: "#778599" },
-		dark: { from: "#243a42", to: "#232f40" },
+		light: { from: "#3b82f6", to: "#1d4ed8" },
+		dark: { from: "#1e3a8a", to: "#172554" },
 	},
 	purple: {
-		light: { from: "#7b627d", to: "#8f6976" },
-		dark: { from: "#412c42", to: "#3c1a26" },
+		light: { from: "#8b5cf6", to: "#7c3aed" },
+		dark: { from: "#4c1d95", to: "#2e1065" },
 	},
 	brown: {
-		light: { from: "#8d7359", to: "#765959" },
-		dark: { from: "#382d23", to: "#3d2323" },
+		light: { from: "#f59e0b", to: "#d97706" },
+		dark: { from: "#78350f", to: "#451a03" },
 	},
 	slate: {
 		light: { from: "#e2e8f0", to: "#cbd5e1" },
