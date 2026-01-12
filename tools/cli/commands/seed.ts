@@ -12,8 +12,10 @@ import {
 import { seedAthleteGroups } from "../seeds/athlete-groups";
 import { seedAthletes } from "../seeds/athletes";
 import {
+	getOrCreateRootUser,
 	getOrCreateSeedOrganization,
 	getOrCreateSeedUser,
+	ROOT_USER_EMAIL,
 	SEED_ORG_SLUG,
 } from "../seeds/base";
 import { seedCashRegister } from "../seeds/cash-register";
@@ -109,14 +111,16 @@ export async function runSeeds(tables: string[], count: number): Promise<void> {
 
 	const seedOrg = await getOrCreateSeedOrganization(db);
 	const seedUser = await getOrCreateSeedUser(db, seedOrg.id);
+	const rootUser = await getOrCreateRootUser(db, seedOrg.id);
 
 	seedSpinner.stop(`Using organization: ${seedOrg.name} (${SEED_ORG_SLUG})`);
+	p.log.info(`Root user: ${ROOT_USER_EMAIL}`);
 
 	// Track created IDs for relationships
 	const context: SeedContext = {
 		organizationId: seedOrg.id,
 		seedUserId: seedUser.id,
-		userIds: [seedUser.id],
+		userIds: [seedUser.id, rootUser.id],
 		athleteIds: [],
 		coachIds: [],
 		locationIds: [],

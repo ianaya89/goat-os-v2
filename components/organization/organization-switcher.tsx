@@ -45,7 +45,7 @@ import { trpc } from "@/trpc/client";
 import { clearOrganizationScopedQueries } from "@/trpc/query-client";
 
 export type OrganizationSwitcherProps = {
-	variant?: "sidebar" | "topbar";
+	variant?: "sidebar" | "topbar" | "breadcrumb";
 };
 
 /**
@@ -190,6 +190,14 @@ export function OrganizationSwitcher({
 	};
 
 	if (isInitialLoading || !user) {
+		if (variant === "breadcrumb") {
+			return (
+				<div className="flex items-center gap-1.5">
+					<Skeleton className="size-4 rounded bg-muted" />
+					<Skeleton className="h-3.5 w-20 rounded bg-muted" />
+				</div>
+			);
+		}
 		if (variant === "topbar") {
 			return (
 				<div className="flex h-9 w-32 items-center gap-2 rounded-lg border border-border/50 bg-background/50 px-3">
@@ -235,6 +243,142 @@ export function OrganizationSwitcher({
 						</span>
 						<ChevronsUpDownIcon className="size-4 shrink-0 text-muted-foreground" />
 					</Button>
+				</PopoverTrigger>
+				<PopoverContent align="start" className="w-60 p-0" forceMount>
+					<Command onValueChange={setSelectedValue} value={selectedValue}>
+						<CommandInput className="h-9" placeholder="Search..." />
+						<CommandList>
+							<CommandGroup>
+								<CommandItem
+									className="cursor-pointer"
+									onSelect={handleSelectPersonalAccount}
+									value={user.id}
+								>
+									<PersonalAccountAvatar className="size-5 shrink-0" />
+									<span className="mr-2">Personal</span>
+									<Icon type="personal" />
+								</CommandItem>
+							</CommandGroup>
+							{Array.isArray(allOrganizations) &&
+								allOrganizations.length > 0 && (
+									<>
+										<CommandSeparator />
+										<CommandGroup
+											heading={`Your Organizations (${allOrganizations.length})`}
+										>
+											{allOrganizations.map((organization) => (
+												<CommandItem
+													className={cn(
+														"group my-1 flex cursor-pointer justify-between transition-colors",
+														{
+															"bg-muted":
+																isOrganizationArea &&
+																activeOrganization?.id === organization.id,
+														},
+													)}
+													key={organization.id}
+													onSelect={() =>
+														handleSelectOrganization(organization.id)
+													}
+													value={organization.id}
+												>
+													<div className="flex items-center">
+														<OrganizationLogo
+															className="mr-2 size-5 shrink-0"
+															name={organization.name}
+															src={organization.logo}
+														/>
+														<span className="mr-2 max-w-[165px] truncate">
+															{organization.name}
+														</span>
+													</div>
+													<Icon id={organization.id} type="organization" />
+												</CommandItem>
+											))}
+										</CommandGroup>
+									</>
+								)}
+						</CommandList>
+					</Command>
+					<div className="space-y-1 p-1">
+						{user?.role === "admin" && (
+							<>
+								<Separator />
+								<Button
+									asChild
+									className="h-8 w-full justify-start gap-1.5 font-normal text-sm"
+									size="sm"
+									variant="ghost"
+								>
+									<Link
+										href="/dashboard/admin/users"
+										onClick={() => setOpen(false)}
+										className="flex items-center"
+									>
+										<div className="mr-0.75 -ml-0.75 flex size-5 items-center justify-center rounded-md bg-foreground text-background">
+											<ShieldIcon className="size-3 shrink-0" />
+										</div>
+										<span className="flex-1">Admin Panel</span>
+										<div
+											className={cn(
+												"ml-auto flex size-4 items-center justify-center rounded-full text-primary-foreground",
+												isAdminArea ? "bg-blue-500" : "bg-transparent",
+											)}
+										>
+											<CheckIcon
+												className={cn(
+													"size-3 shrink-0 text-current",
+													isAdminArea ? "opacity-100" : "opacity-0",
+												)}
+											/>
+										</div>
+									</Link>
+								</Button>
+							</>
+						)}
+						{appConfig.organizations.allowUserCreation && (
+							<>
+								<Separator />
+								<Button
+									className="h-8 w-full justify-start gap-1.5 font-normal text-sm"
+									onClick={() => {
+										NiceModal.show(CreateOrganizationModal);
+										setOpen(false);
+									}}
+									size="sm"
+									variant="ghost"
+								>
+									<PlusIcon className="size-5 shrink-0" />
+									<span>Create an Organization</span>
+								</Button>
+							</>
+						)}
+					</div>
+				</PopoverContent>
+			</Popover>
+		);
+	}
+
+	// Breadcrumb variant - inline style for breadcrumb integration
+	if (variant === "breadcrumb") {
+		return (
+			<Popover onOpenChange={setOpen} open={open}>
+				<PopoverTrigger asChild>
+					<button
+						type="button"
+						aria-expanded={open}
+						className="group flex items-center gap-1.5 rounded-md px-1.5 py-0.5 -mx-1.5 transition-colors hover:bg-accent/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+					>
+						<OrganizationLogo
+							className="size-4"
+							name={activeOrganization?.name ?? ""}
+							src={activeOrganization?.logo}
+						/>
+						<span className="font-medium text-sm text-foreground/80 group-hover:text-foreground">
+							{activeOrganization?.name ?? "Organization"}
+						</span>
+						<ChevronsUpDownIcon className="size-3 text-muted-foreground/60 group-hover:text-muted-foreground" />
+					</button>
 				</PopoverTrigger>
 				<PopoverContent align="start" className="w-60 p-0" forceMount>
 					<Command onValueChange={setSelectedValue} value={selectedValue}>

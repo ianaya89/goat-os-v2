@@ -786,6 +786,10 @@ export const athleteTable = pgTable(
 		// Contact information
 		phone: text("phone"), // Phone number in E.164 format for SMS/WhatsApp notifications
 
+		// Club and category information
+		currentClub: text("current_club"), // Current club or team name
+		category: text("category"), // Age category or division (e.g., "Sub-17", "Primera")
+
 		// Profile information
 		nationality: text("nationality"),
 		position: text("position"), // Primary position (varies by sport)
@@ -843,6 +847,7 @@ export const locationTable = pgTable(
 		postalCode: text("postal_code"),
 		capacity: integer("capacity"),
 		notes: text("notes"),
+		color: text("color"), // Hex color code for calendar display (e.g., "#3b82f6")
 		isActive: boolean("is_active").notNull().default(true),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.notNull()
@@ -876,6 +881,8 @@ export const athleteGroupTable = pgTable(
 			.references(() => organizationTable.id, { onDelete: "cascade" }),
 		name: text("name").notNull(),
 		description: text("description"),
+		ageCategoryId: uuid("age_category_id"),
+		maxCapacity: integer("max_capacity"),
 		isActive: boolean("is_active").notNull().default(true),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.notNull()
@@ -889,6 +896,7 @@ export const athleteGroupTable = pgTable(
 		index("athlete_group_organization_id_idx").on(table.organizationId),
 		index("athlete_group_name_idx").on(table.name),
 		index("athlete_group_is_active_idx").on(table.isActive),
+		index("athlete_group_age_category_id_idx").on(table.ageCategoryId),
 		uniqueIndex("athlete_group_org_name_unique").on(
 			table.organizationId,
 			table.name,
@@ -968,6 +976,11 @@ export const trainingSessionTable = pgTable(
 		objectives: text("objectives"), // Goals for the session
 		planning: text("planning"), // What will be done (pre-session)
 		postSessionNotes: text("post_session_notes"), // What happened (post-session)
+		// Attachment (PDF or image stored in S3)
+		attachmentKey: text("attachment_key"), // S3 object key for attached file
+		attachmentUploadedAt: timestamp("attachment_uploaded_at", {
+			withTimezone: true,
+		}),
 		// Metadata
 		createdBy: uuid("created_by").references(() => userTable.id, {
 			onDelete: "set null",

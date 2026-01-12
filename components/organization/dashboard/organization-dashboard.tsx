@@ -26,11 +26,11 @@ export function OrganizationDashboard() {
 	return (
 		<div className="fade-in flex animate-in flex-col space-y-4 duration-500">
 			{/* Top Row: Daily Summary + Cash Register */}
-			<div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+			<div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-3">
 				<div className="lg:col-span-2">
 					<DailySummaryCard />
 				</div>
-				<div>
+				<div className="h-full">
 					<CashRegisterStatus />
 				</div>
 			</div>

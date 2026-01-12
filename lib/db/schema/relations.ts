@@ -294,6 +294,10 @@ export const athleteGroupRelations = relations(
 			fields: [athleteGroupTable.organizationId],
 			references: [organizationTable.id],
 		}),
+		ageCategory: one(ageCategoryTable, {
+			fields: [athleteGroupTable.ageCategoryId],
+			references: [ageCategoryTable.id],
+		}),
 		members: many(athleteGroupMemberTable),
 		trainingSessions: many(trainingSessionTable),
 	}),

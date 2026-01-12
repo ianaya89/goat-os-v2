@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import type { JSX } from "react";
 import { AiChat } from "@/components/ai/ai-chat";
+import { OrganizationBreadcrumbSwitcher } from "@/components/organization/organization-breadcrumb-switcher";
 import {
 	Page,
 	PageBody,
@@ -46,7 +47,7 @@ export default async function ChatbotPage(): Promise<JSX.Element> {
 					<PageBreadcrumb
 						segments={[
 							{ label: "Home", href: "/dashboard" },
-							{ label: organization.name, href: "/dashboard/organization" },
+							{ label: <OrganizationBreadcrumbSwitcher />, isCustom: true },
 							{ label: "AI Chatbot" },
 						]}
 					/>

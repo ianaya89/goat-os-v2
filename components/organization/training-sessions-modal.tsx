@@ -3,9 +3,10 @@
 import NiceModal, { type NiceModalHocProps } from "@ebay/nice-modal-react";
 import { format } from "date-fns";
 import { CheckIcon, RepeatIcon, XIcon } from "lucide-react";
-import { RecurringSessionForm } from "@/components/organization/recurring-session-form";
 import * as React from "react";
 import { toast } from "sonner";
+import { RecurringSessionForm } from "@/components/organization/recurring-session-form";
+import { SessionAttachmentUpload } from "@/components/organization/session-attachment-upload";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +21,7 @@ import { Field } from "@/components/ui/field";
 import {
 	Form,
 	FormControl,
+	FormDescription,
 	FormField,
 	FormItem,
 	FormLabel,
@@ -57,8 +59,8 @@ import {
 	TrainingSessionStatuses,
 } from "@/lib/db/schema/enums";
 import {
-	type RecurrenceConfig,
 	createRRuleString,
+	type RecurrenceConfig,
 } from "@/lib/training/rrule-utils";
 import { capitalize, cn } from "@/lib/utils";
 import {
@@ -109,11 +111,12 @@ export type TrainingSessionsModalProps = NiceModalHocProps & {
 		postSessionNotes?: string | null;
 		isRecurring?: boolean;
 		rrule?: string | null;
+		attachmentKey?: string | null;
 	};
 };
 
-export const TrainingSessionsModal = NiceModal.create<TrainingSessionsModalProps>(
-	({ session }) => {
+export const TrainingSessionsModal =
+	NiceModal.create<TrainingSessionsModalProps>(({ session }) => {
 		const modal = useEnhancedModal();
 		const utils = trpc.useUtils();
 		const isEditing = !!session;
@@ -139,6 +142,17 @@ export const TrainingSessionsModal = NiceModal.create<TrainingSessionsModalProps
 			React.useState<RecurrenceConfig>({
 				frequency: "weekly",
 			});
+
+		// Duration state (in minutes) - calculate from existing session or default to 60
+		const [duration, setDuration] = React.useState<number>(() => {
+			if (session?.startTime && session?.endTime) {
+				const diff =
+					new Date(session.endTime).getTime() -
+					new Date(session.startTime).getTime();
+				return Math.round(diff / (60 * 1000)); // Convert ms to minutes
+			}
+			return 60; // Default 1 hour
+		});
 
 		// Fetch data for dropdowns
 		const { data: locationsData } =
@@ -205,7 +219,9 @@ export const TrainingSessionsModal = NiceModal.create<TrainingSessionsModalProps
 		};
 
 		const form = useZodForm({
-			schema: isEditing ? updateTrainingSessionSchema : createTrainingSessionSchema,
+			schema: isEditing
+				? updateTrainingSessionSchema
+				: createTrainingSessionSchema,
 			defaultValues: isEditing
 				? {
 						id: session.id,
@@ -236,11 +252,18 @@ export const TrainingSessionsModal = NiceModal.create<TrainingSessionsModalProps
 		});
 
 		const onSubmit = form.handleSubmit(async (data) => {
+			// Calculate endTime from startTime + duration
+			const startTime = new Date(data.startTime as Date);
+			const calculatedEndTime = new Date(
+				startTime.getTime() + duration * 60 * 1000,
+			);
+
 			if (isEditing) {
-				// Update session info
-				await updateSessionMutation.mutateAsync(
-					data as Parameters<typeof updateSessionMutation.mutateAsync>[0],
-				);
+				// Update session info with calculated endTime
+				await updateSessionMutation.mutateAsync({
+					...(data as Parameters<typeof updateSessionMutation.mutateAsync>[0]),
+					endTime: calculatedEndTime,
+				});
 				// Update coaches
 				await updateCoachesMutation.mutateAsync({
 					sessionId: session.id,
@@ -259,14 +282,12 @@ export const TrainingSessionsModal = NiceModal.create<TrainingSessionsModalProps
 			} else {
 				// Generate rrule string if recurring
 				const rrule = isRecurring
-					? createRRuleString(
-							new Date(data.startTime as Date),
-							recurrenceConfig,
-						)
+					? createRRuleString(startTime, recurrenceConfig)
 					: undefined;
 
 				createSessionMutation.mutate({
 					...(data as Parameters<typeof createSessionMutation.mutate>[0]),
+					endTime: calculatedEndTime,
 					coachIds: selectedCoachIds,
 					primaryCoachId: primaryCoachId ?? undefined,
 					athleteIds:
@@ -409,7 +430,14 @@ export const TrainingSessionsModal = NiceModal.create<TrainingSessionsModalProps
 																	{...field}
 																	value={
 																		field.value
-																			? formatDateTimeLocal(new Date(field.value as string | number | Date))
+																			? formatDateTimeLocal(
+																					new Date(
+																						field.value as
+																							| string
+																							| number
+																							| Date,
+																					),
+																				)
 																			: ""
 																	}
 																	onChange={(e) =>
@@ -423,32 +451,27 @@ export const TrainingSessionsModal = NiceModal.create<TrainingSessionsModalProps
 												)}
 											/>
 
-											<FormField
-												control={form.control}
-												name="endTime"
-												render={({ field }) => (
-													<FormItem asChild>
-														<Field>
-															<FormLabel>End Time</FormLabel>
-															<FormControl>
-																<Input
-																	type="datetime-local"
-																	{...field}
-																	value={
-																		field.value
-																			? formatDateTimeLocal(new Date(field.value as string | number | Date))
-																			: ""
-																	}
-																	onChange={(e) =>
-																		field.onChange(new Date(e.target.value))
-																	}
-																/>
-															</FormControl>
-															<FormMessage />
-														</Field>
-													</FormItem>
-												)}
-											/>
+											<Field>
+												<FormLabel>Duration</FormLabel>
+												<Select
+													onValueChange={(value) =>
+														setDuration(parseInt(value, 10))
+													}
+													value={duration.toString()}
+												>
+													<SelectTrigger className="w-full">
+														<SelectValue placeholder="Select duration" />
+													</SelectTrigger>
+													<SelectContent>
+														<SelectItem value="30">30 minutes</SelectItem>
+														<SelectItem value="45">45 minutes</SelectItem>
+														<SelectItem value="60">1 hour</SelectItem>
+														<SelectItem value="90">1.5 hours</SelectItem>
+														<SelectItem value="120">2 hours</SelectItem>
+														<SelectItem value="180">3 hours</SelectItem>
+													</SelectContent>
+												</Select>
+											</Field>
 										</div>
 
 										<FormField
@@ -554,9 +577,8 @@ export const TrainingSessionsModal = NiceModal.create<TrainingSessionsModalProps
 																	<CommandEmpty>No coaches found.</CommandEmpty>
 																	<CommandGroup>
 																		{coaches.map((coach) => {
-																			const isSelected = selectedCoachIds.includes(
-																				coach.id,
-																			);
+																			const isSelected =
+																				selectedCoachIds.includes(coach.id);
 																			return (
 																				<CommandItem
 																					key={coach.id}
@@ -579,7 +601,9 @@ export const TrainingSessionsModal = NiceModal.create<TrainingSessionsModalProps
 																						<UserAvatar
 																							className="size-6"
 																							name={coach.user?.name ?? ""}
-																							src={coach.user?.image ?? undefined}
+																							src={
+																								coach.user?.image ?? undefined
+																							}
 																						/>
 																						<span className="truncate">
 																							{coach.user?.name ?? "Unknown"}
@@ -613,7 +637,10 @@ export const TrainingSessionsModal = NiceModal.create<TrainingSessionsModalProps
 																	{coach.user?.name ?? "Unknown"}
 																</span>
 																{primaryCoachId === coach.id && (
-																	<Badge variant="secondary" className="text-xs">
+																	<Badge
+																		variant="secondary"
+																		className="text-xs"
+																	>
 																		Primary
 																	</Badge>
 																)}
@@ -727,20 +754,26 @@ export const TrainingSessionsModal = NiceModal.create<TrainingSessionsModalProps
 															<CommandList>
 																{athletes.length === 0 ? (
 																	<div className="px-4 py-6 text-center text-muted-foreground text-sm">
-																		No athletes available. Create an athlete first.
+																		No athletes available. Create an athlete
+																		first.
 																	</div>
 																) : (
 																	<>
-																		<CommandEmpty>No athletes found.</CommandEmpty>
+																		<CommandEmpty>
+																			No athletes found.
+																		</CommandEmpty>
 																		<CommandGroup>
 																			{athletes.map((athlete) => {
-																				const isSelected = selectedAthleteIds.includes(
-																					athlete.id,
-																				);
+																				const isSelected =
+																					selectedAthleteIds.includes(
+																						athlete.id,
+																					);
 																				return (
 																					<CommandItem
 																						key={athlete.id}
-																						value={athlete.user?.name ?? athlete.id}
+																						value={
+																							athlete.user?.name ?? athlete.id
+																						}
 																						onSelect={() =>
 																							toggleAthlete(athlete.id)
 																						}
@@ -761,10 +794,14 @@ export const TrainingSessionsModal = NiceModal.create<TrainingSessionsModalProps
 																							<UserAvatar
 																								className="size-6"
 																								name={athlete.user?.name ?? ""}
-																								src={athlete.user?.image ?? undefined}
+																								src={
+																									athlete.user?.image ??
+																									undefined
+																								}
 																							/>
 																							<span className="truncate">
-																								{athlete.user?.name ?? "Unknown"}
+																								{athlete.user?.name ??
+																									"Unknown"}
 																							</span>
 																						</div>
 																					</CommandItem>
@@ -879,6 +916,23 @@ export const TrainingSessionsModal = NiceModal.create<TrainingSessionsModalProps
 												)}
 											/>
 										)}
+
+										<Field>
+											<FormLabel>Attachment</FormLabel>
+											<SessionAttachmentUpload
+												sessionId={session?.id}
+												hasAttachment={!!session?.attachmentKey}
+												onUploadComplete={() => {
+													utils.organization.trainingSession.get.invalidate({
+														id: session?.id,
+													});
+												}}
+												disabled={isPending}
+											/>
+											<FormDescription>
+												Attach a PDF or image (max 10MB)
+											</FormDescription>
+										</Field>
 									</TabsContent>
 								</Tabs>
 							</ScrollArea>
@@ -901,5 +955,4 @@ export const TrainingSessionsModal = NiceModal.create<TrainingSessionsModalProps
 				</SheetContent>
 			</Sheet>
 		);
-	},
-);
+	});

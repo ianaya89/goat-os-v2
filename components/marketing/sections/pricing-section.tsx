@@ -109,13 +109,13 @@ function PricingCard({
 		if (plan.isFree) {
 			return (
 				<Link
-					href="/auth/sign-up"
+					href="/athlete-signup"
 					className={cn(
 						"inline-flex w-full shrink-0 items-center justify-center gap-1 rounded-full px-4 py-2 text-sm font-medium",
 						"bg-marketing-card-hover text-marketing-fg",
 					)}
 				>
-					Get Started Free
+					Comenzar Gratis
 				</Link>
 			);
 		}
@@ -147,7 +147,7 @@ function PricingCard({
 		// Default link button (no onSelect handler)
 		return (
 			<Link
-				href="/auth/sign-up"
+				href="/athlete-signup"
 				className={cn(
 					"inline-flex w-full shrink-0 items-center justify-center gap-1 rounded-full px-4 py-2 text-sm font-medium",
 					isPopular
@@ -155,7 +155,7 @@ function PricingCard({
 						: "bg-marketing-card-hover text-marketing-fg",
 				)}
 			>
-				Start free trial
+				Comenzar Gratis
 			</Link>
 		);
 	};

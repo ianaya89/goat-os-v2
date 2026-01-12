@@ -31,6 +31,13 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import {
 	Sheet,
 	SheetContent,
 	SheetDescription,
@@ -68,6 +75,8 @@ export type AthleteGroupsModalProps = NiceModalHocProps & {
 		id: string;
 		name: string;
 		description?: string | null;
+		ageCategoryId?: string | null;
+		maxCapacity?: number | null;
 		isActive: boolean;
 		members: GroupMember[];
 	};
@@ -94,6 +103,13 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 				staleTime: 30000,
 			},
 		);
+
+		// Get age categories for selection
+		const { data: ageCategories } =
+			trpc.organization.sportsEvent.listAgeCategories.useQuery(
+				{ includeInactive: false },
+				{ staleTime: 60000 },
+			);
 
 		const athletes = athletesData?.athletes ?? [];
 
@@ -140,11 +156,15 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 						id: group.id,
 						name: group.name,
 						description: group.description ?? "",
+						ageCategoryId: group.ageCategoryId ?? null,
+						maxCapacity: group.maxCapacity ?? null,
 						isActive: group.isActive,
 					}
 				: {
 						name: "",
 						description: "",
+						ageCategoryId: null,
+						maxCapacity: null,
 						isActive: true,
 						memberIds: [],
 					},
@@ -200,9 +220,7 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 					onAnimationEndCapture={modal.handleAnimationEndCapture}
 				>
 					<SheetHeader>
-						<SheetTitle>
-							{isEditing ? "Edit Group" : "Create Group"}
-						</SheetTitle>
+						<SheetTitle>{isEditing ? "Edit Group" : "Create Group"}</SheetTitle>
 						<SheetDescription className="sr-only">
 							{isEditing
 								? "Update the group information below."
@@ -259,6 +277,72 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 										)}
 									/>
 
+									<div className="grid grid-cols-2 gap-4">
+										<FormField
+											control={form.control}
+											name="ageCategoryId"
+											render={({ field }) => (
+												<FormItem asChild>
+													<Field>
+														<FormLabel>Age Category</FormLabel>
+														<Select
+															value={field.value ?? ""}
+															onValueChange={(value) =>
+																field.onChange(value || null)
+															}
+														>
+															<FormControl>
+																<SelectTrigger>
+																	<SelectValue placeholder="Select category" />
+																</SelectTrigger>
+															</FormControl>
+															<SelectContent>
+																{ageCategories?.map((category) => (
+																	<SelectItem
+																		key={category.id}
+																		value={category.id}
+																	>
+																		{category.name}
+																	</SelectItem>
+																))}
+															</SelectContent>
+														</Select>
+														<FormMessage />
+													</Field>
+												</FormItem>
+											)}
+										/>
+
+										<FormField
+											control={form.control}
+											name="maxCapacity"
+											render={({ field }) => (
+												<FormItem asChild>
+													<Field>
+														<FormLabel>Max Capacity</FormLabel>
+														<FormControl>
+															<Input
+																type="number"
+																min={1}
+																placeholder="Unlimited"
+																{...field}
+																value={field.value ?? ""}
+																onChange={(e) =>
+																	field.onChange(
+																		e.target.value
+																			? Number.parseInt(e.target.value, 10)
+																			: null,
+																	)
+																}
+															/>
+														</FormControl>
+														<FormMessage />
+													</Field>
+												</FormItem>
+											)}
+										/>
+									</div>
+
 									<Field>
 										<FormLabel>Members</FormLabel>
 										<Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
@@ -272,10 +356,7 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 														: "Select athletes..."}
 												</Button>
 											</PopoverTrigger>
-											<PopoverContent
-												className="w-[300px] p-0"
-												align="start"
-											>
+											<PopoverContent className="w-[300px] p-0" align="start">
 												<Command>
 													<CommandInput placeholder="Search athletes..." />
 													<CommandList>

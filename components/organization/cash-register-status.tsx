@@ -6,10 +6,12 @@ import { es } from "date-fns/locale";
 import {
 	AlertTriangleIcon,
 	CheckCircleIcon,
+	HistoryIcon,
 	LockIcon,
 	PlusIcon,
 	UnlockIcon,
 } from "lucide-react";
+import Link from "next/link";
 import type * as React from "react";
 import { CashMovementModal } from "@/components/organization/cash-movement-modal";
 import { CashRegisterCloseModal } from "@/components/organization/cash-register-close-modal";
@@ -44,13 +46,13 @@ export function CashRegisterStatusCard(): React.JSX.Element {
 
 	if (isPending) {
 		return (
-			<Card>
+			<Card className="h-full flex flex-col">
 				<CardHeader>
 					<Skeleton className="h-6 w-32" />
 					<Skeleton className="h-4 w-48" />
 				</CardHeader>
-				<CardContent>
-					<Skeleton className="h-24 w-full" />
+				<CardContent className="flex-1">
+					<Skeleton className="h-full min-h-[150px] w-full" />
 				</CardContent>
 			</Card>
 		);
@@ -60,10 +62,18 @@ export function CashRegisterStatusCard(): React.JSX.Element {
 	const isClosed = currentRegister?.status === CashRegisterStatus.closed;
 
 	return (
-		<Card>
+		<Card className="h-full flex flex-col">
 			<CardHeader className="flex flex-row items-center justify-between pb-2">
 				<div className="space-y-1">
-					<CardTitle className="text-lg">Caja del Dia</CardTitle>
+					<div className="flex items-center gap-2">
+						<CardTitle className="text-lg">Caja del Dia</CardTitle>
+						<Button variant="ghost" size="sm" asChild className="h-7 px-2">
+							<Link href="/dashboard/organization/cash-register/history">
+								<HistoryIcon className="mr-1 size-3.5" />
+								Historial
+							</Link>
+						</Button>
+					</div>
 					<CardDescription>
 						{format(new Date(), "EEEE, d 'de' MMMM", { locale: es })}
 					</CardDescription>
@@ -97,7 +107,7 @@ export function CashRegisterStatusCard(): React.JSX.Element {
 					)}
 				</Badge>
 			</CardHeader>
-			<CardContent>
+			<CardContent className="flex-1 flex flex-col justify-center">
 				{!currentRegister ? (
 					<div className="flex flex-col items-center gap-4 py-6">
 						<div className="rounded-full bg-muted p-3">

@@ -173,6 +173,41 @@ export const completeSessionSchema = z.object({
 	postSessionNotes: z.string().trim().max(10000).optional(),
 });
 
+// ============================================================================
+// ATTACHMENT SCHEMAS
+// ============================================================================
+
+// Allowed content types for attachments
+export const AttachmentContentType = z.enum([
+	"image/jpeg",
+	"image/png",
+	"application/pdf",
+]);
+export type AttachmentContentType = z.infer<typeof AttachmentContentType>;
+
+// Get signed upload URL for session attachment
+export const getSessionAttachmentUploadUrlSchema = z.object({
+	sessionId: z.string().uuid(),
+	filename: z.string().trim().min(1).max(255),
+	contentType: AttachmentContentType,
+});
+
+// Update session attachment key after upload
+export const updateSessionAttachmentSchema = z.object({
+	sessionId: z.string().uuid(),
+	attachmentKey: z.string().trim().min(1).max(500),
+});
+
+// Delete session attachment
+export const deleteSessionAttachmentSchema = z.object({
+	sessionId: z.string().uuid(),
+});
+
+// Get signed download URL for session attachment
+export const getSessionAttachmentDownloadUrlSchema = z.object({
+	sessionId: z.string().uuid(),
+});
+
 // Type exports
 export type ListTrainingSessionsInput = z.infer<
 	typeof listTrainingSessionsSchema
@@ -208,3 +243,15 @@ export type ModifyRecurringOccurrenceInput = z.infer<
 	typeof modifyRecurringOccurrenceSchema
 >;
 export type CompleteSessionInput = z.infer<typeof completeSessionSchema>;
+export type GetSessionAttachmentUploadUrlInput = z.infer<
+	typeof getSessionAttachmentUploadUrlSchema
+>;
+export type UpdateSessionAttachmentInput = z.infer<
+	typeof updateSessionAttachmentSchema
+>;
+export type DeleteSessionAttachmentInput = z.infer<
+	typeof deleteSessionAttachmentSchema
+>;
+export type GetSessionAttachmentDownloadUrlInput = z.infer<
+	typeof getSessionAttachmentDownloadUrlSchema
+>;

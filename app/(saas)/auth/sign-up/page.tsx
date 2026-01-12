@@ -76,7 +76,7 @@ export default async function SignupPage({
 					Si eres un <strong>atleta</strong>, puedes registrarte directamente:
 				</p>
 				<Link
-					href="/auth/athlete-signup"
+					href="/athlete-signup"
 					className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground text-sm shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
 				>
 					Registrarme como Atleta

@@ -86,8 +86,10 @@ function PageTitle({
 }
 
 export type BreadcrumbSegment = {
-	label: string;
+	label: string | React.ReactNode;
 	href?: string;
+	/** If true, renders the label directly without any wrapper (useful for custom components like org switcher) */
+	isCustom?: boolean;
 };
 
 export function PageBreadcrumb({
@@ -103,14 +105,33 @@ export function PageBreadcrumb({
 			<BreadcrumbList>
 				{segments.map((segment, idx) => {
 					const isLast = idx === segments.length - 1;
+					const key =
+						typeof segment.label === "string"
+							? segment.label + idx
+							: `segment-${idx}`;
+
+					// Custom segments render the label directly (e.g., org switcher)
+					if (segment.isCustom) {
+						return (
+							<React.Fragment key={key}>
+								<BreadcrumbItem className="flex items-center">
+									{segment.label}
+								</BreadcrumbItem>
+								{!isLast && <BreadcrumbSeparator />}
+							</React.Fragment>
+						);
+					}
+
 					return (
-						<React.Fragment key={segment.label + idx}>
+						<React.Fragment key={key}>
 							<BreadcrumbItem>
 								{isLast || !segment.href ? (
 									<BreadcrumbPage>{segment.label}</BreadcrumbPage>
 								) : (
 									<BreadcrumbLink asChild>
-										<Link href={segment.href}>{segment.label}</Link>
+										<Link href={segment.href}>
+											{segment.label as React.ReactNode}
+										</Link>
 									</BreadcrumbLink>
 								)}
 							</BreadcrumbItem>

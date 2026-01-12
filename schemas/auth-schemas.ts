@@ -1,6 +1,6 @@
 import { z } from "zod/v4";
 import { passwordValidator } from "@/lib/auth/utils";
-import { AthleteLevel, DominantSide } from "@/lib/db/schema/enums";
+import { AthleteLevel } from "@/lib/db/schema/enums";
 
 // Sign in form validation
 export const signInSchema = z.object({
@@ -77,6 +77,13 @@ export const athleteSignUpSchema = z.object({
 		.refine((arg) => passwordValidator.validate(arg).success, {
 			message: "La contraseña no cumple los requisitos.",
 		}),
+	// Contact information (required)
+	phone: z
+		.string()
+		.trim()
+		.min(1, "El teléfono es requerido.")
+		.max(20, "Máximo 20 caracteres.")
+		.regex(/^[+]?[\d\s()-]+$/, "Ingresa un número de teléfono válido."),
 	// Athlete required data
 	sport: z
 		.string()
@@ -85,21 +92,18 @@ export const athleteSignUpSchema = z.object({
 		.max(100, "Máximo 100 caracteres."),
 	birthDate: z.coerce.date(),
 	level: z.nativeEnum(AthleteLevel),
-	// Physical attributes (required for athletes)
-	height: z.number().int().min(50, "Altura mínima 50 cm.").max(300, "Altura máxima 300 cm."),
-	weight: z
-		.number()
-		.int()
-		.min(10000, "Peso mínimo 10 kg.")
-		.max(300000, "Peso máximo 300 kg."),
-	dominantFoot: z.nativeEnum(DominantSide),
-	dominantHand: z.nativeEnum(DominantSide),
-	// Profile information (required)
-	nationality: z
+	// Club and category (required)
+	currentClub: z
 		.string()
 		.trim()
-		.min(1, "La nacionalidad es requerida.")
+		.min(1, "El club actual es requerido.")
 		.max(100, "Máximo 100 caracteres."),
+	category: z
+		.string()
+		.trim()
+		.min(1, "La categoría es requerida.")
+		.max(50, "Máximo 50 caracteres."),
+	// Profile information (required)
 	position: z
 		.string()
 		.trim()

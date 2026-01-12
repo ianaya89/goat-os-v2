@@ -10,6 +10,7 @@ import {
 	ClipboardListIcon,
 	CoinsIcon,
 	CreditCardIcon,
+	DumbbellIcon,
 	LayoutDashboardIcon,
 	MapPinIcon,
 	MedalIcon,
@@ -33,7 +34,6 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
 	SidebarGroup,
-	SidebarGroupLabel,
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
@@ -55,35 +55,25 @@ type MenuItem = {
 
 type MenuGroup = {
 	label: string;
+	icon: React.ComponentType<{ className?: string }>;
 	items: MenuItem[];
-	collapsible?: boolean;
 	defaultOpen?: boolean;
 };
+
+const STORAGE_KEY = "sidebar-open-groups";
 
 export function OrganizationMenuItems(): React.JSX.Element {
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 	const { state } = useSidebar();
-	const [openGroup, setOpenGroup] = React.useState<string>("Acquisition");
 
 	// Get current user's profile info to determine which menu items to show
 	const { data: userProfile } = trpc.organization.user.me.useQuery();
 
 	const basePath = "/dashboard/organization";
 
-	// Base application items (always shown)
-	const baseApplicationItems: MenuItem[] = [
-		{
-			label: "Dashboard",
-			href: basePath,
-			icon: LayoutDashboardIcon,
-			exactMatch: true,
-		},
-		{
-			label: "Coaches",
-			href: `${basePath}/coaches`,
-			icon: UserCheckIcon,
-		},
+	// Build sports items conditionally
+	const sportsItems: MenuItem[] = [
 		{
 			label: "Athletes",
 			href: `${basePath}/athletes`,
@@ -93,6 +83,11 @@ export function OrganizationMenuItems(): React.JSX.Element {
 			label: "Athlete Groups",
 			href: `${basePath}/athlete-groups`,
 			icon: UsersIcon,
+		},
+		{
+			label: "Coaches",
+			href: `${basePath}/coaches`,
+			icon: UserCheckIcon,
 		},
 		{
 			label: "Training Sessions",
@@ -111,74 +106,95 @@ export function OrganizationMenuItems(): React.JSX.Element {
 		},
 	];
 
-	// Conditionally add profile-specific items
-	const applicationItems: MenuItem[] = [...baseApplicationItems];
-
-	// Only show "My Sessions (Coach)" if user is a coach
+	// Add coach sessions if user is a coach
 	if (userProfile?.isCoach) {
-		applicationItems.push({
+		sportsItems.push({
 			label: "My Sessions (Coach)",
 			href: `${basePath}/my-sessions/coach`,
 			icon: ClipboardListIcon,
 		});
 	}
 
-	// Only show "My Sessions (Athlete)" if user is an athlete
+	// Add athlete sessions if user is an athlete
 	if (userProfile?.isAthlete) {
-		applicationItems.push({
+		sportsItems.push({
 			label: "My Sessions (Athlete)",
 			href: `${basePath}/my-sessions/athlete`,
 			icon: UserIcon,
 		});
 	}
 
-	// Add remaining common items
-	applicationItems.push(
-		{
-			label: "Locations",
-			href: `${basePath}/locations`,
-			icon: MapPinIcon,
-		},
-		{
-			label: "Payments",
-			href: `${basePath}/payments`,
-			icon: BanknoteIcon,
-		},
-		{
-			label: "Expenses",
-			href: `${basePath}/expenses`,
-			icon: ReceiptIcon,
-		},
-		{
-			label: "Cash Register",
-			href: `${basePath}/cash-register`,
-			icon: WalletIcon,
-		},
-		{
-			label: "Reports",
-			href: `${basePath}/reports`,
-			icon: BarChart3Icon,
-		},
-		{
-			label: "Users",
-			href: `${basePath}/users`,
-			icon: UsersRoundIcon,
-		},
-		{
-			label: "AI Chatbot",
-			href: `${basePath}/chatbot`,
-			icon: BotIcon,
-		},
-	);
-
 	const menuGroups: MenuGroup[] = [
 		{
-			label: "Application",
-			items: applicationItems,
-			collapsible: false,
+			label: "Deporte",
+			icon: MedalIcon,
+			items: sportsItems,
+			defaultOpen: true,
+		},
+		{
+			label: "Finanzas",
+			icon: WalletIcon,
+			items: [
+				{
+					label: "Payments",
+					href: `${basePath}/payments`,
+					icon: BanknoteIcon,
+				},
+				{
+					label: "Expenses",
+					href: `${basePath}/expenses`,
+					icon: ReceiptIcon,
+				},
+				{
+					label: "Cash Register",
+					href: `${basePath}/cash-register`,
+					icon: WalletIcon,
+				},
+			],
+			defaultOpen: false,
+		},
+		{
+			label: "Reportes",
+			icon: BarChart3Icon,
+			items: [
+				{
+					label: "Financieros",
+					href: `${basePath}/reports/financial`,
+					icon: BanknoteIcon,
+				},
+				{
+					label: "Deportivos",
+					href: `${basePath}/reports/sports`,
+					icon: DumbbellIcon,
+				},
+			],
+			defaultOpen: false,
+		},
+		{
+			label: "General",
+			icon: LayoutDashboardIcon,
+			items: [
+				{
+					label: "Locations",
+					href: `${basePath}/locations`,
+					icon: MapPinIcon,
+				},
+				{
+					label: "Users",
+					href: `${basePath}/users`,
+					icon: UsersRoundIcon,
+				},
+				{
+					label: "AI Chatbot",
+					href: `${basePath}/chatbot`,
+					icon: BotIcon,
+				},
+			],
+			defaultOpen: false,
 		},
 		{
 			label: "Settings",
+			icon: SettingsIcon,
 			items: [
 				{
 					label: "General",
@@ -201,9 +217,36 @@ export function OrganizationMenuItems(): React.JSX.Element {
 					icon: CoinsIcon,
 				},
 			],
-			collapsible: false,
+			defaultOpen: false,
 		},
 	];
+
+	// Initialize open groups from localStorage or defaults
+	const [openGroups, setOpenGroups] = React.useState<Set<string>>(() => {
+		if (typeof window === "undefined") {
+			return new Set(
+				menuGroups.filter((g) => g.defaultOpen).map((g) => g.label),
+			);
+		}
+		try {
+			const stored = localStorage.getItem(STORAGE_KEY);
+			if (stored) {
+				return new Set(JSON.parse(stored));
+			}
+		} catch {
+			// Ignore localStorage errors
+		}
+		return new Set(menuGroups.filter((g) => g.defaultOpen).map((g) => g.label));
+	});
+
+	// Persist open groups to localStorage
+	React.useEffect(() => {
+		try {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify([...openGroups]));
+		} catch {
+			// Ignore localStorage errors
+		}
+	}, [openGroups]);
 
 	const getIsActive = React.useCallback(
 		(item: MenuItem): boolean => {
@@ -236,78 +279,78 @@ export function OrganizationMenuItems(): React.JSX.Element {
 
 	const isCollapsed = state === "collapsed";
 
-	const handleGroupToggle = (groupLabel: string) => {
-		setOpenGroup(openGroup === groupLabel ? "" : groupLabel);
+	const toggleGroup = (groupLabel: string) => {
+		setOpenGroups((prev) => {
+			const next = new Set(prev);
+			if (next.has(groupLabel)) {
+				next.delete(groupLabel);
+			} else {
+				next.add(groupLabel);
+			}
+			return next;
+		});
 	};
+
+	// Check if any item in a group is active (for highlighting the group)
+	const isGroupActive = React.useCallback(
+		(group: MenuGroup): boolean => {
+			return group.items.some((item) => getIsActive(item));
+		},
+		[getIsActive],
+	);
 
 	return (
 		<ScrollArea
-			className="[&>[data-radix-scroll-area-viewport]>div]:flex! h-full [&>[data-radix-scroll-area-viewport]>div]:h-full [&>[data-radix-scroll-area-viewport]>div]:flex-col [&>[data-radix-scroll-area-viewport]>div]:-space-y-1"
-			/* Overriding the hardcoded { disply:table } to get full flex height */
+			className="[&>[data-radix-scroll-area-viewport]>div]:flex! h-full [&>[data-radix-scroll-area-viewport]>div]:h-full [&>[data-radix-scroll-area-viewport]>div]:flex-col"
 			verticalScrollBar
 		>
-			{menuGroups.map((group, groupIndex) => {
-				if (!group.collapsible) {
-					return (
-						<React.Fragment key={groupIndex}>
-							<SidebarGroup className="pb-1">
-								{group.label && (
-									<SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-								)}
-								<SidebarMenu>
-									{group.items.map((item, itemIndex) => {
-										const isActive = getIsActive(item);
-										return (
-											<SidebarMenuItem key={itemIndex}>
-												<SidebarMenuButton
-													asChild
-													isActive={isActive}
-													tooltip={item.label}
-												>
-													<Link
-														href={item.href}
-														{...(item.external && {
-															target: "_blank",
-															rel: "noopener noreferrer",
-														})}
-													>
-														<item.icon
-															className={cn(
-																"size-4 shrink-0",
-																isActive
-																	? "text-foreground"
-																	: "text-muted-foreground",
-															)}
-														/>
-														<span
-															className={cn(
-																isActive
-																	? "dark:text-foreground"
-																	: "dark:text-muted-foreground",
-															)}
-														>
-															{item.label}
-														</span>
-													</Link>
-												</SidebarMenuButton>
-											</SidebarMenuItem>
-										);
-									})}
-								</SidebarMenu>
-							</SidebarGroup>
-						</React.Fragment>
-					);
-				}
+			{/* Dashboard link - always visible at top */}
+			<SidebarGroup className="pb-0">
+				<SidebarMenu>
+					<SidebarMenuItem>
+						<SidebarMenuButton
+							asChild
+							isActive={pathname === basePath}
+							tooltip="Dashboard"
+						>
+							<Link href={basePath}>
+								<LayoutDashboardIcon
+									className={cn(
+										"size-4 shrink-0",
+										pathname === basePath
+											? "text-foreground"
+											: "text-muted-foreground",
+									)}
+								/>
+								<span
+									className={cn(
+										pathname === basePath
+											? "dark:text-foreground"
+											: "dark:text-muted-foreground",
+									)}
+								>
+									Dashboard
+								</span>
+							</Link>
+						</SidebarMenuButton>
+					</SidebarMenuItem>
+				</SidebarMenu>
+			</SidebarGroup>
 
-				// When collapsed, show all items as individual menu buttons
+			{/* Collapsible groups */}
+			{menuGroups.map((group) => {
+				const isOpen = openGroups.has(group.label);
+				const groupActive = isGroupActive(group);
+
+				// When sidebar is collapsed, show all items as individual menu buttons
 				if (isCollapsed) {
 					return (
-						<SidebarGroup className="pb-1" key={groupIndex}>
+						<SidebarGroup className="pb-0" key={group.label}>
 							<SidebarMenu>
-								{group.items.map((item, itemIndex) => {
+								{group.items.map((item) => {
 									const isActive = getIsActive(item);
 									return (
-										<SidebarMenuItem key={itemIndex}>
+										<SidebarMenuItem key={item.href}>
 											<SidebarMenuButton
 												asChild
 												isActive={isActive}
@@ -348,31 +391,52 @@ export function OrganizationMenuItems(): React.JSX.Element {
 				}
 
 				// When expanded, show collapsible groups
-				const isOpen = openGroup === group.label;
 				return (
-					<SidebarGroup className="pb-1" key={groupIndex}>
+					<SidebarGroup className="pb-0" key={group.label}>
 						<SidebarMenu>
 							<Collapsible
 								className="group/collapsible"
-								onOpenChange={() => handleGroupToggle(group.label)}
 								open={isOpen}
+								onOpenChange={() => toggleGroup(group.label)}
 							>
 								<SidebarMenuItem>
 									<CollapsibleTrigger asChild>
 										<SidebarMenuButton
-											className="flex w-full items-center justify-between px-2 font-medium text-sidebar-foreground/70 text-xs"
+											className={cn(
+												"flex w-full items-center justify-between",
+												groupActive && !isOpen && "bg-sidebar-accent/50",
+											)}
 											tooltip={group.label}
 										>
-											<span>{group.label}</span>
-											<ChevronRight className="ml-auto h-4 w-4 shrink-0 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+											<div className="flex items-center gap-2">
+												<group.icon
+													className={cn(
+														"size-4 shrink-0",
+														groupActive
+															? "text-foreground"
+															: "text-muted-foreground",
+													)}
+												/>
+												<span
+													className={cn(
+														"font-medium",
+														groupActive
+															? "text-foreground"
+															: "text-muted-foreground",
+													)}
+												>
+													{group.label}
+												</span>
+											</div>
+											<ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
 										</SidebarMenuButton>
 									</CollapsibleTrigger>
 									<CollapsibleContent>
-										<SidebarMenuSub className="ml-0 border-0">
-											{group.items.map((item, itemIndex) => {
+										<SidebarMenuSub className="ml-0 border-l-0 pl-4">
+											{group.items.map((item) => {
 												const isActive = getIsActive(item);
 												return (
-													<SidebarMenuSubItem key={itemIndex}>
+													<SidebarMenuSubItem key={item.href}>
 														<SidebarMenuSubButton asChild isActive={isActive}>
 															<Link
 																href={item.href}
@@ -381,12 +445,19 @@ export function OrganizationMenuItems(): React.JSX.Element {
 																	rel: "noopener noreferrer",
 																})}
 															>
-																<item.icon className={cn("size-4 shrink-0")} />
+																<item.icon
+																	className={cn(
+																		"size-4 shrink-0",
+																		isActive
+																			? "text-foreground"
+																			: "text-muted-foreground",
+																	)}
+																/>
 																<span
 																	className={cn(
 																		isActive
-																			? "dark:text-foreground"
-																			: "dark:text-muted-foreground",
+																			? "text-foreground"
+																			: "text-muted-foreground",
 																	)}
 																>
 																	{item.label}

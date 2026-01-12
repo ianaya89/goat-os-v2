@@ -27,17 +27,28 @@ import {
 	trainingSessionCoachTable,
 	trainingSessionTable,
 } from "@/lib/db/schema/tables";
+import { env } from "@/lib/env";
+import {
+	deleteObject,
+	generateStorageKey,
+	getSignedUploadUrl,
+	getSignedUrl,
+} from "@/lib/storage";
 import {
 	bulkDeleteTrainingSessionsSchema,
 	bulkUpdateTrainingSessionsStatusSchema,
 	cancelRecurringOccurrenceSchema,
 	completeSessionSchema,
 	createTrainingSessionSchema,
+	deleteSessionAttachmentSchema,
 	deleteTrainingSessionSchema,
+	getSessionAttachmentDownloadUrlSchema,
+	getSessionAttachmentUploadUrlSchema,
 	listTrainingSessionsForCalendarSchema,
 	listTrainingSessionsSchema,
 	modifyRecurringOccurrenceSchema,
 	updateSessionAthletesSchema,
+	updateSessionAttachmentSchema,
 	updateSessionCoachesSchema,
 	updateTrainingSessionSchema,
 } from "@/schemas/organization-training-session-schemas";
@@ -202,11 +213,35 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 				where: and(...conditions),
 				orderBy: asc(trainingSessionTable.startTime),
 				with: {
-					location: { columns: { id: true, name: true } },
-					athleteGroup: { columns: { id: true, name: true } },
+					location: { columns: { id: true, name: true, color: true } },
+					athleteGroup: {
+						columns: { id: true, name: true },
+						with: {
+							members: {
+								limit: 5,
+								with: {
+									athlete: {
+										with: {
+											user: { columns: { id: true, name: true, image: true } },
+										},
+									},
+								},
+							},
+						},
+					},
 					coaches: {
 						with: {
 							coach: {
+								with: {
+									user: { columns: { id: true, name: true, image: true } },
+								},
+							},
+						},
+					},
+					athletes: {
+						limit: 5,
+						with: {
+							athlete: {
 								with: {
 									user: { columns: { id: true, name: true, image: true } },
 								},
@@ -1341,6 +1376,189 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 				sent: successful,
 				failed,
 				total: athletes.length,
+			};
+		}),
+
+	// ============================================================================
+	// ATTACHMENT UPLOAD
+	// ============================================================================
+
+	getAttachmentUploadUrl: protectedOrganizationProcedure
+		.input(getSessionAttachmentUploadUrlSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify session belongs to organization
+			const session = await db.query.trainingSessionTable.findFirst({
+				where: and(
+					eq(trainingSessionTable.id, input.sessionId),
+					eq(trainingSessionTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!session) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Session not found",
+				});
+			}
+
+			// Generate unique storage key
+			const key = generateStorageKey(
+				"session-attachments",
+				ctx.organization.id,
+				input.filename,
+			);
+
+			const bucket = env.S3_BUCKET;
+			if (!bucket) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Storage not configured",
+				});
+			}
+
+			// Generate signed upload URL
+			const uploadUrl = await getSignedUploadUrl(key, bucket, {
+				contentType: input.contentType,
+				expiresIn: 300, // 5 minutes to upload
+			});
+
+			return {
+				uploadUrl,
+				key,
+			};
+		}),
+
+	updateAttachment: protectedOrganizationProcedure
+		.input(updateSessionAttachmentSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify session belongs to organization
+			const session = await db.query.trainingSessionTable.findFirst({
+				where: and(
+					eq(trainingSessionTable.id, input.sessionId),
+					eq(trainingSessionTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!session) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Session not found",
+				});
+			}
+
+			// Delete old attachment if exists
+			if (session.attachmentKey) {
+				const bucket = env.S3_BUCKET;
+				if (bucket) {
+					try {
+						await deleteObject(session.attachmentKey, bucket);
+					} catch {
+						// Ignore deletion errors
+					}
+				}
+			}
+
+			// Update session with new attachment
+			const [updated] = await db
+				.update(trainingSessionTable)
+				.set({
+					attachmentKey: input.attachmentKey,
+					attachmentUploadedAt: new Date(),
+				})
+				.where(eq(trainingSessionTable.id, input.sessionId))
+				.returning();
+
+			return updated;
+		}),
+
+	deleteAttachment: protectedOrganizationProcedure
+		.input(deleteSessionAttachmentSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify session belongs to organization
+			const session = await db.query.trainingSessionTable.findFirst({
+				where: and(
+					eq(trainingSessionTable.id, input.sessionId),
+					eq(trainingSessionTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!session) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Session not found",
+				});
+			}
+
+			if (!session.attachmentKey) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Session has no attachment",
+				});
+			}
+
+			const bucket = env.S3_BUCKET;
+			if (bucket) {
+				try {
+					await deleteObject(session.attachmentKey, bucket);
+				} catch {
+					// Ignore deletion errors
+				}
+			}
+
+			// Update session to remove attachment
+			const [updated] = await db
+				.update(trainingSessionTable)
+				.set({
+					attachmentKey: null,
+					attachmentUploadedAt: null,
+				})
+				.where(eq(trainingSessionTable.id, input.sessionId))
+				.returning();
+
+			return updated;
+		}),
+
+	getAttachmentDownloadUrl: protectedOrganizationProcedure
+		.input(getSessionAttachmentDownloadUrlSchema)
+		.query(async ({ ctx, input }) => {
+			// Verify session belongs to organization
+			const session = await db.query.trainingSessionTable.findFirst({
+				where: and(
+					eq(trainingSessionTable.id, input.sessionId),
+					eq(trainingSessionTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!session) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Session not found",
+				});
+			}
+
+			if (!session.attachmentKey) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Session has no attachment",
+				});
+			}
+
+			const bucket = env.S3_BUCKET;
+			if (!bucket) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Storage not configured",
+				});
+			}
+
+			// Generate signed download URL (valid for 1 hour)
+			const downloadUrl = await getSignedUrl(session.attachmentKey, bucket, {
+				expiresIn: 3600,
+			});
+
+			return {
+				downloadUrl,
+				key: session.attachmentKey,
 			};
 		}),
 });

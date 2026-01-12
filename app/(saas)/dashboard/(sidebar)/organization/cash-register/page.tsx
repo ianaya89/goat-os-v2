@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import type * as React from "react";
 import { CashRegisterMovementsWrapper } from "@/components/organization/cash-register-movements-wrapper";
 import { CashRegisterStatusCard } from "@/components/organization/cash-register-status";
+import { OrganizationBreadcrumbSwitcher } from "@/components/organization/organization-breadcrumb-switcher";
 import {
 	Page,
 	PageBody,
@@ -11,7 +12,7 @@ import {
 	PagePrimaryBar,
 	PageTitle,
 } from "@/components/ui/custom/page";
-import { getOrganizationById, getSession } from "@/lib/auth/server";
+import { getSession } from "@/lib/auth/server";
 
 export const metadata: Metadata = {
 	title: "Caja",
@@ -23,13 +24,6 @@ export default async function CashRegisterPage(): Promise<React.JSX.Element> {
 		redirect("/dashboard");
 	}
 
-	const organization = await getOrganizationById(
-		session.session.activeOrganizationId,
-	);
-	if (!organization) {
-		redirect("/dashboard");
-	}
-
 	return (
 		<Page>
 			<PageHeader>
@@ -37,7 +31,7 @@ export default async function CashRegisterPage(): Promise<React.JSX.Element> {
 					<PageBreadcrumb
 						segments={[
 							{ label: "Home", href: "/dashboard" },
-							{ label: organization.name, href: "/dashboard/organization" },
+							{ label: <OrganizationBreadcrumbSwitcher />, isCustom: true },
 							{ label: "Caja" },
 						]}
 					/>

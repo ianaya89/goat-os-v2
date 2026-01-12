@@ -6,16 +6,27 @@ import type {
 	ColumnFiltersState,
 	SortingState,
 } from "@tanstack/react-table";
-import { format } from "date-fns";
+import {
+	endOfDay,
+	endOfMonth,
+	endOfWeek,
+	format,
+	startOfDay,
+	startOfMonth,
+	startOfWeek,
+} from "date-fns";
 import {
 	BanknoteIcon,
 	CalendarIcon,
 	ClockIcon,
+	CopyIcon,
+	EditIcon,
 	EyeIcon,
 	MapPinIcon,
 	MoreHorizontalIcon,
 	PlusIcon,
 	RepeatIcon,
+	Trash2Icon,
 	UsersIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -54,7 +65,7 @@ import {
 import { UserAvatar } from "@/components/user/user-avatar";
 import { appConfig } from "@/config/app.config";
 import {
-	TrainingSessionStatus,
+	type TrainingSessionStatus,
 	TrainingSessionStatuses,
 } from "@/lib/db/schema/enums";
 import { capitalize, cn } from "@/lib/utils";
@@ -164,6 +175,54 @@ export function TrainingSessionsTable(): React.JSX.Element {
 		}),
 	);
 
+	const [locationFilter, setLocationFilter] = useQueryState(
+		"locationId",
+		parseAsString.withDefault("").withOptions({
+			shallow: true,
+		}),
+	);
+
+	const [coachFilter, setCoachFilter] = useQueryState(
+		"coachId",
+		parseAsString.withDefault("").withOptions({
+			shallow: true,
+		}),
+	);
+
+	const [athleteFilter, setAthleteFilter] = useQueryState(
+		"athleteId",
+		parseAsString.withDefault("").withOptions({
+			shallow: true,
+		}),
+	);
+
+	// Period filter - default to "week" (current week)
+	const [periodFilter, setPeriodFilter] = useQueryState(
+		"period",
+		parseAsString.withDefault("week").withOptions({
+			shallow: true,
+		}),
+	);
+
+	// Calculate date range based on period filter
+	const dateRange = React.useMemo(() => {
+		const now = new Date();
+		switch (periodFilter) {
+			case "day":
+				return { from: startOfDay(now), to: endOfDay(now) };
+			case "week":
+				return {
+					from: startOfWeek(now, { weekStartsOn: 1 }),
+					to: endOfWeek(now, { weekStartsOn: 1 }),
+				};
+			case "month":
+				return { from: startOfMonth(now), to: endOfMonth(now) };
+			default:
+				// "all" or any other value - no date filter
+				return undefined;
+		}
+	}, [periodFilter]);
+
 	const [sorting, setSorting] = useQueryState<SortingState>(
 		"sort",
 		parseAsJson<SortingState>((value) => {
@@ -182,13 +241,42 @@ export function TrainingSessionsTable(): React.JSX.Element {
 
 	const utils = trpc.useUtils();
 
+	// Fetch filter options
+	const { data: locationsData } =
+		trpc.organization.location.listActive.useQuery();
+	const { data: coachesData } = trpc.organization.coach.list.useQuery({
+		limit: 100,
+		offset: 0,
+	});
+	const { data: athletesData } = trpc.organization.athlete.list.useQuery({
+		limit: 100,
+		offset: 0,
+	});
+
+	const locations = locationsData ?? [];
+	const coaches = coachesData?.coaches ?? [];
+	const athletes = athletesData?.athletes ?? [];
+
 	const columnFilters: ColumnFiltersState = React.useMemo(() => {
 		const filters: ColumnFiltersState = [];
+		// Period filter (single select, always show current value)
+		if (periodFilter) {
+			filters.push({ id: "period", value: [periodFilter] });
+		}
 		if (statusFilter && statusFilter.length > 0) {
 			filters.push({ id: "status", value: statusFilter });
 		}
+		if (locationFilter) {
+			filters.push({ id: "locationId", value: [locationFilter] });
+		}
+		if (coachFilter) {
+			filters.push({ id: "coachId", value: [coachFilter] });
+		}
+		if (athleteFilter) {
+			filters.push({ id: "athleteId", value: [athleteFilter] });
+		}
 		return filters;
-	}, [statusFilter]);
+	}, [periodFilter, statusFilter, locationFilter, coachFilter, athleteFilter]);
 
 	const handleFiltersChange = (filters: ColumnFiltersState): void => {
 		const getFilterValue = (id: string): string[] => {
@@ -196,7 +284,14 @@ export function TrainingSessionsTable(): React.JSX.Element {
 			return Array.isArray(filter?.value) ? (filter.value as string[]) : [];
 		};
 
+		// Period is single-select, default to "week" if cleared
+		const periodValue = getFilterValue("period")[0];
+		setPeriodFilter(periodValue || "week");
+
 		setStatusFilter(getFilterValue("status"));
+		setLocationFilter(getFilterValue("locationId")[0] || "");
+		setCoachFilter(getFilterValue("coachId")[0] || "");
+		setAthleteFilter(getFilterValue("athleteId")[0] || "");
 
 		if (pageIndex !== 0) {
 			setPageIndex(0);
@@ -234,12 +329,27 @@ export function TrainingSessionsTable(): React.JSX.Element {
 				status: (statusFilter || []).filter((s) =>
 					TrainingSessionStatuses.includes(s as TrainingSessionStatus),
 				) as TrainingSessionStatus[],
+				locationId: locationFilter || undefined,
+				coachId: coachFilter || undefined,
+				athleteId: athleteFilter || undefined,
+				dateRange: dateRange,
 			},
 		},
 		{
 			placeholderData: (prev) => prev,
 		},
 	);
+
+	const createSessionMutation =
+		trpc.organization.trainingSession.create.useMutation({
+			onSuccess: () => {
+				toast.success("Session duplicated successfully");
+				utils.organization.trainingSession.list.invalidate();
+			},
+			onError: (error) => {
+				toast.error(error.message || "Failed to duplicate session");
+			},
+		});
 
 	const deleteSessionMutation =
 		trpc.organization.trainingSession.delete.useMutation({
@@ -251,6 +361,33 @@ export function TrainingSessionsTable(): React.JSX.Element {
 				toast.error(error.message || "Failed to delete session");
 			},
 		});
+
+	// Duplicate a session - creates a copy with new date (tomorrow same time)
+	const handleDuplicateSession = (session: TrainingSession) => {
+		const originalStart = new Date(session.startTime);
+		const originalEnd = new Date(session.endTime);
+		const duration = originalEnd.getTime() - originalStart.getTime();
+
+		// Set to tomorrow same time
+		const newStart = new Date(originalStart);
+		newStart.setDate(newStart.getDate() + 1);
+		const newEnd = new Date(newStart.getTime() + duration);
+
+		createSessionMutation.mutate({
+			title: `${session.title} (Copy)`,
+			description: session.description ?? undefined,
+			startTime: newStart,
+			endTime: newEnd,
+			status: "pending",
+			locationId: session.location?.id ?? null,
+			athleteGroupId: session.athleteGroup?.id ?? null,
+			coachIds: session.coaches.map((c) => c.coach.id),
+			primaryCoachId: session.coaches.find((c) => c.isPrimary)?.coach.id,
+			athleteIds: session.athleteGroup
+				? undefined
+				: session.athletes.map((a) => a.athlete.id),
+		});
+	};
 
 	const handleSearchQueryChange = (value: string): void => {
 		if (value !== searchQuery) {
@@ -418,7 +555,9 @@ export function TrainingSessionsTable(): React.JSX.Element {
 				const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0);
 				const totalPaid = payments.reduce((sum, p) => sum + p.paidAmount, 0);
 				const allPaid = payments.every((p) => p.status === "paid");
-				const somePaid = payments.some((p) => p.status === "paid" || p.status === "partial");
+				const somePaid = payments.some(
+					(p) => p.status === "paid" || p.status === "partial",
+				);
 
 				let paymentStatus: string;
 				if (allPaid || totalPaid >= totalAmount) {
@@ -433,7 +572,8 @@ export function TrainingSessionsTable(): React.JSX.Element {
 					<Badge
 						className={cn(
 							"border-none px-2 py-0.5 font-medium text-foreground text-xs shadow-none",
-							paymentStatusColors[paymentStatus] || "bg-gray-100 dark:bg-gray-800",
+							paymentStatusColors[paymentStatus] ||
+								"bg-gray-100 dark:bg-gray-800",
 						)}
 						variant="outline"
 					>
@@ -474,7 +614,15 @@ export function TrainingSessionsTable(): React.JSX.Element {
 									});
 								}}
 							>
+								<EditIcon className="mr-2 size-4" />
 								Edit
+							</DropdownMenuItem>
+							<DropdownMenuItem
+								onClick={() => handleDuplicateSession(row.original)}
+								disabled={createSessionMutation.isPending}
+							>
+								<CopyIcon className="mr-2 size-4" />
+								Duplicate
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 							<DropdownMenuItem
@@ -491,6 +639,7 @@ export function TrainingSessionsTable(): React.JSX.Element {
 								}}
 								variant="destructive"
 							>
+								<Trash2Icon className="mr-2 size-4" />
 								Delete
 							</DropdownMenuItem>
 						</DropdownMenuContent>
@@ -502,11 +651,45 @@ export function TrainingSessionsTable(): React.JSX.Element {
 
 	const sessionFilters: FilterConfig[] = [
 		{
+			key: "period",
+			title: "Period",
+			options: [
+				{ value: "day", label: "Today" },
+				{ value: "week", label: "This Week" },
+				{ value: "month", label: "This Month" },
+				{ value: "all", label: "All Time" },
+			],
+		},
+		{
 			key: "status",
 			title: "Status",
 			options: TrainingSessionStatuses.map((status) => ({
 				value: status,
 				label: capitalize(status),
+			})),
+		},
+		{
+			key: "locationId",
+			title: "Location",
+			options: locations.map((loc) => ({
+				value: loc.id,
+				label: loc.name,
+			})),
+		},
+		{
+			key: "coachId",
+			title: "Coach",
+			options: coaches.map((coach) => ({
+				value: coach.id,
+				label: coach.user?.name ?? "Unknown",
+			})),
+		},
+		{
+			key: "athleteId",
+			title: "Athlete",
+			options: athletes.map((athlete) => ({
+				value: athlete.id,
+				label: athlete.user?.name ?? "Unknown",
 			})),
 		},
 	];
@@ -540,10 +723,7 @@ export function TrainingSessionsTable(): React.JSX.Element {
 			defaultSorting={DEFAULT_SORTING}
 			sorting={sorting}
 			toolbarActions={
-				<Button
-					onClick={() => NiceModal.show(TrainingSessionsModal)}
-					size="sm"
-				>
+				<Button onClick={() => NiceModal.show(TrainingSessionsModal)} size="sm">
 					<PlusIcon className="size-4 shrink-0" />
 					Add Session
 				</Button>

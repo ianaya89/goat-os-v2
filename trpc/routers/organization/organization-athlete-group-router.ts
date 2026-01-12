@@ -12,6 +12,7 @@ import {
 } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
+	ageCategoryTable,
 	athleteGroupMemberTable,
 	athleteGroupTable,
 	athleteTable,
@@ -49,8 +50,13 @@ export const organizationAthleteGroupRouter = createTRPCRouter({
 
 			// Active filter
 			if (input.filters?.isActive !== undefined) {
+				conditions.push(eq(athleteGroupTable.isActive, input.filters.isActive));
+			}
+
+			// Age category filter
+			if (input.filters?.ageCategoryId) {
 				conditions.push(
-					eq(athleteGroupTable.isActive, input.filters.isActive),
+					eq(athleteGroupTable.ageCategoryId, input.filters.ageCategoryId),
 				);
 			}
 
@@ -79,6 +85,7 @@ export const organizationAthleteGroupRouter = createTRPCRouter({
 					offset: input.offset,
 					orderBy: orderByColumn,
 					with: {
+						ageCategory: true,
 						members: {
 							with: {
 								athlete: {
@@ -121,6 +128,7 @@ export const organizationAthleteGroupRouter = createTRPCRouter({
 					eq(athleteGroupTable.organizationId, ctx.organization.id),
 				),
 				with: {
+					ageCategory: true,
 					members: {
 						with: {
 							athlete: {
@@ -165,8 +173,11 @@ export const organizationAthleteGroupRouter = createTRPCRouter({
 				id: true,
 				name: true,
 				description: true,
+				ageCategoryId: true,
+				maxCapacity: true,
 			},
 			with: {
+				ageCategory: true,
 				members: {
 					columns: { id: true },
 				},

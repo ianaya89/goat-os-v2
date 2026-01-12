@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import type * as React from "react";
+import { OrganizationBreadcrumbSwitcher } from "@/components/organization/organization-breadcrumb-switcher";
 import { TrainingSessionDetail } from "@/components/organization/training-session-detail";
 import {
 	Page,
@@ -10,7 +11,7 @@ import {
 	PageHeader,
 	PagePrimaryBar,
 } from "@/components/ui/custom/page";
-import { getOrganizationById, getSession } from "@/lib/auth/server";
+import { getSession } from "@/lib/auth/server";
 
 export const metadata: Metadata = {
 	title: "Session Details",
@@ -31,13 +32,6 @@ export default async function TrainingSessionDetailPage({
 		redirect("/dashboard");
 	}
 
-	const organization = await getOrganizationById(
-		session.session.activeOrganizationId,
-	);
-	if (!organization) {
-		redirect("/dashboard");
-	}
-
 	return (
 		<Page>
 			<PageHeader>
@@ -45,7 +39,7 @@ export default async function TrainingSessionDetailPage({
 					<PageBreadcrumb
 						segments={[
 							{ label: "Home", href: "/dashboard" },
-							{ label: organization.name, href: "/dashboard/organization" },
+							{ label: <OrganizationBreadcrumbSwitcher />, isCustom: true },
 							{
 								label: "Training Sessions",
 								href: "/dashboard/organization/training-sessions",

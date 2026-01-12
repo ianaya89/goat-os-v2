@@ -2,6 +2,7 @@
 
 import NiceModal from "@ebay/nice-modal-react";
 import { CommandIcon, SearchIcon } from "lucide-react";
+import { usePathname } from "next/navigation";
 import * as React from "react";
 import { OrganizationSwitcher } from "@/components/organization/organization-switcher";
 import { Button } from "@/components/ui/button";
@@ -15,15 +16,21 @@ export type TopbarActionsProps = {
 
 export function TopbarActions({
 	className,
-	showOrgSwitcher = true,
+	showOrgSwitcher,
 }: TopbarActionsProps): React.JSX.Element {
+	const pathname = usePathname();
 	const handleShowCommandMenu = React.useCallback((): void => {
 		NiceModal.show(CommandMenu);
 	}, []);
 
+	// Hide org switcher in organization area (it's shown in breadcrumb instead)
+	const isOrganizationArea = pathname?.startsWith("/dashboard/organization");
+	const shouldShowOrgSwitcher =
+		showOrgSwitcher ?? (!isOrganizationArea ? true : false);
+
 	return (
 		<div className={cn("flex items-center gap-3", className)}>
-			{showOrgSwitcher && (
+			{shouldShowOrgSwitcher && (
 				<div className="hidden sm:block">
 					<OrganizationSwitcher variant="topbar" />
 				</div>

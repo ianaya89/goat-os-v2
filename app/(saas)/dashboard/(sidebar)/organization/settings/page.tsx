@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import type * as React from "react";
+import { OrganizationBreadcrumbSwitcher } from "@/components/organization/organization-breadcrumb-switcher";
 import { OrganizationSettingsTabs } from "@/components/organization/organization-settings-tabs";
 import {
 	Page,
@@ -41,7 +42,7 @@ export default async function OrganizationSettingsPage(): Promise<React.JSX.Elem
 					<PageBreadcrumb
 						segments={[
 							{ label: "Home", href: "/dashboard" },
-							{ label: organization.name, href: "/dashboard/organization" },
+							{ label: <OrganizationBreadcrumbSwitcher />, isCustom: true },
 							{ label: "Settings" },
 						]}
 					/>

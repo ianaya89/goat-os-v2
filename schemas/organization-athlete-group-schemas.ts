@@ -19,6 +19,7 @@ export const listAthleteGroupsSchema = z.object({
 	filters: z
 		.object({
 			isActive: z.boolean().optional(),
+			ageCategoryId: z.string().uuid().optional(),
 		})
 		.optional(),
 });
@@ -35,6 +36,8 @@ export const createAthleteGroupSchema = z.object({
 		.trim()
 		.max(2000, "Description is too long")
 		.optional(),
+	ageCategoryId: z.string().uuid().optional().nullable(),
+	maxCapacity: z.number().int().positive().optional().nullable(),
 	isActive: z.boolean().default(true),
 	// Initial member IDs (optional)
 	memberIds: z.array(z.string().uuid()).optional(),
@@ -55,6 +58,8 @@ export const updateAthleteGroupSchema = z.object({
 		.max(2000, "Description is too long")
 		.optional()
 		.nullable(),
+	ageCategoryId: z.string().uuid().optional().nullable(),
+	maxCapacity: z.number().int().positive().optional().nullable(),
 	isActive: z.boolean().optional(),
 });
 

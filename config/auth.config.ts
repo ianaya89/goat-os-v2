@@ -31,7 +31,7 @@ export const authConfig = {
 	trustedOrigins: origins,
 	// Allow new user registrations
 	// When false, only users with invitations can sign up (invitation-only mode)
-	// Athletes can still sign up via /auth/athlete-signup
+	// Athletes can still sign up via /athlete-signup
 	enableSignup: false,
 	enableSocialLogin: true,
 	cors: {

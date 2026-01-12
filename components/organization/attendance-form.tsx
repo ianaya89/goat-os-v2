@@ -26,10 +26,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { UserAvatar } from "@/components/user/user-avatar";
-import {
-	AttendanceStatus,
-	AttendanceStatuses,
-} from "@/lib/db/schema/enums";
+import { AttendanceStatus, AttendanceStatuses } from "@/lib/db/schema/enums";
 import { capitalize, cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
@@ -90,24 +87,8 @@ export function AttendanceForm({ sessionId }: AttendanceFormProps) {
 			},
 		});
 
-	if (sessionLoading || attendanceLoading) {
-		return (
-			<Card>
-				<CardHeader>
-					<CardTitle>Attendance</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<div className="space-y-2">
-						{[1, 2, 3].map((i) => (
-							<Skeleton key={i} className="h-12 w-full" />
-						))}
-					</div>
-				</CardContent>
-			</Card>
-		);
-	}
-
 	// Build list of athletes from session (either from group or individual assignments)
+	// IMPORTANT: useMemo must be called before any early returns to follow React hooks rules
 	const athletes = React.useMemo(() => {
 		if (!session) return [];
 
@@ -149,6 +130,23 @@ export function AttendanceForm({ sessionId }: AttendanceFormProps) {
 		}
 		return map;
 	}, [attendanceRecords]);
+
+	if (sessionLoading || attendanceLoading) {
+		return (
+			<Card>
+				<CardHeader>
+					<CardTitle>Attendance</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<div className="space-y-2">
+						{[1, 2, 3].map((i) => (
+							<Skeleton key={i} className="h-12 w-full" />
+						))}
+					</div>
+				</CardContent>
+			</Card>
+		);
+	}
 
 	const handleStatusChange = (athleteId: string, status: AttendanceStatus) => {
 		recordAttendanceMutation.mutate({
@@ -272,7 +270,10 @@ export function AttendanceForm({ sessionId }: AttendanceFormProps) {
 										<Select
 											value={status}
 											onValueChange={(value) =>
-												handleStatusChange(athlete.id, value as AttendanceStatus)
+												handleStatusChange(
+													athlete.id,
+													value as AttendanceStatus,
+												)
 											}
 											disabled={recordAttendanceMutation.isPending}
 										>

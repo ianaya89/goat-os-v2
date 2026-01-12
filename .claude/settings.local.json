@@ -35,7 +35,12 @@
 			"Bash(npx tsx:*)",
 			"Bash(npm run with-dev-env:*)",
 			"Bash(npm run db:seed:*)",
-			"Bash(npm run db:reset:*)"
+			"Bash(npm run db:reset:*)",
+			"Bash(curl:*)",
+			"Bash(pnpm run cli:seed:*)",
+			"Bash(pnpm run with-dev-env:*)",
+			"Bash(dotenv -e ./.env -- tsx:*)",
+			"Bash(npx dotenv:*)"
 		]
 	}
 }

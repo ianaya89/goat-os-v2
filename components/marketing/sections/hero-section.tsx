@@ -68,51 +68,63 @@ function HeroScreenshot() {
 
 export function HeroSection() {
 	return (
-		<section id="hero" className="py-16 scroll-mt-14">
-			<div className="mx-auto flex max-w-2xl flex-col gap-16 px-6 md:max-w-3xl lg:max-w-7xl lg:px-10">
-				<div className="flex flex-col gap-32">
-					<div className="flex flex-col items-start gap-8">
+		<section
+			id="hero"
+			className="relative py-24 lg:py-32 scroll-mt-14 overflow-hidden"
+		>
+			{/* Background gradient */}
+			<div className="absolute inset-0 bg-gradient-to-br from-marketing-accent/5 via-transparent to-purple-500/5 dark:from-marketing-accent/10 dark:to-purple-500/10" />
+			<div className="absolute top-0 right-0 w-[500px] h-[500px] bg-marketing-accent/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+			<div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+
+			<div className="relative mx-auto flex max-w-2xl flex-col gap-20 px-6 md:max-w-3xl lg:max-w-7xl lg:px-10">
+				<div className="flex flex-col gap-24 lg:gap-32">
+					<div className="flex flex-col items-start gap-10">
 						{/* Announcement Pill */}
 						<Link
 							href="#"
 							className={cn(
-								"relative inline-flex max-w-full items-center gap-3 overflow-hidden rounded-md px-3.5 py-2 text-sm",
-								"bg-marketing-card",
-								"hover:bg-marketing-card-hover transition-all duration-300",
-								"dark:ring-inset dark:ring-1 dark:ring-white/5",
-								"sm:flex-row sm:items-center sm:gap-3 sm:rounded-full sm:px-3 sm:py-0.5",
+								"relative inline-flex items-center gap-3 overflow-hidden rounded-full px-4 py-2",
+								"bg-gradient-to-r from-marketing-accent/20 to-purple-500/20",
+								"border border-marketing-accent/30 dark:border-marketing-accent/20",
+								"hover:border-marketing-accent/50 hover:shadow-lg hover:shadow-marketing-accent/10",
+								"transition-all duration-300",
 								fadeInUp,
 							)}
 							style={{ animationDelay: "0ms" }}
 						>
-							<span className="truncate text-pretty sm:truncate">
+							<span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+							<span className="text-sm font-medium">
 								Potencia el rendimiento de tus atletas
 							</span>
-							<span className="hidden h-3 w-px bg-marketing-card-hover sm:block" />
-							<span className="inline-flex shrink-0 items-center gap-1 font-semibold text-marketing-accent">
+							<span className="inline-flex items-center gap-1 text-sm font-bold text-marketing-accent">
 								Conoce mas
-								<ChevronRightIcon className="size-3" />
+								<ChevronRightIcon className="size-4" />
 							</span>
 						</Link>
 
 						{/* Headline */}
 						<h1
 							className={cn(
-								"max-w-5xl text-balance font-display text-5xl tracking-display-tight",
-								"text-marketing-fg",
-								"sm:text-6xl sm:leading-[1.1]",
-								"lg:text-[5.5rem] lg:leading-[1.05]",
+								"max-w-5xl font-display tracking-display-tight",
+								"text-5xl sm:text-7xl lg:text-8xl",
+								"leading-[1.05]",
 								fadeInUp,
 							)}
 							style={{ animationDelay: "100ms" }}
 						>
-							El sistema operativo para el deporte de alto rendimiento.
+							<span className="text-marketing-fg">
+								El sistema operativo para{" "}
+							</span>
+							<span className="bg-gradient-to-r from-marketing-accent via-blue-500 to-purple-600 bg-clip-text text-transparent">
+								el deporte de alto rendimiento.
+							</span>
 						</h1>
 
 						{/* Description */}
 						<div
 							className={cn(
-								"flex max-w-3xl flex-col gap-4 text-lg leading-8 text-marketing-fg-muted",
+								"flex max-w-2xl flex-col gap-4 text-xl leading-relaxed text-marketing-fg-muted",
 								fadeInUp,
 							)}
 							style={{ animationDelay: "200ms" }}
@@ -126,29 +138,34 @@ export function HeroSection() {
 
 						{/* CTA Buttons */}
 						<div
-							className={cn("flex items-center gap-4", fadeInUp)}
+							className={cn(
+								"flex flex-col sm:flex-row items-start sm:items-center gap-4",
+								fadeInUp,
+							)}
 							style={{ animationDelay: "300ms" }}
 						>
 							<Link
-								href="/auth/sign-up"
+								href="/athlete-signup"
 								className={cn(
-									"inline-flex shrink-0 items-center justify-center gap-1 rounded-full px-6 py-3 text-sm font-semibold",
-									"bg-marketing-accent text-marketing-accent-fg",
-									"hover:bg-marketing-accent-hover hover:scale-[1.02]",
-									"transition-all duration-300 shadow-lg shadow-marketing-accent/25",
+									"inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 text-base font-bold",
+									"bg-gradient-to-r from-marketing-accent to-blue-600 text-white",
+									"hover:shadow-2xl hover:shadow-marketing-accent/40 hover:scale-105",
+									"transition-all duration-300",
 								)}
 							>
-								Comenzar Ahora
+								Registrarme como Atleta
+								<ArrowRightIcon className="size-5" />
 							</Link>
 							<Link
 								href="/pricing"
 								className={cn(
-									"group inline-flex shrink-0 items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-medium",
-									"text-marketing-fg hover:bg-marketing-card-hover transition-all duration-300",
+									"group inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 text-base font-semibold",
+									"border-2 border-marketing-border hover:border-marketing-accent",
+									"text-marketing-fg hover:text-marketing-accent transition-all duration-300",
 								)}
 							>
 								Ver Precios
-								<ArrowRightIcon className="size-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+								<ArrowRightIcon className="size-5 transition-transform duration-300 group-hover:translate-x-1" />
 							</Link>
 						</div>
 					</div>
