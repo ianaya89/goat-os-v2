@@ -204,6 +204,79 @@ npm run lint && npm run typecheck
 
 Never use `--no-verify` to skip hooks.
 
+## Database Migrations (CRITICAL)
+
+### Golden Rules
+
+1. **NEVER write migration files manually** - Always use `npm run db:generate`
+2. **NEVER use `db:push` in production** - Only for local development
+3. **NEVER mix manual and auto-generated migrations**
+4. **ALWAYS run migrations immediately after generating**
+
+### Correct Workflow
+
+```bash
+# 1. Make schema changes in lib/db/schema/tables.ts
+# 2. Generate migration
+npm run db:generate
+
+# 3. Review the generated .sql file in lib/db/migrations/
+# 4. Test locally first
+npm run db:migrate
+
+# 5. Deploy and run migrations in production
+npm run cli  # Select environment → Run Migrations
+```
+
+### Using the Database CLI
+
+```bash
+npm run cli
+```
+
+The CLI allows you to:
+- Select environment (local/staging/production) via `.env.db`
+- Generate migrations
+- Run migrations with visual feedback
+- Reset database (local only)
+
+### Environment Configuration
+
+Create `.env.db` for multi-environment support:
+
+```bash
+cp .env.db.example .env.db
+```
+
+```env
+DATABASE_URL_LOCAL="postgresql://postgres:password@localhost:5432/database"
+DATABASE_URL_STAGING="postgresql://..."
+DATABASE_URL_PRODUCTION="postgresql://..."
+```
+
+### Common Mistakes to Avoid
+
+```typescript
+// ❌ WRONG - Creating .sql files manually
+// lib/db/migrations/20260114000000_my_custom_migration.sql
+
+// ❌ WRONG - Using db:push in production
+npm run db:push  // This bypasses migration history!
+
+// ❌ WRONG - Running db:regenerate without understanding implications
+npm run db:regenerate  // Can create duplicate migrations
+
+// ✅ CORRECT - Always use generate
+npm run db:generate
+```
+
+### Troubleshooting
+
+If migrations fail with "already exists" errors:
+1. Check `__drizzle_migrations` table in the database
+2. Compare with `lib/db/migrations/meta/_journal.json`
+3. The database state and journal must be in sync
+
 ## Related Docs
 
 - [AGENTS.md](./AGENTS.md) - Full guidelines
