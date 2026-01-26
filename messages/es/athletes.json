@@ -1,0 +1,128 @@
+{
+	"title": "Atletas",
+	"description": "Gestiona los atletas de tu organización.",
+	"add": "Agregar atleta",
+	"edit": "Editar atleta",
+	"view": "Ver atleta",
+	"delete": "Eliminar atleta",
+	"search": "Buscar atletas...",
+	"filters": {
+		"all": "Todos",
+		"active": "Activos",
+		"inactive": "Inactivos",
+		"byGroup": "Por grupo",
+		"byCategory": "Por categoría"
+	},
+	"table": {
+		"name": "Nombre",
+		"email": "Email",
+		"phone": "Teléfono",
+		"sport": "Deporte",
+		"level": "Nivel",
+		"category": "Categoría",
+		"group": "Grupo",
+		"status": "Estado",
+		"actions": "Acciones"
+	},
+	"form": {
+		"personalInfo": "Información personal",
+		"name": "Nombre completo",
+		"email": "Email",
+		"phone": "Teléfono",
+		"birthDate": "Fecha de nacimiento",
+		"sportInfo": "Información deportiva",
+		"sport": "Deporte",
+		"level": "Nivel",
+		"position": "Posición",
+		"secondaryPosition": "Posición secundaria",
+		"jerseyNumber": "Número de camiseta",
+		"yearsOfExperience": "Años de experiencia",
+		"currentClub": "Club actual",
+		"category": "Categoría",
+		"group": "Grupo",
+		"parentInfo": "Información del padre/tutor",
+		"parentName": "Nombre del padre/tutor",
+		"parentPhone": "Teléfono del padre/tutor",
+		"parentEmail": "Email del padre/tutor",
+		"parentRelationship": "Parentesco",
+		"consents": "Consentimientos",
+		"acceptTerms": "Acepto los términos y condiciones",
+		"confirmMedicalFitness": "Confirmo que el atleta tiene aptitud médica",
+		"parentalConsent": "Consentimiento parental"
+	},
+	"levels": {
+		"beginner": "Principiante",
+		"intermediate": "Intermedio",
+		"advanced": "Avanzado",
+		"professional": "Profesional"
+	},
+	"detail": {
+		"overview": "Resumen",
+		"sessions": "Sesiones",
+		"payments": "Pagos",
+		"documents": "Documentos",
+		"notes": "Notas"
+	},
+	"success": {
+		"created": "Atleta creado correctamente.",
+		"updated": "Atleta actualizado correctamente.",
+		"deleted": "Atleta eliminado correctamente."
+	},
+	"error": {
+		"notFound": "Atleta no encontrado.",
+		"createFailed": "No se pudo crear el atleta.",
+		"updateFailed": "No se pudo actualizar el atleta.",
+		"deleteFailed": "No se pudo eliminar el atleta."
+	},
+	"achievements": {
+		"title": "Palmarés y Reconocimientos",
+		"add": "Agregar Logro",
+		"edit": "Editar Logro",
+		"empty": "Sin logros registrados",
+		"emptyDescription": "Agrega tus logros deportivos, premios y reconocimientos para mostrarlos en tu perfil público.",
+		"form": {
+			"title": "Título del Logro",
+			"titlePlaceholder": "Campeón Liga Nacional, MVP del Torneo...",
+			"type": "Tipo de Logro",
+			"scope": "Alcance",
+			"scopeDescription": "Individual o logro de equipo",
+			"year": "Año",
+			"position": "Posición / Lugar",
+			"positionPlaceholder": "1er lugar, Medalla de Oro...",
+			"competition": "Competencia / Torneo",
+			"competitionPlaceholder": "Copa América Sub-20, Liga Nacional...",
+			"organization": "Organización",
+			"organizationPlaceholder": "FIFA, CONMEBOL, Liga Nacional...",
+			"organizationDescription": "Entidad que otorgó el reconocimiento",
+			"team": "Equipo",
+			"teamPlaceholder": "Selección Argentina, Club Atlético...",
+			"teamDescription": "Equipo con el que se obtuvo el logro",
+			"description": "Descripción",
+			"descriptionPlaceholder": "Describe brevemente este logro...",
+			"isPublic": "Mostrar en perfil público",
+			"isPublicDescription": "Este logro será visible en tu perfil público"
+		},
+		"types": {
+			"championship": "Campeonato / Título",
+			"award": "Premio Individual",
+			"selection": "Selección",
+			"record": "Record",
+			"recognition": "Reconocimiento",
+			"mvp": "MVP",
+			"top_scorer": "Goleador / Máx. Anotador",
+			"best_player": "Mejor Jugador",
+			"all_star": "All-Star / Selección de Estrellas",
+			"scholarship": "Beca Deportiva",
+			"other": "Otro"
+		},
+		"scopes": {
+			"individual": "Individual",
+			"collective": "Colectivo (Equipo)"
+		},
+		"success": {
+			"created": "Logro agregado",
+			"updated": "Logro actualizado",
+			"deleted": "Logro eliminado"
+		}
+	}
+}

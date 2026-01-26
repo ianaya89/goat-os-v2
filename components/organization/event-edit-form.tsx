@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import * as React from "react";
+import type * as React from "react";
 import { EventForm } from "@/components/organization/event-form";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,7 +11,9 @@ interface EventEditFormProps {
 	eventId: string;
 }
 
-export function EventEditForm({ eventId }: EventEditFormProps): React.JSX.Element {
+export function EventEditForm({
+	eventId,
+}: EventEditFormProps): React.JSX.Element {
 	const router = useRouter();
 
 	const { data, isPending, error } = trpc.organization.sportsEvent.get.useQuery(

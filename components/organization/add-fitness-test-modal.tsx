@@ -47,15 +47,35 @@ const fitnessTestOptions = [
 	{ value: FitnessTestType.sprint60m, label: "60m Sprint", unit: "seconds" },
 	{ value: FitnessTestType.sprint100m, label: "100m Sprint", unit: "seconds" },
 	{ value: FitnessTestType.verticalJump, label: "Vertical Jump", unit: "cm" },
-	{ value: FitnessTestType.standingLongJump, label: "Standing Long Jump", unit: "cm" },
+	{
+		value: FitnessTestType.standingLongJump,
+		label: "Standing Long Jump",
+		unit: "cm",
+	},
 	{ value: FitnessTestType.yoYoTest, label: "Yo-Yo Test", unit: "level" },
 	{ value: FitnessTestType.beepTest, label: "Beep Test", unit: "level" },
-	{ value: FitnessTestType.cooperTest, label: "Cooper Test (12min)", unit: "meters" },
-	{ value: FitnessTestType.agilityTTest, label: "Agility T-Test", unit: "seconds" },
-	{ value: FitnessTestType.illinoisAgility, label: "Illinois Agility", unit: "seconds" },
+	{
+		value: FitnessTestType.cooperTest,
+		label: "Cooper Test (12min)",
+		unit: "meters",
+	},
+	{
+		value: FitnessTestType.agilityTTest,
+		label: "Agility T-Test",
+		unit: "seconds",
+	},
+	{
+		value: FitnessTestType.illinoisAgility,
+		label: "Illinois Agility",
+		unit: "seconds",
+	},
 	{ value: FitnessTestType.maxSpeed, label: "Max Speed", unit: "km/h" },
 	{ value: FitnessTestType.reactionTime, label: "Reaction Time", unit: "ms" },
-	{ value: FitnessTestType.flexibility, label: "Flexibility (Sit & Reach)", unit: "cm" },
+	{
+		value: FitnessTestType.flexibility,
+		label: "Flexibility (Sit & Reach)",
+		unit: "cm",
+	},
 	{ value: FitnessTestType.plankHold, label: "Plank Hold", unit: "seconds" },
 	{ value: FitnessTestType.pushUps, label: "Push Ups (1 min)", unit: "reps" },
 	{ value: FitnessTestType.sitUps, label: "Sit Ups (1 min)", unit: "reps" },
@@ -100,20 +120,21 @@ export const AddFitnessTestModal = NiceModal.create<AddFitnessTestModalProps>(
 			}
 		};
 
-		const createMutation = trpc.organization.athlete.createFitnessTest.useMutation({
-			onSuccess: () => {
-				toast.success("Fitness test result has been saved successfully.");
-				utils.organization.athlete.getProfile.invalidate({ id: athleteId });
-				modal.hide();
-			},
-			onError: (error) => {
-				toast.error(error.message);
-			},
-		});
+		const createMutation =
+			trpc.organization.athlete.createFitnessTest.useMutation({
+				onSuccess: () => {
+					toast.success("Fitness test result has been saved successfully.");
+					utils.organization.athlete.getProfile.invalidate({ id: athleteId });
+					modal.hide();
+				},
+				onError: (error) => {
+					toast.error(error.message);
+				},
+			});
 
 		const onSubmit = (values: FormValues) => {
 			const result = parseInt(values.result, 10);
-			if (isNaN(result)) {
+			if (Number.isNaN(result)) {
 				toast.error("Please enter a valid result number");
 				return;
 			}
@@ -147,7 +168,10 @@ export const AddFitnessTestModal = NiceModal.create<AddFitnessTestModalProps>(
 					</SheetHeader>
 
 					<Form {...form}>
-						<form onSubmit={form.handleSubmit(onSubmit)} className="mt-6 space-y-4">
+						<form
+							onSubmit={form.handleSubmit(onSubmit)}
+							className="mt-6 space-y-4"
+						>
 							<FormField
 								control={form.control}
 								name="testType"
@@ -189,7 +213,7 @@ export const AddFitnessTestModal = NiceModal.create<AddFitnessTestModalProps>(
 														variant="outline"
 														className={cn(
 															"w-full pl-3 text-left font-normal",
-															!field.value && "text-muted-foreground"
+															!field.value && "text-muted-foreground",
 														)}
 													>
 														{field.value ? (
@@ -304,5 +328,5 @@ export const AddFitnessTestModal = NiceModal.create<AddFitnessTestModalProps>(
 				</SheetContent>
 			</Sheet>
 		);
-	}
+	},
 );

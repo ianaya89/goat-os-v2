@@ -37,13 +37,14 @@ async function verifyAthleteSessionAssignment(
 	if (!session) return false;
 
 	// Check direct assignment
-	const directAssignment =
-		await db.query.trainingSessionAthleteTable.findFirst({
+	const directAssignment = await db.query.trainingSessionAthleteTable.findFirst(
+		{
 			where: and(
 				eq(trainingSessionAthleteTable.sessionId, sessionId),
 				eq(trainingSessionAthleteTable.athleteId, athleteId),
 			),
-		});
+		},
+	);
 
 	if (directAssignment) return true;
 
@@ -94,13 +95,12 @@ export const organizationSessionFeedbackRouter = createTRPCRouter({
 			}
 
 			// Get feedback
-			const feedback =
-				await db.query.athleteSessionFeedbackTable.findFirst({
-					where: and(
-						eq(athleteSessionFeedbackTable.sessionId, input.sessionId),
-						eq(athleteSessionFeedbackTable.athleteId, athlete.id),
-					),
-				});
+			const feedback = await db.query.athleteSessionFeedbackTable.findFirst({
+				where: and(
+					eq(athleteSessionFeedbackTable.sessionId, input.sessionId),
+					eq(athleteSessionFeedbackTable.athleteId, athlete.id),
+				),
+			});
 
 			// Get session to determine if RPE can be submitted
 			const session = await db.query.trainingSessionTable.findFirst({
@@ -252,19 +252,18 @@ export const organizationSessionFeedbackRouter = createTRPCRouter({
 			}
 
 			// Get all feedback for this session
-			const feedbackList =
-				await db.query.athleteSessionFeedbackTable.findMany({
-					where: eq(athleteSessionFeedbackTable.sessionId, input.sessionId),
-					with: {
-						athlete: {
-							with: {
-								user: {
-									columns: { id: true, name: true, email: true, image: true },
-								},
+			const feedbackList = await db.query.athleteSessionFeedbackTable.findMany({
+				where: eq(athleteSessionFeedbackTable.sessionId, input.sessionId),
+				with: {
+					athlete: {
+						with: {
+							user: {
+								columns: { id: true, name: true, email: true, image: true },
 							},
 						},
 					},
-				});
+				},
+			});
 
 			// Calculate averages
 			const rpeValues = feedbackList

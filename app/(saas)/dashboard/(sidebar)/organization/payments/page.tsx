@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import type * as React from "react";
 import { OrganizationBreadcrumbSwitcher } from "@/components/organization/organization-breadcrumb-switcher";
 import { PaymentsTable } from "@/components/organization/payments-table";
@@ -23,21 +24,23 @@ export default async function PaymentsPage(): Promise<React.JSX.Element> {
 		redirect("/dashboard");
 	}
 
+	const t = await getTranslations("organization.pages");
+
 	return (
 		<Page>
 			<PageHeader>
 				<PagePrimaryBar>
 					<PageBreadcrumb
 						segments={[
-							{ label: "Home", href: "/dashboard" },
+							{ label: t("home"), href: "/dashboard" },
 							{ label: <OrganizationBreadcrumbSwitcher />, isCustom: true },
-							{ label: "Payments" },
+							{ label: t("payments.title") },
 						]}
 					/>
 				</PagePrimaryBar>
 			</PageHeader>
 			<PageBody>
-				<PageContent title="Training Payments">
+				<PageContent title={t("payments.title")}>
 					<PaymentsTable />
 				</PageContent>
 			</PageBody>

@@ -16,7 +16,7 @@ export function CashRegisterMovementsWrapper() {
 
 	if (!currentRegister) {
 		return (
-			<Card>
+			<Card className="h-full">
 				<CardHeader>
 					<CardTitle>Movimientos del Dia</CardTitle>
 					<CardDescription>
@@ -33,7 +33,7 @@ export function CashRegisterMovementsWrapper() {
 	}
 
 	return (
-		<Card>
+		<Card className="h-full">
 			<CardHeader>
 				<CardTitle>Movimientos del Dia</CardTitle>
 				<CardDescription>Todos los movimientos registrados hoy</CardDescription>

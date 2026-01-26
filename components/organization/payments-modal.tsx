@@ -4,6 +4,7 @@ import NiceModal, { type NiceModalHocProps } from "@ebay/nice-modal-react";
 import { format } from "date-fns";
 import * as React from "react";
 import { toast } from "sonner";
+import { TrainingPaymentReceiptUpload } from "@/components/organization/training-payment-receipt-upload";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import {
@@ -35,7 +36,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 import { useZodForm } from "@/hooks/use-zod-form";
 import {
-	TrainingPaymentMethod,
+	type TrainingPaymentMethod,
 	TrainingPaymentMethods,
 	TrainingPaymentStatus,
 	TrainingPaymentStatuses,
@@ -69,6 +70,7 @@ export type PaymentsModalProps = NiceModalHocProps & {
 		receiptNumber?: string | null;
 		description?: string | null;
 		notes?: string | null;
+		receiptImageKey?: string | null;
 	};
 };
 
@@ -79,16 +81,16 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 		const isEditing = !!payment;
 
 		// Fetch data for dropdowns
-		const { data: sessionsData } = trpc.organization.trainingSession.list.useQuery({
+		const { data: sessionsData } =
+			trpc.organization.trainingSession.list.useQuery({
+				limit: 100,
+				offset: 0,
+				sortBy: "startTime",
+				sortOrder: "desc",
+			});
+		const { data: athletesData } = trpc.organization.athlete.list.useQuery({
 			limit: 100,
 			offset: 0,
-			sortBy: "startTime",
-			sortOrder: "desc",
-		});
-		const { data: athletesData } = trpc.organization.athlete.list.useQuery({
-			limit: 500,
-			offset: 0,
-			filters: { status: ["active"] },
 		});
 
 		const sessions = sessionsData?.sessions ?? [];
@@ -119,13 +121,16 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 			});
 
 		const form = useZodForm({
-			schema: isEditing ? updateTrainingPaymentSchema : createTrainingPaymentSchema,
+			schema: isEditing
+				? updateTrainingPaymentSchema
+				: createTrainingPaymentSchema,
 			defaultValues: isEditing
 				? {
 						id: payment.id,
 						amount: payment.amount,
 						status: payment.status as TrainingPaymentStatus,
-						paymentMethod: (payment.paymentMethod as TrainingPaymentMethod) ?? null,
+						paymentMethod:
+							(payment.paymentMethod as TrainingPaymentMethod) ?? null,
 						paidAmount: payment.paidAmount,
 						paymentDate: payment.paymentDate ?? undefined,
 						receiptNumber: payment.receiptNumber ?? "",
@@ -383,9 +388,7 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 														<FormLabel>Payment Method</FormLabel>
 														<Select
 															onValueChange={(value) =>
-																field.onChange(
-																	value === "none" ? null : value,
-																)
+																field.onChange(value === "none" ? null : value)
 															}
 															value={field.value ?? "none"}
 														>
@@ -426,7 +429,12 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 																{...field}
 																value={
 																	field.value
-																		? format(new Date(field.value as string | number | Date), "yyyy-MM-dd")
+																		? format(
+																				new Date(
+																					field.value as string | number | Date,
+																				),
+																				"yyyy-MM-dd",
+																			)
 																		: ""
 																}
 																onChange={(e) =>
@@ -487,6 +495,20 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 											</FormItem>
 										)}
 									/>
+
+									{/* Receipt Upload - Only show when editing */}
+									{isEditing && payment && (
+										<Field>
+											<FormLabel>Comprobante de Pago</FormLabel>
+											<TrainingPaymentReceiptUpload
+												paymentId={payment.id}
+												hasReceipt={!!payment.receiptImageKey}
+												onUploadComplete={() => {
+													utils.organization.trainingPayment.list.invalidate();
+												}}
+											/>
+										</Field>
+									)}
 								</div>
 							</ScrollArea>
 

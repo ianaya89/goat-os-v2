@@ -1,7 +1,7 @@
 "use client";
 
 import { addDays, format } from "date-fns";
-import { CalendarIcon, ListIcon, MailIcon, SendIcon } from "lucide-react";
+import { CalendarIcon, LayoutListIcon, MailIcon, SendIcon } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 import { TrainingSessionCalendar } from "@/components/organization/training-session-calendar";
@@ -13,7 +13,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
 type ViewMode = "table" | "calendar";
@@ -70,31 +70,35 @@ export function TrainingSessionsView() {
 					</DropdownMenuContent>
 				</DropdownMenu>
 
-				<ToggleGroup
-					type="single"
-					value={viewMode}
-					onValueChange={(value) => {
-						if (value) setViewMode(value as ViewMode);
-					}}
-					className="bg-muted rounded-lg p-1"
-				>
-					<ToggleGroupItem
-						value="table"
-						aria-label="Table view"
-						className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+				{/* View Toggle */}
+				<div className="inline-flex items-center rounded-lg bg-muted p-1">
+					<button
+						type="button"
+						onClick={() => setViewMode("table")}
+						className={cn(
+							"inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all",
+							viewMode === "table"
+								? "bg-background text-foreground shadow-sm"
+								: "text-muted-foreground hover:text-foreground",
+						)}
 					>
-						<ListIcon className="size-4" />
-						<span className="ml-2 hidden sm:inline">Table</span>
-					</ToggleGroupItem>
-					<ToggleGroupItem
-						value="calendar"
-						aria-label="Calendar view"
-						className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+						<LayoutListIcon className="size-4" />
+						<span className="hidden sm:inline">List</span>
+					</button>
+					<button
+						type="button"
+						onClick={() => setViewMode("calendar")}
+						className={cn(
+							"inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all",
+							viewMode === "calendar"
+								? "bg-background text-foreground shadow-sm"
+								: "text-muted-foreground hover:text-foreground",
+						)}
 					>
 						<CalendarIcon className="size-4" />
-						<span className="ml-2 hidden sm:inline">Calendar</span>
-					</ToggleGroupItem>
-				</ToggleGroup>
+						<span className="hidden sm:inline">Calendar</span>
+					</button>
+				</div>
 			</div>
 
 			{viewMode === "table" ? (

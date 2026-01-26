@@ -26,7 +26,9 @@ export const organizationLocationRouter = createTRPCRouter({
 	list: protectedOrganizationProcedure
 		.input(listLocationsSchema)
 		.query(async ({ ctx, input }) => {
-			const conditions = [eq(locationTable.organizationId, ctx.organization.id)];
+			const conditions = [
+				eq(locationTable.organizationId, ctx.organization.id),
+			];
 
 			// Search query
 			if (input.query) {

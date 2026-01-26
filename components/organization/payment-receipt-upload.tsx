@@ -214,6 +214,8 @@ export function PaymentReceiptUpload({
 
 	return (
 		<div
+			role="button"
+			tabIndex={0}
 			className={cn(
 				"relative border-2 border-dashed rounded-lg p-3 transition-colors cursor-pointer",
 				isDragging
@@ -225,6 +227,12 @@ export function PaymentReceiptUpload({
 			onDragLeave={handleDragLeave}
 			onDrop={handleDrop}
 			onClick={() => fileInputRef.current?.click()}
+			onKeyDown={(e) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					fileInputRef.current?.click();
+				}
+			}}
 		>
 			<input
 				ref={fileInputRef}

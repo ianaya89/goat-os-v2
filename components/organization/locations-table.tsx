@@ -7,7 +7,12 @@ import type {
 	SortingState,
 } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { MoreHorizontalIcon, PlusIcon } from "lucide-react";
+import {
+	MoreHorizontalIcon,
+	PencilIcon,
+	PlusIcon,
+	Trash2Icon,
+} from "lucide-react";
 import {
 	parseAsArrayOf,
 	parseAsInteger,
@@ -260,9 +265,7 @@ export function LocationsTable(): React.JSX.Element {
 				<Badge
 					className={cn(
 						"border-none px-2 py-0.5 font-medium text-foreground text-xs shadow-none",
-						row.original.isActive
-							? statusColors.active
-							: statusColors.inactive,
+						row.original.isActive ? statusColors.active : statusColors.inactive,
 					)}
 					variant="outline"
 				>
@@ -303,6 +306,7 @@ export function LocationsTable(): React.JSX.Element {
 									NiceModal.show(LocationsModal, { location: row.original });
 								}}
 							>
+								<PencilIcon className="mr-2 size-4" />
 								Edit
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
@@ -320,6 +324,7 @@ export function LocationsTable(): React.JSX.Element {
 								}}
 								variant="destructive"
 							>
+								<Trash2Icon className="mr-2 size-4" />
 								Delete
 							</DropdownMenuItem>
 						</DropdownMenuContent>

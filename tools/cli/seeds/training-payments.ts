@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import type { DrizzleClient } from "@/lib/db/types";
 import type { SeedContext } from "../commands/seed";
 import { schema } from "../db";
 import { ENTITY_PAYMENT, seedUUID } from "./utils";
@@ -24,7 +25,7 @@ function addDays(date: Date, days: number): Date {
 }
 
 export async function seedTrainingPayments(
-	db: any,
+	db: DrizzleClient,
 	count: number,
 	context: SeedContext,
 ): Promise<string[]> {

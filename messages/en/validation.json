@@ -1,0 +1,47 @@
+{
+	"required": "This field is required.",
+	"email": {
+		"invalid": "Enter a valid email address.",
+		"required": "Email is required."
+	},
+	"password": {
+		"required": "Password is required.",
+		"tooShort": "Password is too short.",
+		"tooLong": "Password is too long.",
+		"requirements": "Password does not meet requirements."
+	},
+	"name": {
+		"required": "Name is required.",
+		"tooLong": "Name is too long."
+	},
+	"phone": {
+		"required": "Phone is required.",
+		"invalid": "Enter a valid phone number."
+	},
+	"minLength": "Minimum {min} characters.",
+	"maxLength": "Maximum {max} characters.",
+	"min": "Minimum value is {min}.",
+	"max": "Maximum value is {max}.",
+	"invalidType": "Invalid data type.",
+	"invalidDate": "Invalid date.",
+	"invalidNumber": "Invalid number.",
+	"positiveNumber": "Must be a positive number.",
+	"integer": "Must be an integer.",
+	"url": "Enter a valid URL.",
+	"file": {
+		"required": "File is required.",
+		"tooLarge": "File is too large.",
+		"invalidType": "File type not allowed."
+	},
+	"athlete": {
+		"sportRequired": "Sport is required.",
+		"clubRequired": "Current club is required.",
+		"categoryRequired": "Category is required.",
+		"positionRequired": "Position is required.",
+		"parentNameRequired": "Parent/guardian name is required for minors.",
+		"parentPhoneRequired": "Parent/guardian phone is required for minors.",
+		"parentalConsentRequired": "Parental consent is required for minors.",
+		"acceptTermsRequired": "You must accept the terms and conditions.",
+		"confirmMedicalFitnessRequired": "You must confirm medical fitness."
+	}
+}

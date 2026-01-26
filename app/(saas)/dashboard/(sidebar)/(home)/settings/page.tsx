@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import type * as React from "react";
+import { OrganizationBreadcrumbSwitcher } from "@/components/organization/organization-breadcrumb-switcher";
 import {
 	Page,
 	PageBody,
@@ -16,6 +18,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AccountSettingsPage(): Promise<React.JSX.Element> {
+	const t = await getTranslations("settings");
 	const userAccounts = await trpc.user.getAccounts();
 	const userHasPassword = userAccounts?.some(
 		(account) => account.providerId === "credential",
@@ -26,8 +29,11 @@ export default async function AccountSettingsPage(): Promise<React.JSX.Element> 
 				<PagePrimaryBar>
 					<PageBreadcrumb
 						segments={[
-							{ label: "Home", href: "/dashboard" },
-							{ label: "Settings" },
+							{
+								label: <OrganizationBreadcrumbSwitcher />,
+								isCustom: true,
+							},
+							{ label: t("title") },
 						]}
 					/>
 				</PagePrimaryBar>
@@ -36,7 +42,7 @@ export default async function AccountSettingsPage(): Promise<React.JSX.Element> 
 				<div className="p-4 pb-24 sm:px-6 sm:pt-6">
 					<div className="max-w-2xl">
 						<div className="mb-2">
-							<PageTitle>Account Settings</PageTitle>
+							<PageTitle>{t("user.title")}</PageTitle>
 						</div>
 						<AccountSettingsTabs userHasPassword={userHasPassword} />
 					</div>

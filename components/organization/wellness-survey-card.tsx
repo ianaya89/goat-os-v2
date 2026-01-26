@@ -121,13 +121,17 @@ export function WellnessSurveyCard() {
 								getScoreBgColor(survey.sleepQuality),
 							)}
 						>
-							<BedIcon className={cn("size-4", getScoreColor(survey.sleepQuality))} />
+							<BedIcon
+								className={cn("size-4", getScoreColor(survey.sleepQuality))}
+							/>
 						</div>
 						<div>
 							<p className="text-muted-foreground text-xs">Sleep</p>
 							<p className="font-medium text-sm">
 								{sleepHours.toFixed(1)}h{" "}
-								<span className={cn("text-xs", getScoreColor(survey.sleepQuality))}>
+								<span
+									className={cn("text-xs", getScoreColor(survey.sleepQuality))}
+								>
 									({survey.sleepQuality}/10)
 								</span>
 							</p>
@@ -142,11 +146,18 @@ export function WellnessSurveyCard() {
 								getScoreBgColor(survey.energy),
 							)}
 						>
-							<BatteryIcon className={cn("size-4", getScoreColor(survey.energy))} />
+							<BatteryIcon
+								className={cn("size-4", getScoreColor(survey.energy))}
+							/>
 						</div>
 						<div>
 							<p className="text-muted-foreground text-xs">Energy</p>
-							<p className={cn("font-medium text-sm", getScoreColor(survey.energy))}>
+							<p
+								className={cn(
+									"font-medium text-sm",
+									getScoreColor(survey.energy),
+								)}
+							>
 								{survey.energy}/10
 							</p>
 						</div>
@@ -160,8 +171,14 @@ export function WellnessSurveyCard() {
 								getScoreBgColor(survey.fatigue, true),
 							)}
 						>
-							<span className={cn("text-sm", getScoreColor(survey.fatigue, true))}>
-								{survey.fatigue <= 3 ? "💪" : survey.fatigue <= 6 ? "😮‍💨" : "😴"}
+							<span
+								className={cn("text-sm", getScoreColor(survey.fatigue, true))}
+							>
+								{survey.fatigue <= 3
+									? "💪"
+									: survey.fatigue <= 6
+										? "😮‍💨"
+										: "😴"}
 							</span>
 						</div>
 						<div>
@@ -199,7 +216,12 @@ export function WellnessSurveyCard() {
 						</div>
 						<div>
 							<p className="text-muted-foreground text-xs">Mood</p>
-							<p className={cn("font-medium text-sm", getScoreColor(survey.mood))}>
+							<p
+								className={cn(
+									"font-medium text-sm",
+									getScoreColor(survey.mood),
+								)}
+							>
 								{survey.mood}/10
 							</p>
 						</div>
@@ -214,7 +236,10 @@ export function WellnessSurveyCard() {
 							)}
 						>
 							<span
-								className={cn("text-sm", getScoreColor(survey.muscleSoreness, true))}
+								className={cn(
+									"text-sm",
+									getScoreColor(survey.muscleSoreness, true),
+								)}
 							>
 								{survey.muscleSoreness <= 3
 									? "✓"

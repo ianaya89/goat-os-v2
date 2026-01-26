@@ -1,7 +1,7 @@
 "use client";
 
 import NiceModal, { type NiceModalHocProps } from "@ebay/nice-modal-react";
-import { CheckIcon, XIcon } from "lucide-react";
+import { CheckIcon, Loader2Icon, SearchIcon, XIcon } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +50,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 import { useZodForm } from "@/hooks/use-zod-form";
+import { type AthleteSport, AthleteSports } from "@/lib/db/schema/enums";
 import { cn } from "@/lib/utils";
 import {
 	createAthleteGroupSchema,
@@ -70,11 +71,18 @@ interface GroupMember {
 	};
 }
 
+interface SelectedAthlete {
+	id: string;
+	name: string;
+	image: string | null;
+}
+
 export type AthleteGroupsModalProps = NiceModalHocProps & {
 	group?: {
 		id: string;
 		name: string;
 		description?: string | null;
+		sport?: AthleteSport | null;
 		ageCategoryId?: string | null;
 		maxCapacity?: number | null;
 		isActive: boolean;
@@ -87,22 +95,58 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 		const modal = useEnhancedModal();
 		const utils = trpc.useUtils();
 		const isEditing = !!group;
-		const [selectedAthleteIds, setSelectedAthleteIds] = React.useState<
-			string[]
-		>(group?.members.map((m) => m.athlete.id) ?? []);
-		const [popoverOpen, setPopoverOpen] = React.useState(false);
 
-		// Get all athletes for selection
-		const { data: athletesData } = trpc.organization.athlete.list.useQuery(
-			{
-				limit: 500,
-				offset: 0,
-				filters: { status: ["active"] },
-			},
-			{
-				staleTime: 30000,
-			},
+		// Store selected athletes with their data for display
+		const [selectedAthletes, setSelectedAthletes] = React.useState<
+			SelectedAthlete[]
+		>(
+			() =>
+				group?.members.map((m) => ({
+					id: m.athlete.id,
+					name: m.athlete.user?.name ?? "Unknown",
+					image: m.athlete.user?.image ?? null,
+				})) ?? [],
 		);
+
+		const [popoverOpen, setPopoverOpen] = React.useState(false);
+		const [searchQuery, setSearchQuery] = React.useState("");
+		const [debouncedQuery, setDebouncedQuery] = React.useState("");
+		const debounceTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+		// Debounce search query
+		React.useEffect(() => {
+			if (debounceTimeoutRef.current) {
+				clearTimeout(debounceTimeoutRef.current);
+			}
+
+			debounceTimeoutRef.current = setTimeout(() => {
+				setDebouncedQuery(searchQuery);
+			}, 300);
+
+			return () => {
+				if (debounceTimeoutRef.current) {
+					clearTimeout(debounceTimeoutRef.current);
+				}
+			};
+		}, [searchQuery]);
+
+		// Only search when there's a query with at least 2 characters
+		const shouldSearch = debouncedQuery.length >= 2;
+
+		const { data: searchResults, isFetching: isSearching } =
+			trpc.organization.athlete.list.useQuery(
+				{
+					limit: 20,
+					offset: 0,
+					query: debouncedQuery,
+				},
+				{
+					enabled: shouldSearch,
+					staleTime: 10000,
+				},
+			);
+
+		const athletes = searchResults?.athletes ?? [];
 
 		// Get age categories for selection
 		const { data: ageCategories } =
@@ -110,8 +154,6 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 				{ includeInactive: false },
 				{ staleTime: 60000 },
 			);
-
-		const athletes = athletesData?.athletes ?? [];
 
 		const createGroupMutation =
 			trpc.organization.athleteGroup.create.useMutation({
@@ -156,6 +198,7 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 						id: group.id,
 						name: group.name,
 						description: group.description ?? "",
+						sport: group.sport ?? null,
 						ageCategoryId: group.ageCategoryId ?? null,
 						maxCapacity: group.maxCapacity ?? null,
 						isActive: group.isActive,
@@ -163,6 +206,7 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 				: {
 						name: "",
 						description: "",
+						sport: null,
 						ageCategoryId: null,
 						maxCapacity: null,
 						isActive: true,
@@ -171,6 +215,7 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 		});
 
 		const onSubmit = form.handleSubmit(async (data) => {
+			const selectedIds = selectedAthletes.map((a) => a.id);
 			if (isEditing) {
 				// Update group info
 				await updateGroupMutation.mutateAsync(
@@ -179,12 +224,12 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 				// Update members
 				await setMembersMutation.mutateAsync({
 					groupId: group.id,
-					athleteIds: selectedAthleteIds,
+					athleteIds: selectedIds,
 				});
 			} else {
 				createGroupMutation.mutate({
 					...(data as Parameters<typeof createGroupMutation.mutate>[0]),
-					memberIds: selectedAthleteIds,
+					memberIds: selectedIds,
 				});
 			}
 		});
@@ -194,21 +239,31 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 			updateGroupMutation.isPending ||
 			setMembersMutation.isPending;
 
-		const toggleAthlete = (athleteId: string) => {
-			setSelectedAthleteIds((prev) =>
-				prev.includes(athleteId)
-					? prev.filter((id) => id !== athleteId)
-					: [...prev, athleteId],
-			);
+		const toggleAthlete = (athlete: {
+			id: string;
+			user: { name: string; image: string | null } | null;
+		}) => {
+			setSelectedAthletes((prev) => {
+				const isSelected = prev.some((a) => a.id === athlete.id);
+				if (isSelected) {
+					return prev.filter((a) => a.id !== athlete.id);
+				}
+				return [
+					...prev,
+					{
+						id: athlete.id,
+						name: athlete.user?.name ?? "Unknown",
+						image: athlete.user?.image ?? null,
+					},
+				];
+			});
 		};
 
 		const removeAthlete = (athleteId: string) => {
-			setSelectedAthleteIds((prev) => prev.filter((id) => id !== athleteId));
+			setSelectedAthletes((prev) => prev.filter((a) => a.id !== athleteId));
 		};
 
-		const selectedAthletes = athletes.filter((a) =>
-			selectedAthleteIds.includes(a.id),
-		);
+		const selectedAthleteIds = selectedAthletes.map((a) => a.id);
 
 		return (
 			<Sheet
@@ -271,6 +326,39 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 															value={field.value ?? ""}
 														/>
 													</FormControl>
+													<FormMessage />
+												</Field>
+											</FormItem>
+										)}
+									/>
+
+									<FormField
+										control={form.control}
+										name="sport"
+										render={({ field }) => (
+											<FormItem asChild>
+												<Field>
+													<FormLabel>Sport</FormLabel>
+													<Select
+														value={field.value ?? ""}
+														onValueChange={(value) =>
+															field.onChange(value || null)
+														}
+													>
+														<FormControl>
+															<SelectTrigger>
+																<SelectValue placeholder="Select sport" />
+															</SelectTrigger>
+														</FormControl>
+														<SelectContent>
+															{AthleteSports.map((sport) => (
+																<SelectItem key={sport} value={sport}>
+																	{sport.charAt(0).toUpperCase() +
+																		sport.slice(1).replace(/_/g, " ")}
+																</SelectItem>
+															))}
+														</SelectContent>
+													</Select>
 													<FormMessage />
 												</Field>
 											</FormItem>
@@ -351,53 +439,77 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 													variant="outline"
 													className="w-full justify-start font-normal"
 												>
-													{selectedAthleteIds.length > 0
-														? `${selectedAthleteIds.length} athlete${selectedAthleteIds.length > 1 ? "s" : ""} selected`
-														: "Select athletes..."}
+													<SearchIcon className="mr-2 size-4 text-muted-foreground" />
+													{selectedAthletes.length > 0
+														? `${selectedAthletes.length} athlete${selectedAthletes.length > 1 ? "s" : ""} selected`
+														: "Search and select athletes..."}
 												</Button>
 											</PopoverTrigger>
 											<PopoverContent className="w-[300px] p-0" align="start">
-												<Command>
-													<CommandInput placeholder="Search athletes..." />
+												<Command shouldFilter={false}>
+													<CommandInput
+														placeholder="Search athletes..."
+														value={searchQuery}
+														onValueChange={setSearchQuery}
+													/>
 													<CommandList>
-														<CommandEmpty>No athletes found.</CommandEmpty>
-														<CommandGroup>
-															{athletes.map((athlete) => {
-																const isSelected = selectedAthleteIds.includes(
-																	athlete.id,
-																);
-																return (
-																	<CommandItem
-																		key={athlete.id}
-																		value={athlete.user?.name ?? athlete.id}
-																		onSelect={() => toggleAthlete(athlete.id)}
-																	>
-																		<div className="flex items-center gap-2">
-																			<div
-																				className={cn(
-																					"flex size-4 items-center justify-center rounded-sm border",
-																					isSelected
-																						? "border-primary bg-primary text-primary-foreground"
-																						: "border-muted-foreground",
-																				)}
+														{!shouldSearch && (
+															<div className="py-6 text-center text-sm text-muted-foreground">
+																Type at least 2 characters to search
+															</div>
+														)}
+														{shouldSearch && isSearching && (
+															<div className="flex items-center justify-center py-6">
+																<Loader2Icon className="size-5 animate-spin text-muted-foreground" />
+															</div>
+														)}
+														{shouldSearch &&
+															!isSearching &&
+															athletes.length === 0 && (
+																<CommandEmpty>No athletes found.</CommandEmpty>
+															)}
+														{shouldSearch &&
+															!isSearching &&
+															athletes.length > 0 && (
+																<CommandGroup>
+																	{athletes.map((athlete) => {
+																		const isSelected =
+																			selectedAthleteIds.includes(athlete.id);
+																		return (
+																			<CommandItem
+																				key={athlete.id}
+																				value={athlete.id}
+																				onSelect={() => toggleAthlete(athlete)}
 																			>
-																				{isSelected && (
-																					<CheckIcon className="size-3" />
-																				)}
-																			</div>
-																			<UserAvatar
-																				className="size-6"
-																				name={athlete.user?.name ?? ""}
-																				src={athlete.user?.image ?? undefined}
-																			/>
-																			<span className="truncate">
-																				{athlete.user?.name ?? "Unknown"}
-																			</span>
-																		</div>
-																	</CommandItem>
-																);
-															})}
-														</CommandGroup>
+																				<div className="flex items-center gap-2">
+																					<div
+																						className={cn(
+																							"flex size-4 items-center justify-center rounded-sm border",
+																							isSelected
+																								? "border-primary bg-primary text-primary-foreground"
+																								: "border-muted-foreground",
+																						)}
+																					>
+																						{isSelected && (
+																							<CheckIcon className="size-3" />
+																						)}
+																					</div>
+																					<UserAvatar
+																						className="size-6"
+																						name={athlete.user?.name ?? ""}
+																						src={
+																							athlete.user?.image ?? undefined
+																						}
+																					/>
+																					<span className="truncate">
+																						{athlete.user?.name ?? "Unknown"}
+																					</span>
+																				</div>
+																			</CommandItem>
+																		);
+																	})}
+																</CommandGroup>
+															)}
 													</CommandList>
 												</Command>
 											</PopoverContent>
@@ -411,7 +523,7 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 														variant="secondary"
 														className="gap-1"
 													>
-														{athlete.user?.name ?? "Unknown"}
+														{athlete.name}
 														<button
 															type="button"
 															onClick={() => removeAthlete(athlete.id)}

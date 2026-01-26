@@ -1,0 +1,47 @@
+{
+	"required": "Este campo es requerido.",
+	"email": {
+		"invalid": "Ingresa un email válido.",
+		"required": "El email es requerido."
+	},
+	"password": {
+		"required": "La contraseña es requerida.",
+		"tooShort": "La contraseña es muy corta.",
+		"tooLong": "La contraseña es muy larga.",
+		"requirements": "La contraseña no cumple los requisitos."
+	},
+	"name": {
+		"required": "El nombre es requerido.",
+		"tooLong": "El nombre es muy largo."
+	},
+	"phone": {
+		"required": "El teléfono es requerido.",
+		"invalid": "Ingresa un número de teléfono válido."
+	},
+	"minLength": "Mínimo {min} caracteres.",
+	"maxLength": "Máximo {max} caracteres.",
+	"min": "El valor mínimo es {min}.",
+	"max": "El valor máximo es {max}.",
+	"invalidType": "Tipo de dato inválido.",
+	"invalidDate": "Fecha inválida.",
+	"invalidNumber": "Número inválido.",
+	"positiveNumber": "Debe ser un número positivo.",
+	"integer": "Debe ser un número entero.",
+	"url": "Ingresa una URL válida.",
+	"file": {
+		"required": "El archivo es requerido.",
+		"tooLarge": "El archivo es muy grande.",
+		"invalidType": "Tipo de archivo no permitido."
+	},
+	"athlete": {
+		"sportRequired": "El deporte es requerido.",
+		"clubRequired": "El club actual es requerido.",
+		"categoryRequired": "La categoría es requerida.",
+		"positionRequired": "La posición es requerida.",
+		"parentNameRequired": "El nombre del padre/tutor es requerido para menores de edad.",
+		"parentPhoneRequired": "El teléfono del padre/tutor es requerido para menores de edad.",
+		"parentalConsentRequired": "Se requiere el consentimiento parental para menores de edad.",
+		"acceptTermsRequired": "Debes aceptar los términos y condiciones.",
+		"confirmMedicalFitnessRequired": "Debes confirmar la aptitud física."
+	}
+}

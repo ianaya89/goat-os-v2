@@ -7,21 +7,26 @@ import {
 	Clock,
 	Copy,
 	Edit,
+	ExternalLinkIcon,
+	LayoutGrid,
 	Mail,
 	MapPin,
 	MoreHorizontal,
 	Phone,
 	Trash2,
+	UserPlus,
 	Users,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import * as React from "react";
+import type * as React from "react";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/confirmation-modal";
+import { EventDiscounts } from "@/components/organization/event-discounts";
 import { EventPaymentsTable } from "@/components/organization/event-payments-table";
 import { EventPricingConfig } from "@/components/organization/event-pricing-config";
 import { EventRegistrationsTable } from "@/components/organization/event-registrations-table";
+import { RegisterExistingAthletesModal } from "@/components/organization/register-existing-athletes-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -80,16 +85,17 @@ export function EventDetail({ eventId }: EventDetailProps): React.JSX.Element {
 		},
 	});
 
-	const duplicateEventMutation = trpc.organization.sportsEvent.duplicate.useMutation({
-		onSuccess: (result) => {
-			toast.success("Evento duplicado");
-			utils.organization.sportsEvent.list.invalidate();
-			router.push(`/dashboard/organization/events/${result.id}`);
-		},
-		onError: (error: { message?: string }) => {
-			toast.error(error.message || "Error al duplicar el evento");
-		},
-	});
+	const duplicateEventMutation =
+		trpc.organization.sportsEvent.duplicate.useMutation({
+			onSuccess: (result) => {
+				toast.success("Evento duplicado");
+				utils.organization.sportsEvent.list.invalidate();
+				router.push(`/dashboard/organization/events/${result.id}`);
+			},
+			onError: (error: { message?: string }) => {
+				toast.error(error.message || "Error al duplicar el evento");
+			},
+		});
 
 	if (isPending) {
 		return <EventDetailSkeleton />;
@@ -280,12 +286,22 @@ export function EventDetail({ eventId }: EventDetailProps): React.JSX.Element {
 
 			{/* Tabs */}
 			<Tabs defaultValue="overview" className="space-y-4">
-				<TabsList>
-					<TabsTrigger value="overview">Resumen</TabsTrigger>
-					<TabsTrigger value="registrations">Inscripciones</TabsTrigger>
-					<TabsTrigger value="payments">Pagos</TabsTrigger>
-					<TabsTrigger value="pricing">Precios</TabsTrigger>
-				</TabsList>
+				<div className="flex items-center justify-between">
+					<TabsList>
+						<TabsTrigger value="overview">Resumen</TabsTrigger>
+						<TabsTrigger value="registrations">Inscripciones</TabsTrigger>
+						<TabsTrigger value="payments">Pagos</TabsTrigger>
+						<TabsTrigger value="pricing">Precios</TabsTrigger>
+					</TabsList>
+					<Button variant="outline" asChild>
+						<Link
+							href={`/dashboard/organization/events/${eventId}/organization`}
+						>
+							<LayoutGrid className="size-4 mr-2" />
+							Organización
+						</Link>
+					</Button>
+				</div>
 
 				<TabsContent value="overview" className="space-y-4">
 					<div className="grid gap-4 md:grid-cols-2">
@@ -347,30 +363,61 @@ export function EventDetail({ eventId }: EventDetailProps): React.JSX.Element {
 							<CardContent className="space-y-3">
 								<div className="flex items-center justify-between">
 									<span className="text-sm">Inscripción pública</span>
-									<Badge variant={event.allowPublicRegistration ? "default" : "secondary"}>
+									<Badge
+										variant={
+											event.allowPublicRegistration ? "default" : "secondary"
+										}
+									>
 										{event.allowPublicRegistration ? "Sí" : "No"}
 									</Badge>
 								</div>
 								<div className="flex items-center justify-between">
 									<span className="text-sm">Lista de espera</span>
-									<Badge variant={event.enableWaitlist ? "default" : "secondary"}>
+									<Badge
+										variant={event.enableWaitlist ? "default" : "secondary"}
+									>
 										{event.enableWaitlist ? "Sí" : "No"}
 									</Badge>
 								</div>
 								<div className="flex items-center justify-between">
 									<span className="text-sm">Requiere aprobación</span>
-									<Badge variant={event.requiresApproval ? "default" : "secondary"}>
+									<Badge
+										variant={event.requiresApproval ? "default" : "secondary"}
+									>
 										{event.requiresApproval ? "Sí" : "No"}
 									</Badge>
 								</div>
 								<div className="flex items-center justify-between">
 									<span className="text-sm">Acceso anticipado</span>
-									<Badge variant={event.allowEarlyAccessForMembers ? "default" : "secondary"}>
+									<Badge
+										variant={
+											event.allowEarlyAccessForMembers ? "default" : "secondary"
+										}
+									>
 										{event.allowEarlyAccessForMembers
 											? `${event.memberEarlyAccessDays} días`
 											: "No"}
 									</Badge>
 								</div>
+								{event.allowPublicRegistration && event.organizationSlug && (
+									<div className="pt-3 mt-3 border-t">
+										<Button
+											variant="outline"
+											size="sm"
+											asChild
+											className="w-full"
+										>
+											<Link
+												href={`/${event.organizationSlug}/events/${event.slug}/register`}
+												target="_blank"
+												rel="noopener noreferrer"
+											>
+												<ExternalLinkIcon className="size-4 mr-2" />
+												Ver formulario público
+											</Link>
+										</Button>
+									</div>
+								)}
 							</CardContent>
 						</Card>
 					</div>
@@ -378,11 +425,21 @@ export function EventDetail({ eventId }: EventDetailProps): React.JSX.Element {
 
 				<TabsContent value="registrations">
 					<Card>
-						<CardHeader>
-							<CardTitle>Inscripciones</CardTitle>
-							<CardDescription>
-								Lista de atletas inscritos al evento
-							</CardDescription>
+						<CardHeader className="flex flex-row items-center justify-between">
+							<div>
+								<CardTitle>Inscripciones</CardTitle>
+								<CardDescription>
+									Lista de atletas inscritos al evento
+								</CardDescription>
+							</div>
+							<Button
+								onClick={() =>
+									NiceModal.show(RegisterExistingAthletesModal, { eventId })
+								}
+							>
+								<UserPlus className="mr-2 size-4" />
+								Inscribir Atletas
+							</Button>
 						</CardHeader>
 						<CardContent>
 							<EventRegistrationsTable eventId={eventId} />
@@ -404,8 +461,9 @@ export function EventDetail({ eventId }: EventDetailProps): React.JSX.Element {
 					</Card>
 				</TabsContent>
 
-				<TabsContent value="pricing">
+				<TabsContent value="pricing" className="space-y-6">
 					<EventPricingConfig eventId={eventId} currency={event.currency} />
+					<EventDiscounts eventId={eventId} currency={event.currency} />
 				</TabsContent>
 			</Tabs>
 		</div>

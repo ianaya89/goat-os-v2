@@ -1,0 +1,51 @@
+{
+	"title": "Entrenadores",
+	"description": "Gestiona los entrenadores de tu organización.",
+	"add": "Agregar entrenador",
+	"edit": "Editar entrenador",
+	"view": "Ver entrenador",
+	"delete": "Eliminar entrenador",
+	"search": "Buscar entrenadores...",
+	"filters": {
+		"all": "Todos",
+		"active": "Activos",
+		"inactive": "Inactivos"
+	},
+	"table": {
+		"name": "Nombre",
+		"email": "Email",
+		"phone": "Teléfono",
+		"specialization": "Especialización",
+		"certifications": "Certificaciones",
+		"status": "Estado",
+		"actions": "Acciones"
+	},
+	"form": {
+		"personalInfo": "Información personal",
+		"name": "Nombre completo",
+		"email": "Email",
+		"phone": "Teléfono",
+		"professionalInfo": "Información profesional",
+		"specialization": "Especialización",
+		"certifications": "Certificaciones",
+		"yearsOfExperience": "Años de experiencia",
+		"bio": "Biografía"
+	},
+	"detail": {
+		"overview": "Resumen",
+		"sessions": "Sesiones",
+		"athletes": "Atletas",
+		"schedule": "Horario"
+	},
+	"success": {
+		"created": "Entrenador creado correctamente.",
+		"updated": "Entrenador actualizado correctamente.",
+		"deleted": "Entrenador eliminado correctamente."
+	},
+	"error": {
+		"notFound": "Entrenador no encontrado.",
+		"createFailed": "No se pudo crear el entrenador.",
+		"updateFailed": "No se pudo actualizar el entrenador.",
+		"deleteFailed": "No se pudo eliminar el entrenador."
+	}
+}

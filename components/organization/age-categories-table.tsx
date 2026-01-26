@@ -2,11 +2,16 @@
 
 import NiceModal from "@ebay/nice-modal-react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontalIcon, PlusIcon } from "lucide-react";
+import {
+	MoreHorizontalIcon,
+	PencilIcon,
+	PlusIcon,
+	Trash2Icon,
+} from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
-import { AgeCategoriesModal } from "@/components/organization/age-categories-modal";
 import { ConfirmationModal } from "@/components/confirmation-modal";
+import { AgeCategoriesModal } from "@/components/organization/age-categories-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,8 +25,8 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { formatBirthYearRange } from "@/lib/format-event";
 import { cn } from "@/lib/utils";
-import { formatAgeRange } from "@/lib/format-event";
 import { trpc } from "@/trpc/client";
 
 interface AgeCategory {
@@ -29,8 +34,8 @@ interface AgeCategory {
 	organizationId: string;
 	name: string;
 	displayName: string;
-	minAge: number | null;
-	maxAge: number | null;
+	minBirthYear: number | null;
+	maxBirthYear: number | null;
 	sortOrder: number;
 	isActive: boolean;
 	createdAt: Date;
@@ -46,20 +51,22 @@ export function AgeCategoriesTable(): React.JSX.Element {
 	const [rowSelection, setRowSelection] = React.useState({});
 	const utils = trpc.useUtils();
 
-	const { data, isPending } = trpc.organization.sportsEvent.listAgeCategories.useQuery(
-		{ includeInactive: true },
-		{ placeholderData: (prev) => prev },
-	);
+	const { data, isPending } =
+		trpc.organization.sportsEvent.listAgeCategories.useQuery(
+			{ includeInactive: true },
+			{ placeholderData: (prev) => prev },
+		);
 
-	const deleteAgeCategoryMutation = trpc.organization.sportsEvent.deleteAgeCategory.useMutation({
-		onSuccess: () => {
-			toast.success("Categoría de edad eliminada");
-			utils.organization.sportsEvent.listAgeCategories.invalidate();
-		},
-		onError: (error: { message?: string }) => {
-			toast.error(error.message || "Error al eliminar la categoría");
-		},
-	});
+	const deleteAgeCategoryMutation =
+		trpc.organization.sportsEvent.deleteAgeCategory.useMutation({
+			onSuccess: () => {
+				toast.success("Categoría de edad eliminada");
+				utils.organization.sportsEvent.listAgeCategories.invalidate();
+			},
+			onError: (error: { message?: string }) => {
+				toast.error(error.message || "Error al eliminar la categoría");
+			},
+		});
 
 	const columns: ColumnDef<AgeCategory>[] = [
 		createSelectionColumn<AgeCategory>(),
@@ -82,11 +89,14 @@ export function AgeCategoriesTable(): React.JSX.Element {
 			),
 		},
 		{
-			id: "ageRange",
-			header: "Rango de Edad",
+			id: "birthYearRange",
+			header: "Años de nacimiento",
 			cell: ({ row }) => (
 				<span className="text-foreground/80">
-					{formatAgeRange(row.original.minAge, row.original.maxAge)}
+					{formatBirthYearRange(
+						row.original.minBirthYear,
+						row.original.maxBirthYear,
+					)}
 				</span>
 			),
 		},
@@ -104,9 +114,7 @@ export function AgeCategoriesTable(): React.JSX.Element {
 				<Badge
 					className={cn(
 						"border-none px-2 py-0.5 font-medium text-xs shadow-none",
-						row.original.isActive
-							? statusColors.active
-							: statusColors.inactive,
+						row.original.isActive ? statusColors.active : statusColors.inactive,
 					)}
 					variant="outline"
 				>
@@ -138,6 +146,7 @@ export function AgeCategoriesTable(): React.JSX.Element {
 									});
 								}}
 							>
+								<PencilIcon className="mr-2 size-4" />
 								Editar
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
@@ -155,6 +164,7 @@ export function AgeCategoriesTable(): React.JSX.Element {
 								}}
 								variant="destructive"
 							>
+								<Trash2Icon className="mr-2 size-4" />
 								Eliminar
 							</DropdownMenuItem>
 						</DropdownMenuContent>

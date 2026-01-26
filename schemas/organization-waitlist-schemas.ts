@@ -1,9 +1,15 @@
 import { z } from "zod/v4";
 import {
+	DayOfWeek,
 	WaitlistEntryStatus,
 	WaitlistPriority,
 	WaitlistReferenceType,
 } from "@/lib/db/schema/enums";
+
+// Time format validation (HH:MM)
+const timeSchema = z
+	.string()
+	.regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Time must be in HH:MM format");
 
 // Sortable fields for waitlist entries
 export const WaitlistSortField = z.enum([
@@ -26,9 +32,9 @@ export const listWaitlistEntriesSchema = z.object({
 			referenceType: z.nativeEnum(WaitlistReferenceType).optional(),
 			status: z.array(z.nativeEnum(WaitlistEntryStatus)).optional(),
 			priority: z.array(z.nativeEnum(WaitlistPriority)).optional(),
-			trainingSessionId: z.string().uuid().optional(),
 			athleteGroupId: z.string().uuid().optional(),
 			athleteId: z.string().uuid().optional(),
+			preferredDays: z.array(z.nativeEnum(DayOfWeek)).optional(),
 		})
 		.optional(),
 });
@@ -38,7 +44,11 @@ export const createWaitlistEntrySchema = z
 	.object({
 		athleteId: z.string().uuid(),
 		referenceType: z.nativeEnum(WaitlistReferenceType),
-		trainingSessionId: z.string().uuid().optional(),
+		// Schedule preferences (for referenceType = 'schedule')
+		preferredDays: z.array(z.nativeEnum(DayOfWeek)).min(1).optional(),
+		preferredStartTime: timeSchema.optional(),
+		preferredEndTime: timeSchema.optional(),
+		// Athlete group reference (for referenceType = 'athlete_group')
 		athleteGroupId: z.string().uuid().optional(),
 		priority: z.nativeEnum(WaitlistPriority).default(WaitlistPriority.medium),
 		reason: z.string().trim().max(1000, "Reason is too long").optional(),
@@ -47,17 +57,21 @@ export const createWaitlistEntrySchema = z
 	})
 	.refine(
 		(data) => {
-			if (data.referenceType === WaitlistReferenceType.trainingSession) {
-				return !!data.trainingSessionId && !data.athleteGroupId;
+			if (data.referenceType === WaitlistReferenceType.schedule) {
+				return (
+					!!data.preferredDays &&
+					data.preferredDays.length > 0 &&
+					!data.athleteGroupId
+				);
 			}
 			if (data.referenceType === WaitlistReferenceType.athleteGroup) {
-				return !!data.athleteGroupId && !data.trainingSessionId;
+				return !!data.athleteGroupId && !data.preferredDays;
 			}
 			return false;
 		},
 		{
 			message:
-				"Invalid reference: must provide correct ID based on reference type",
+				"Invalid reference: must provide correct fields based on reference type",
 		},
 	);
 
@@ -65,6 +79,9 @@ export const createWaitlistEntrySchema = z
 export const updateWaitlistEntrySchema = z.object({
 	id: z.string().uuid(),
 	priority: z.nativeEnum(WaitlistPriority).optional(),
+	preferredDays: z.array(z.nativeEnum(DayOfWeek)).min(1).optional().nullable(),
+	preferredStartTime: timeSchema.optional().nullable(),
+	preferredEndTime: timeSchema.optional().nullable(),
 	reason: z
 		.string()
 		.trim()
@@ -104,7 +121,10 @@ export const assignFromWaitlistSchema = z.object({
 // Get waitlist count for a reference
 export const getWaitlistCountSchema = z.object({
 	referenceType: z.nativeEnum(WaitlistReferenceType),
-	referenceId: z.string().uuid(), // trainingSessionId or athleteGroupId
+	// For athlete_group: use athleteGroupId
+	// For schedule: optionally filter by days
+	athleteGroupId: z.string().uuid().optional(),
+	preferredDays: z.array(z.nativeEnum(DayOfWeek)).optional(),
 });
 
 // Type exports

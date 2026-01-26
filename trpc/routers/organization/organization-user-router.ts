@@ -15,19 +15,29 @@ import {
 } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { MemberRole } from "@/lib/db/schema/enums";
 import {
 	athleteTable,
 	coachTable,
 	memberTable,
 	userTable,
 } from "@/lib/db/schema/tables";
-import { MemberRole } from "@/lib/db/schema/enums";
 import { logger } from "@/lib/logger";
 import {
+	deleteObject,
+	generateStorageKey,
+	getBucketName,
+	getSignedUploadUrl,
+	getSignedUrl,
+} from "@/lib/storage/s3";
+import {
 	getOrganizationUserSchema,
+	getProfileImageUploadUrlSchema,
 	listOrganizationUsersSchema,
 	removeOrganizationUserSchema,
+	removeProfileImageSchema,
 	resendVerificationEmailSchema,
+	saveProfileImageSchema,
 	sendPasswordResetSchema,
 	updateOrganizationUserRoleSchema,
 } from "@/schemas/organization-user-schemas";
@@ -240,12 +250,8 @@ export const organizationUserRouter = createTRPCRouter({
 			]);
 
 			// Create lookup maps
-			const coachMap = new Map(
-				coachProfiles.map((c) => [c.userId, c]),
-			);
-			const athleteMap = new Map(
-				athleteProfiles.map((a) => [a.userId, a]),
-			);
+			const coachMap = new Map(coachProfiles.map((c) => [c.userId, c]));
+			const athleteMap = new Map(athleteProfiles.map((a) => [a.userId, a]));
 
 			// Filter by profile if needed
 			let filteredMembers = membersWithUsers;
@@ -662,5 +668,231 @@ export const organizationUserRouter = createTRPCRouter({
 					message: "Failed to resend verification email",
 				});
 			}
+		}),
+
+	// ============================================================================
+	// PROFILE IMAGE
+	// ============================================================================
+
+	getProfileImageUploadUrl: protectedOrganizationProcedure
+		.input(getProfileImageUploadUrlSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify user is in this organization
+			const targetMember = await db.query.memberTable.findFirst({
+				where: and(
+					eq(memberTable.organizationId, ctx.organization.id),
+					eq(memberTable.userId, input.userId),
+				),
+			});
+
+			if (!targetMember) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "User not found in this organization",
+				});
+			}
+
+			// Check permissions: only self or admin/owner can change profile image
+			const canEdit =
+				input.userId === ctx.user.id ||
+				ctx.membership.role === MemberRole.owner ||
+				ctx.membership.role === MemberRole.admin;
+
+			if (!canEdit) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message:
+						"You don't have permission to change this user's profile image",
+				});
+			}
+
+			const storageKey = generateStorageKey(
+				"profile-images",
+				ctx.organization.id,
+				input.fileName,
+			);
+
+			const uploadUrl = await getSignedUploadUrl(storageKey, getBucketName(), {
+				contentType: input.contentType || "image/jpeg",
+				expiresIn: 3600, // 1 hour
+			});
+
+			return { uploadUrl, imageKey: storageKey };
+		}),
+
+	saveProfileImage: protectedOrganizationProcedure
+		.input(saveProfileImageSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify user is in this organization
+			const targetMember = await db.query.memberTable.findFirst({
+				where: and(
+					eq(memberTable.organizationId, ctx.organization.id),
+					eq(memberTable.userId, input.userId),
+				),
+			});
+
+			if (!targetMember) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "User not found in this organization",
+				});
+			}
+
+			// Check permissions
+			const canEdit =
+				input.userId === ctx.user.id ||
+				ctx.membership.role === MemberRole.owner ||
+				ctx.membership.role === MemberRole.admin;
+
+			if (!canEdit) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message:
+						"You don't have permission to change this user's profile image",
+				});
+			}
+
+			// Get current user to delete old image if exists
+			const user = await db.query.userTable.findFirst({
+				where: eq(userTable.id, input.userId),
+			});
+
+			if (user?.imageKey) {
+				try {
+					await deleteObject(user.imageKey, getBucketName());
+				} catch (error) {
+					logger.error(
+						{ error, oldImageKey: user.imageKey },
+						"Failed to delete old profile image",
+					);
+				}
+			}
+
+			// Update user with new image key
+			const [updatedUser] = await db
+				.update(userTable)
+				.set({ imageKey: input.imageKey })
+				.where(eq(userTable.id, input.userId))
+				.returning();
+
+			logger.info(
+				{
+					userId: input.userId,
+					imageKey: input.imageKey,
+					updatedBy: ctx.user.id,
+				},
+				"Profile image updated",
+			);
+
+			return updatedUser;
+		}),
+
+	removeProfileImage: protectedOrganizationProcedure
+		.input(removeProfileImageSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify user is in this organization
+			const targetMember = await db.query.memberTable.findFirst({
+				where: and(
+					eq(memberTable.organizationId, ctx.organization.id),
+					eq(memberTable.userId, input.userId),
+				),
+			});
+
+			if (!targetMember) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "User not found in this organization",
+				});
+			}
+
+			// Check permissions
+			const canEdit =
+				input.userId === ctx.user.id ||
+				ctx.membership.role === MemberRole.owner ||
+				ctx.membership.role === MemberRole.admin;
+
+			if (!canEdit) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message:
+						"You don't have permission to change this user's profile image",
+				});
+			}
+
+			// Get current user to delete image
+			const user = await db.query.userTable.findFirst({
+				where: eq(userTable.id, input.userId),
+			});
+
+			if (user?.imageKey) {
+				try {
+					await deleteObject(user.imageKey, getBucketName());
+				} catch (error) {
+					logger.error(
+						{ error, imageKey: user.imageKey },
+						"Failed to delete profile image from S3",
+					);
+				}
+			}
+
+			// Clear image key
+			const [updatedUser] = await db
+				.update(userTable)
+				.set({ imageKey: null })
+				.where(eq(userTable.id, input.userId))
+				.returning();
+
+			logger.info(
+				{
+					userId: input.userId,
+					removedBy: ctx.user.id,
+				},
+				"Profile image removed",
+			);
+
+			return updatedUser;
+		}),
+
+	getProfileImageUrl: protectedOrganizationProcedure
+		.input(getOrganizationUserSchema)
+		.query(async ({ ctx, input }) => {
+			// Verify user is in this organization
+			const targetMember = await db.query.memberTable.findFirst({
+				where: and(
+					eq(memberTable.organizationId, ctx.organization.id),
+					eq(memberTable.userId, input.userId),
+				),
+			});
+
+			if (!targetMember) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "User not found in this organization",
+				});
+			}
+
+			const user = await db.query.userTable.findFirst({
+				where: eq(userTable.id, input.userId),
+				columns: { image: true, imageKey: true },
+			});
+
+			if (!user) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "User not found",
+				});
+			}
+
+			// Prioritize S3 image over OAuth image
+			if (user.imageKey) {
+				const signedUrl = await getSignedUrl(user.imageKey, getBucketName());
+				return { imageUrl: signedUrl, source: "s3" as const };
+			}
+
+			if (user.image) {
+				return { imageUrl: user.image, source: "oauth" as const };
+			}
+
+			return { imageUrl: null, source: null };
 		}),
 });

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import type * as React from "react";
 import { AgeCategoriesTable } from "@/components/organization/age-categories-table";
 import { OrganizationBreadcrumbSwitcher } from "@/components/organization/organization-breadcrumb-switcher";
@@ -14,7 +15,7 @@ import {
 import { getSession } from "@/lib/auth/server";
 
 export const metadata: Metadata = {
-	title: "Categorías de Edad",
+	title: "Age Categories",
 };
 
 export default async function AgeCategoriesPage(): Promise<React.JSX.Element> {
@@ -23,21 +24,23 @@ export default async function AgeCategoriesPage(): Promise<React.JSX.Element> {
 		redirect("/dashboard");
 	}
 
+	const t = await getTranslations("organization.pages");
+
 	return (
 		<Page>
 			<PageHeader>
 				<PagePrimaryBar>
 					<PageBreadcrumb
 						segments={[
-							{ label: "Home", href: "/dashboard" },
+							{ label: t("home"), href: "/dashboard" },
 							{ label: <OrganizationBreadcrumbSwitcher />, isCustom: true },
-							{ label: "Categorías de Edad" },
+							{ label: t("ageCategories.title") },
 						]}
 					/>
 				</PagePrimaryBar>
 			</PageHeader>
 			<PageBody>
-				<PageContent title="Categorías de Edad">
+				<PageContent title={t("ageCategories.title")}>
 					<AgeCategoriesTable />
 				</PageContent>
 			</PageBody>

@@ -1,0 +1,283 @@
+{
+	"menu": {
+		"dashboard": "Dashboard",
+		"athletes": "Athletes",
+		"athleteGroups": "Athlete Groups",
+		"coaches": "Coaches",
+		"trainingSessions": "Training Sessions",
+		"events": "Events",
+		"eventTemplates": "Event Templates",
+		"ageCategories": "Age Categories",
+		"waitlist": "Waitlist",
+		"equipment": "Equipment",
+		"inventoryAudit": "Inventory Audit",
+		"mySessionsCoach": "My Sessions (Coach)",
+		"mySessionsAthlete": "My Sessions (Athlete)",
+		"myCalendar": "My Calendar",
+		"mySessions": "My Sessions",
+		"myGroups": "My Groups",
+		"myPayments": "My Payments",
+		"myEvents": "My Events",
+		"calendar": "Calendar",
+		"sessions": "Sessions",
+		"groupsItem": "Groups",
+		"paymentsSimple": "Payments",
+		"eventsSimple": "Events",
+		"profile": "Profile",
+		"payments": "Payments",
+		"expenses": "Expenses",
+		"cashRegister": "Cash Register",
+		"products": "Products",
+		"payroll": "Payroll",
+		"financialReports": "Financial",
+		"sportsReports": "Sports",
+		"locations": "Locations",
+		"users": "Users",
+		"vendors": "Vendors",
+		"sponsors": "Sponsors",
+		"chatbot": "AI Chatbot",
+		"settingsGeneral": "General",
+		"settingsMembers": "Members",
+		"settingsSubscription": "Subscription",
+		"settingsCredits": "Credits",
+		"seasons": "Seasons",
+		"teams": "Teams",
+		"competitions": "Competitions",
+		"matches": "Matches",
+		"groups": {
+			"sports": "Sports",
+			"competitions": "Competitions",
+			"finance": "Finance",
+			"reports": "Reports",
+			"general": "General",
+			"settings": "Settings",
+			"myArea": "My Area",
+			"activity": "Activity"
+		}
+	},
+	"pages": {
+		"home": "Home",
+		"myCalendar": {
+			"title": "My Calendar",
+			"pageTitle": "My Training Calendar"
+		},
+		"myGroups": {
+			"title": "My Groups",
+			"pageTitle": "My Training Groups"
+		},
+		"myPayments": {
+			"title": "My Payments",
+			"pageTitle": "My Payments"
+		},
+		"myEvents": {
+			"title": "My Events",
+			"pageTitle": "My Events"
+		},
+		"waitlist": {
+			"title": "Waitlist",
+			"description": "Manage your organization's waitlist"
+		},
+		"athletes": {
+			"title": "Athletes",
+			"description": "Manage your organization's athletes",
+			"profile": "Profile",
+			"profileTitle": "Athlete Profile"
+		},
+		"athleteGroups": {
+			"title": "Athlete Groups",
+			"description": "Manage athlete groups"
+		},
+		"coaches": {
+			"title": "Coaches",
+			"description": "Manage your organization's coaches",
+			"profile": "Profile",
+			"profileTitle": "Coach Profile"
+		},
+		"trainingSessions": {
+			"title": "Training Sessions",
+			"description": "Manage training sessions",
+			"detail": "Session Details"
+		},
+		"events": {
+			"title": "Events",
+			"description": "Manage your organization's events",
+			"new": "New Event",
+			"edit": "Edit",
+			"editTitle": "Edit: {title}",
+			"detail": "Event Detail",
+			"eventFallback": "Event",
+			"organization": "Organization"
+		},
+		"ageCategories": {
+			"title": "Age Categories",
+			"description": "Manage age categories"
+		},
+		"equipment": {
+			"title": "Equipment",
+			"description": "Manage training equipment"
+		},
+		"payments": {
+			"title": "Payments",
+			"description": "Manage payments"
+		},
+		"expenses": {
+			"title": "Expenses",
+			"description": "Manage expenses",
+			"categories": "Expense Categories"
+		},
+		"cashRegister": {
+			"title": "Cash Register",
+			"description": "Manage cash register",
+			"history": "Cash Register History"
+		},
+		"products": {
+			"title": "Products",
+			"description": "Manage products"
+		},
+		"payroll": {
+			"title": "Payroll",
+			"description": "Manage payroll"
+		},
+		"locations": {
+			"title": "Locations",
+			"description": "Manage locations"
+		},
+		"users": {
+			"title": "Users",
+			"description": "Manage organization users"
+		},
+		"vendors": {
+			"title": "Vendors",
+			"description": "Manage vendors"
+		},
+		"sponsors": {
+			"title": "Sponsors",
+			"description": "Manage sponsors"
+		},
+		"chatbot": {
+			"title": "AI Chatbot",
+			"description": "Chat with AI assistant"
+		},
+		"reports": {
+			"title": "Reports",
+			"financial": {
+				"title": "Financial Reports",
+				"description": "Analysis of income, expenses, and cash flow for your organization"
+			},
+			"sports": {
+				"title": "Sports Reports",
+				"description": "Analysis of training sessions, attendance, and athlete performance"
+			},
+			"pending": {
+				"title": "Pending Payments",
+				"description": "Training sessions and event registrations pending payment"
+			}
+		},
+		"mySessions": {
+			"coach": {
+				"title": "My Sessions (Coach)",
+				"pageTitle": "My Sessions"
+			},
+			"athlete": {
+				"title": "My Sessions (Athlete)",
+				"pageTitle": "My Training Sessions"
+			}
+		},
+		"settings": {
+			"title": "Settings",
+			"pageTitle": "Organization Settings"
+		}
+	},
+	"switcher": {
+		"title": "Switch organization",
+		"create": "Create organization",
+		"noOrganizations": "You have no organizations"
+	},
+	"create": {
+		"title": "Create organization",
+		"description": "Set up your new sports organization.",
+		"name": "Organization name",
+		"slug": "Custom URL",
+		"submit": "Create organization"
+	},
+	"settings": {
+		"title": "Settings",
+		"tabs": {
+			"general": "General",
+			"members": "Members",
+			"subscription": "Subscription",
+			"credits": "Credits"
+		},
+		"general": {
+			"title": "General settings",
+			"name": "Name",
+			"slug": "URL",
+			"logo": "Logo",
+			"save": "Save changes"
+		},
+		"members": {
+			"title": "Members",
+			"invite": "Invite member",
+			"role": "Role",
+			"status": "Status",
+			"actions": "Actions",
+			"remove": "Remove member",
+			"changeRole": "Change role"
+		},
+		"subscription": {
+			"title": "Subscription",
+			"currentPlan": "Current plan",
+			"upgrade": "Upgrade plan",
+			"cancel": "Cancel subscription"
+		},
+		"credits": {
+			"title": "Credits",
+			"balance": "Current balance",
+			"buy": "Buy credits",
+			"history": "History"
+		},
+		"features": {
+			"title": "Organization Features",
+			"description": "Enable or disable features for your organization. Disabled features will be hidden from the menu and blocked from access.",
+			"updateSuccess": "Feature updated successfully",
+			"categories": {
+				"sports": "Sports",
+				"finance": "Finance",
+				"reports": "Reports",
+				"general": "General"
+			},
+			"items": {
+				"athletes": "Athletes",
+				"athlete_groups": "Athlete Groups",
+				"coaches": "Coaches",
+				"training_sessions": "Training Sessions",
+				"events": "Events",
+				"event_templates": "Event Templates",
+				"age_categories": "Age Categories",
+				"waitlist": "Waitlist",
+				"equipment": "Equipment",
+				"equipment_audit": "Equipment Audit",
+				"payments": "Payments",
+				"expenses": "Expenses",
+				"cash_register": "Cash Register",
+				"products": "Products",
+				"payroll": "Payroll",
+				"financial_reports": "Financial Reports",
+				"sports_reports": "Sports Reports",
+				"pending_reports": "Pending Payments Report",
+				"locations": "Locations",
+				"vendors": "Vendors",
+				"sponsors": "Sponsors",
+				"chatbot": "AI Chatbot"
+			}
+		}
+	},
+	"invitation": {
+		"title": "Organization invitation",
+		"description": "You have been invited to join {organization}.",
+		"accept": "Accept invitation",
+		"decline": "Decline",
+		"expired": "This invitation has expired.",
+		"invalid": "This invitation is not valid."
+	}
+}

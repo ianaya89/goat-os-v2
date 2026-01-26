@@ -41,6 +41,7 @@ export function RatingInput({
 
 	return (
 		<div
+			role="group"
 			className="flex gap-0.5"
 			onMouseLeave={() => setHoveredValue(null)}
 		>
@@ -55,7 +56,9 @@ export function RatingInput({
 						onMouseEnter={() => !disabled && setHoveredValue(rating)}
 						className={cn(
 							"transition-colors",
-							disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:scale-110",
+							disabled
+								? "cursor-not-allowed opacity-50"
+								: "cursor-pointer hover:scale-110",
 						)}
 					>
 						<StarIcon

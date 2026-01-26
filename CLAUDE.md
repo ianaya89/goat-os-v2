@@ -140,6 +140,62 @@ logger.error({ error }, "Operation failed");
 | `lib/db/schema/tables.ts`  | Database schema |
 | `trpc/init.ts`             | tRPC setup      |
 
+## Internationalization (i18n)
+
+All user-facing text must be translated. Never hardcode strings in components.
+
+### Translation Files
+
+```
+messages/
+├── es/           # Spanish (primary)
+│   ├── common.json
+│   ├── auth.json
+│   ├── dashboard.json
+│   ├── organization.json
+│   ├── training.json
+│   └── ...
+└── en/           # English
+    └── ...
+```
+
+### Using Translations
+
+```typescript
+// Server components
+import { getTranslations } from "next-intl/server";
+const t = await getTranslations("namespace");
+
+// Client components
+import { useTranslations } from "next-intl";
+const t = useTranslations("namespace");
+
+// Usage
+<h1>{t("title")}</h1>
+<p>{t("description", { name: user.name })}</p>
+```
+
+### Adding New Translations
+
+1. Add keys to both `messages/es/*.json` and `messages/en/*.json`
+2. Use nested keys for organization: `"section.subsection.key"`
+3. Use ICU format for plurals: `"{count, plural, one {item} other {items}}"`
+
+## Type Safety (CRITICAL)
+
+**Always run typecheck after making changes:**
+
+```bash
+npm run typecheck
+```
+
+### Common Practices
+
+- Run `npm run typecheck` after modifying components, schemas, or tRPC routers
+- Fix all TypeScript errors before committing
+- Never use `@ts-ignore` or `any` - find proper types
+- Use `unknown` for truly unknown types, then narrow with type guards
+
 ## Before Committing
 
 ```bash

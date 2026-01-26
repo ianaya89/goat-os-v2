@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import type * as React from "react";
 import { OrganizationBreadcrumbSwitcher } from "@/components/organization/organization-breadcrumb-switcher";
 import { OrganizationSettingsTabs } from "@/components/organization/organization-settings-tabs";
@@ -35,15 +36,17 @@ export default async function OrganizationSettingsPage(): Promise<React.JSX.Elem
 		redirect("/dashboard");
 	}
 
+	const t = await getTranslations("organization.pages");
+
 	return (
 		<Page>
 			<PageHeader>
 				<PagePrimaryBar>
 					<PageBreadcrumb
 						segments={[
-							{ label: "Home", href: "/dashboard" },
+							{ label: t("home"), href: "/dashboard" },
 							{ label: <OrganizationBreadcrumbSwitcher />, isCustom: true },
-							{ label: "Settings" },
+							{ label: t("settings.title") },
 						]}
 					/>
 				</PagePrimaryBar>
@@ -52,7 +55,7 @@ export default async function OrganizationSettingsPage(): Promise<React.JSX.Elem
 				<div className="p-4 pb-24 sm:px-6 sm:pt-6">
 					<div className="max-w-2xl">
 						<div className="mb-2">
-							<PageTitle>Organization Settings</PageTitle>
+							<PageTitle>{t("settings.pageTitle")}</PageTitle>
 						</div>
 						<OrganizationSettingsTabs
 							isAdmin={isOrganizationAdmin(organization, session?.user)}

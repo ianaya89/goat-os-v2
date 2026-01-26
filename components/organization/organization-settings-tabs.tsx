@@ -5,6 +5,7 @@ import type * as React from "react";
 import { CreditsSettingsTab } from "@/components/billing/credits-settings-tab";
 import { SubscriptionSettingsTab } from "@/components/billing/subscription-settings-tab";
 import { DeleteOrganizationCard } from "@/components/organization/delete-organization-card";
+import { FeaturesSettingsTab } from "@/components/organization/features-settings-tab";
 import { OrganizationChangeNameCard } from "@/components/organization/organization-change-name-card";
 import { OrganizationInviteMemberCard } from "@/components/organization/organization-invite-member-card";
 import { OrganizationLogoCard } from "@/components/organization/organization-logo-card";
@@ -17,7 +18,13 @@ import {
 } from "@/components/ui/custom/underlined-tabs";
 import { billingConfig } from "@/config/billing.config";
 
-const tabValues = ["general", "members", "subscription", "credits"] as const;
+const tabValues = [
+	"general",
+	"members",
+	"features",
+	"subscription",
+	"credits",
+] as const;
 type TabValue = (typeof tabValues)[number];
 
 type OrganizationSettingsTabsProps = {
@@ -41,6 +48,11 @@ export function OrganizationSettingsTabs({
 			<UnderlinedTabsList className="mb-6 sm:-ml-4">
 				<UnderlinedTabsTrigger value="general">General</UnderlinedTabsTrigger>
 				<UnderlinedTabsTrigger value="members">Members</UnderlinedTabsTrigger>
+				{isAdmin && (
+					<UnderlinedTabsTrigger value="features">
+						Features
+					</UnderlinedTabsTrigger>
+				)}
 				{billingConfig.enabled && (
 					<UnderlinedTabsTrigger value="subscription">
 						Subscription
@@ -63,6 +75,11 @@ export function OrganizationSettingsTabs({
 					<OrganizationMembersCard />
 				</div>
 			</UnderlinedTabsContent>
+			{isAdmin && (
+				<UnderlinedTabsContent value="features">
+					<FeaturesSettingsTab isAdmin={isAdmin} />
+				</UnderlinedTabsContent>
+			)}
 			{billingConfig.enabled && (
 				<UnderlinedTabsContent value="subscription">
 					<SubscriptionSettingsTab isAdmin={isAdmin} />

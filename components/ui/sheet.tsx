@@ -158,7 +158,10 @@ function SheetTitle({
 		<SheetPrimitive.Title
 			data-slot="sheet-title"
 			// Sharp & Bold: larger, tighter tracking
-			className={cn("font-semibold text-lg text-foreground tracking-tight", className)}
+			className={cn(
+				"font-semibold text-lg text-foreground tracking-tight",
+				className,
+			)}
 			{...props}
 		/>
 	);

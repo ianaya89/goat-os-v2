@@ -3,10 +3,10 @@
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
+	AlertCircleIcon,
 	CalendarIcon,
 	PlusIcon,
 	Trash2Icon,
-	AlertCircleIcon,
 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
@@ -81,50 +81,56 @@ export function EventPricingConfig({
 	eventId,
 	currency,
 }: EventPricingConfigProps): React.JSX.Element {
-	const [pricingMode, setPricingMode] = React.useState<"flat" | "tiered">("flat");
+	const [pricingMode, setPricingMode] = React.useState<"flat" | "tiered">(
+		"flat",
+	);
 	const [isAddingTier, setIsAddingTier] = React.useState(false);
 	const [editingTierId, setEditingTierId] = React.useState<string | null>(null);
 
 	const utils = trpc.useUtils();
 
-	const { data: tiers, isPending } = trpc.organization.sportsEvent.listPricingTiers.useQuery(
-		{ eventId, includeInactive: true },
-		{ placeholderData: (prev) => prev },
-	);
+	const { data: tiers, isPending } =
+		trpc.organization.sportsEvent.listPricingTiers.useQuery(
+			{ eventId, includeInactive: true },
+			{ placeholderData: (prev) => prev },
+		);
 
-	const createTierMutation = trpc.organization.sportsEvent.createPricingTier.useMutation({
-		onSuccess: () => {
-			toast.success("Precio creado");
-			utils.organization.sportsEvent.listPricingTiers.invalidate({ eventId });
-			setIsAddingTier(false);
-			form.reset();
-		},
-		onError: (error) => {
-			toast.error(error.message || "Error al crear el precio");
-		},
-	});
+	const createTierMutation =
+		trpc.organization.sportsEvent.createPricingTier.useMutation({
+			onSuccess: () => {
+				toast.success("Precio creado");
+				utils.organization.sportsEvent.listPricingTiers.invalidate({ eventId });
+				setIsAddingTier(false);
+				form.reset();
+			},
+			onError: (error) => {
+				toast.error(error.message || "Error al crear el precio");
+			},
+		});
 
-	const updateTierMutation = trpc.organization.sportsEvent.updatePricingTier.useMutation({
-		onSuccess: () => {
-			toast.success("Precio actualizado");
-			utils.organization.sportsEvent.listPricingTiers.invalidate({ eventId });
-			setEditingTierId(null);
-			form.reset();
-		},
-		onError: (error) => {
-			toast.error(error.message || "Error al actualizar el precio");
-		},
-	});
+	const updateTierMutation =
+		trpc.organization.sportsEvent.updatePricingTier.useMutation({
+			onSuccess: () => {
+				toast.success("Precio actualizado");
+				utils.organization.sportsEvent.listPricingTiers.invalidate({ eventId });
+				setEditingTierId(null);
+				form.reset();
+			},
+			onError: (error) => {
+				toast.error(error.message || "Error al actualizar el precio");
+			},
+		});
 
-	const deleteTierMutation = trpc.organization.sportsEvent.deletePricingTier.useMutation({
-		onSuccess: () => {
-			toast.success("Precio eliminado");
-			utils.organization.sportsEvent.listPricingTiers.invalidate({ eventId });
-		},
-		onError: (error) => {
-			toast.error(error.message || "Error al eliminar el precio");
-		},
-	});
+	const deleteTierMutation =
+		trpc.organization.sportsEvent.deletePricingTier.useMutation({
+			onSuccess: () => {
+				toast.success("Precio eliminado");
+				utils.organization.sportsEvent.listPricingTiers.invalidate({ eventId });
+			},
+			onError: (error) => {
+				toast.error(error.message || "Error al eliminar el precio");
+			},
+		});
 
 	const form = useZodForm({
 		schema: tierFormSchema,
@@ -242,11 +248,7 @@ export function EventPricingConfig({
 						className="grid grid-cols-2 gap-4"
 					>
 						<div>
-							<RadioGroupItem
-								value="flat"
-								id="flat"
-								className="peer sr-only"
-							/>
+							<RadioGroupItem value="flat" id="flat" className="peer sr-only" />
 							<Label
 								htmlFor="flat"
 								className={cn(
@@ -290,7 +292,10 @@ export function EventPricingConfig({
 								<div>
 									<p className="font-medium">{flatRateTier.name}</p>
 									<p className="text-2xl font-bold text-primary">
-										{formatEventPrice(flatRateTier.price, flatRateTier.currency)}
+										{formatEventPrice(
+											flatRateTier.price,
+											flatRateTier.currency,
+										)}
 									</p>
 								</div>
 								<div className="flex gap-2">
@@ -357,7 +362,10 @@ export function EventPricingConfig({
 														min={0}
 														step={0.01}
 														placeholder="0.00"
-														{...field}
+														value={field.value}
+														onChange={(e) =>
+															field.onChange(e.target.valueAsNumber || 0)
+														}
 													/>
 												</FormControl>
 												<FormDescription>
@@ -494,7 +502,10 @@ export function EventPricingConfig({
 														min={0}
 														step={0.01}
 														placeholder="0.00"
-														{...field}
+														value={field.value}
+														onChange={(e) =>
+															field.onChange(e.target.valueAsNumber || 0)
+														}
 													/>
 												</FormControl>
 												<FormMessage />
@@ -527,7 +538,10 @@ export function EventPricingConfig({
 																</Button>
 															</FormControl>
 														</PopoverTrigger>
-														<PopoverContent className="w-auto p-0" align="start">
+														<PopoverContent
+															className="w-auto p-0"
+															align="start"
+														>
 															<Calendar
 																mode="single"
 																selected={field.value}
@@ -565,7 +579,10 @@ export function EventPricingConfig({
 																</Button>
 															</FormControl>
 														</PopoverTrigger>
-														<PopoverContent className="w-auto p-0" align="start">
+														<PopoverContent
+															className="w-auto p-0"
+															align="start"
+														>
 															<Calendar
 																mode="single"
 																selected={field.value}

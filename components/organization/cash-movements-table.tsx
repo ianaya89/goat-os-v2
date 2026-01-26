@@ -49,6 +49,7 @@ const referenceTypeLabels: Record<string, string> = {
 	event_payment: "Pago de Evento",
 	expense: "Gasto",
 	manual: "Manual",
+	product_sale: "Venta de Productos",
 };
 
 interface CashMovementsTableProps {

@@ -58,6 +58,24 @@ export const resendVerificationEmailSchema = z.object({
 	userId: z.string().uuid(),
 });
 
+// Get profile image upload URL
+export const getProfileImageUploadUrlSchema = z.object({
+	userId: z.string().uuid(),
+	fileName: z.string().min(1),
+	contentType: z.string().optional(),
+});
+
+// Save profile image after upload
+export const saveProfileImageSchema = z.object({
+	userId: z.string().uuid(),
+	imageKey: z.string().min(1),
+});
+
+// Remove profile image
+export const removeProfileImageSchema = z.object({
+	userId: z.string().uuid(),
+});
+
 // Type exports
 export type ListOrganizationUsersInput = z.infer<
 	typeof listOrganizationUsersSchema
@@ -75,3 +93,8 @@ export type SendPasswordResetInput = z.infer<typeof sendPasswordResetSchema>;
 export type ResendVerificationEmailInput = z.infer<
 	typeof resendVerificationEmailSchema
 >;
+export type GetProfileImageUploadUrlInput = z.infer<
+	typeof getProfileImageUploadUrlSchema
+>;
+export type SaveProfileImageInput = z.infer<typeof saveProfileImageSchema>;
+export type RemoveProfileImageInput = z.infer<typeof removeProfileImageSchema>;

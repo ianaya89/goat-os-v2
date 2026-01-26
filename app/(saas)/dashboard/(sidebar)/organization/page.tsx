@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import type * as React from "react";
 import { OrganizationDashboard } from "@/components/organization/dashboard/organization-dashboard";
 import { OrganizationBreadcrumbSwitcher } from "@/components/organization/organization-breadcrumb-switcher";
@@ -28,18 +29,19 @@ export default async function DashboardPage(): Promise<React.JSX.Element> {
 		redirect("/dashboard");
 	}
 
+	const t = await getTranslations("dashboard");
+
 	return (
 		<Page>
 			<PageHeader>
 				<PagePrimaryBar>
 					<PageBreadcrumb
 						segments={[
-							{ label: "Home", href: "/dashboard" },
 							{
 								label: <OrganizationBreadcrumbSwitcher />,
 								isCustom: true,
 							},
-							{ label: "Dashboard" },
+							{ label: t("breadcrumb.dashboard") },
 						]}
 					/>
 				</PagePrimaryBar>
@@ -48,7 +50,7 @@ export default async function DashboardPage(): Promise<React.JSX.Element> {
 				<div className="p-4 sm:px-6 sm:pt-6 sm:pb-24">
 					<div className="mx-auto w-full space-y-4">
 						<div>
-							<PageTitle>Dashboard</PageTitle>
+							<PageTitle>{t("title")}</PageTitle>
 						</div>
 						<OrganizationDashboard />
 					</div>

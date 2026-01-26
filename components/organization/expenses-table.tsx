@@ -11,8 +11,10 @@ import {
 	BanknoteIcon,
 	FolderIcon,
 	MoreHorizontalIcon,
+	PencilIcon,
 	PlusIcon,
 	StoreIcon,
+	Trash2Icon,
 } from "lucide-react";
 import {
 	parseAsArrayOf,
@@ -342,6 +344,7 @@ export function ExpensesTable(): React.JSX.Element {
 									NiceModal.show(ExpensesModal, { expense: row.original });
 								}}
 							>
+								<PencilIcon className="mr-2 size-4" />
 								Editar
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
@@ -359,6 +362,7 @@ export function ExpensesTable(): React.JSX.Element {
 								}}
 								variant="destructive"
 							>
+								<Trash2Icon className="mr-2 size-4" />
 								Eliminar
 							</DropdownMenuItem>
 						</DropdownMenuContent>

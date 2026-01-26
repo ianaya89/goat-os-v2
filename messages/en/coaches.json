@@ -1,0 +1,51 @@
+{
+	"title": "Coaches",
+	"description": "Manage your organization's coaches.",
+	"add": "Add coach",
+	"edit": "Edit coach",
+	"view": "View coach",
+	"delete": "Delete coach",
+	"search": "Search coaches...",
+	"filters": {
+		"all": "All",
+		"active": "Active",
+		"inactive": "Inactive"
+	},
+	"table": {
+		"name": "Name",
+		"email": "Email",
+		"phone": "Phone",
+		"specialization": "Specialization",
+		"certifications": "Certifications",
+		"status": "Status",
+		"actions": "Actions"
+	},
+	"form": {
+		"personalInfo": "Personal information",
+		"name": "Full name",
+		"email": "Email",
+		"phone": "Phone",
+		"professionalInfo": "Professional information",
+		"specialization": "Specialization",
+		"certifications": "Certifications",
+		"yearsOfExperience": "Years of experience",
+		"bio": "Biography"
+	},
+	"detail": {
+		"overview": "Overview",
+		"sessions": "Sessions",
+		"athletes": "Athletes",
+		"schedule": "Schedule"
+	},
+	"success": {
+		"created": "Coach created successfully.",
+		"updated": "Coach updated successfully.",
+		"deleted": "Coach deleted successfully."
+	},
+	"error": {
+		"notFound": "Coach not found.",
+		"createFailed": "Failed to create coach.",
+		"updateFailed": "Failed to update coach.",
+		"deleteFailed": "Failed to delete coach."
+	}
+}

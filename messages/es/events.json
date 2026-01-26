@@ -1,0 +1,138 @@
+{
+	"title": "Eventos",
+	"description": "Gestiona los eventos deportivos de tu organización.",
+	"add": "Crear evento",
+	"edit": "Editar evento",
+	"view": "Ver evento",
+	"delete": "Eliminar evento",
+	"publish": "Publicar evento",
+	"unpublish": "Despublicar evento",
+	"search": "Buscar eventos...",
+	"filters": {
+		"all": "Todos",
+		"upcoming": "Próximos",
+		"past": "Pasados",
+		"draft": "Borradores",
+		"published": "Publicados"
+	},
+	"table": {
+		"name": "Nombre",
+		"date": "Fecha",
+		"location": "Ubicación",
+		"type": "Tipo",
+		"registrations": "Inscripciones",
+		"status": "Estado",
+		"actions": "Acciones"
+	},
+	"form": {
+		"basicInfo": "Información básica",
+		"name": "Nombre del evento",
+		"description": "Descripción",
+		"type": "Tipo de evento",
+		"schedule": "Horario",
+		"startDate": "Fecha de inicio",
+		"endDate": "Fecha de fin",
+		"startTime": "Hora de inicio",
+		"endTime": "Hora de fin",
+		"location": "Ubicación",
+		"venue": "Sede",
+		"address": "Dirección",
+		"registration": "Inscripción",
+		"registrationStart": "Inicio de inscripciones",
+		"registrationEnd": "Fin de inscripciones",
+		"maxParticipants": "Máximo de participantes",
+		"price": "Precio",
+		"earlyBirdPrice": "Precio anticipado",
+		"earlyBirdDeadline": "Fecha límite precio anticipado"
+	},
+	"types": {
+		"competition": "Competencia",
+		"tournament": "Torneo",
+		"exhibition": "Exhibición",
+		"clinic": "Clínica",
+		"camp": "Campamento",
+		"tryout": "Prueba",
+		"other": "Otro"
+	},
+	"status": {
+		"draft": "Borrador",
+		"published": "Publicado",
+		"cancelled": "Cancelado",
+		"completed": "Completado"
+	},
+	"registration": {
+		"title": "Inscripción",
+		"register": "Inscribirse",
+		"registered": "Inscrito",
+		"waitlist": "Lista de espera",
+		"full": "Evento lleno",
+		"closed": "Inscripciones cerradas",
+		"confirm": "Confirmar inscripción",
+		"cancel": "Cancelar inscripción"
+	},
+	"detail": {
+		"overview": "Resumen",
+		"participants": "Participantes",
+		"schedule": "Programa",
+		"results": "Resultados"
+	},
+	"success": {
+		"created": "Evento creado correctamente.",
+		"updated": "Evento actualizado correctamente.",
+		"deleted": "Evento eliminado correctamente.",
+		"published": "Evento publicado correctamente.",
+		"unpublished": "Evento despublicado correctamente."
+	},
+	"error": {
+		"notFound": "Evento no encontrado.",
+		"createFailed": "No se pudo crear el evento.",
+		"updateFailed": "No se pudo actualizar el evento.",
+		"deleteFailed": "No se pudo eliminar el evento."
+	},
+	"templates": {
+		"title": "Templates de Eventos",
+		"description": "Crea templates reutilizables para generar eventos rapidamente.",
+		"add": "Nuevo Template",
+		"edit": "Editar Template",
+		"view": "Ver Template",
+		"delete": "Eliminar Template",
+		"saveAs": "Guardar como Template",
+		"createFrom": "Crear desde Template",
+		"search": "Buscar templates...",
+		"table": {
+			"name": "Nombre",
+			"category": "Categoria",
+			"type": "Tipo",
+			"usage": "Usos",
+			"created": "Creado",
+			"actions": "Acciones"
+		},
+		"form": {
+			"name": "Nombre del template",
+			"description": "Descripcion",
+			"category": "Categoria",
+			"eventType": "Tipo de evento",
+			"defaultTitle": "Titulo por defecto",
+			"defaultDescription": "Descripcion por defecto",
+			"defaultDuration": "Duracion por defecto (dias)"
+		},
+		"modal": {
+			"saveTitle": "Guardar como Template",
+			"saveDescription": "Crea un template reutilizable a partir de este evento.",
+			"createTitle": "Crear Evento desde Template",
+			"createDescription": "Selecciona un template para crear un nuevo evento."
+		},
+		"success": {
+			"created": "Template creado correctamente.",
+			"updated": "Template actualizado correctamente.",
+			"deleted": "Template eliminado correctamente.",
+			"eventCreated": "Evento creado desde template correctamente."
+		},
+		"error": {
+			"notFound": "Template no encontrado.",
+			"createFailed": "No se pudo crear el template.",
+			"updateFailed": "No se pudo actualizar el template.",
+			"deleteFailed": "No se pudo eliminar el template."
+		}
+	}
+}

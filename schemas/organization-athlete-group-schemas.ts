@@ -1,8 +1,10 @@
 import { z } from "zod/v4";
+import { AthleteSport } from "@/lib/db/schema/enums";
 
 // Sortable fields for athlete groups
 export const AthleteGroupSortField = z.enum([
 	"name",
+	"sport",
 	"memberCount",
 	"isActive",
 	"createdAt",
@@ -19,6 +21,7 @@ export const listAthleteGroupsSchema = z.object({
 	filters: z
 		.object({
 			isActive: z.boolean().optional(),
+			sport: z.array(z.nativeEnum(AthleteSport)).optional(),
 			ageCategoryId: z.string().uuid().optional(),
 		})
 		.optional(),
@@ -36,6 +39,7 @@ export const createAthleteGroupSchema = z.object({
 		.trim()
 		.max(2000, "Description is too long")
 		.optional(),
+	sport: z.nativeEnum(AthleteSport).optional().nullable(),
 	ageCategoryId: z.string().uuid().optional().nullable(),
 	maxCapacity: z.number().int().positive().optional().nullable(),
 	isActive: z.boolean().default(true),
@@ -58,6 +62,7 @@ export const updateAthleteGroupSchema = z.object({
 		.max(2000, "Description is too long")
 		.optional()
 		.nullable(),
+	sport: z.nativeEnum(AthleteSport).optional().nullable(),
 	ageCategoryId: z.string().uuid().optional().nullable(),
 	maxCapacity: z.number().int().positive().optional().nullable(),
 	isActive: z.boolean().optional(),

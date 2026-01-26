@@ -1,5 +1,7 @@
 import { z } from "zod/v4";
 import {
+	DiscountMode,
+	DiscountValueType,
 	EventPaymentMethod,
 	EventPaymentStatus,
 	EventRegistrationStatus,
@@ -19,8 +21,8 @@ export const listAgeCategoriesSchema = z.object({
 export const createAgeCategorySchema = z.object({
 	name: z.string().trim().min(1, "Name is required").max(50),
 	displayName: z.string().trim().min(1, "Display name is required").max(100),
-	minAge: z.number().int().min(0).max(100).optional(),
-	maxAge: z.number().int().min(0).max(100).optional(),
+	minBirthYear: z.number().int().min(1950).max(2050).optional(),
+	maxBirthYear: z.number().int().min(1950).max(2050).optional(),
 	sortOrder: z.number().int().default(0),
 	isActive: z.boolean().default(true),
 });
@@ -29,8 +31,8 @@ export const updateAgeCategorySchema = z.object({
 	id: z.string().uuid(),
 	name: z.string().trim().min(1).max(50).optional(),
 	displayName: z.string().trim().min(1).max(100).optional(),
-	minAge: z.number().int().min(0).max(100).optional().nullable(),
-	maxAge: z.number().int().min(0).max(100).optional().nullable(),
+	minBirthYear: z.number().int().min(1950).max(2050).optional().nullable(),
+	maxBirthYear: z.number().int().min(1950).max(2050).optional().nullable(),
 	sortOrder: z.number().int().optional(),
 	isActive: z.boolean().optional(),
 });
@@ -113,7 +115,9 @@ export const createSportsEventSchema = z
 
 		// Payment settings
 		currency: z.string().default("ARS"),
-		acceptedPaymentMethods: z.array(z.nativeEnum(EventPaymentMethod)).optional(),
+		acceptedPaymentMethods: z
+			.array(z.nativeEnum(EventPaymentMethod))
+			.optional(),
 
 		// Contact
 		contactEmail: z.string().email().optional(),
@@ -167,6 +171,7 @@ export const updateSportsEventSchema = z.object({
 	contactEmail: z.string().email().optional().nullable(),
 	contactPhone: z.string().max(30).optional().nullable(),
 	coverImageUrl: z.string().url().optional().nullable(),
+	ageCategoryIds: z.array(z.string().uuid()).optional(),
 });
 
 export const deleteSportsEventSchema = z.object({
@@ -181,7 +186,12 @@ export const updateSportsEventStatusSchema = z.object({
 export const duplicateSportsEventSchema = z.object({
 	id: z.string().uuid(),
 	newTitle: z.string().trim().min(1).max(200),
-	newSlug: z.string().trim().min(1).max(200).regex(/^[a-z0-9-]+$/),
+	newSlug: z
+		.string()
+		.trim()
+		.min(1)
+		.max(200)
+		.regex(/^[a-z0-9-]+$/),
 	newStartDate: z.coerce.date(),
 	newEndDate: z.coerce.date(),
 });
@@ -334,6 +344,16 @@ export const bulkUpdateRegistrationStatusSchema = z.object({
 	status: z.nativeEnum(EventRegistrationStatus),
 });
 
+// Bulk register existing athletes from the organization
+export const registerExistingAthletesSchema = z.object({
+	eventId: z.string().uuid(),
+	athleteIds: z.array(z.string().uuid()).min(1).max(100),
+	status: z
+		.nativeEnum(EventRegistrationStatus)
+		.default(EventRegistrationStatus.confirmed),
+	notes: z.string().trim().max(2000).optional(),
+});
+
 // ============================================================================
 // EVENT PAYMENT SCHEMAS
 // ============================================================================
@@ -413,6 +433,161 @@ export const removeEventCoachSchema = z.object({
 });
 
 // ============================================================================
+// EVENT DISCOUNT SCHEMAS
+// ============================================================================
+
+export const listDiscountsSchema = z.object({
+	eventId: z.string().uuid(),
+	includeInactive: z.boolean().default(false),
+});
+
+export const createDiscountSchema = z
+	.object({
+		eventId: z.string().uuid(),
+		name: z.string().trim().min(1, "El nombre es requerido").max(100),
+		description: z.string().trim().max(500).optional(),
+
+		// Mode
+		discountMode: z.nativeEnum(DiscountMode),
+		code: z
+			.string()
+			.trim()
+			.min(1)
+			.max(50)
+			.transform((val) => val.toUpperCase())
+			.optional()
+			.nullable(),
+
+		// Value
+		discountValueType: z.nativeEnum(DiscountValueType),
+		discountValue: z.number().int().min(1, "El valor debe ser mayor a 0"),
+
+		// Limits
+		maxUses: z.number().int().min(1).optional().nullable(),
+		maxUsesPerUser: z.number().int().min(1).optional().nullable(),
+
+		// Dates
+		validFrom: z.coerce.date().optional().nullable(),
+		validUntil: z.coerce.date().optional().nullable(),
+
+		// Restrictions
+		minPurchaseAmount: z.number().int().min(0).optional().nullable(),
+		priority: z.number().int().default(0),
+
+		isActive: z.boolean().default(true),
+	})
+	.refine(
+		(data) => {
+			// If mode is "code", code is required
+			if (data.discountMode === DiscountMode.code && !data.code) {
+				return false;
+			}
+			return true;
+		},
+		{
+			message: "El código es requerido para descuentos con código",
+			path: ["code"],
+		},
+	)
+	.refine(
+		(data) => {
+			// If percentage, value must be 1-100
+			if (
+				data.discountValueType === DiscountValueType.percentage &&
+				data.discountValue > 100
+			) {
+				return false;
+			}
+			return true;
+		},
+		{
+			message: "El porcentaje debe estar entre 1 y 100",
+			path: ["discountValue"],
+		},
+	);
+
+export const updateDiscountSchema = z
+	.object({
+		id: z.string().uuid(),
+		name: z.string().trim().min(1).max(100).optional(),
+		description: z.string().trim().max(500).optional().nullable(),
+		discountMode: z.nativeEnum(DiscountMode).optional(),
+		code: z
+			.string()
+			.trim()
+			.min(1)
+			.max(50)
+			.transform((val) => val.toUpperCase())
+			.optional()
+			.nullable(),
+		discountValueType: z.nativeEnum(DiscountValueType).optional(),
+		discountValue: z.number().int().min(1).optional(),
+		maxUses: z.number().int().min(1).optional().nullable(),
+		maxUsesPerUser: z.number().int().min(1).optional().nullable(),
+		validFrom: z.coerce.date().optional().nullable(),
+		validUntil: z.coerce.date().optional().nullable(),
+		minPurchaseAmount: z.number().int().min(0).optional().nullable(),
+		priority: z.number().int().optional(),
+		isActive: z.boolean().optional(),
+	})
+	.refine(
+		(data) => {
+			// If both mode and code are provided, validate
+			if (
+				data.discountMode === DiscountMode.code &&
+				data.code !== undefined &&
+				!data.code
+			) {
+				return false;
+			}
+			return true;
+		},
+		{
+			message: "El código es requerido para descuentos con código",
+			path: ["code"],
+		},
+	)
+	.refine(
+		(data) => {
+			// If both type and value are provided, validate percentage
+			if (
+				data.discountValueType === DiscountValueType.percentage &&
+				data.discountValue !== undefined &&
+				data.discountValue > 100
+			) {
+				return false;
+			}
+			return true;
+		},
+		{
+			message: "El porcentaje debe estar entre 1 y 100",
+			path: ["discountValue"],
+		},
+	);
+
+export const deleteDiscountSchema = z.object({
+	id: z.string().uuid(),
+});
+
+// Validate a discount code (for registration with code)
+export const validateDiscountCodeSchema = z.object({
+	eventId: z.string().uuid(),
+	code: z
+		.string()
+		.trim()
+		.transform((val) => val.toUpperCase()),
+	userEmail: z.string().trim().email(),
+	originalPrice: z.number().int().min(0),
+});
+
+// Get applicable automatic discounts
+export const getApplicableDiscountsSchema = z.object({
+	eventId: z.string().uuid(),
+	userEmail: z.string().trim().email(),
+	originalPrice: z.number().int().min(0),
+});
+
+// ============================================================================
 // PUBLIC EVENT SCHEMAS (for public pages, no auth required)
 // ============================================================================
 
@@ -443,6 +618,12 @@ export const publicEventRegistrationSchema = z.object({
 	emergencyContactPhone: z.string().trim().max(30).optional(),
 	emergencyContactRelation: z.string().trim().max(100).optional(),
 
+	// Parent/Guardian info (required for minors)
+	parentName: z.string().trim().max(200).optional(),
+	parentPhone: z.string().trim().max(30).optional(),
+	parentEmail: z.string().trim().email().max(255).optional(),
+	parentRelationship: z.string().trim().max(100).optional(),
+
 	// Age category
 	ageCategoryId: z.string().uuid().optional(),
 
@@ -453,6 +634,14 @@ export const publicEventRegistrationSchema = z.object({
 	acceptTerms: z.boolean().refine((val) => val === true, {
 		message: "You must accept the terms and conditions",
 	}),
+
+	// Medical fitness confirmation
+	confirmMedicalFitness: z.boolean().refine((val) => val === true, {
+		message: "You must confirm medical fitness",
+	}),
+
+	// Parental consent (for minors)
+	parentalConsent: z.boolean().optional(),
 });
 
 export const checkRegistrationEmailSchema = z.object({
@@ -501,9 +690,14 @@ export type UpdateEventRegistrationInput = z.infer<
 export type CancelEventRegistrationInput = z.infer<
 	typeof cancelEventRegistrationSchema
 >;
-export type ConfirmFromWaitlistInput = z.infer<typeof confirmFromWaitlistSchema>;
+export type ConfirmFromWaitlistInput = z.infer<
+	typeof confirmFromWaitlistSchema
+>;
 export type BulkUpdateRegistrationStatusInput = z.infer<
 	typeof bulkUpdateRegistrationStatusSchema
+>;
+export type RegisterExistingAthletesInput = z.infer<
+	typeof registerExistingAthletesSchema
 >;
 
 export type ListEventPaymentsInput = z.infer<typeof listEventPaymentsSchema>;
@@ -514,6 +708,17 @@ export type ProcessRefundInput = z.infer<typeof processRefundSchema>;
 export type ListEventCoachesInput = z.infer<typeof listEventCoachesSchema>;
 export type AssignEventCoachInput = z.infer<typeof assignEventCoachSchema>;
 export type RemoveEventCoachInput = z.infer<typeof removeEventCoachSchema>;
+
+export type ListDiscountsInput = z.infer<typeof listDiscountsSchema>;
+export type CreateDiscountInput = z.infer<typeof createDiscountSchema>;
+export type UpdateDiscountInput = z.infer<typeof updateDiscountSchema>;
+export type DeleteDiscountInput = z.infer<typeof deleteDiscountSchema>;
+export type ValidateDiscountCodeInput = z.infer<
+	typeof validateDiscountCodeSchema
+>;
+export type GetApplicableDiscountsInput = z.infer<
+	typeof getApplicableDiscountsSchema
+>;
 
 export type GetPublicEventInput = z.infer<typeof getPublicEventSchema>;
 export type ListPublicEventsInput = z.infer<typeof listPublicEventsSchema>;

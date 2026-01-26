@@ -172,7 +172,10 @@ function DialogTitle({
 		<DialogPrimitive.Title
 			data-slot="dialog-title"
 			// Sharp & Bold: tighter tracking
-			className={cn("font-semibold text-lg text-foreground leading-none tracking-tight", className)}
+			className={cn(
+				"font-semibold text-lg text-foreground leading-none tracking-tight",
+				className,
+			)}
 			{...props}
 		/>
 	);

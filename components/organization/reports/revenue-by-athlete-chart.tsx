@@ -131,11 +131,7 @@ export function RevenueByAthleteChart({
 										return null;
 									}}
 								/>
-								<Bar
-									dataKey="total"
-									fill="hsl(var(--primary))"
-									radius={[0, 4, 4, 0]}
-								/>
+								<Bar dataKey="total" fill="#3b82f6" radius={[0, 4, 4, 0]} />
 							</BarChart>
 						</ResponsiveContainer>
 					</div>

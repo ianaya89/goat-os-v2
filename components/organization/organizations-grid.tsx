@@ -2,7 +2,8 @@
 
 import NiceModal from "@ebay/nice-modal-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { PlusIcon, UsersIcon } from "lucide-react";
+import { MedalIcon, PlusIcon, UsersIcon } from "lucide-react";
+import Link from "next/link";
 import * as React from "react";
 import { CreateOrganizationModal } from "@/components/organization/create-organization-modal";
 import { OrganizationLogo } from "@/components/organization/organization-logo";
@@ -35,6 +36,13 @@ export function OrganizationsGrid(): React.JSX.Element {
 	const [selectingOrgId, setSelectingOrgId] = React.useState<string | null>(
 		null,
 	);
+
+	// Check if user is an athlete - athletes cannot create organizations
+	const { data: isAthlete } = trpc.athlete.isAthlete.useQuery();
+
+	// Athletes cannot create organizations, they can only select existing ones
+	const canCreateOrganization =
+		appConfig.organizations.allowUserCreation && !isAthlete;
 
 	const handleSelectOrganization = async (organizationId: string) => {
 		setSelectingOrgId(organizationId);
@@ -88,17 +96,38 @@ export function OrganizationsGrid(): React.JSX.Element {
 	}
 
 	if (allOrganizations?.length === 0) {
+		// Special message for athletes without organizations
+		if (isAthlete) {
+			return (
+				<Empty className="h-60 border">
+					<EmptyHeader>
+						<EmptyTitle>Sin Organizaciones</EmptyTitle>
+						<EmptyDescription>
+							Aun no perteneces a ninguna organizacion. Contacta con tu club o
+							academia para que te agreguen como atleta.
+						</EmptyDescription>
+					</EmptyHeader>
+					<Button asChild variant="outline">
+						<Link href="/dashboard/my-profile">
+							<MedalIcon className="mr-2 size-4" />
+							Ver Mi Perfil Deportivo
+						</Link>
+					</Button>
+				</Empty>
+			);
+		}
+
 		return (
 			<Empty className="h-60 border">
 				<EmptyHeader>
 					<EmptyTitle>No Organization</EmptyTitle>
 					<EmptyDescription>
-						{appConfig.organizations.allowUserCreation
+						{canCreateOrganization
 							? "Create an organization to get started."
 							: "You don't have any organizations yet. Contact an admin to get started."}
 					</EmptyDescription>
 				</EmptyHeader>
-				{appConfig.organizations.allowUserCreation && (
+				{canCreateOrganization && (
 					<Button
 						onClick={() => NiceModal.show(CreateOrganizationModal)}
 						type="button"
@@ -158,7 +187,7 @@ export function OrganizationsGrid(): React.JSX.Element {
 						</Card>
 					</button>
 				))}
-				{appConfig.organizations.allowUserCreation && (
+				{canCreateOrganization && (
 					<button
 						className={cn(
 							buttonVariants({ variant: "outline" }),

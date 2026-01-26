@@ -16,20 +16,34 @@ import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { organizationAiRouter } from "@/trpc/routers/organization/organization-ai-router";
 import { organizationAthleteEvaluationRouter } from "@/trpc/routers/organization/organization-athlete-evaluation-router";
 import { organizationAthleteGroupRouter } from "@/trpc/routers/organization/organization-athlete-group-router";
+import { organizationAthleteMedicalRouter } from "@/trpc/routers/organization/organization-athlete-medical-router";
 import { organizationAthleteRouter } from "@/trpc/routers/organization/organization-athlete-router";
 import { organizationAthleteWellnessRouter } from "@/trpc/routers/organization/organization-athlete-wellness-router";
 import { organizationAttendanceRouter } from "@/trpc/routers/organization/organization-attendance-router";
 import { organizationCashRegisterRouter } from "@/trpc/routers/organization/organization-cash-register-router";
 import { organizationCoachRouter } from "@/trpc/routers/organization/organization-coach-router";
+import { organizationCompetitionRouter } from "@/trpc/routers/organization/organization-competition-router";
 import { organizationCreditRouter } from "@/trpc/routers/organization/organization-credit-router";
 import { organizationDashboardRouter } from "@/trpc/routers/organization/organization-dashboard-router";
+import { organizationEquipmentAuditRouter } from "@/trpc/routers/organization/organization-equipment-audit-router";
+import { organizationEquipmentRouter } from "@/trpc/routers/organization/organization-equipment-router";
+import { organizationEventOrganizationRouter } from "@/trpc/routers/organization/organization-event-organization-router";
+import { organizationEventRotationRouter } from "@/trpc/routers/organization/organization-event-rotation-router";
+import { organizationEventTemplateRouter } from "@/trpc/routers/organization/organization-event-template-router";
 import { organizationExpenseRouter } from "@/trpc/routers/organization/organization-expense-router";
+import { organizationFeaturesRouter } from "@/trpc/routers/organization/organization-features-router";
 import { organizationLocationRouter } from "@/trpc/routers/organization/organization-location-router";
+import { organizationMatchRouter } from "@/trpc/routers/organization/organization-match-router";
 import { organizationNotificationRouter } from "@/trpc/routers/organization/organization-notification-router";
+import { organizationPayrollRouter } from "@/trpc/routers/organization/organization-payroll-router";
 import { organizationReportsRouter } from "@/trpc/routers/organization/organization-reports-router";
+import { organizationSeasonRouter } from "@/trpc/routers/organization/organization-season-router";
 import { organizationSessionFeedbackRouter } from "@/trpc/routers/organization/organization-session-feedback-router";
+import { organizationSponsorRouter } from "@/trpc/routers/organization/organization-sponsor-router";
 import { organizationSportsEventRouter } from "@/trpc/routers/organization/organization-sports-event-router";
+import { organizationStockRouter } from "@/trpc/routers/organization/organization-stock-router";
 import { organizationSubscriptionRouter } from "@/trpc/routers/organization/organization-subscription-router";
+import { organizationTeamRouter } from "@/trpc/routers/organization/organization-team-router";
 import { organizationTrainingPaymentRouter } from "@/trpc/routers/organization/organization-training-payment-router";
 import { organizationTrainingSessionRouter } from "@/trpc/routers/organization/organization-training-session-router";
 import { organizationUserRouter } from "@/trpc/routers/organization/organization-user-router";
@@ -145,6 +159,7 @@ export const organizationRouter = createTRPCRouter({
 	athlete: organizationAthleteRouter,
 	athleteEvaluation: organizationAthleteEvaluationRouter,
 	athleteGroup: organizationAthleteGroupRouter,
+	athleteMedical: organizationAthleteMedicalRouter,
 	athleteWellness: organizationAthleteWellnessRouter,
 	attendance: organizationAttendanceRouter,
 	sessionFeedback: organizationSessionFeedbackRouter,
@@ -162,4 +177,17 @@ export const organizationRouter = createTRPCRouter({
 	cashRegister: organizationCashRegisterRouter,
 	reports: organizationReportsRouter,
 	waitlist: organizationWaitlistRouter,
+	eventOrganization: organizationEventOrganizationRouter,
+	sponsor: organizationSponsorRouter,
+	stock: organizationStockRouter,
+	equipment: organizationEquipmentRouter,
+	equipmentAudit: organizationEquipmentAuditRouter,
+	eventTemplate: organizationEventTemplateRouter,
+	payroll: organizationPayrollRouter,
+	eventRotation: organizationEventRotationRouter,
+	features: organizationFeaturesRouter,
+	season: organizationSeasonRouter,
+	team: organizationTeamRouter,
+	competition: organizationCompetitionRouter,
+	match: organizationMatchRouter,
 });

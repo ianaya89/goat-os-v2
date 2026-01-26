@@ -1,0 +1,138 @@
+{
+	"title": "Events",
+	"description": "Manage your organization's sports events.",
+	"add": "Create event",
+	"edit": "Edit event",
+	"view": "View event",
+	"delete": "Delete event",
+	"publish": "Publish event",
+	"unpublish": "Unpublish event",
+	"search": "Search events...",
+	"filters": {
+		"all": "All",
+		"upcoming": "Upcoming",
+		"past": "Past",
+		"draft": "Drafts",
+		"published": "Published"
+	},
+	"table": {
+		"name": "Name",
+		"date": "Date",
+		"location": "Location",
+		"type": "Type",
+		"registrations": "Registrations",
+		"status": "Status",
+		"actions": "Actions"
+	},
+	"form": {
+		"basicInfo": "Basic information",
+		"name": "Event name",
+		"description": "Description",
+		"type": "Event type",
+		"schedule": "Schedule",
+		"startDate": "Start date",
+		"endDate": "End date",
+		"startTime": "Start time",
+		"endTime": "End time",
+		"location": "Location",
+		"venue": "Venue",
+		"address": "Address",
+		"registration": "Registration",
+		"registrationStart": "Registration start",
+		"registrationEnd": "Registration end",
+		"maxParticipants": "Maximum participants",
+		"price": "Price",
+		"earlyBirdPrice": "Early bird price",
+		"earlyBirdDeadline": "Early bird deadline"
+	},
+	"types": {
+		"competition": "Competition",
+		"tournament": "Tournament",
+		"exhibition": "Exhibition",
+		"clinic": "Clinic",
+		"camp": "Camp",
+		"tryout": "Tryout",
+		"other": "Other"
+	},
+	"status": {
+		"draft": "Draft",
+		"published": "Published",
+		"cancelled": "Cancelled",
+		"completed": "Completed"
+	},
+	"registration": {
+		"title": "Registration",
+		"register": "Register",
+		"registered": "Registered",
+		"waitlist": "Waitlist",
+		"full": "Event full",
+		"closed": "Registration closed",
+		"confirm": "Confirm registration",
+		"cancel": "Cancel registration"
+	},
+	"detail": {
+		"overview": "Overview",
+		"participants": "Participants",
+		"schedule": "Schedule",
+		"results": "Results"
+	},
+	"success": {
+		"created": "Event created successfully.",
+		"updated": "Event updated successfully.",
+		"deleted": "Event deleted successfully.",
+		"published": "Event published successfully.",
+		"unpublished": "Event unpublished successfully."
+	},
+	"error": {
+		"notFound": "Event not found.",
+		"createFailed": "Failed to create event.",
+		"updateFailed": "Failed to update event.",
+		"deleteFailed": "Failed to delete event."
+	},
+	"templates": {
+		"title": "Event Templates",
+		"description": "Create reusable templates to quickly generate events.",
+		"add": "New Template",
+		"edit": "Edit Template",
+		"view": "View Template",
+		"delete": "Delete Template",
+		"saveAs": "Save as Template",
+		"createFrom": "Create from Template",
+		"search": "Search templates...",
+		"table": {
+			"name": "Name",
+			"category": "Category",
+			"type": "Type",
+			"usage": "Usage",
+			"created": "Created",
+			"actions": "Actions"
+		},
+		"form": {
+			"name": "Template name",
+			"description": "Description",
+			"category": "Category",
+			"eventType": "Event type",
+			"defaultTitle": "Default title",
+			"defaultDescription": "Default description",
+			"defaultDuration": "Default duration (days)"
+		},
+		"modal": {
+			"saveTitle": "Save as Template",
+			"saveDescription": "Create a reusable template from this event.",
+			"createTitle": "Create Event from Template",
+			"createDescription": "Select a template to create a new event."
+		},
+		"success": {
+			"created": "Template created successfully.",
+			"updated": "Template updated successfully.",
+			"deleted": "Template deleted successfully.",
+			"eventCreated": "Event created from template successfully."
+		},
+		"error": {
+			"notFound": "Template not found.",
+			"createFailed": "Failed to create template.",
+			"updateFailed": "Failed to update template.",
+			"deleteFailed": "Failed to delete template."
+		}
+	}
+}

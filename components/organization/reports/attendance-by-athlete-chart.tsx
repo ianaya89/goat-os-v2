@@ -82,7 +82,7 @@ export function AttendanceByAthleteChart({
 
 	const renderChart = (
 		chartData: ReturnType<typeof formatChartData>,
-		sortBy: "best" | "worst",
+		_sortBy: "best" | "worst",
 	) => {
 		if (chartData.length === 0) {
 			return (

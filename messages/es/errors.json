@@ -1,0 +1,31 @@
+{
+	"generic": "Algo salió mal. Por favor, intenta de nuevo.",
+	"network": "Error de conexión. Verifica tu conexión a internet.",
+	"notFound": "No encontrado.",
+	"unauthorized": "No autorizado.",
+	"forbidden": "No tienes permisos para realizar esta acción.",
+	"badRequest": "Solicitud inválida.",
+	"serverError": "Error del servidor. Por favor, intenta más tarde.",
+	"trpc": {
+		"BAD_REQUEST": "Solicitud inválida.",
+		"UNAUTHORIZED": "No autorizado.",
+		"FORBIDDEN": "No tienes permisos para esta acción.",
+		"NOT_FOUND": "Recurso no encontrado.",
+		"TIMEOUT": "La solicitud tardó demasiado.",
+		"CONFLICT": "Conflicto con el estado actual.",
+		"PRECONDITION_FAILED": "Precondición fallida.",
+		"PAYLOAD_TOO_LARGE": "El contenido es muy grande.",
+		"METHOD_NOT_SUPPORTED": "Método no soportado.",
+		"UNPROCESSABLE_CONTENT": "Contenido no procesable.",
+		"TOO_MANY_REQUESTS": "Demasiadas solicitudes. Por favor, espera un momento.",
+		"CLIENT_CLOSED_REQUEST": "Solicitud cancelada.",
+		"INTERNAL_SERVER_ERROR": "Error interno del servidor."
+	},
+	"entity": {
+		"notFound": "{entity} no encontrado.",
+		"alreadyExists": "{entity} ya existe.",
+		"createFailed": "No se pudo crear {entity}.",
+		"updateFailed": "No se pudo actualizar {entity}.",
+		"deleteFailed": "No se pudo eliminar {entity}."
+	}
+}

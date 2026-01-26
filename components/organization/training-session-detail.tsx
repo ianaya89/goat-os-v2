@@ -3,6 +3,7 @@
 import NiceModal from "@ebay/nice-modal-react";
 import { format } from "date-fns";
 import {
+	ActivityIcon,
 	ArrowLeftIcon,
 	BellIcon,
 	CalendarIcon,
@@ -20,8 +21,10 @@ import {
 import Link from "next/link";
 import * as React from "react";
 import { toast } from "sonner";
+import { useOrganizationUserProfile } from "@/app/(saas)/dashboard/(sidebar)/organization/providers";
 import { AttendanceForm } from "@/components/organization/attendance-form";
 import { EvaluationForm } from "@/components/organization/evaluation-form";
+import { SessionFeedbackModal } from "@/components/organization/session-feedback-modal";
 import { SessionFeedbackView } from "@/components/organization/session-feedback-view";
 import { TrainingSessionsModal } from "@/components/organization/training-sessions-modal";
 import { Badge } from "@/components/ui/badge";
@@ -57,8 +60,12 @@ export function TrainingSessionDetail({
 	sessionId,
 }: TrainingSessionDetailProps) {
 	const utils = trpc.useUtils();
+	const userProfile = useOrganizationUserProfile();
 	const [postNotes, setPostNotes] = React.useState("");
 	const [isCompletingSession, setIsCompletingSession] = React.useState(false);
+
+	// Use pre-computed capability from context
+	const isRestrictedMember = userProfile.capabilities.isRestrictedMember;
 
 	const {
 		data: session,
@@ -200,56 +207,78 @@ export function TrainingSessionDetail({
 					</div>
 				</div>
 				<div className="flex gap-2">
-					{canSendReminder && (
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
+					{/* Admin/Coach actions */}
+					{!isRestrictedMember && (
+						<>
+							{canSendReminder && (
+								<DropdownMenu>
+									<DropdownMenuTrigger asChild>
+										<Button
+											variant="outline"
+											disabled={sendReminderMutation.isPending}
+										>
+											<BellIcon className="mr-2 size-4" />
+											{sendReminderMutation.isPending
+												? "Sending..."
+												: "Send Reminder"}
+											<ChevronDownIcon className="ml-2 size-4" />
+										</Button>
+									</DropdownMenuTrigger>
+									<DropdownMenuContent align="end">
+										<DropdownMenuItem
+											onClick={() => handleSendReminder("email")}
+										>
+											<MailIcon className="mr-2 size-4" />
+											Send via Email
+										</DropdownMenuItem>
+										<DropdownMenuItem onClick={() => handleSendReminder("sms")}>
+											<PhoneIcon className="mr-2 size-4" />
+											Send via SMS
+										</DropdownMenuItem>
+										<DropdownMenuItem
+											onClick={() => handleSendReminder("whatsapp")}
+										>
+											<MessageSquareIcon className="mr-2 size-4" />
+											Send via WhatsApp
+										</DropdownMenuItem>
+									</DropdownMenuContent>
+								</DropdownMenu>
+							)}
+							<Button onClick={handleEdit} variant="outline">
+								<EditIcon className="mr-2 size-4" />
+								Edit
+							</Button>
+							{!isCompleted && !isCancelled && (
 								<Button
-									variant="outline"
-									disabled={sendReminderMutation.isPending}
+									onClick={() => setIsCompletingSession(true)}
+									variant="default"
 								>
-									<BellIcon className="mr-2 size-4" />
-									{sendReminderMutation.isPending
-										? "Sending..."
-										: "Send Reminder"}
-									<ChevronDownIcon className="ml-2 size-4" />
+									<CheckCircleIcon className="mr-2 size-4" />
+									Complete Session
 								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent align="end">
-								<DropdownMenuItem onClick={() => handleSendReminder("email")}>
-									<MailIcon className="mr-2 size-4" />
-									Send via Email
-								</DropdownMenuItem>
-								<DropdownMenuItem onClick={() => handleSendReminder("sms")}>
-									<PhoneIcon className="mr-2 size-4" />
-									Send via SMS
-								</DropdownMenuItem>
-								<DropdownMenuItem
-									onClick={() => handleSendReminder("whatsapp")}
-								>
-									<MessageSquareIcon className="mr-2 size-4" />
-									Send via WhatsApp
-								</DropdownMenuItem>
-							</DropdownMenuContent>
-						</DropdownMenu>
+							)}
+						</>
 					)}
-					<Button onClick={handleEdit} variant="outline">
-						<EditIcon className="mr-2 size-4" />
-						Edit
-					</Button>
-					{!isCompleted && !isCancelled && (
+					{/* Athlete feedback button */}
+					{isRestrictedMember && (isCompleted || !isFutureSession) && (
 						<Button
-							onClick={() => setIsCompletingSession(true)}
+							onClick={() => {
+								NiceModal.show(SessionFeedbackModal, {
+									sessionId,
+									sessionTitle: session.title,
+								});
+							}}
 							variant="default"
 						>
-							<CheckCircleIcon className="mr-2 size-4" />
-							Complete Session
+							<ActivityIcon className="mr-2 size-4" />
+							Dar Feedback
 						</Button>
 					)}
 				</div>
 			</div>
 
-			{/* Complete Session Dialog */}
-			{isCompletingSession && (
+			{/* Complete Session Dialog - Admin/Coach only */}
+			{!isRestrictedMember && isCompletingSession && (
 				<Card className="border-primary">
 					<CardHeader>
 						<CardTitle className="text-lg">Complete Session</CardTitle>
@@ -435,22 +464,35 @@ export function TrainingSessionDetail({
 			)}
 
 			{/* Attendance, Evaluations & Feedback Tabs */}
-			<Tabs defaultValue="attendance" className="space-y-4">
-				<TabsList>
-					<TabsTrigger value="attendance">Attendance</TabsTrigger>
-					<TabsTrigger value="evaluations">Evaluations</TabsTrigger>
-					<TabsTrigger value="feedback">Athlete Feedback</TabsTrigger>
-				</TabsList>
-				<TabsContent value="attendance">
-					<AttendanceForm sessionId={sessionId} />
-				</TabsContent>
-				<TabsContent value="evaluations">
-					<EvaluationForm sessionId={sessionId} />
-				</TabsContent>
-				<TabsContent value="feedback">
-					<SessionFeedbackView sessionId={sessionId} />
-				</TabsContent>
-			</Tabs>
+			{isRestrictedMember ? (
+				/* Athlete view - only show feedback */
+				<Card>
+					<CardHeader>
+						<CardTitle className="text-base">Mi Feedback</CardTitle>
+					</CardHeader>
+					<CardContent>
+						<SessionFeedbackView sessionId={sessionId} athleteView />
+					</CardContent>
+				</Card>
+			) : (
+				/* Admin/Coach view - show all tabs */
+				<Tabs defaultValue="attendance" className="space-y-4">
+					<TabsList>
+						<TabsTrigger value="attendance">Attendance</TabsTrigger>
+						<TabsTrigger value="evaluations">Evaluations</TabsTrigger>
+						<TabsTrigger value="feedback">Athlete Feedback</TabsTrigger>
+					</TabsList>
+					<TabsContent value="attendance">
+						<AttendanceForm sessionId={sessionId} />
+					</TabsContent>
+					<TabsContent value="evaluations">
+						<EvaluationForm sessionId={sessionId} />
+					</TabsContent>
+					<TabsContent value="feedback">
+						<SessionFeedbackView sessionId={sessionId} />
+					</TabsContent>
+				</Tabs>
+			)}
 		</div>
 	);
 }

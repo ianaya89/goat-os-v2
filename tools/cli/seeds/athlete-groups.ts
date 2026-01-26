@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import type { DrizzleClient } from "@/lib/db/types";
 import type { SeedContext } from "../commands/seed";
 import { schema } from "../db";
 import { ENTITY_GROUP, ENTITY_GROUP_MEMBER, seedUUID } from "./utils";
@@ -24,7 +25,7 @@ const descriptions = [
 ];
 
 export async function seedAthleteGroups(
-	db: any,
+	db: DrizzleClient,
 	count: number,
 	context: SeedContext,
 ): Promise<string[]> {
@@ -65,9 +66,10 @@ export async function seedAthleteGroups(
 	}
 
 	// Add athletes to groups if we have both and no existing members
-	if (context.athleteIds.length > 0 && groupIds.length > 0) {
+	const firstGroupId = groupIds[0];
+	if (context.athleteIds.length > 0 && groupIds.length > 0 && firstGroupId) {
 		const existingMembers = await db.query.athleteGroupMemberTable.findMany({
-			where: eq(schema.athleteGroupMemberTable.groupId, groupIds[0]),
+			where: eq(schema.athleteGroupMemberTable.groupId, firstGroupId),
 		});
 
 		if (existingMembers.length === 0) {
@@ -76,15 +78,18 @@ export async function seedAthleteGroups(
 
 			for (let g = 0; g < groupIds.length; g++) {
 				const groupId = groupIds[g];
+				if (!groupId) continue;
 				// Add deterministic athletes to each group
 				const numAthletes = Math.min(5, context.athleteIds.length);
 
 				for (let i = 0; i < numAthletes; i++) {
 					const athleteIndex = (g + i) % context.athleteIds.length;
+					const athleteId = context.athleteIds[athleteIndex];
+					if (!athleteId) continue;
 					members.push({
 						id: seedUUID(ENTITY_GROUP_MEMBER, g * 100 + i + 1),
 						groupId,
-						athleteId: context.athleteIds[athleteIndex],
+						athleteId,
 					});
 				}
 			}

@@ -1,0 +1,91 @@
+{
+	"title": "Dashboard",
+	"welcome": "Welcome, {name}",
+	"yourOrganizations": "Your Organizations",
+	"breadcrumb": {
+		"home": "Home",
+		"dashboard": "Dashboard"
+	},
+	"overview": {
+		"title": "Overview",
+		"totalAthletes": "Total athletes",
+		"activeCoaches": "Active coaches",
+		"upcomingSessions": "Upcoming sessions",
+		"pendingPayments": "Pending payments"
+	},
+	"quickActions": {
+		"title": "Quick actions",
+		"addAthlete": "Add athlete",
+		"createSession": "Create session",
+		"recordPayment": "Record payment",
+		"viewReports": "View reports"
+	},
+	"recentActivity": {
+		"title": "Recent activity",
+		"noActivity": "No recent activity"
+	},
+	"onboarding": {
+		"title": "Initial setup",
+		"description": "Complete these steps to start using the platform.",
+		"steps": {
+			"profile": "Complete profile",
+			"organization": "Set up organization",
+			"members": "Invite members",
+			"billing": "Set up billing"
+		}
+	},
+	"daily": {
+		"title": "Today's Activity",
+		"noData": "No data available",
+		"sessions": "Sessions",
+		"completed": "completed",
+		"attendance": "Attendance",
+		"present": "present",
+		"income": "Income",
+		"payments": "payments",
+		"todaySessions": "Today's sessions",
+		"statusCompleted": "Completed",
+		"statusConfirmed": "Confirmed",
+		"statusPending": "Pending",
+		"viewAll": "View all ({count} sessions)",
+		"noSessions": "No sessions scheduled for today",
+		"viewCalendar": "View session calendar"
+	},
+	"weekly": {
+		"title": "Weekly Summary",
+		"noData": "No data available",
+		"viewReports": "View reports",
+		"sessions": "Sessions",
+		"completed": "completed",
+		"attendance": "Attendance",
+		"income": "Income",
+		"payments": "payments",
+		"cancelled": "Cancelled",
+		"sessionsPerDay": "Sessions per day",
+		"attendanceBreakdown": "Attendance breakdown",
+		"presentLabel": "Present",
+		"lateLabel": "Late",
+		"absentLabel": "Absent",
+		"excusedLabel": "Excused"
+	},
+	"cashRegister": {
+		"title": "Today's Cash Register",
+		"history": "History",
+		"statusOpen": "Open",
+		"statusClosed": "Closed",
+		"statusNotOpened": "Not Opened",
+		"notOpenTitle": "Cash register is not open",
+		"notOpenDescription": "Open the cash register to record today's movements",
+		"openButton": "Open Cash Register",
+		"openingBalance": "Opening Balance",
+		"closingBalance": "Closing Balance",
+		"netFlow": "Net Flow",
+		"incomeLabel": "Income",
+		"expenseLabel": "Expenses",
+		"paymentsLabel": "Payments",
+		"movementButton": "Movement",
+		"closeButton": "Close Cash Register",
+		"openedBy": "Opened by {name}",
+		"closedBy": "Closed by {name}"
+	}
+}

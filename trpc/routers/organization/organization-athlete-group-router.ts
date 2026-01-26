@@ -60,6 +60,11 @@ export const organizationAthleteGroupRouter = createTRPCRouter({
 				);
 			}
 
+			// Sport filter
+			if (input.filters?.sport && input.filters.sport.length > 0) {
+				conditions.push(inArray(athleteGroupTable.sport, input.filters.sport));
+			}
+
 			const whereCondition = and(...conditions);
 
 			// Build sort order
@@ -68,6 +73,9 @@ export const organizationAthleteGroupRouter = createTRPCRouter({
 			switch (input.sortBy) {
 				case "name":
 					orderByColumn = sortDirection(athleteGroupTable.name);
+					break;
+				case "sport":
+					orderByColumn = sortDirection(athleteGroupTable.sport);
 					break;
 				case "isActive":
 					orderByColumn = sortDirection(athleteGroupTable.isActive);
@@ -173,6 +181,7 @@ export const organizationAthleteGroupRouter = createTRPCRouter({
 				id: true,
 				name: true,
 				description: true,
+				sport: true,
 				ageCategoryId: true,
 				maxCapacity: true,
 			},
@@ -495,4 +504,56 @@ export const organizationAthleteGroupRouter = createTRPCRouter({
 
 			return { success: true, memberCount: validAthleteIds.length };
 		}),
+
+	// List groups that the current user (as athlete) belongs to
+	listMyGroups: protectedOrganizationProcedure.query(async ({ ctx }) => {
+		// First, find the athlete record for the current user
+		const athlete = await db.query.athleteTable.findFirst({
+			where: and(
+				eq(athleteTable.userId, ctx.user.id),
+				eq(athleteTable.organizationId, ctx.organization.id),
+			),
+		});
+
+		if (!athlete) {
+			return { groups: [], athlete: null };
+		}
+
+		// Get all group memberships for this athlete
+		const memberships = await db.query.athleteGroupMemberTable.findMany({
+			where: eq(athleteGroupMemberTable.athleteId, athlete.id),
+			with: {
+				group: {
+					with: {
+						ageCategory: true,
+						members: {
+							with: {
+								athlete: {
+									with: {
+										user: {
+											columns: {
+												id: true,
+												name: true,
+												image: true,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		});
+
+		const groups = memberships
+			.map((m) => m.group)
+			.filter((g) => g.isActive)
+			.map((group) => ({
+				...group,
+				memberCount: group.members.length,
+			}));
+
+		return { groups, athlete };
+	}),
 });

@@ -5,7 +5,7 @@
  * and can be verified without database lookups.
  */
 
-import { createHmac } from "crypto";
+import { createHmac } from "node:crypto";
 import { env } from "@/lib/env";
 
 interface ConfirmationPayload {

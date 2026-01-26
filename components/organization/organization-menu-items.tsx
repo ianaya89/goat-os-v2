@@ -11,21 +11,32 @@ import {
 	CoinsIcon,
 	CreditCardIcon,
 	DumbbellIcon,
+	FileTextIcon,
+	HandshakeIcon,
+	HardHatIcon,
 	LayoutDashboardIcon,
 	MapPinIcon,
 	MedalIcon,
+	PackageIcon,
 	ReceiptIcon,
 	SettingsIcon,
+	ShieldIcon,
+	SwordsIcon,
 	TagsIcon,
+	TrophyIcon,
+	TruckIcon,
 	UserCheckIcon,
 	UserIcon,
 	UsersIcon,
 	UsersRoundIcon,
+	WalletCardsIcon,
 	WalletIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import * as React from "react";
+import { useOrganizationUserProfile } from "@/app/(saas)/dashboard/(sidebar)/organization/providers";
 import {
 	Collapsible,
 	CollapsibleContent,
@@ -42,8 +53,8 @@ import {
 	SidebarMenuSubItem,
 	useSidebar,
 } from "@/components/ui/sidebar";
+import { OrganizationFeature } from "@/lib/db/schema/enums";
 import { cn } from "@/lib/utils";
-import { trpc } from "@/trpc/client";
 
 type MenuItem = {
 	label: string;
@@ -51,6 +62,8 @@ type MenuItem = {
 	icon: React.ComponentType<{ className?: string }>;
 	external?: boolean;
 	exactMatch?: boolean;
+	/** Optional feature flag - if set, item only shows when this feature is enabled */
+	feature?: OrganizationFeature;
 };
 
 type MenuGroup = {
@@ -63,161 +76,304 @@ type MenuGroup = {
 const STORAGE_KEY = "sidebar-open-groups";
 
 export function OrganizationMenuItems(): React.JSX.Element {
+	const t = useTranslations("organization.menu");
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 	const { state } = useSidebar();
 
-	// Get current user's profile info to determine which menu items to show
-	const { data: userProfile } = trpc.organization.user.me.useQuery();
+	// Get user profile from context (set by server-side layout)
+	const userProfile = useOrganizationUserProfile();
 
 	const basePath = "/dashboard/organization";
 
-	// Build sports items conditionally
+	// Use pre-computed capability from context
+	const isRestrictedMember = userProfile.capabilities.isRestrictedMember;
+
+	// Menu items for restricted members (athletes) - no "My" prefix needed
+	// since they can only see their own data anyway
+	const restrictedMemberMenuItems: MenuItem[] = [
+		{
+			label: t("calendar"),
+			href: `${basePath}/my-calendar`,
+			icon: CalendarIcon,
+			feature: OrganizationFeature.trainingSessions,
+		},
+		{
+			label: t("sessions"),
+			href: `${basePath}/my-sessions/athlete`,
+			icon: ClipboardListIcon,
+			feature: OrganizationFeature.trainingSessions,
+		},
+		{
+			label: t("groupsItem"),
+			href: `${basePath}/my-groups`,
+			icon: UsersIcon,
+			feature: OrganizationFeature.athleteGroups,
+		},
+		{
+			label: t("paymentsSimple"),
+			href: `${basePath}/my-payments`,
+			icon: BanknoteIcon,
+			feature: OrganizationFeature.payments,
+		},
+		{
+			label: t("eventsSimple"),
+			href: `${basePath}/my-events`,
+			icon: CalendarDaysIcon,
+			feature: OrganizationFeature.events,
+		},
+	];
+
+	// Build sports items conditionally (for admin/owner view)
 	const sportsItems: MenuItem[] = [
 		{
-			label: "Athletes",
+			label: t("athletes"),
 			href: `${basePath}/athletes`,
 			icon: MedalIcon,
+			feature: OrganizationFeature.athletes,
 		},
 		{
-			label: "Athlete Groups",
+			label: t("athleteGroups"),
 			href: `${basePath}/athlete-groups`,
 			icon: UsersIcon,
+			feature: OrganizationFeature.athleteGroups,
 		},
 		{
-			label: "Coaches",
+			label: t("coaches"),
 			href: `${basePath}/coaches`,
 			icon: UserCheckIcon,
+			feature: OrganizationFeature.coaches,
 		},
 		{
-			label: "Training Sessions",
+			label: t("trainingSessions"),
 			href: `${basePath}/training-sessions`,
 			icon: CalendarIcon,
+			feature: OrganizationFeature.trainingSessions,
 		},
 		{
-			label: "Events",
+			label: t("events"),
 			href: `${basePath}/events`,
 			icon: CalendarDaysIcon,
+			feature: OrganizationFeature.events,
 		},
 		{
-			label: "Age Categories",
+			label: t("eventTemplates"),
+			href: `${basePath}/events/templates`,
+			icon: FileTextIcon,
+			feature: OrganizationFeature.eventTemplates,
+		},
+		{
+			label: t("ageCategories"),
 			href: `${basePath}/age-categories`,
 			icon: TagsIcon,
+			feature: OrganizationFeature.ageCategories,
 		},
 		{
-			label: "Lista de Espera",
+			label: t("waitlist"),
 			href: `${basePath}/waitlist`,
 			icon: ClipboardListIcon,
+			feature: OrganizationFeature.waitlist,
+		},
+		{
+			label: t("equipment"),
+			href: `${basePath}/equipment`,
+			icon: HardHatIcon,
+			feature: OrganizationFeature.equipment,
+		},
+		{
+			label: t("inventoryAudit"),
+			href: `${basePath}/equipment/audit`,
+			icon: ClipboardListIcon,
+			feature: OrganizationFeature.equipmentAudit,
 		},
 	];
 
 	// Add coach sessions if user is a coach
-	if (userProfile?.isCoach) {
+	if (userProfile.isCoach) {
 		sportsItems.push({
-			label: "My Sessions (Coach)",
+			label: t("mySessionsCoach"),
 			href: `${basePath}/my-sessions/coach`,
 			icon: ClipboardListIcon,
+			feature: OrganizationFeature.trainingSessions,
 		});
 	}
 
-	// Add athlete sessions if user is an athlete
-	if (userProfile?.isAthlete) {
+	// Add athlete sessions if user is an athlete (but not restricted - they have their own menu)
+	if (userProfile.isAthlete && !isRestrictedMember) {
 		sportsItems.push({
-			label: "My Sessions (Athlete)",
+			label: t("mySessionsAthlete"),
 			href: `${basePath}/my-sessions/athlete`,
 			icon: UserIcon,
+			feature: OrganizationFeature.trainingSessions,
 		});
 	}
 
-	const menuGroups: MenuGroup[] = [
+	// Restricted member menu groups (simpler, no "My" prefix)
+	const restrictedMemberMenuGroups: MenuGroup[] = [
 		{
-			label: "Deporte",
+			label: t("groups.activity"),
+			icon: CalendarIcon,
+			items: restrictedMemberMenuItems,
+			defaultOpen: true,
+		},
+	];
+
+	// Competition items (teams, matches, tournaments)
+	const competitionItems: MenuItem[] = [
+		{
+			label: t("seasons"),
+			href: `${basePath}/seasons`,
+			icon: CalendarIcon,
+			feature: OrganizationFeature.teams,
+		},
+		{
+			label: t("teams"),
+			href: `${basePath}/teams`,
+			icon: ShieldIcon,
+			feature: OrganizationFeature.teams,
+		},
+		{
+			label: t("competitions"),
+			href: `${basePath}/competitions`,
+			icon: TrophyIcon,
+			feature: OrganizationFeature.competitions,
+		},
+		{
+			label: t("matches"),
+			href: `${basePath}/matches`,
+			icon: SwordsIcon,
+			feature: OrganizationFeature.matches,
+		},
+	];
+
+	// Admin/Owner menu groups
+	const adminMenuGroups: MenuGroup[] = [
+		{
+			label: t("groups.sports"),
 			icon: MedalIcon,
 			items: sportsItems,
 			defaultOpen: true,
 		},
 		{
-			label: "Finanzas",
+			label: t("groups.competitions"),
+			icon: TrophyIcon,
+			items: competitionItems,
+			defaultOpen: false,
+		},
+		{
+			label: t("groups.finance"),
 			icon: WalletIcon,
 			items: [
 				{
-					label: "Payments",
+					label: t("payments"),
 					href: `${basePath}/payments`,
 					icon: BanknoteIcon,
+					feature: OrganizationFeature.payments,
 				},
 				{
-					label: "Expenses",
+					label: t("expenses"),
 					href: `${basePath}/expenses`,
 					icon: ReceiptIcon,
+					feature: OrganizationFeature.expenses,
 				},
 				{
-					label: "Cash Register",
+					label: t("cashRegister"),
 					href: `${basePath}/cash-register`,
 					icon: WalletIcon,
+					feature: OrganizationFeature.cashRegister,
+				},
+				{
+					label: t("products"),
+					href: `${basePath}/products`,
+					icon: PackageIcon,
+					feature: OrganizationFeature.products,
+				},
+				{
+					label: t("payroll"),
+					href: `${basePath}/payroll`,
+					icon: WalletCardsIcon,
+					feature: OrganizationFeature.payroll,
 				},
 			],
 			defaultOpen: false,
 		},
 		{
-			label: "Reportes",
+			label: t("groups.reports"),
 			icon: BarChart3Icon,
 			items: [
 				{
-					label: "Financieros",
+					label: t("financialReports"),
 					href: `${basePath}/reports/financial`,
 					icon: BanknoteIcon,
+					feature: OrganizationFeature.financialReports,
 				},
 				{
-					label: "Deportivos",
+					label: t("sportsReports"),
 					href: `${basePath}/reports/sports`,
 					icon: DumbbellIcon,
+					feature: OrganizationFeature.sportsReports,
 				},
 			],
 			defaultOpen: false,
 		},
 		{
-			label: "General",
+			label: t("groups.general"),
 			icon: LayoutDashboardIcon,
 			items: [
 				{
-					label: "Locations",
+					label: t("locations"),
 					href: `${basePath}/locations`,
 					icon: MapPinIcon,
+					feature: OrganizationFeature.locations,
 				},
 				{
-					label: "Users",
+					label: t("users"),
 					href: `${basePath}/users`,
 					icon: UsersRoundIcon,
+					// No feature flag - users management is always available
 				},
 				{
-					label: "AI Chatbot",
+					label: t("vendors"),
+					href: `${basePath}/vendors`,
+					icon: TruckIcon,
+					feature: OrganizationFeature.vendors,
+				},
+				{
+					label: t("sponsors"),
+					href: `${basePath}/sponsors`,
+					icon: HandshakeIcon,
+					feature: OrganizationFeature.sponsors,
+				},
+				{
+					label: t("chatbot"),
 					href: `${basePath}/chatbot`,
 					icon: BotIcon,
+					feature: OrganizationFeature.chatbot,
 				},
 			],
 			defaultOpen: false,
 		},
 		{
-			label: "Settings",
+			label: t("groups.settings"),
 			icon: SettingsIcon,
 			items: [
 				{
-					label: "General",
+					label: t("settingsGeneral"),
 					href: `${basePath}/settings?tab=general`,
 					icon: SettingsIcon,
 				},
 				{
-					label: "Members",
+					label: t("settingsMembers"),
 					href: `${basePath}/settings?tab=members`,
 					icon: UsersIcon,
 				},
 				{
-					label: "Subscription",
+					label: t("settingsSubscription"),
 					href: `${basePath}/settings?tab=subscription`,
 					icon: CreditCardIcon,
 				},
 				{
-					label: "Credits",
+					label: t("settingsCredits"),
 					href: `${basePath}/settings?tab=credits`,
 					icon: CoinsIcon,
 				},
@@ -225,6 +381,25 @@ export function OrganizationMenuItems(): React.JSX.Element {
 			defaultOpen: false,
 		},
 	];
+
+	// Filter menu items based on enabled features
+	const enabledFeatures = userProfile.enabledFeatures;
+	const filterByFeature = (items: MenuItem[]): MenuItem[] =>
+		items.filter((item) => !item.feature || enabledFeatures.has(item.feature));
+
+	// Filter groups and remove empty groups
+	const filterMenuGroups = (groups: MenuGroup[]): MenuGroup[] =>
+		groups
+			.map((group) => ({
+				...group,
+				items: filterByFeature(group.items),
+			}))
+			.filter((group) => group.items.length > 0);
+
+	// Use restricted member menu if user has restricted access, otherwise use admin menu
+	const menuGroups: MenuGroup[] = filterMenuGroups(
+		isRestrictedMember ? restrictedMemberMenuGroups : adminMenuGroups,
+	);
 
 	// Initialize open groups from localStorage or defaults
 	const [openGroups, setOpenGroups] = React.useState<Set<string>>(() => {
@@ -316,7 +491,7 @@ export function OrganizationMenuItems(): React.JSX.Element {
 						<SidebarMenuButton
 							asChild
 							isActive={pathname === basePath}
-							tooltip="Dashboard"
+							tooltip={t("dashboard")}
 						>
 							<Link href={basePath}>
 								<LayoutDashboardIcon
@@ -334,7 +509,7 @@ export function OrganizationMenuItems(): React.JSX.Element {
 											: "dark:text-muted-foreground",
 									)}
 								>
-									Dashboard
+									{t("dashboard")}
 								</span>
 							</Link>
 						</SidebarMenuButton>

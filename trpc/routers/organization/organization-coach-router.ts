@@ -12,7 +12,6 @@ import {
 	or,
 	type SQL,
 } from "drizzle-orm";
-import { nanoid } from "nanoid";
 import { appConfig } from "@/config/app.config";
 import { db } from "@/lib/db";
 import { MemberRole, TrainingSessionStatus } from "@/lib/db/schema/enums";
@@ -21,6 +20,7 @@ import {
 	athleteEvaluationTable,
 	athleteGroupMemberTable,
 	athleteGroupTable,
+	attendanceTable,
 	coachTable,
 	memberTable,
 	trainingSessionAthleteTable,
@@ -30,7 +30,7 @@ import {
 } from "@/lib/db/schema/tables";
 import { sendCoachWelcomeEmail } from "@/lib/email";
 import { logger } from "@/lib/logger";
-import { getBaseUrl } from "@/lib/utils";
+import { generateTemporaryPassword, getBaseUrl } from "@/lib/utils";
 import {
 	bulkDeleteCoachesSchema,
 	bulkUpdateCoachesStatusSchema,
@@ -41,11 +41,6 @@ import {
 	updateCoachSchema,
 } from "@/schemas/organization-coach-schemas";
 import { createTRPCRouter, protectedOrganizationProcedure } from "@/trpc/init";
-
-// Generate a temporary password
-function generateTemporaryPassword(): string {
-	return `Temp${nanoid(12)}!`;
-}
 
 export const organizationCoachRouter = createTRPCRouter({
 	list: protectedOrganizationProcedure
@@ -148,6 +143,7 @@ export const organizationCoachRouter = createTRPCRouter({
 								name: true,
 								email: true,
 								image: true,
+								imageKey: true,
 							},
 						},
 					},
@@ -204,6 +200,7 @@ export const organizationCoachRouter = createTRPCRouter({
 							name: true,
 							email: true,
 							image: true,
+							imageKey: true,
 						},
 					},
 				},
@@ -240,6 +237,17 @@ export const organizationCoachRouter = createTRPCRouter({
 								coaches: {
 									with: {
 										coach: {
+											with: {
+												user: {
+													columns: { id: true, name: true, image: true },
+												},
+											},
+										},
+									},
+								},
+								attendances: {
+									with: {
+										athlete: {
 											with: {
 												user: {
 													columns: { id: true, name: true, image: true },
@@ -373,6 +381,16 @@ export const organizationCoachRouter = createTRPCRouter({
 						) / ratingsGiven.length
 					: 0;
 
+			// Aggregate attendance data from sessions
+			const allAttendance = sessions.flatMap((s) => s.attendances ?? []);
+			const attendanceStats = {
+				total: allAttendance.length,
+				present: allAttendance.filter((a) => a.status === "present").length,
+				absent: allAttendance.filter((a) => a.status === "absent").length,
+				late: allAttendance.filter((a) => a.status === "late").length,
+				excused: allAttendance.filter((a) => a.status === "excused").length,
+			};
+
 			const stats = {
 				totalSessions,
 				completedSessions,
@@ -381,6 +399,7 @@ export const organizationCoachRouter = createTRPCRouter({
 				totalAthletes: athletes.length,
 				evaluationsGiven: evaluations.length,
 				avgRatingGiven: Math.round(avgRating * 10) / 10,
+				attendance: attendanceStats,
 			};
 
 			return {
@@ -435,13 +454,13 @@ export const organizationCoachRouter = createTRPCRouter({
 					await db.insert(memberTable).values({
 						organizationId: ctx.organization.id,
 						userId: existingUser.id,
-						role: MemberRole.coach,
+						role: MemberRole.staff,
 					});
 				} else if (existingMember.role === MemberRole.member) {
 					// Update existing member role to coach
 					await db
 						.update(memberTable)
-						.set({ role: MemberRole.coach })
+						.set({ role: MemberRole.staff })
 						.where(eq(memberTable.id, existingMember.id));
 				}
 			} else {
@@ -481,7 +500,7 @@ export const organizationCoachRouter = createTRPCRouter({
 				await db.insert(memberTable).values({
 					organizationId: ctx.organization.id,
 					userId: newUser.id,
-					role: MemberRole.coach,
+					role: MemberRole.staff,
 				});
 
 				logger.info(

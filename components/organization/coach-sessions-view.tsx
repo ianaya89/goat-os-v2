@@ -23,14 +23,15 @@ import { trpc } from "@/trpc/client";
 const statusColors: Record<string, string> = {
 	pending: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100",
 	confirmed: "bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100",
-	completed: "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100",
+	completed:
+		"bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100",
 	cancelled: "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100",
 };
 
 export function CoachSessionsView() {
 	const [tab, setTab] = React.useState<"upcoming" | "past" | "all">("upcoming");
 
-	const { data, isLoading, error } =
+	const { data, isLoading } =
 		trpc.organization.trainingSession.listMySessionsAsCoach.useQuery({
 			limit: 100,
 			offset: 0,
@@ -46,7 +47,8 @@ export function CoachSessionsView() {
 		if (tab === "upcoming") {
 			return data.sessions.filter(
 				(s) =>
-					(isAfter(new Date(s.startTime), now) || isToday(new Date(s.startTime))) &&
+					(isAfter(new Date(s.startTime), now) ||
+						isToday(new Date(s.startTime))) &&
 					s.status !== TrainingSessionStatus.cancelled &&
 					s.status !== TrainingSessionStatus.completed,
 			);
@@ -99,9 +101,8 @@ export function CoachSessionsView() {
 		).length ?? 0;
 
 	const completedCount =
-		data.sessions.filter(
-			(s) => s.status === TrainingSessionStatus.completed,
-		).length ?? 0;
+		data.sessions.filter((s) => s.status === TrainingSessionStatus.completed)
+			.length ?? 0;
 
 	const todayCount =
 		data.sessions.filter(
@@ -137,9 +138,7 @@ export function CoachSessionsView() {
 					</CardHeader>
 					<CardContent>
 						<div className="font-bold text-2xl">{upcomingCount}</div>
-						<p className="text-muted-foreground text-xs">
-							pending & confirmed
-						</p>
+						<p className="text-muted-foreground text-xs">pending & confirmed</p>
 					</CardContent>
 				</Card>
 				<Card>
@@ -216,7 +215,7 @@ interface SessionCardProps {
 }
 
 function SessionCard({ session }: SessionCardProps) {
-	const isUpcoming = isAfter(new Date(session.startTime), new Date());
+	const _isUpcoming = isAfter(new Date(session.startTime), new Date());
 	const isTodaySession = isToday(new Date(session.startTime));
 
 	// Get athletes from either group or direct assignment

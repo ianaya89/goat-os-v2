@@ -1,0 +1,89 @@
+{
+	"nav": {
+		"home": "Home",
+		"about": "About",
+		"pricing": "Pricing",
+		"blog": "Blog",
+		"contact": "Contact",
+		"signIn": "Sign in",
+		"signUp": "Sign up",
+		"dashboard": "Dashboard"
+	},
+	"hero": {
+		"title": "The sports platform your organization needs",
+		"subtitle": "Manage athletes, training, events, and finances in one place.",
+		"cta": "Start free",
+		"secondaryCta": "View demo"
+	},
+	"features": {
+		"title": "Everything you need",
+		"subtitle": "Powerful tools to manage your sports organization.",
+		"athletes": {
+			"title": "Athlete Management",
+			"description": "Manage profiles, groups, categories, and progress tracking."
+		},
+		"training": {
+			"title": "Training Sessions",
+			"description": "Schedule sessions, track attendance, and manage schedules."
+		},
+		"events": {
+			"title": "Events & Competitions",
+			"description": "Organize events, manage registrations and results."
+		},
+		"finance": {
+			"title": "Finance",
+			"description": "Payment tracking, expenses, cash register, and financial reports."
+		}
+	},
+	"pricing": {
+		"title": "Plans & Pricing",
+		"subtitle": "Choose the plan that best fits your needs.",
+		"monthly": "Monthly",
+		"yearly": "Yearly",
+		"perMonth": "/month",
+		"perYear": "/year",
+		"save": "Save {percent}%",
+		"popular": "Most popular",
+		"cta": "Get started",
+		"features": "Features included"
+	},
+	"testimonials": {
+		"title": "What our customers say",
+		"subtitle": "Sports organizations that trust us."
+	},
+	"faq": {
+		"title": "Frequently Asked Questions",
+		"items": {
+			"trial": {
+				"question": "Do you have a trial period?",
+				"answer": "Yes, we offer a 14-day free trial with full access to all features."
+			},
+			"cancel": {
+				"question": "Can I cancel anytime?",
+				"answer": "Yes, you can cancel your subscription at any time without penalties."
+			},
+			"support": {
+				"question": "What kind of support do you offer?",
+				"answer": "We offer email and chat support. Premium plans include priority support."
+			},
+			"data": {
+				"question": "Is my data secure?",
+				"answer": "We use end-to-end encryption and comply with data protection regulations."
+			}
+		}
+	},
+	"cta": {
+		"title": "Start today",
+		"subtitle": "Join hundreds of sports organizations that already trust us.",
+		"button": "Create free account"
+	},
+	"footer": {
+		"product": "Product",
+		"company": "Company",
+		"legal": "Legal",
+		"support": "Support",
+		"copyright": "All rights reserved.",
+		"terms": "Terms of service",
+		"privacy": "Privacy policy"
+	}
+}

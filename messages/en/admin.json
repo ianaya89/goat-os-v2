@@ -1,0 +1,101 @@
+{
+	"title": "Administration",
+	"description": "Platform administration panel.",
+	"nav": {
+		"users": "Users",
+		"organizations": "Organizations",
+		"config": "Configuration"
+	},
+	"users": {
+		"title": "Users",
+		"description": "Manage platform users.",
+		"search": "Search users...",
+		"table": {
+			"name": "Name",
+			"email": "Email",
+			"role": "Role",
+			"status": "Status",
+			"createdAt": "Registration date",
+			"actions": "Actions"
+		},
+		"filters": {
+			"all": "All",
+			"active": "Active",
+			"banned": "Banned",
+			"byRole": "By role"
+		},
+		"actions": {
+			"edit": "Edit",
+			"ban": "Ban",
+			"unban": "Unban",
+			"delete": "Delete",
+			"impersonate": "Impersonate"
+		},
+		"roles": {
+			"user": "User",
+			"admin": "Administrator"
+		},
+		"success": {
+			"updated": "User updated successfully.",
+			"banned": "User banned successfully.",
+			"unbanned": "User unbanned successfully.",
+			"deleted": "User deleted successfully.",
+			"roleUpdated": "User role updated successfully."
+		},
+		"error": {
+			"notFound": "User not found.",
+			"updateFailed": "Failed to update user.",
+			"banFailed": "Failed to ban user.",
+			"deleteFailed": "Failed to delete user."
+		}
+	},
+	"organizations": {
+		"title": "Organizations",
+		"description": "Manage platform organizations.",
+		"search": "Search organizations...",
+		"table": {
+			"name": "Name",
+			"slug": "URL",
+			"owner": "Owner",
+			"members": "Members",
+			"plan": "Plan",
+			"createdAt": "Creation date",
+			"actions": "Actions"
+		},
+		"filters": {
+			"all": "All",
+			"active": "Active",
+			"suspended": "Suspended",
+			"byPlan": "By plan"
+		},
+		"actions": {
+			"view": "View",
+			"edit": "Edit",
+			"suspend": "Suspend",
+			"reactivate": "Reactivate",
+			"delete": "Delete"
+		},
+		"success": {
+			"updated": "Organization updated successfully.",
+			"suspended": "Organization suspended successfully.",
+			"reactivated": "Organization reactivated successfully.",
+			"deleted": "Organization deleted successfully."
+		},
+		"error": {
+			"notFound": "Organization not found.",
+			"updateFailed": "Failed to update organization.",
+			"suspendFailed": "Failed to suspend organization.",
+			"deleteFailed": "Failed to delete organization."
+		}
+	},
+	"config": {
+		"title": "Configuration",
+		"description": "Global platform configuration.",
+		"sections": {
+			"general": "General",
+			"features": "Features",
+			"billing": "Billing",
+			"email": "Email"
+		}
+	}
+}

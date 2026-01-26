@@ -9,11 +9,12 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { appConfig } from "@/config/app.config";
 import { ThemeProvider } from "@/hooks/use-theme";
+import { TRPCProvider } from "@/trpc/client";
 
 /**
  * Marketing-specific providers.
  * Lighter weight than SaaS providers - no auth/session context needed.
- * Includes TRPC for public API calls like contact form.
+ * Includes TRPC for public API calls like contact form and event registration.
  */
 export function MarketingProviders({
 	children,
@@ -28,11 +29,13 @@ export function MarketingProviders({
 				enableSystem
 				themes={[...appConfig.theme.available]}
 			>
-				<TooltipProvider>
-					<NiceModal.Provider>
-						<RootProvider>{children}</RootProvider>
-					</NiceModal.Provider>
-				</TooltipProvider>
+				<TRPCProvider>
+					<TooltipProvider>
+						<NiceModal.Provider>
+							<RootProvider>{children}</RootProvider>
+						</NiceModal.Provider>
+					</TooltipProvider>
+				</TRPCProvider>
 			</ThemeProvider>
 			<Toaster position="top-right" />
 		</NuqsAdapter>

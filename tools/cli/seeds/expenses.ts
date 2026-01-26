@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
+import type { DrizzleClient } from "@/lib/db/types";
 import type { SeedContext } from "../commands/seed";
 import { schema } from "../db";
 
@@ -29,7 +30,7 @@ function addDays(date: Date, days: number): Date {
 }
 
 export async function seedExpenses(
-	db: any,
+	db: DrizzleClient,
 	count: number,
 	context: SeedContext,
 ): Promise<string[]> {
@@ -79,16 +80,19 @@ export async function seedExpenses(
 
 		const expenseDate = addDays(now, -Math.floor(Math.random() * 90));
 
+		const categoryId =
+			categoryIds[Math.floor(Math.random() * categoryIds.length)];
+		if (!categoryId) continue;
 		expenses.push({
 			id: randomUUID(),
 			organizationId: context.organizationId,
-			categoryId: categoryIds[Math.floor(Math.random() * categoryIds.length)],
+			categoryId,
 			amount: (100 + Math.floor(Math.random() * 10000)) * 100,
 			currency: "ARS",
 			description:
 				expenseDescriptions[
 					Math.floor(Math.random() * expenseDescriptions.length)
-				],
+				] ?? "Gasto general",
 			expenseDate,
 			recordedBy: context.seedUserId,
 		});

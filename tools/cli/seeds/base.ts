@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
+import type { DrizzleClient } from "@/lib/db/types";
 import { schema } from "../db";
 
 // Fixed IDs for idempotent seeding
@@ -24,7 +25,9 @@ export type SeedUser = {
  * Get or create the seed organization
  * This ensures idempotent seeding - always uses the same org
  */
-export async function getOrCreateSeedOrganization(db: any): Promise<SeedOrg> {
+export async function getOrCreateSeedOrganization(
+	db: DrizzleClient,
+): Promise<SeedOrg> {
 	// Check if org already exists
 	const existing = await db.query.organizationTable.findFirst({
 		where: eq(schema.organizationTable.slug, SEED_ORG_SLUG),
@@ -50,10 +53,14 @@ export async function getOrCreateSeedOrganization(db: any): Promise<SeedOrg> {
 		})
 		.returning();
 
+	if (!org) {
+		throw new Error("Failed to create seed organization");
+	}
+
 	return {
 		id: org.id,
 		name: org.name,
-		slug: org.slug!,
+		slug: org.slug ?? SEED_ORG_SLUG,
 	};
 }
 
@@ -61,7 +68,7 @@ export async function getOrCreateSeedOrganization(db: any): Promise<SeedOrg> {
  * Get or create the seed user (owner of seed org)
  */
 export async function getOrCreateSeedUser(
-	db: any,
+	db: DrizzleClient,
 	organizationId: string,
 ): Promise<SeedUser> {
 	// Check if user already exists
@@ -108,6 +115,10 @@ export async function getOrCreateSeedUser(
 		})
 		.returning();
 
+	if (!user) {
+		throw new Error("Failed to create seed user");
+	}
+
 	// Create membership as owner
 	await db.insert(schema.memberTable).values({
 		id: randomUUID(),
@@ -127,7 +138,7 @@ export async function getOrCreateSeedUser(
  * Clear all seed data for a fresh start (optional)
  */
 export async function clearSeedData(
-	db: any,
+	db: DrizzleClient,
 	organizationId: string,
 ): Promise<void> {
 	// Delete in reverse order of dependencies
@@ -144,7 +155,7 @@ export async function clearSeedData(
  * This user can log in with email/password
  */
 export async function getOrCreateRootUser(
-	db: any,
+	db: DrizzleClient,
 	organizationId: string,
 ): Promise<SeedUser> {
 	// Check if user already exists
@@ -194,6 +205,10 @@ export async function getOrCreateRootUser(
 			onboardingComplete: true,
 		})
 		.returning();
+
+	if (!user) {
+		throw new Error("Failed to create root user");
+	}
 
 	// Create credential account with password
 	await db.insert(schema.accountTable).values({

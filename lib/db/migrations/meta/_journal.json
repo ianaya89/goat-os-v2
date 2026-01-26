@@ -120,6 +120,132 @@
       "when": 1768191242693,
       "tag": "20260112041402_tranquil_post",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1768196868000,
+      "tag": "20260112012748_waitlist_schedule_days",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1768206551000,
+      "tag": "20260112020911_event_discounts",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1768212000000,
+      "tag": "20260112060000_sponsor_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1768197085439,
+      "tag": "20260112055125_kind_talos",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1768197860221,
+      "tag": "20260112060420_athlete_parental_medical",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1768200514192,
+      "tag": "20260112064834_damp_sharon_ventura",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1768221883752,
+      "tag": "20260112124443_flat_tusk",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1768223500501,
+      "tag": "20260112131140_skinny_blackheart",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1768232249560,
+      "tag": "20260112153729_moaning_invaders",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1768233600000,
+      "tag": "20260112160000_age_to_birth_year",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1768237200000,
+      "tag": "20260112170000_event_templates",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1768323600000,
+      "tag": "20260113010000_athlete_extended_profile",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1768406400000,
+      "tag": "20260114000000_event_rotation_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1769472905000,
+      "tag": "20260126005505_athlete_public_profile",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1769479200000,
+      "tag": "20260126020000_athlete_references",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1769482800000,
+      "tag": "20260126030000_athlete_sponsors",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1769558400000,
+      "tag": "20260127000000_team_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1769486400000,
+      "tag": "20260126040000_organization_features",
+      "breakpoints": true
     }
   ]
 }

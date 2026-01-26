@@ -34,3 +34,38 @@ export const ENTITY_SESSION_COACH = 61;
 export const ENTITY_ATTENDANCE = 62;
 export const ENTITY_PAYMENT = 7;
 export const ENTITY_EVENT = 8;
+export const ENTITY_EVENT_PRICING = 81;
+export const ENTITY_EVENT_REGISTRATION = 82;
+export const ENTITY_EVENT_PAYMENT = 83;
+export const ENTITY_SPONSOR = 9;
+export const ENTITY_SPONSOR_ASSIGNMENT = 91;
+export const ENTITY_VENDOR = 10;
+export const ENTITY_WAITLIST = 11;
+export const ENTITY_EVENT_DISCOUNT = 84;
+
+// Event organization entities
+export const ENTITY_EVENT_ZONE = 100;
+export const ENTITY_EVENT_CHECKLIST = 101;
+export const ENTITY_EVENT_TASK = 102;
+export const ENTITY_EVENT_STAFF = 103;
+export const ENTITY_EVENT_STAFF_SHIFT = 104;
+export const ENTITY_EVENT_BUDGET_LINE = 105;
+export const ENTITY_EVENT_ORG_SPONSOR = 106;
+export const ENTITY_EVENT_SPONSOR_BENEFIT = 107;
+export const ENTITY_EVENT_MILESTONE = 108;
+export const ENTITY_EVENT_DOCUMENT = 109;
+export const ENTITY_EVENT_NOTE = 110;
+export const ENTITY_EVENT_INVENTORY = 111;
+export const ENTITY_EVENT_VENDOR_ASSIGNMENT = 112;
+export const ENTITY_EVENT_RISK = 113;
+export const ENTITY_EVENT_RISK_LOG = 114;
+export const ENTITY_EVENT_ORG_VENDOR = 115;
+
+// Stock and Equipment entities
+export const ENTITY_PRODUCT = 120;
+export const ENTITY_STOCK_TRANSACTION = 121;
+export const ENTITY_SALE = 122;
+export const ENTITY_SALE_ITEM = 123;
+export const ENTITY_EQUIPMENT = 130;
+export const ENTITY_EQUIPMENT_ASSIGNMENT = 131;
+export const ENTITY_EQUIPMENT_MAINTENANCE = 132;

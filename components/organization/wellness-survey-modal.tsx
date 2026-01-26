@@ -79,7 +79,9 @@ function MetricSlider({
 		<div className="space-y-3">
 			<div className="flex items-center justify-between">
 				<Label>{label}</Label>
-				<span className={cn("font-bold text-lg", getScoreColor(value, inverse))}>
+				<span
+					className={cn("font-bold text-lg", getScoreColor(value, inverse))}
+				>
 					{value}/10
 				</span>
 			</div>
@@ -133,7 +135,11 @@ export const WellnessSurveyModal = NiceModal.create(() => {
 
 	const onSubmit = (values: FormValues) => {
 		const sleepHoursNum = parseFloat(values.sleepHours);
-		if (isNaN(sleepHoursNum) || sleepHoursNum < 0 || sleepHoursNum > 24) {
+		if (
+			Number.isNaN(sleepHoursNum) ||
+			sleepHoursNum < 0 ||
+			sleepHoursNum > 24
+		) {
 			toast.error("Please enter valid sleep hours (0-24)");
 			return;
 		}
@@ -150,7 +156,7 @@ export const WellnessSurveyModal = NiceModal.create(() => {
 		});
 	};
 
-	const moodValue = form.watch("mood");
+	const _moodValue = form.watch("mood");
 
 	return (
 		<Sheet
@@ -166,12 +172,16 @@ export const WellnessSurveyModal = NiceModal.create(() => {
 						Daily Wellness Check
 					</SheetTitle>
 					<SheetDescription>
-						Track how you're feeling today to monitor your recovery and readiness.
+						Track how you're feeling today to monitor your recovery and
+						readiness.
 					</SheetDescription>
 				</SheetHeader>
 
 				<Form {...form}>
-					<form onSubmit={form.handleSubmit(onSubmit)} className="mt-6 space-y-6">
+					<form
+						onSubmit={form.handleSubmit(onSubmit)}
+						className="mt-6 space-y-6"
+					>
 						{/* Sleep Section */}
 						<div className="space-y-4 rounded-lg border p-4">
 							<h3 className="font-medium">Sleep</h3>
@@ -193,7 +203,9 @@ export const WellnessSurveyModal = NiceModal.create(() => {
 													{...field}
 												/>
 											</FormControl>
-											<span className="text-muted-foreground text-sm">hours</span>
+											<span className="text-muted-foreground text-sm">
+												hours
+											</span>
 										</div>
 										<div className="flex gap-2 pt-1">
 											{[6, 7, 8, 9].map((h) => (
@@ -292,7 +304,9 @@ export const WellnessSurveyModal = NiceModal.create(() => {
 									<div className="space-y-3">
 										<div className="flex items-center justify-between">
 											<Label>Mood</Label>
-											<span className="text-2xl">{getMoodEmoji(field.value)}</span>
+											<span className="text-2xl">
+												{getMoodEmoji(field.value)}
+											</span>
 										</div>
 										<Slider
 											value={[field.value]}
@@ -343,7 +357,8 @@ export const WellnessSurveyModal = NiceModal.create(() => {
 										/>
 									</FormControl>
 									<FormDescription className="text-xs">
-										Note any injuries, illness, or other factors affecting your wellness.
+										Note any injuries, illness, or other factors affecting your
+										wellness.
 									</FormDescription>
 									<FormMessage />
 								</FormItem>

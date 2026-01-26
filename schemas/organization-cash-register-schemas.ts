@@ -61,11 +61,18 @@ export const getCashMovementsSchema = z.object({
 	type: z.nativeEnum(CashMovementType).optional(),
 });
 
+// Product item for cash movement
+export const cashMovementProductItemSchema = z.object({
+	productId: z.string().uuid(),
+	quantity: z.number().int().min(1, "La cantidad debe ser al menos 1"),
+});
+
 // Add manual movement (adjustment)
 export const addManualMovementSchema = z.object({
 	type: z.nativeEnum(CashMovementType),
 	amount: z.number().int().min(1, "Amount must be positive"),
 	description: z.string().trim().min(1, "Description is required").max(500),
+	products: z.array(cashMovementProductItemSchema).optional(),
 });
 
 // Get daily summary
@@ -91,3 +98,6 @@ export type GetCashRegisterHistoryInput = z.infer<
 export type GetCashMovementsInput = z.infer<typeof getCashMovementsSchema>;
 export type AddManualMovementInput = z.infer<typeof addManualMovementSchema>;
 export type GetDailySummaryInput = z.infer<typeof getDailySummarySchema>;
+export type CashMovementProductItem = z.infer<
+	typeof cashMovementProductItemSchema
+>;

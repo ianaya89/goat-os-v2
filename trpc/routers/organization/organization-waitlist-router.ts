@@ -1,5 +1,14 @@
 import { TRPCError } from "@trpc/server";
-import { and, asc, count, desc, eq, inArray, type SQL } from "drizzle-orm";
+import {
+	and,
+	arrayOverlaps,
+	asc,
+	count,
+	desc,
+	eq,
+	inArray,
+	type SQL,
+} from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
 	WaitlistEntryStatus,
@@ -9,8 +18,6 @@ import {
 	athleteGroupMemberTable,
 	athleteGroupTable,
 	athleteTable,
-	trainingSessionAthleteTable,
-	trainingSessionTable,
 	waitlistEntryTable,
 } from "@/lib/db/schema/tables";
 import {
@@ -56,14 +63,6 @@ export const organizationWaitlistRouter = createTRPCRouter({
 			}
 
 			// Specific reference filters
-			if (input.filters?.trainingSessionId) {
-				conditions.push(
-					eq(
-						waitlistEntryTable.trainingSessionId,
-						input.filters.trainingSessionId,
-					),
-				);
-			}
 			if (input.filters?.athleteGroupId) {
 				conditions.push(
 					eq(waitlistEntryTable.athleteGroupId, input.filters.athleteGroupId),
@@ -72,6 +71,17 @@ export const organizationWaitlistRouter = createTRPCRouter({
 			if (input.filters?.athleteId) {
 				conditions.push(
 					eq(waitlistEntryTable.athleteId, input.filters.athleteId),
+				);
+			}
+			if (
+				input.filters?.preferredDays &&
+				input.filters.preferredDays.length > 0
+			) {
+				conditions.push(
+					arrayOverlaps(
+						waitlistEntryTable.preferredDays,
+						input.filters.preferredDays,
+					),
 				);
 			}
 
@@ -107,14 +117,6 @@ export const organizationWaitlistRouter = createTRPCRouter({
 								user: {
 									columns: { id: true, name: true, email: true, image: true },
 								},
-							},
-						},
-						trainingSession: {
-							columns: {
-								id: true,
-								title: true,
-								startTime: true,
-								endTime: true,
 							},
 						},
 						athleteGroup: {
@@ -154,7 +156,6 @@ export const organizationWaitlistRouter = createTRPCRouter({
 							},
 						},
 					},
-					trainingSession: true,
 					athleteGroup: true,
 					createdByUser: { columns: { id: true, name: true } },
 					assignedByUser: { columns: { id: true, name: true } },
@@ -191,35 +192,7 @@ export const organizationWaitlistRouter = createTRPCRouter({
 			}
 
 			// Verify reference exists and belongs to organization
-			if (input.referenceType === WaitlistReferenceType.trainingSession) {
-				const session = await db.query.trainingSessionTable.findFirst({
-					where: and(
-						eq(trainingSessionTable.id, input.trainingSessionId!),
-						eq(trainingSessionTable.organizationId, ctx.organization.id),
-					),
-				});
-				if (!session) {
-					throw new TRPCError({
-						code: "NOT_FOUND",
-						message: "Training session not found",
-					});
-				}
-
-				// Check if athlete is already on waitlist for this session
-				const existingEntry = await db.query.waitlistEntryTable.findFirst({
-					where: and(
-						eq(waitlistEntryTable.athleteId, input.athleteId),
-						eq(waitlistEntryTable.trainingSessionId, input.trainingSessionId!),
-						eq(waitlistEntryTable.status, WaitlistEntryStatus.waiting),
-					),
-				});
-				if (existingEntry) {
-					throw new TRPCError({
-						code: "CONFLICT",
-						message: "Athlete is already on waitlist for this session",
-					});
-				}
-			} else {
+			if (input.referenceType === WaitlistReferenceType.athleteGroup) {
 				const group = await db.query.athleteGroupTable.findFirst({
 					where: and(
 						eq(athleteGroupTable.id, input.athleteGroupId!),
@@ -248,12 +221,17 @@ export const organizationWaitlistRouter = createTRPCRouter({
 					});
 				}
 			}
+			// For schedule type, no need to verify - just check if athlete has existing waitlist entry for same days
+			// (We allow multiple schedule entries for the same athlete with different day preferences)
 
-			// Calculate next position
+			// Calculate next position based on reference type
 			const referenceCondition =
-				input.referenceType === WaitlistReferenceType.trainingSession
-					? eq(waitlistEntryTable.trainingSessionId, input.trainingSessionId!)
-					: eq(waitlistEntryTable.athleteGroupId, input.athleteGroupId!);
+				input.referenceType === WaitlistReferenceType.athleteGroup
+					? eq(waitlistEntryTable.athleteGroupId, input.athleteGroupId!)
+					: eq(
+							waitlistEntryTable.referenceType,
+							WaitlistReferenceType.schedule,
+						);
 
 			const lastEntry = await db.query.waitlistEntryTable.findFirst({
 				where: and(
@@ -272,7 +250,9 @@ export const organizationWaitlistRouter = createTRPCRouter({
 					organizationId: ctx.organization.id,
 					athleteId: input.athleteId,
 					referenceType: input.referenceType,
-					trainingSessionId: input.trainingSessionId,
+					preferredDays: input.preferredDays,
+					preferredStartTime: input.preferredStartTime,
+					preferredEndTime: input.preferredEndTime,
 					athleteGroupId: input.athleteGroupId,
 					priority: input.priority,
 					reason: input.reason,
@@ -381,7 +361,8 @@ export const organizationWaitlistRouter = createTRPCRouter({
 			return { success: true, count: updated.length };
 		}),
 
-	// Assign athlete from waitlist to session/group
+	// Assign athlete from waitlist to group (only for athlete_group type)
+	// For schedule type, this just marks the entry as assigned (admin handled placement)
 	assign: protectedOrganizationProcedure
 		.input(assignFromWaitlistSchema)
 		.mutation(async ({ ctx, input }) => {
@@ -400,23 +381,8 @@ export const organizationWaitlistRouter = createTRPCRouter({
 				});
 			}
 
-			// Add athlete to session or group based on reference type
-			if (entry.referenceType === WaitlistReferenceType.trainingSession) {
-				// Check if athlete is already assigned
-				const existing = await db.query.trainingSessionAthleteTable.findFirst({
-					where: and(
-						eq(trainingSessionAthleteTable.sessionId, entry.trainingSessionId!),
-						eq(trainingSessionAthleteTable.athleteId, entry.athleteId),
-					),
-				});
-
-				if (!existing) {
-					await db.insert(trainingSessionAthleteTable).values({
-						sessionId: entry.trainingSessionId!,
-						athleteId: entry.athleteId,
-					});
-				}
-			} else {
+			// For athlete_group type, add athlete to the group
+			if (entry.referenceType === WaitlistReferenceType.athleteGroup) {
 				// Check if athlete is already a member
 				const existing = await db.query.athleteGroupMemberTable.findFirst({
 					where: and(
@@ -432,6 +398,7 @@ export const organizationWaitlistRouter = createTRPCRouter({
 					});
 				}
 			}
+			// For schedule type, we just mark as assigned (admin manually placed the athlete)
 
 			// Update waitlist entry status
 			const [updated] = await db
@@ -451,21 +418,35 @@ export const organizationWaitlistRouter = createTRPCRouter({
 	getCount: protectedOrganizationProcedure
 		.input(getWaitlistCountSchema)
 		.query(async ({ ctx, input }) => {
-			const condition =
-				input.referenceType === WaitlistReferenceType.trainingSession
-					? eq(waitlistEntryTable.trainingSessionId, input.referenceId)
-					: eq(waitlistEntryTable.athleteGroupId, input.referenceId);
+			const conditions: SQL[] = [
+				eq(waitlistEntryTable.organizationId, ctx.organization.id),
+				eq(waitlistEntryTable.status, WaitlistEntryStatus.waiting),
+				eq(waitlistEntryTable.referenceType, input.referenceType),
+			];
+
+			if (
+				input.referenceType === WaitlistReferenceType.athleteGroup &&
+				input.athleteGroupId
+			) {
+				conditions.push(
+					eq(waitlistEntryTable.athleteGroupId, input.athleteGroupId),
+				);
+			}
+
+			if (
+				input.referenceType === WaitlistReferenceType.schedule &&
+				input.preferredDays &&
+				input.preferredDays.length > 0
+			) {
+				conditions.push(
+					arrayOverlaps(waitlistEntryTable.preferredDays, input.preferredDays),
+				);
+			}
 
 			const result = await db
 				.select({ count: count() })
 				.from(waitlistEntryTable)
-				.where(
-					and(
-						eq(waitlistEntryTable.organizationId, ctx.organization.id),
-						eq(waitlistEntryTable.status, WaitlistEntryStatus.waiting),
-						condition,
-					),
-				);
+				.where(and(...conditions));
 
 			return { count: result[0]?.count ?? 0 };
 		}),

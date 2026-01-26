@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
+import type { DrizzleClient } from "@/lib/db/types";
 import type { SeedContext } from "../commands/seed";
 import { schema } from "../db";
 
@@ -37,7 +38,7 @@ function getDateOnly(date: Date): Date {
 }
 
 export async function seedCashRegister(
-	db: any,
+	db: DrizzleClient,
 	count: number,
 	context: SeedContext,
 ): Promise<{ registerIds: string[]; movementIds: string[] }> {
@@ -90,10 +91,12 @@ export async function seedCashRegister(
 		const numMovements = 3 + Math.floor(Math.random() * 6);
 		for (let m = 0; m < numMovements; m++) {
 			const type =
-				movementTypes[Math.floor(Math.random() * movementTypes.length)];
-			const descriptions = movementDescriptions[type];
+				movementTypes[Math.floor(Math.random() * movementTypes.length)] ??
+				"income";
+			const descriptions = movementDescriptions[type] ?? ["Pago general"];
 			const description =
-				descriptions[Math.floor(Math.random() * descriptions.length)];
+				descriptions[Math.floor(Math.random() * descriptions.length)] ??
+				"Movimiento";
 
 			let amount: number;
 			if (type === "income") {

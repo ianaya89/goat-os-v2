@@ -1,5 +1,7 @@
+import { eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import type * as React from "react";
 import { EventDetail } from "@/components/organization/event-detail";
 import { OrganizationBreadcrumbSwitcher } from "@/components/organization/organization-breadcrumb-switcher";
@@ -12,9 +14,11 @@ import {
 	PagePrimaryBar,
 } from "@/components/ui/custom/page";
 import { getSession } from "@/lib/auth/server";
+import { db } from "@/lib/db";
+import { sportsEventTable } from "@/lib/db/schema/tables";
 
 export const metadata: Metadata = {
-	title: "Detalle del Evento",
+	title: "Event Detail",
 };
 
 interface EventDetailPageProps {
@@ -31,22 +35,32 @@ export default async function EventDetailPage({
 		redirect("/dashboard");
 	}
 
+	const t = await getTranslations("organization.pages");
+
+	const event = await db.query.sportsEventTable.findFirst({
+		where: eq(sportsEventTable.id, eventId),
+		columns: { title: true },
+	});
+
 	return (
 		<Page>
 			<PageHeader>
 				<PagePrimaryBar>
 					<PageBreadcrumb
 						segments={[
-							{ label: "Home", href: "/dashboard" },
+							{ label: t("home"), href: "/dashboard" },
 							{ label: <OrganizationBreadcrumbSwitcher />, isCustom: true },
-							{ label: "Eventos", href: "/dashboard/organization/events" },
-							{ label: "Detalle" },
+							{
+								label: t("events.title"),
+								href: "/dashboard/organization/events",
+							},
+							{ label: event?.title ?? t("events.eventFallback") },
 						]}
 					/>
 				</PagePrimaryBar>
 			</PageHeader>
 			<PageBody>
-				<PageContent title="Detalle del Evento">
+				<PageContent title={event?.title ?? t("events.detail")}>
 					<EventDetail eventId={eventId} />
 				</PageContent>
 			</PageBody>

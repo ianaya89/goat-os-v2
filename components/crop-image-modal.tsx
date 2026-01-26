@@ -23,6 +23,8 @@ export const CropImageModal = NiceModal.create<CropImageModalProps>(
 	({ image, onCrop }) => {
 		const modal = useEnhancedModal();
 		const cropperRef = React.useRef<ReactCropperElement>(null);
+		const [imageSrc, setImageSrc] = React.useState<string | null>(null);
+		const imageUrlRef = React.useRef<string | null>(null);
 
 		const getCroppedImage = async () => {
 			const cropper = cropperRef.current?.cropper;
@@ -39,19 +41,26 @@ export const CropImageModal = NiceModal.create<CropImageModalProps>(
 			return imageBlob;
 		};
 
-		const imageSrc = React.useMemo(
-			() => image && URL.createObjectURL(image),
-			[image],
-		);
-
-		// Clean up object URL when component unmounts or image changes
+		// Create blob URL when image changes
 		React.useEffect(() => {
+			if (image) {
+				// Revoke previous URL if exists
+				if (imageUrlRef.current) {
+					URL.revokeObjectURL(imageUrlRef.current);
+				}
+				const url = URL.createObjectURL(image);
+				imageUrlRef.current = url;
+				setImageSrc(url);
+			}
+
+			// Cleanup on unmount only
 			return () => {
-				if (imageSrc) {
-					URL.revokeObjectURL(imageSrc);
+				if (imageUrlRef.current) {
+					URL.revokeObjectURL(imageUrlRef.current);
+					imageUrlRef.current = null;
 				}
 			};
-		}, [imageSrc]);
+		}, [image]);
 
 		return (
 			<Dialog open={modal.visible}>

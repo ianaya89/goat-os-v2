@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import type * as React from "react";
 import { OrganizationBreadcrumbSwitcher } from "@/components/organization/organization-breadcrumb-switcher";
 import { TrainingSessionsView } from "@/components/organization/training-sessions-view";
@@ -23,21 +24,24 @@ export default async function TrainingSessionsPage(): Promise<React.JSX.Element>
 		redirect("/dashboard");
 	}
 
+	const t = await getTranslations("training");
+	const tDashboard = await getTranslations("dashboard");
+
 	return (
 		<Page>
 			<PageHeader>
 				<PagePrimaryBar>
 					<PageBreadcrumb
 						segments={[
-							{ label: "Home", href: "/dashboard" },
+							{ label: tDashboard("breadcrumb.home"), href: "/dashboard" },
 							{ label: <OrganizationBreadcrumbSwitcher />, isCustom: true },
-							{ label: "Training Sessions" },
+							{ label: t("sessions.title") },
 						]}
 					/>
 				</PagePrimaryBar>
 			</PageHeader>
 			<PageBody>
-				<PageContent title="Training Sessions">
+				<PageContent title={t("sessions.title")}>
 					<TrainingSessionsView />
 				</PageContent>
 			</PageBody>

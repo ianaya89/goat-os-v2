@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import type { JSX } from "react";
 import { AiChat } from "@/components/ai/ai-chat";
 import { OrganizationBreadcrumbSwitcher } from "@/components/organization/organization-breadcrumb-switcher";
@@ -40,15 +41,17 @@ export default async function ChatbotPage(): Promise<JSX.Element> {
 		redirect("/dashboard");
 	}
 
+	const t = await getTranslations("organization.pages");
+
 	return (
 		<Page>
 			<PageHeader>
 				<PagePrimaryBar>
 					<PageBreadcrumb
 						segments={[
-							{ label: "Home", href: "/dashboard" },
+							{ label: t("home"), href: "/dashboard" },
 							{ label: <OrganizationBreadcrumbSwitcher />, isCustom: true },
-							{ label: "AI Chatbot" },
+							{ label: t("chatbot.title") },
 						]}
 					/>
 				</PagePrimaryBar>

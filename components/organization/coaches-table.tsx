@@ -7,7 +7,13 @@ import type {
 	SortingState,
 } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { MoreHorizontalIcon, PlusIcon, UserIcon } from "lucide-react";
+import {
+	MoreHorizontalIcon,
+	PencilIcon,
+	PlusIcon,
+	Trash2Icon,
+	UserIcon,
+} from "lucide-react";
 import Link from "next/link";
 import {
 	parseAsArrayOf,
@@ -59,6 +65,7 @@ interface Coach {
 		name: string;
 		email: string;
 		image: string | null;
+		imageKey: string | null;
 	} | null;
 }
 
@@ -326,6 +333,7 @@ export function CoachesTable(): React.JSX.Element {
 									NiceModal.show(CoachesModal, { coach: row.original });
 								}}
 							>
+								<PencilIcon className="mr-2 size-4" />
 								Edit
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
@@ -343,6 +351,7 @@ export function CoachesTable(): React.JSX.Element {
 								}}
 								variant="destructive"
 							>
+								<Trash2Icon className="mr-2 size-4" />
 								Delete
 							</DropdownMenuItem>
 						</DropdownMenuContent>

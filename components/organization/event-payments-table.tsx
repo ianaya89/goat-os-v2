@@ -3,7 +3,12 @@
 import NiceModal from "@ebay/nice-modal-react";
 import type { ColumnDef, ColumnFiltersState } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { MoreHorizontalIcon, Plus, ReceiptText } from "lucide-react";
+import {
+	MoreHorizontalIcon,
+	Plus,
+	ReceiptText,
+	RotateCcwIcon,
+} from "lucide-react";
 import {
 	parseAsArrayOf,
 	parseAsInteger,
@@ -100,36 +105,42 @@ export function EventPaymentsTable({
 
 	const [statusFilter, setStatusFilter] = useQueryState(
 		"payStatus",
-		parseAsArrayOf(parseAsString).withDefault([]).withOptions({ shallow: true }),
+		parseAsArrayOf(parseAsString)
+			.withDefault([])
+			.withOptions({ shallow: true }),
 	);
 
 	const [methodFilter, setMethodFilter] = useQueryState(
 		"payMethod",
-		parseAsArrayOf(parseAsString).withDefault([]).withOptions({ shallow: true }),
+		parseAsArrayOf(parseAsString)
+			.withDefault([])
+			.withOptions({ shallow: true }),
 	);
 
 	const utils = trpc.useUtils();
 
-	const { data, isPending } = trpc.organization.sportsEvent.listPayments.useQuery(
-		{
-			eventId,
-			limit: pageSize || appConfig.pagination.defaultLimit,
-			offset: (pageIndex || 0) * (pageSize || appConfig.pagination.defaultLimit),
-			filters: {
-				status:
-					statusFilter && statusFilter.length > 0
-						? (statusFilter as typeof EventPaymentStatuses)
-						: undefined,
-				paymentMethod:
-					methodFilter && methodFilter.length > 0
-						? (methodFilter as typeof EventPaymentMethods)
-						: undefined,
+	const { data, isPending } =
+		trpc.organization.sportsEvent.listPayments.useQuery(
+			{
+				eventId,
+				limit: pageSize || appConfig.pagination.defaultLimit,
+				offset:
+					(pageIndex || 0) * (pageSize || appConfig.pagination.defaultLimit),
+				filters: {
+					status:
+						statusFilter && statusFilter.length > 0
+							? (statusFilter as typeof EventPaymentStatuses)
+							: undefined,
+					paymentMethod:
+						methodFilter && methodFilter.length > 0
+							? (methodFilter as typeof EventPaymentMethods)
+							: undefined,
+				},
 			},
-		},
-		{
-			placeholderData: (prev) => prev,
-		},
-	);
+			{
+				placeholderData: (prev) => prev,
+			},
+		);
 
 	const processRefundMutation =
 		trpc.organization.sportsEvent.processRefund.useMutation({
@@ -288,6 +299,7 @@ export function EventPaymentsTable({
 											}}
 											variant="destructive"
 										>
+											<RotateCcwIcon className="mr-2 size-4" />
 											Procesar Reembolso
 										</DropdownMenuItem>
 									</>

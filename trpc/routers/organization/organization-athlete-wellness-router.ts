@@ -7,6 +7,7 @@ import {
 } from "@/lib/db/schema/tables";
 import { logger } from "@/lib/logger";
 import {
+	createWellnessSurveyForAthleteSchema,
 	createWellnessSurveySchema,
 	getTodayWellnessSchema,
 	getWellnessStatsSchema,
@@ -258,9 +259,7 @@ export const organizationAthleteWellnessRouter = createTRPCRouter({
 				days: input.days,
 				surveyCount: stats?.count ?? 0,
 				averages: {
-					sleepHours: stats?.avgSleepHours
-						? Number(stats.avgSleepHours)
-						: null,
+					sleepHours: stats?.avgSleepHours ? Number(stats.avgSleepHours) : null,
 					sleepQuality: stats?.avgSleepQuality
 						? Number(stats.avgSleepQuality)
 						: null,
@@ -275,5 +274,63 @@ export const organizationAthleteWellnessRouter = createTRPCRouter({
 					energy: stats?.avgEnergy ? Number(stats.avgEnergy) : null,
 				},
 			};
+		}),
+
+	// Create wellness survey for an athlete (admin/coach)
+	createForAthlete: protectedOrganizationProcedure
+		.input(createWellnessSurveyForAthleteSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify athlete belongs to organization
+			const athlete = await db.query.athleteTable.findFirst({
+				where: and(
+					eq(athleteTable.id, input.athleteId),
+					eq(athleteTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!athlete) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Athlete not found",
+				});
+			}
+
+			const surveyDate = input.surveyDate ?? new Date();
+
+			// Create the survey
+			const [survey] = await db
+				.insert(athleteWellnessSurveyTable)
+				.values({
+					athleteId: input.athleteId,
+					organizationId: ctx.organization.id,
+					surveyDate,
+					sleepHours: input.sleepHours,
+					sleepQuality: input.sleepQuality,
+					fatigue: input.fatigue,
+					muscleSoreness: input.muscleSoreness,
+					mood: input.mood,
+					stressLevel: input.stressLevel,
+					energy: input.energy,
+					notes: input.notes,
+				})
+				.returning();
+
+			if (!survey) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Failed to create wellness survey",
+				});
+			}
+
+			logger.info(
+				{
+					athleteId: input.athleteId,
+					surveyId: survey.id,
+					createdBy: ctx.user.id,
+				},
+				"Wellness survey created by admin/coach",
+			);
+
+			return survey;
 		}),
 });

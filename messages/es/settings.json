@@ -1,0 +1,67 @@
+{
+	"title": "Configuración",
+	"user": {
+		"title": "Configuración de usuario",
+		"profile": {
+			"title": "Perfil",
+			"description": "Gestiona tu información personal.",
+			"name": "Nombre",
+			"email": "Email",
+			"phone": "Teléfono",
+			"avatar": "Avatar",
+			"changeAvatar": "Cambiar avatar",
+			"removeAvatar": "Eliminar avatar"
+		},
+		"security": {
+			"title": "Seguridad",
+			"description": "Gestiona la seguridad de tu cuenta.",
+			"changePassword": "Cambiar contraseña",
+			"currentPassword": "Contraseña actual",
+			"newPassword": "Nueva contraseña",
+			"confirmPassword": "Confirmar contraseña",
+			"twoFactor": "Autenticación de dos factores",
+			"enable2FA": "Habilitar 2FA",
+			"disable2FA": "Deshabilitar 2FA",
+			"sessions": "Sesiones activas",
+			"revokeSession": "Cerrar sesión",
+			"revokeAllSessions": "Cerrar todas las sesiones"
+		},
+		"notifications": {
+			"title": "Notificaciones",
+			"description": "Configura tus preferencias de notificación.",
+			"email": "Notificaciones por email",
+			"push": "Notificaciones push",
+			"types": {
+				"payments": "Pagos",
+				"sessions": "Sesiones",
+				"events": "Eventos",
+				"news": "Noticias"
+			}
+		},
+		"preferences": {
+			"title": "Preferencias",
+			"language": "Idioma",
+			"timezone": "Zona horaria",
+			"dateFormat": "Formato de fecha",
+			"theme": "Tema",
+			"themes": {
+				"light": "Claro",
+				"dark": "Oscuro",
+				"system": "Sistema"
+			}
+		}
+	},
+	"success": {
+		"saved": "Configuración guardada correctamente.",
+		"passwordChanged": "Contraseña cambiada correctamente.",
+		"avatarUpdated": "Avatar actualizado correctamente.",
+		"2faEnabled": "Autenticación de dos factores habilitada.",
+		"2faDisabled": "Autenticación de dos factores deshabilitada."
+	},
+	"error": {
+		"saveFailed": "No se pudo guardar la configuración.",
+		"passwordChangeFailed": "No se pudo cambiar la contraseña.",
+		"avatarUpdateFailed": "No se pudo actualizar el avatar.",
+		"wrongPassword": "La contraseña actual es incorrecta."
+	}
+}

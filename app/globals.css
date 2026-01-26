@@ -566,7 +566,19 @@ input[cmdk-input] {
 
   .fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
     font-weight: 600;
-    color: var(--primary);
+    color: var(--primary-foreground);
+    background-color: var(--primary);
+    border-radius: 9999px;
+    width: 1.75rem;
+    height: 1.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Today column highlight in time grid */
+  .fc .fc-timegrid-col.fc-day-today {
+    background-color: hsl(var(--primary) / 0.03);
   }
 
   /* Events */
@@ -575,12 +587,18 @@ input[cmdk-input] {
     padding: 2px 4px;
     font-size: 0.75rem;
     cursor: pointer;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border-left-width: 3px;
   }
 
   .fc .fc-event:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+    z-index: 10;
+  }
+
+  .fc .fc-event:active {
+    transform: translateY(0) scale(0.99);
   }
 
   .fc .fc-daygrid-event-dot {

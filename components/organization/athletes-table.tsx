@@ -7,7 +7,13 @@ import type {
 	SortingState,
 } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { EyeIcon, MoreHorizontalIcon, PlusIcon } from "lucide-react";
+import {
+	EyeIcon,
+	MoreHorizontalIcon,
+	PencilIcon,
+	PlusIcon,
+	Trash2Icon,
+} from "lucide-react";
 import Link from "next/link";
 import {
 	parseAsArrayOf,
@@ -45,6 +51,11 @@ import { trpc } from "@/trpc/client";
 
 const DEFAULT_SORTING: SortingState = [{ id: "createdAt", desc: false }];
 
+interface AthleteGroup {
+	id: string;
+	name: string;
+}
+
 interface Athlete {
 	id: string;
 	organizationId: string;
@@ -61,6 +72,7 @@ interface Athlete {
 		email: string;
 		image: string | null;
 	} | null;
+	groups?: AthleteGroup[];
 }
 
 const statusColors: Record<string, string> = {
@@ -253,10 +265,7 @@ export function AthletesTable(): React.JSX.Element {
 							name={name}
 							src={row.original.user?.image ?? undefined}
 						/>
-						<span
-							className="truncate font-medium text-foreground"
-							title={name}
-						>
+						<span className="truncate font-medium text-foreground" title={name}>
 							{name}
 						</span>
 					</Link>
@@ -326,6 +335,38 @@ export function AthletesTable(): React.JSX.Element {
 			),
 		},
 		{
+			accessorKey: "groups",
+			header: "Groups",
+			enableSorting: false,
+			cell: ({ row }) => {
+				const groups = row.original.groups ?? [];
+				if (groups.length === 0) {
+					return <span className="text-muted-foreground">-</span>;
+				}
+				return (
+					<div className="flex flex-wrap gap-1">
+						{groups.slice(0, 2).map((group) => (
+							<Badge
+								key={group.id}
+								className="border-none bg-indigo-100 px-2 py-0.5 font-medium text-foreground text-xs shadow-none dark:bg-indigo-900"
+								variant="outline"
+							>
+								{group.name}
+							</Badge>
+						))}
+						{groups.length > 2 && (
+							<Badge
+								className="border-none bg-gray-100 px-2 py-0.5 font-medium text-foreground text-xs shadow-none dark:bg-gray-800"
+								variant="outline"
+							>
+								+{groups.length - 2}
+							</Badge>
+						)}
+					</div>
+				);
+			},
+		},
+		{
 			accessorKey: "birthDate",
 			header: ({ column }) => (
 				<SortableColumnHeader column={column} title="Birth Date" />
@@ -367,7 +408,9 @@ export function AthletesTable(): React.JSX.Element {
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
 							<DropdownMenuItem asChild>
-								<Link href={`/dashboard/organization/athletes/${row.original.id}`}>
+								<Link
+									href={`/dashboard/organization/athletes/${row.original.id}`}
+								>
 									<EyeIcon className="mr-2 size-4" />
 									View Profile
 								</Link>
@@ -377,6 +420,7 @@ export function AthletesTable(): React.JSX.Element {
 									NiceModal.show(AthletesModal, { athlete: row.original });
 								}}
 							>
+								<PencilIcon className="mr-2 size-4" />
 								Edit
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
@@ -394,6 +438,7 @@ export function AthletesTable(): React.JSX.Element {
 								}}
 								variant="destructive"
 							>
+								<Trash2Icon className="mr-2 size-4" />
 								Delete
 							</DropdownMenuItem>
 						</DropdownMenuContent>

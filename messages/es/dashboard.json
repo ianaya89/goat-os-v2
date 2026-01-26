@@ -1,0 +1,91 @@
+{
+	"title": "Dashboard",
+	"welcome": "Bienvenido, {name}",
+	"yourOrganizations": "Tus Organizaciones",
+	"breadcrumb": {
+		"home": "Inicio",
+		"dashboard": "Dashboard"
+	},
+	"overview": {
+		"title": "Resumen",
+		"totalAthletes": "Total de atletas",
+		"activeCoaches": "Entrenadores activos",
+		"upcomingSessions": "Próximas sesiones",
+		"pendingPayments": "Pagos pendientes"
+	},
+	"quickActions": {
+		"title": "Acciones rápidas",
+		"addAthlete": "Agregar atleta",
+		"createSession": "Crear sesión",
+		"recordPayment": "Registrar pago",
+		"viewReports": "Ver reportes"
+	},
+	"recentActivity": {
+		"title": "Actividad reciente",
+		"noActivity": "No hay actividad reciente"
+	},
+	"onboarding": {
+		"title": "Configuración inicial",
+		"description": "Completa estos pasos para comenzar a usar la plataforma.",
+		"steps": {
+			"profile": "Completar perfil",
+			"organization": "Configurar organización",
+			"members": "Invitar miembros",
+			"billing": "Configurar facturación"
+		}
+	},
+	"daily": {
+		"title": "Actividad de Hoy",
+		"noData": "No hay datos disponibles",
+		"sessions": "Sesiones",
+		"completed": "completadas",
+		"attendance": "Asistencias",
+		"present": "presentes",
+		"income": "Ingresos",
+		"payments": "pagos",
+		"todaySessions": "Sesiones de hoy",
+		"statusCompleted": "Completada",
+		"statusConfirmed": "Confirmada",
+		"statusPending": "Pendiente",
+		"viewAll": "Ver todas ({count} sesiones)",
+		"noSessions": "No hay sesiones programadas para hoy",
+		"viewCalendar": "Ver calendario de sesiones"
+	},
+	"weekly": {
+		"title": "Resumen Semanal",
+		"noData": "No hay datos disponibles",
+		"viewReports": "Ver reportes",
+		"sessions": "Sesiones",
+		"completed": "completadas",
+		"attendance": "Asistencia",
+		"income": "Ingresos",
+		"payments": "pagos",
+		"cancelled": "Canceladas",
+		"sessionsPerDay": "Sesiones por día",
+		"attendanceBreakdown": "Desglose de asistencia",
+		"presentLabel": "Presentes",
+		"lateLabel": "Tarde",
+		"absentLabel": "Ausentes",
+		"excusedLabel": "Justificados"
+	},
+	"cashRegister": {
+		"title": "Caja del Día",
+		"history": "Historial",
+		"statusOpen": "Abierta",
+		"statusClosed": "Cerrada",
+		"statusNotOpened": "Sin Abrir",
+		"notOpenTitle": "La caja no está abierta",
+		"notOpenDescription": "Abre la caja para registrar movimientos de hoy",
+		"openButton": "Abrir Caja",
+		"openingBalance": "Saldo Inicial",
+		"closingBalance": "Saldo Final",
+		"netFlow": "Flujo Neto",
+		"incomeLabel": "Ingresos",
+		"expenseLabel": "Egresos",
+		"paymentsLabel": "Pagos",
+		"movementButton": "Movimiento",
+		"closeButton": "Cerrar Caja",
+		"openedBy": "Abierta por {name}",
+		"closedBy": "Cerrada por {name}"
+	}
+}

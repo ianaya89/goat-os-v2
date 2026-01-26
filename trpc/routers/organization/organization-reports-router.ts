@@ -2,6 +2,8 @@ import { and, asc, count, desc, eq, gte, lte, sql, sum } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
 	AttendanceStatus,
+	EventPaymentStatus,
+	EventRegistrationStatus,
 	TrainingPaymentStatus,
 	TrainingSessionStatus,
 } from "@/lib/db/schema/enums";
@@ -10,8 +12,12 @@ import {
 	athleteTable,
 	attendanceTable,
 	coachTable,
+	eventPaymentTable,
+	eventRegistrationTable,
 	expenseCategoryTable,
 	expenseTable,
+	locationTable,
+	sportsEventTable,
 	trainingPaymentTable,
 	trainingSessionCoachTable,
 	trainingSessionTable,
@@ -26,9 +32,14 @@ import {
 	getExpensesByPeriodSchema,
 	getFinancialSummarySchema,
 	getOutstandingPaymentsSchema,
+	getPendingEventRegistrationsSchema,
+	getPendingSummarySchema,
 	getRevenueByAthleteSchema,
+	getRevenueByEventSchema,
+	getRevenueByLocationSchema,
 	getRevenueByPaymentMethodSchema,
 	getRevenueByPeriodSchema,
+	getRevenueWithCumulativeSchema,
 	getSessionsByCoachSchema,
 	getSessionsByPeriodSchema,
 	getTrainingSummarySchema,
@@ -496,6 +507,154 @@ export const organizationReportsRouter = createTRPCRouter({
 			}));
 		}),
 
+	// Revenue with cumulative totals
+	getRevenueWithCumulative: protectedOrganizationProcedure
+		.input(getRevenueWithCumulativeSchema)
+		.query(async ({ ctx, input }) => {
+			const { from, to } = input.dateRange ?? getDefaultDateRange();
+
+			let dateTrunc: ReturnType<typeof sql>;
+			switch (input.period) {
+				case "day":
+					dateTrunc = sql`DATE_TRUNC('day', ${trainingPaymentTable.paymentDate})`;
+					break;
+				case "week":
+					dateTrunc = sql`DATE_TRUNC('week', ${trainingPaymentTable.paymentDate})`;
+					break;
+				case "year":
+					dateTrunc = sql`DATE_TRUNC('year', ${trainingPaymentTable.paymentDate})`;
+					break;
+				default:
+					dateTrunc = sql`DATE_TRUNC('month', ${trainingPaymentTable.paymentDate})`;
+			}
+
+			const result = await db
+				.select({
+					period: dateTrunc,
+					total: sum(trainingPaymentTable.paidAmount),
+					count: count(),
+				})
+				.from(trainingPaymentTable)
+				.where(
+					and(
+						eq(trainingPaymentTable.organizationId, ctx.organization.id),
+						eq(trainingPaymentTable.status, TrainingPaymentStatus.paid),
+						gte(trainingPaymentTable.paymentDate, from),
+						lte(trainingPaymentTable.paymentDate, to),
+					),
+				)
+				.groupBy(dateTrunc)
+				.orderBy(dateTrunc);
+
+			// Calculate cumulative totals
+			let cumulative = 0;
+			return result.map((r) => {
+				const periodTotal = Number(r.total ?? 0);
+				cumulative += periodTotal;
+				return {
+					period: r.period as Date,
+					total: periodTotal,
+					cumulative,
+					count: Number(r.count ?? 0),
+				};
+			});
+		}),
+
+	// Revenue by sports event
+	getRevenueByEvent: protectedOrganizationProcedure
+		.input(getRevenueByEventSchema)
+		.query(async ({ ctx, input }) => {
+			const { from, to } = input.dateRange ?? getDefaultDateRange();
+
+			const result = await db
+				.select({
+					eventId: sportsEventTable.id,
+					eventTitle: sportsEventTable.title,
+					eventType: sportsEventTable.eventType,
+					eventDate: sportsEventTable.startDate,
+					total: sum(eventPaymentTable.amount),
+					count: count(),
+				})
+				.from(eventPaymentTable)
+				.innerJoin(
+					eventRegistrationTable,
+					eq(eventPaymentTable.registrationId, eventRegistrationTable.id),
+				)
+				.innerJoin(
+					sportsEventTable,
+					eq(eventRegistrationTable.eventId, sportsEventTable.id),
+				)
+				.where(
+					and(
+						eq(eventPaymentTable.organizationId, ctx.organization.id),
+						eq(eventPaymentTable.status, EventPaymentStatus.paid),
+						gte(eventPaymentTable.paymentDate, from),
+						lte(eventPaymentTable.paymentDate, to),
+					),
+				)
+				.groupBy(
+					sportsEventTable.id,
+					sportsEventTable.title,
+					sportsEventTable.eventType,
+					sportsEventTable.startDate,
+				)
+				.orderBy(desc(sum(eventPaymentTable.amount)))
+				.limit(input.limit);
+
+			return result.map((r) => ({
+				eventId: r.eventId,
+				eventTitle: r.eventTitle,
+				eventType: r.eventType,
+				eventDate: r.eventDate,
+				total: Number(r.total ?? 0),
+				count: Number(r.count ?? 0),
+			}));
+		}),
+
+	// Revenue by location (from training sessions)
+	getRevenueByLocation: protectedOrganizationProcedure
+		.input(getRevenueByLocationSchema)
+		.query(async ({ ctx, input }) => {
+			const { from, to } = input.dateRange ?? getDefaultDateRange();
+
+			const result = await db
+				.select({
+					locationId: locationTable.id,
+					locationName: locationTable.name,
+					locationAddress: locationTable.address,
+					total: sum(trainingPaymentTable.paidAmount),
+					count: count(),
+				})
+				.from(trainingPaymentTable)
+				.innerJoin(
+					trainingSessionTable,
+					eq(trainingPaymentTable.sessionId, trainingSessionTable.id),
+				)
+				.innerJoin(
+					locationTable,
+					eq(trainingSessionTable.locationId, locationTable.id),
+				)
+				.where(
+					and(
+						eq(trainingPaymentTable.organizationId, ctx.organization.id),
+						eq(trainingPaymentTable.status, TrainingPaymentStatus.paid),
+						gte(trainingPaymentTable.paymentDate, from),
+						lte(trainingPaymentTable.paymentDate, to),
+					),
+				)
+				.groupBy(locationTable.id, locationTable.name, locationTable.address)
+				.orderBy(desc(sum(trainingPaymentTable.paidAmount)))
+				.limit(input.limit);
+
+			return result.map((r) => ({
+				locationId: r.locationId,
+				locationName: r.locationName,
+				locationAddress: r.locationAddress,
+				total: Number(r.total ?? 0),
+				count: Number(r.count ?? 0),
+			}));
+		}),
+
 	// ============================================================================
 	// TRAINING REPORTS
 	// ============================================================================
@@ -874,5 +1033,157 @@ export const organizationReportsRouter = createTRPCRouter({
 					rate: total > 0 ? (attended / total) * 100 : 0,
 				};
 			});
+		}),
+
+	// ============================================================================
+	// PENDING PAYMENTS REPORTS
+	// ============================================================================
+
+	// Pending event registrations
+	getPendingEventRegistrations: protectedOrganizationProcedure
+		.input(getPendingEventRegistrationsSchema)
+		.query(async ({ ctx, input }) => {
+			const [registrations, countResult] = await Promise.all([
+				db.query.eventRegistrationTable.findMany({
+					where: and(
+						eq(eventRegistrationTable.organizationId, ctx.organization.id),
+						eq(
+							eventRegistrationTable.status,
+							EventRegistrationStatus.pendingPayment,
+						),
+					),
+					limit: input.limit,
+					offset: input.offset,
+					orderBy: desc(eventRegistrationTable.createdAt),
+					with: {
+						event: {
+							columns: {
+								id: true,
+								title: true,
+								startDate: true,
+								eventType: true,
+							},
+						},
+						athlete: {
+							with: {
+								user: { columns: { id: true, name: true, email: true } },
+							},
+						},
+					},
+				}),
+				db
+					.select({ count: count() })
+					.from(eventRegistrationTable)
+					.where(
+						and(
+							eq(eventRegistrationTable.organizationId, ctx.organization.id),
+							eq(
+								eventRegistrationTable.status,
+								EventRegistrationStatus.pendingPayment,
+							),
+						),
+					),
+			]);
+
+			// Calculate total outstanding for events
+			const totalOutstanding = await db
+				.select({
+					total: sum(
+						sql`${eventRegistrationTable.price} - ${eventRegistrationTable.paidAmount}`,
+					),
+				})
+				.from(eventRegistrationTable)
+				.where(
+					and(
+						eq(eventRegistrationTable.organizationId, ctx.organization.id),
+						eq(
+							eventRegistrationTable.status,
+							EventRegistrationStatus.pendingPayment,
+						),
+					),
+				);
+
+			return {
+				registrations: registrations.map((r) => ({
+					id: r.id,
+					eventId: r.eventId,
+					eventTitle: r.event?.title ?? "Evento desconocido",
+					eventDate: r.event?.startDate,
+					eventType: r.event?.eventType,
+					athleteId: r.athleteId,
+					athleteName:
+						r.athlete?.user?.name ?? r.registrantName ?? "Sin nombre",
+					athleteEmail:
+						r.athlete?.user?.email ?? r.registrantEmail ?? "Sin email",
+					price: r.price,
+					paidAmount: r.paidAmount,
+					currency: r.currency,
+					discountAmount: r.discountAmount ?? 0,
+					registeredAt: r.registeredAt,
+					createdAt: r.createdAt,
+				})),
+				total: countResult[0]?.count ?? 0,
+				totalOutstandingAmount: Number(totalOutstanding[0]?.total ?? 0),
+			};
+		}),
+
+	// Combined pending payments summary
+	getPendingSummary: protectedOrganizationProcedure
+		.input(getPendingSummarySchema)
+		.query(async ({ ctx }) => {
+			// Get pending training payments summary
+			const trainingPending = await db
+				.select({
+					totalPending: sum(
+						sql`${trainingPaymentTable.amount} - ${trainingPaymentTable.paidAmount}`,
+					),
+					pendingCount: count(),
+				})
+				.from(trainingPaymentTable)
+				.where(
+					and(
+						eq(trainingPaymentTable.organizationId, ctx.organization.id),
+						eq(trainingPaymentTable.status, TrainingPaymentStatus.pending),
+					),
+				);
+
+			// Get pending event registrations summary
+			const eventPending = await db
+				.select({
+					totalPending: sum(
+						sql`${eventRegistrationTable.price} - ${eventRegistrationTable.paidAmount}`,
+					),
+					pendingCount: count(),
+				})
+				.from(eventRegistrationTable)
+				.where(
+					and(
+						eq(eventRegistrationTable.organizationId, ctx.organization.id),
+						eq(
+							eventRegistrationTable.status,
+							EventRegistrationStatus.pendingPayment,
+						),
+					),
+				);
+
+			const trainingAmount = Number(trainingPending[0]?.totalPending ?? 0);
+			const trainingCount = Number(trainingPending[0]?.pendingCount ?? 0);
+			const eventAmount = Number(eventPending[0]?.totalPending ?? 0);
+			const eventCount = Number(eventPending[0]?.pendingCount ?? 0);
+
+			return {
+				training: {
+					totalAmount: trainingAmount,
+					count: trainingCount,
+				},
+				events: {
+					totalAmount: eventAmount,
+					count: eventCount,
+				},
+				combined: {
+					totalAmount: trainingAmount + eventAmount,
+					count: trainingCount + eventCount,
+				},
+			};
 		}),
 });

@@ -3,13 +3,19 @@ import {
 	accountTable,
 	ageCategoryTable,
 	aiChatTable,
+	athleteAchievementTable,
 	athleteCareerHistoryTable,
+	athleteEducationTable,
 	athleteEvaluationTable,
 	athleteFitnessTestTable,
 	athleteGroupMemberTable,
 	athleteGroupTable,
+	athleteLanguageTable,
+	athleteMedicalDocumentTable,
 	athletePhysicalMetricsTable,
+	athleteReferenceTable,
 	athleteSessionFeedbackTable,
+	athleteSponsorTable,
 	athleteTable,
 	athleteWellnessSurveyTable,
 	attendanceTable,
@@ -17,27 +23,74 @@ import {
 	cashMovementTable,
 	cashRegisterTable,
 	coachTable,
+	competitionTable,
 	creditBalanceTable,
 	creditDeductionFailureTable,
 	creditTransactionTable,
+	equipmentAssignmentTable,
+	equipmentInventoryAuditTable,
+	equipmentInventoryCountTable,
+	equipmentMaintenanceTable,
 	eventAgeCategoryTable,
+	eventBudgetLineTable,
+	eventChecklistTable,
 	eventCoachTable,
+	eventDiscountTable,
+	eventDiscountUsageTable,
+	eventDocumentTable,
+	eventGroupMemberTable,
+	eventGroupTable,
+	eventInventoryTable,
+	eventMilestoneTable,
+	eventNoteTable,
 	eventPaymentTable,
 	eventPricingTierTable,
 	eventRegistrationTable,
+	eventRiskLogTable,
+	eventRiskTable,
+	eventRotationAssignmentTable,
+	eventRotationScheduleTable,
+	eventSponsorAssignmentTable,
+	eventSponsorBenefitTable,
+	eventSponsorTable,
+	eventStaffShiftTable,
+	eventStaffTable,
+	eventStationStaffTable,
+	eventStationTable,
+	eventTaskTable,
+	eventTemplateTable,
+	eventTimeBlockTable,
+	eventVendorAssignmentTable,
+	eventVendorTable,
+	eventZoneStaffTable,
+	eventZoneTable,
 	expenseCategoryTable,
 	expenseTable,
 	invitationTable,
 	locationTable,
+	matchTable,
 	memberTable,
 	orderItemTable,
 	orderTable,
+	organizationFeatureTable,
 	organizationTable,
+	productTable,
 	recurringSessionExceptionTable,
+	saleItemTable,
+	saleTable,
+	seasonTable,
 	sessionTable,
+	sponsorTable,
 	sportsEventTable,
+	staffPayrollTable,
+	stockTransactionTable,
 	subscriptionItemTable,
 	subscriptionTable,
+	teamCompetitionTable,
+	teamMemberTable,
+	teamStaffTable,
+	teamTable,
+	trainingEquipmentTable,
 	trainingPaymentTable,
 	trainingSessionAthleteTable,
 	trainingSessionCoachTable,
@@ -100,6 +153,24 @@ export const organizationRelations = relations(
 		sportsEvents: many(sportsEventTable),
 		eventRegistrations: many(eventRegistrationTable),
 		eventPayments: many(eventPaymentTable),
+		// Organization-level vendors and sponsors
+		vendors: many(eventVendorTable),
+		sponsors: many(sponsorTable),
+		// Event templates
+		eventTemplates: many(eventTemplateTable),
+		// Feature flags
+		features: many(organizationFeatureTable),
+	}),
+);
+
+// Organization feature flags relations
+export const organizationFeatureRelations = relations(
+	organizationFeatureTable,
+	({ one }) => ({
+		organization: one(organizationTable, {
+			fields: [organizationFeatureTable.organizationId],
+			references: [organizationTable.id],
+		}),
 	}),
 );
 
@@ -267,6 +338,11 @@ export const athleteRelations = relations(athleteTable, ({ one, many }) => ({
 	physicalMetrics: many(athletePhysicalMetricsTable),
 	fitnessTests: many(athleteFitnessTestTable),
 	careerHistory: many(athleteCareerHistoryTable),
+	languages: many(athleteLanguageTable),
+	education: many(athleteEducationTable),
+	references: many(athleteReferenceTable),
+	sponsors: many(athleteSponsorTable),
+	achievements: many(athleteAchievementTable),
 	// Wellness tracking
 	wellnessSurveys: many(athleteWellnessSurveyTable),
 	// Session feedback (RPE)
@@ -357,7 +433,6 @@ export const trainingSessionRelations = relations(
 		evaluations: many(athleteEvaluationTable),
 		exceptions: many(recurringSessionExceptionTable),
 		feedback: many(athleteSessionFeedbackTable),
-		waitlistEntries: many(waitlistEntryTable),
 	}),
 );
 
@@ -509,6 +584,76 @@ export const athleteCareerHistoryRelations = relations(
 	}),
 );
 
+// Athlete Language relations
+export const athleteLanguageRelations = relations(
+	athleteLanguageTable,
+	({ one }) => ({
+		athlete: one(athleteTable, {
+			fields: [athleteLanguageTable.athleteId],
+			references: [athleteTable.id],
+		}),
+	}),
+);
+
+// Athlete Education relations
+export const athleteEducationRelations = relations(
+	athleteEducationTable,
+	({ one }) => ({
+		athlete: one(athleteTable, {
+			fields: [athleteEducationTable.athleteId],
+			references: [athleteTable.id],
+		}),
+	}),
+);
+
+// Athlete Reference relations
+export const athleteReferenceRelations = relations(
+	athleteReferenceTable,
+	({ one }) => ({
+		athlete: one(athleteTable, {
+			fields: [athleteReferenceTable.athleteId],
+			references: [athleteTable.id],
+		}),
+	}),
+);
+
+// Athlete Sponsor relations
+export const athleteSponsorRelations = relations(
+	athleteSponsorTable,
+	({ one }) => ({
+		athlete: one(athleteTable, {
+			fields: [athleteSponsorTable.athleteId],
+			references: [athleteTable.id],
+		}),
+	}),
+);
+
+// Athlete Achievement relations
+export const athleteAchievementRelations = relations(
+	athleteAchievementTable,
+	({ one }) => ({
+		athlete: one(athleteTable, {
+			fields: [athleteAchievementTable.athleteId],
+			references: [athleteTable.id],
+		}),
+	}),
+);
+
+// Athlete Medical Document relations
+export const athleteMedicalDocumentRelations = relations(
+	athleteMedicalDocumentTable,
+	({ one }) => ({
+		athlete: one(athleteTable, {
+			fields: [athleteMedicalDocumentTable.athleteId],
+			references: [athleteTable.id],
+		}),
+		uploadedByUser: one(userTable, {
+			fields: [athleteMedicalDocumentTable.uploadedBy],
+			references: [userTable.id],
+		}),
+	}),
+);
+
 export const athleteWellnessSurveyRelations = relations(
 	athleteWellnessSurveyTable,
 	({ one }) => ({
@@ -573,8 +718,23 @@ export const sportsEventRelations = relations(
 		}),
 		ageCategories: many(eventAgeCategoryTable),
 		pricingTiers: many(eventPricingTierTable),
+		discounts: many(eventDiscountTable),
 		registrations: many(eventRegistrationTable),
 		coaches: many(eventCoachTable),
+		// Event organization features
+		checklists: many(eventChecklistTable),
+		tasks: many(eventTaskTable),
+		staff: many(eventStaffTable),
+		budgetLines: many(eventBudgetLineTable),
+		sponsors: many(eventSponsorTable),
+		sponsorAssignments: many(eventSponsorAssignmentTable),
+		milestones: many(eventMilestoneTable),
+		documents: many(eventDocumentTable),
+		notes: many(eventNoteTable),
+		inventory: many(eventInventoryTable),
+		vendorAssignments: many(eventVendorAssignmentTable),
+		zones: many(eventZoneTable),
+		risks: many(eventRiskTable),
 	}),
 );
 
@@ -637,7 +797,12 @@ export const eventRegistrationRelations = relations(
 			fields: [eventRegistrationTable.appliedPricingTierId],
 			references: [eventPricingTierTable.id],
 		}),
+		appliedDiscount: one(eventDiscountTable, {
+			fields: [eventRegistrationTable.appliedDiscountId],
+			references: [eventDiscountTable.id],
+		}),
 		payments: many(eventPaymentTable),
+		discountUsages: many(eventDiscountUsageTable),
 	}),
 );
 
@@ -671,6 +836,42 @@ export const eventCoachRelations = relations(eventCoachTable, ({ one }) => ({
 		references: [coachTable.id],
 	}),
 }));
+
+// ============================================================================
+// EVENT DISCOUNT RELATIONS
+// ============================================================================
+
+// Event Discount relations
+export const eventDiscountRelations = relations(
+	eventDiscountTable,
+	({ one, many }) => ({
+		event: one(sportsEventTable, {
+			fields: [eventDiscountTable.eventId],
+			references: [sportsEventTable.id],
+		}),
+		organization: one(organizationTable, {
+			fields: [eventDiscountTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		usages: many(eventDiscountUsageTable),
+		registrations: many(eventRegistrationTable),
+	}),
+);
+
+// Event Discount Usage relations
+export const eventDiscountUsageRelations = relations(
+	eventDiscountUsageTable,
+	({ one }) => ({
+		discount: one(eventDiscountTable, {
+			fields: [eventDiscountUsageTable.discountId],
+			references: [eventDiscountTable.id],
+		}),
+		registration: one(eventRegistrationTable, {
+			fields: [eventDiscountUsageTable.registrationId],
+			references: [eventRegistrationTable.id],
+		}),
+	}),
+);
 
 // ============================================================================
 // EXPENSE & CASH REGISTER RELATIONS
@@ -761,10 +962,6 @@ export const waitlistEntryRelations = relations(
 			fields: [waitlistEntryTable.athleteId],
 			references: [athleteTable.id],
 		}),
-		trainingSession: one(trainingSessionTable, {
-			fields: [waitlistEntryTable.trainingSessionId],
-			references: [trainingSessionTable.id],
-		}),
 		athleteGroup: one(athleteGroupTable, {
 			fields: [waitlistEntryTable.athleteGroupId],
 			references: [athleteGroupTable.id],
@@ -781,3 +978,968 @@ export const waitlistEntryRelations = relations(
 		}),
 	}),
 );
+
+// ============================================================================
+// EVENT ORGANIZATION RELATIONS
+// ============================================================================
+
+// Vendor relations (organization-level, shared across events)
+export const eventVendorRelations = relations(
+	eventVendorTable,
+	({ one, many }) => ({
+		organization: one(organizationTable, {
+			fields: [eventVendorTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		createdByUser: one(userTable, {
+			fields: [eventVendorTable.createdBy],
+			references: [userTable.id],
+		}),
+		eventAssignments: many(eventVendorAssignmentTable),
+		budgetLines: many(eventBudgetLineTable),
+		inventoryItems: many(eventInventoryTable),
+	}),
+);
+
+// Sponsor relations (organization-level, shared across events)
+export const sponsorRelations = relations(sponsorTable, ({ one, many }) => ({
+	organization: one(organizationTable, {
+		fields: [sponsorTable.organizationId],
+		references: [organizationTable.id],
+	}),
+	createdByUser: one(userTable, {
+		fields: [sponsorTable.createdBy],
+		references: [userTable.id],
+	}),
+	eventAssignments: many(eventSponsorAssignmentTable),
+}));
+
+// Event sponsor assignment relations
+export const eventSponsorAssignmentRelations = relations(
+	eventSponsorAssignmentTable,
+	({ one }) => ({
+		event: one(sportsEventTable, {
+			fields: [eventSponsorAssignmentTable.eventId],
+			references: [sportsEventTable.id],
+		}),
+		sponsor: one(sponsorTable, {
+			fields: [eventSponsorAssignmentTable.sponsorId],
+			references: [sponsorTable.id],
+		}),
+	}),
+);
+
+// Zone relations
+export const eventZoneRelations = relations(
+	eventZoneTable,
+	({ one, many }) => ({
+		event: one(sportsEventTable, {
+			fields: [eventZoneTable.eventId],
+			references: [sportsEventTable.id],
+		}),
+		organization: one(organizationTable, {
+			fields: [eventZoneTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		createdByUser: one(userTable, {
+			fields: [eventZoneTable.createdBy],
+			references: [userTable.id],
+		}),
+		staffShifts: many(eventStaffShiftTable),
+		inventoryItems: many(eventInventoryTable),
+		staff: many(eventZoneStaffTable),
+	}),
+);
+
+// Zone staff relations
+export const eventZoneStaffRelations = relations(
+	eventZoneStaffTable,
+	({ one }) => ({
+		zone: one(eventZoneTable, {
+			fields: [eventZoneStaffTable.zoneId],
+			references: [eventZoneTable.id],
+		}),
+		staff: one(eventStaffTable, {
+			fields: [eventZoneStaffTable.staffId],
+			references: [eventStaffTable.id],
+		}),
+	}),
+);
+
+// Checklist relations
+export const eventChecklistRelations = relations(
+	eventChecklistTable,
+	({ one }) => ({
+		event: one(sportsEventTable, {
+			fields: [eventChecklistTable.eventId],
+			references: [sportsEventTable.id],
+		}),
+		organization: one(organizationTable, {
+			fields: [eventChecklistTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		completedByUser: one(userTable, {
+			fields: [eventChecklistTable.completedBy],
+			references: [userTable.id],
+			relationName: "checklistCompletedBy",
+		}),
+		createdByUser: one(userTable, {
+			fields: [eventChecklistTable.createdBy],
+			references: [userTable.id],
+			relationName: "checklistCreatedBy",
+		}),
+	}),
+);
+
+// Task relations
+export const eventTaskRelations = relations(eventTaskTable, ({ one }) => ({
+	event: one(sportsEventTable, {
+		fields: [eventTaskTable.eventId],
+		references: [sportsEventTable.id],
+	}),
+	organization: one(organizationTable, {
+		fields: [eventTaskTable.organizationId],
+		references: [organizationTable.id],
+	}),
+	assignee: one(userTable, {
+		fields: [eventTaskTable.assigneeId],
+		references: [userTable.id],
+		relationName: "taskAssignee",
+	}),
+	createdByUser: one(userTable, {
+		fields: [eventTaskTable.createdBy],
+		references: [userTable.id],
+		relationName: "taskCreatedBy",
+	}),
+}));
+
+// Staff relations
+export const eventStaffRelations = relations(
+	eventStaffTable,
+	({ one, many }) => ({
+		event: one(sportsEventTable, {
+			fields: [eventStaffTable.eventId],
+			references: [sportsEventTable.id],
+		}),
+		organization: one(organizationTable, {
+			fields: [eventStaffTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		user: one(userTable, {
+			fields: [eventStaffTable.userId],
+			references: [userTable.id],
+		}),
+		createdByUser: one(userTable, {
+			fields: [eventStaffTable.createdBy],
+			references: [userTable.id],
+			relationName: "staffCreatedBy",
+		}),
+		shifts: many(eventStaffShiftTable),
+	}),
+);
+
+// Staff shift relations
+export const eventStaffShiftRelations = relations(
+	eventStaffShiftTable,
+	({ one }) => ({
+		staff: one(eventStaffTable, {
+			fields: [eventStaffShiftTable.staffId],
+			references: [eventStaffTable.id],
+		}),
+		event: one(sportsEventTable, {
+			fields: [eventStaffShiftTable.eventId],
+			references: [sportsEventTable.id],
+		}),
+		zone: one(eventZoneTable, {
+			fields: [eventStaffShiftTable.zoneId],
+			references: [eventZoneTable.id],
+		}),
+	}),
+);
+
+// Budget line relations
+export const eventBudgetLineRelations = relations(
+	eventBudgetLineTable,
+	({ one }) => ({
+		event: one(sportsEventTable, {
+			fields: [eventBudgetLineTable.eventId],
+			references: [sportsEventTable.id],
+		}),
+		organization: one(organizationTable, {
+			fields: [eventBudgetLineTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		category: one(expenseCategoryTable, {
+			fields: [eventBudgetLineTable.categoryId],
+			references: [expenseCategoryTable.id],
+		}),
+		expense: one(expenseTable, {
+			fields: [eventBudgetLineTable.expenseId],
+			references: [expenseTable.id],
+		}),
+		vendor: one(eventVendorTable, {
+			fields: [eventBudgetLineTable.vendorId],
+			references: [eventVendorTable.id],
+		}),
+		approvedByUser: one(userTable, {
+			fields: [eventBudgetLineTable.approvedBy],
+			references: [userTable.id],
+			relationName: "budgetApprovedBy",
+		}),
+		createdByUser: one(userTable, {
+			fields: [eventBudgetLineTable.createdBy],
+			references: [userTable.id],
+			relationName: "budgetCreatedBy",
+		}),
+	}),
+);
+
+// Sponsor relations
+export const eventSponsorRelations = relations(
+	eventSponsorTable,
+	({ one, many }) => ({
+		event: one(sportsEventTable, {
+			fields: [eventSponsorTable.eventId],
+			references: [sportsEventTable.id],
+		}),
+		organization: one(organizationTable, {
+			fields: [eventSponsorTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		createdByUser: one(userTable, {
+			fields: [eventSponsorTable.createdBy],
+			references: [userTable.id],
+		}),
+		benefits: many(eventSponsorBenefitTable),
+	}),
+);
+
+// Sponsor benefit relations
+export const eventSponsorBenefitRelations = relations(
+	eventSponsorBenefitTable,
+	({ one }) => ({
+		sponsor: one(eventSponsorTable, {
+			fields: [eventSponsorBenefitTable.sponsorId],
+			references: [eventSponsorTable.id],
+		}),
+	}),
+);
+
+// Milestone relations
+export const eventMilestoneRelations = relations(
+	eventMilestoneTable,
+	({ one }) => ({
+		event: one(sportsEventTable, {
+			fields: [eventMilestoneTable.eventId],
+			references: [sportsEventTable.id],
+		}),
+		organization: one(organizationTable, {
+			fields: [eventMilestoneTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		responsible: one(userTable, {
+			fields: [eventMilestoneTable.responsibleId],
+			references: [userTable.id],
+			relationName: "milestoneResponsible",
+		}),
+		createdByUser: one(userTable, {
+			fields: [eventMilestoneTable.createdBy],
+			references: [userTable.id],
+			relationName: "milestoneCreatedBy",
+		}),
+	}),
+);
+
+// Document relations
+export const eventDocumentRelations = relations(
+	eventDocumentTable,
+	({ one }) => ({
+		event: one(sportsEventTable, {
+			fields: [eventDocumentTable.eventId],
+			references: [sportsEventTable.id],
+		}),
+		organization: one(organizationTable, {
+			fields: [eventDocumentTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		uploadedByUser: one(userTable, {
+			fields: [eventDocumentTable.uploadedBy],
+			references: [userTable.id],
+		}),
+	}),
+);
+
+// Note relations
+export const eventNoteRelations = relations(
+	eventNoteTable,
+	({ one, many }) => ({
+		event: one(sportsEventTable, {
+			fields: [eventNoteTable.eventId],
+			references: [sportsEventTable.id],
+		}),
+		organization: one(organizationTable, {
+			fields: [eventNoteTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		author: one(userTable, {
+			fields: [eventNoteTable.authorId],
+			references: [userTable.id],
+		}),
+		parentNote: one(eventNoteTable, {
+			fields: [eventNoteTable.parentNoteId],
+			references: [eventNoteTable.id],
+			relationName: "noteReplies",
+		}),
+		replies: many(eventNoteTable, {
+			relationName: "noteReplies",
+		}),
+		pinnedByUser: one(userTable, {
+			fields: [eventNoteTable.pinnedBy],
+			references: [userTable.id],
+			relationName: "notePinnedBy",
+		}),
+	}),
+);
+
+// Inventory relations
+export const eventInventoryRelations = relations(
+	eventInventoryTable,
+	({ one }) => ({
+		event: one(sportsEventTable, {
+			fields: [eventInventoryTable.eventId],
+			references: [sportsEventTable.id],
+		}),
+		organization: one(organizationTable, {
+			fields: [eventInventoryTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		vendor: one(eventVendorTable, {
+			fields: [eventInventoryTable.vendorId],
+			references: [eventVendorTable.id],
+		}),
+		zone: one(eventZoneTable, {
+			fields: [eventInventoryTable.zoneId],
+			references: [eventZoneTable.id],
+		}),
+		responsible: one(userTable, {
+			fields: [eventInventoryTable.responsibleId],
+			references: [userTable.id],
+			relationName: "inventoryResponsible",
+		}),
+		createdByUser: one(userTable, {
+			fields: [eventInventoryTable.createdBy],
+			references: [userTable.id],
+			relationName: "inventoryCreatedBy",
+		}),
+	}),
+);
+
+// Vendor assignment relations
+export const eventVendorAssignmentRelations = relations(
+	eventVendorAssignmentTable,
+	({ one }) => ({
+		event: one(sportsEventTable, {
+			fields: [eventVendorAssignmentTable.eventId],
+			references: [sportsEventTable.id],
+		}),
+		vendor: one(eventVendorTable, {
+			fields: [eventVendorAssignmentTable.vendorId],
+			references: [eventVendorTable.id],
+		}),
+	}),
+);
+
+// Risk relations
+export const eventRiskRelations = relations(
+	eventRiskTable,
+	({ one, many }) => ({
+		event: one(sportsEventTable, {
+			fields: [eventRiskTable.eventId],
+			references: [sportsEventTable.id],
+		}),
+		organization: one(organizationTable, {
+			fields: [eventRiskTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		owner: one(userTable, {
+			fields: [eventRiskTable.ownerId],
+			references: [userTable.id],
+			relationName: "riskOwner",
+		}),
+		createdByUser: one(userTable, {
+			fields: [eventRiskTable.createdBy],
+			references: [userTable.id],
+			relationName: "riskCreatedBy",
+		}),
+		logs: many(eventRiskLogTable),
+	}),
+);
+
+// Risk log relations
+export const eventRiskLogRelations = relations(
+	eventRiskLogTable,
+	({ one }) => ({
+		risk: one(eventRiskTable, {
+			fields: [eventRiskLogTable.riskId],
+			references: [eventRiskTable.id],
+		}),
+		user: one(userTable, {
+			fields: [eventRiskLogTable.userId],
+			references: [userTable.id],
+		}),
+	}),
+);
+
+// ============================================================================
+// STOCK & PRODUCT RELATIONS
+// ============================================================================
+
+// Product relations
+export const productRelations = relations(productTable, ({ one, many }) => ({
+	organization: one(organizationTable, {
+		fields: [productTable.organizationId],
+		references: [organizationTable.id],
+	}),
+	createdByUser: one(userTable, {
+		fields: [productTable.createdBy],
+		references: [userTable.id],
+		relationName: "productCreatedBy",
+	}),
+	stockTransactions: many(stockTransactionTable),
+	saleItems: many(saleItemTable),
+}));
+
+// Stock transaction relations
+export const stockTransactionRelations = relations(
+	stockTransactionTable,
+	({ one }) => ({
+		organization: one(organizationTable, {
+			fields: [stockTransactionTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		product: one(productTable, {
+			fields: [stockTransactionTable.productId],
+			references: [productTable.id],
+		}),
+		recordedByUser: one(userTable, {
+			fields: [stockTransactionTable.recordedBy],
+			references: [userTable.id],
+			relationName: "stockTransactionRecordedBy",
+		}),
+	}),
+);
+
+// Sale relations
+export const saleRelations = relations(saleTable, ({ one, many }) => ({
+	organization: one(organizationTable, {
+		fields: [saleTable.organizationId],
+		references: [organizationTable.id],
+	}),
+	athlete: one(athleteTable, {
+		fields: [saleTable.athleteId],
+		references: [athleteTable.id],
+	}),
+	cashMovement: one(cashMovementTable, {
+		fields: [saleTable.cashMovementId],
+		references: [cashMovementTable.id],
+	}),
+	soldByUser: one(userTable, {
+		fields: [saleTable.soldBy],
+		references: [userTable.id],
+		relationName: "saleSoldBy",
+	}),
+	items: many(saleItemTable),
+}));
+
+// Sale item relations
+export const saleItemRelations = relations(saleItemTable, ({ one }) => ({
+	sale: one(saleTable, {
+		fields: [saleItemTable.saleId],
+		references: [saleTable.id],
+	}),
+	product: one(productTable, {
+		fields: [saleItemTable.productId],
+		references: [productTable.id],
+	}),
+}));
+
+// ============================================================================
+// TRAINING EQUIPMENT RELATIONS
+// ============================================================================
+
+// Training equipment relations
+export const trainingEquipmentRelations = relations(
+	trainingEquipmentTable,
+	({ one, many }) => ({
+		organization: one(organizationTable, {
+			fields: [trainingEquipmentTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		location: one(locationTable, {
+			fields: [trainingEquipmentTable.locationId],
+			references: [locationTable.id],
+		}),
+		createdByUser: one(userTable, {
+			fields: [trainingEquipmentTable.createdBy],
+			references: [userTable.id],
+			relationName: "equipmentCreatedBy",
+		}),
+		assignments: many(equipmentAssignmentTable),
+		maintenanceRecords: many(equipmentMaintenanceTable),
+		inventoryCounts: many(equipmentInventoryCountTable),
+	}),
+);
+
+// Equipment assignment relations
+export const equipmentAssignmentRelations = relations(
+	equipmentAssignmentTable,
+	({ one }) => ({
+		organization: one(organizationTable, {
+			fields: [equipmentAssignmentTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		equipment: one(trainingEquipmentTable, {
+			fields: [equipmentAssignmentTable.equipmentId],
+			references: [trainingEquipmentTable.id],
+		}),
+		athleteGroup: one(athleteGroupTable, {
+			fields: [equipmentAssignmentTable.athleteGroupId],
+			references: [athleteGroupTable.id],
+		}),
+		trainingSession: one(trainingSessionTable, {
+			fields: [equipmentAssignmentTable.trainingSessionId],
+			references: [trainingSessionTable.id],
+		}),
+		coach: one(coachTable, {
+			fields: [equipmentAssignmentTable.coachId],
+			references: [coachTable.id],
+		}),
+		assignedByUser: one(userTable, {
+			fields: [equipmentAssignmentTable.assignedBy],
+			references: [userTable.id],
+			relationName: "equipmentAssignedBy",
+		}),
+	}),
+);
+
+// Equipment maintenance relations
+export const equipmentMaintenanceRelations = relations(
+	equipmentMaintenanceTable,
+	({ one }) => ({
+		equipment: one(trainingEquipmentTable, {
+			fields: [equipmentMaintenanceTable.equipmentId],
+			references: [trainingEquipmentTable.id],
+		}),
+		performedByUser: one(userTable, {
+			fields: [equipmentMaintenanceTable.performedBy],
+			references: [userTable.id],
+			relationName: "maintenancePerformedBy",
+		}),
+	}),
+);
+
+// ============================================================================
+// EQUIPMENT INVENTORY AUDIT RELATIONS
+// ============================================================================
+
+// Inventory audit relations
+export const equipmentInventoryAuditRelations = relations(
+	equipmentInventoryAuditTable,
+	({ one, many }) => ({
+		organization: one(organizationTable, {
+			fields: [equipmentInventoryAuditTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		location: one(locationTable, {
+			fields: [equipmentInventoryAuditTable.locationId],
+			references: [locationTable.id],
+		}),
+		createdByUser: one(userTable, {
+			fields: [equipmentInventoryAuditTable.createdBy],
+			references: [userTable.id],
+			relationName: "auditCreatedBy",
+		}),
+		performedByUser: one(userTable, {
+			fields: [equipmentInventoryAuditTable.performedBy],
+			references: [userTable.id],
+			relationName: "auditPerformedBy",
+		}),
+		approvedByUser: one(userTable, {
+			fields: [equipmentInventoryAuditTable.approvedBy],
+			references: [userTable.id],
+			relationName: "auditApprovedBy",
+		}),
+		counts: many(equipmentInventoryCountTable),
+	}),
+);
+
+// Inventory count item relations
+export const equipmentInventoryCountRelations = relations(
+	equipmentInventoryCountTable,
+	({ one }) => ({
+		audit: one(equipmentInventoryAuditTable, {
+			fields: [equipmentInventoryCountTable.auditId],
+			references: [equipmentInventoryAuditTable.id],
+		}),
+		equipment: one(trainingEquipmentTable, {
+			fields: [equipmentInventoryCountTable.equipmentId],
+			references: [trainingEquipmentTable.id],
+		}),
+		countedByUser: one(userTable, {
+			fields: [equipmentInventoryCountTable.countedBy],
+			references: [userTable.id],
+			relationName: "countCountedBy",
+		}),
+		adjustedByUser: one(userTable, {
+			fields: [equipmentInventoryCountTable.adjustedBy],
+			references: [userTable.id],
+			relationName: "countAdjustedBy",
+		}),
+	}),
+);
+
+// ============================================================================
+// STAFF PAYROLL RELATIONS
+// ============================================================================
+
+// Staff payroll relations
+export const staffPayrollRelations = relations(
+	staffPayrollTable,
+	({ one }) => ({
+		organization: one(organizationTable, {
+			fields: [staffPayrollTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		coach: one(coachTable, {
+			fields: [staffPayrollTable.coachId],
+			references: [coachTable.id],
+		}),
+		user: one(userTable, {
+			fields: [staffPayrollTable.userId],
+			references: [userTable.id],
+			relationName: "payrollRecipient",
+		}),
+		expense: one(expenseTable, {
+			fields: [staffPayrollTable.expenseId],
+			references: [expenseTable.id],
+		}),
+		createdByUser: one(userTable, {
+			fields: [staffPayrollTable.createdBy],
+			references: [userTable.id],
+			relationName: "payrollCreatedBy",
+		}),
+		approvedByUser: one(userTable, {
+			fields: [staffPayrollTable.approvedBy],
+			references: [userTable.id],
+			relationName: "payrollApprovedBy",
+		}),
+		paidByUser: one(userTable, {
+			fields: [staffPayrollTable.paidBy],
+			references: [userTable.id],
+			relationName: "payrollPaidBy",
+		}),
+	}),
+);
+
+// ============================================================================
+// EVENT TEMPLATE RELATIONS
+// ============================================================================
+
+// Event template relations
+export const eventTemplateRelations = relations(
+	eventTemplateTable,
+	({ one }) => ({
+		organization: one(organizationTable, {
+			fields: [eventTemplateTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		sourceEvent: one(sportsEventTable, {
+			fields: [eventTemplateTable.sourceEventId],
+			references: [sportsEventTable.id],
+		}),
+		createdByUser: one(userTable, {
+			fields: [eventTemplateTable.createdBy],
+			references: [userTable.id],
+		}),
+	}),
+);
+
+// ============================================================================
+// EVENT ROTATION SCHEDULE RELATIONS
+// ============================================================================
+
+// Event group relations
+export const eventGroupRelations = relations(
+	eventGroupTable,
+	({ one, many }) => ({
+		event: one(sportsEventTable, {
+			fields: [eventGroupTable.eventId],
+			references: [sportsEventTable.id],
+		}),
+		organization: one(organizationTable, {
+			fields: [eventGroupTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		leader: one(eventStaffTable, {
+			fields: [eventGroupTable.leaderId],
+			references: [eventStaffTable.id],
+		}),
+		members: many(eventGroupMemberTable),
+		rotationAssignments: many(eventRotationAssignmentTable),
+		createdByUser: one(userTable, {
+			fields: [eventGroupTable.createdBy],
+			references: [userTable.id],
+		}),
+	}),
+);
+
+// Event group member relations
+export const eventGroupMemberRelations = relations(
+	eventGroupMemberTable,
+	({ one }) => ({
+		group: one(eventGroupTable, {
+			fields: [eventGroupMemberTable.groupId],
+			references: [eventGroupTable.id],
+		}),
+		registration: one(eventRegistrationTable, {
+			fields: [eventGroupMemberTable.registrationId],
+			references: [eventRegistrationTable.id],
+		}),
+		assignedByUser: one(userTable, {
+			fields: [eventGroupMemberTable.assignedBy],
+			references: [userTable.id],
+		}),
+	}),
+);
+
+// Event station relations
+export const eventStationRelations = relations(
+	eventStationTable,
+	({ one, many }) => ({
+		event: one(sportsEventTable, {
+			fields: [eventStationTable.eventId],
+			references: [sportsEventTable.id],
+		}),
+		organization: one(organizationTable, {
+			fields: [eventStationTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		zone: one(eventZoneTable, {
+			fields: [eventStationTable.zoneId],
+			references: [eventZoneTable.id],
+		}),
+		staff: many(eventStationStaffTable),
+		rotationAssignments: many(eventRotationAssignmentTable),
+		createdByUser: one(userTable, {
+			fields: [eventStationTable.createdBy],
+			references: [userTable.id],
+		}),
+	}),
+);
+
+// Event station staff relations
+export const eventStationStaffRelations = relations(
+	eventStationStaffTable,
+	({ one }) => ({
+		station: one(eventStationTable, {
+			fields: [eventStationStaffTable.stationId],
+			references: [eventStationTable.id],
+		}),
+		staff: one(eventStaffTable, {
+			fields: [eventStationStaffTable.staffId],
+			references: [eventStaffTable.id],
+		}),
+	}),
+);
+
+// Event rotation schedule relations
+export const eventRotationScheduleRelations = relations(
+	eventRotationScheduleTable,
+	({ one, many }) => ({
+		event: one(sportsEventTable, {
+			fields: [eventRotationScheduleTable.eventId],
+			references: [sportsEventTable.id],
+		}),
+		organization: one(organizationTable, {
+			fields: [eventRotationScheduleTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		timeBlocks: many(eventTimeBlockTable),
+		createdByUser: one(userTable, {
+			fields: [eventRotationScheduleTable.createdBy],
+			references: [userTable.id],
+		}),
+	}),
+);
+
+// Event time block relations
+export const eventTimeBlockRelations = relations(
+	eventTimeBlockTable,
+	({ one, many }) => ({
+		schedule: one(eventRotationScheduleTable, {
+			fields: [eventTimeBlockTable.scheduleId],
+			references: [eventRotationScheduleTable.id],
+		}),
+		zone: one(eventZoneTable, {
+			fields: [eventTimeBlockTable.zoneId],
+			references: [eventZoneTable.id],
+		}),
+		assignments: many(eventRotationAssignmentTable),
+	}),
+);
+
+// Event rotation assignment relations
+export const eventRotationAssignmentRelations = relations(
+	eventRotationAssignmentTable,
+	({ one }) => ({
+		timeBlock: one(eventTimeBlockTable, {
+			fields: [eventRotationAssignmentTable.timeBlockId],
+			references: [eventTimeBlockTable.id],
+		}),
+		group: one(eventGroupTable, {
+			fields: [eventRotationAssignmentTable.groupId],
+			references: [eventGroupTable.id],
+		}),
+		station: one(eventStationTable, {
+			fields: [eventRotationAssignmentTable.stationId],
+			references: [eventStationTable.id],
+		}),
+	}),
+);
+
+// ============================================================================
+// TEAM / SQUAD MANAGEMENT RELATIONS
+// ============================================================================
+
+// Season relations
+export const seasonRelations = relations(seasonTable, ({ one, many }) => ({
+	organization: one(organizationTable, {
+		fields: [seasonTable.organizationId],
+		references: [organizationTable.id],
+	}),
+	createdByUser: one(userTable, {
+		fields: [seasonTable.createdBy],
+		references: [userTable.id],
+	}),
+	teams: many(teamTable),
+	competitions: many(competitionTable),
+}));
+
+// Team relations
+export const teamRelations = relations(teamTable, ({ one, many }) => ({
+	organization: one(organizationTable, {
+		fields: [teamTable.organizationId],
+		references: [organizationTable.id],
+	}),
+	season: one(seasonTable, {
+		fields: [teamTable.seasonId],
+		references: [seasonTable.id],
+	}),
+	ageCategory: one(ageCategoryTable, {
+		fields: [teamTable.ageCategoryId],
+		references: [ageCategoryTable.id],
+	}),
+	createdByUser: one(userTable, {
+		fields: [teamTable.createdBy],
+		references: [userTable.id],
+	}),
+	members: many(teamMemberTable),
+	staff: many(teamStaffTable),
+	competitions: many(teamCompetitionTable),
+	homeMatches: many(matchTable, { relationName: "homeTeam" }),
+	awayMatches: many(matchTable, { relationName: "awayTeam" }),
+}));
+
+// Team member relations
+export const teamMemberRelations = relations(teamMemberTable, ({ one }) => ({
+	team: one(teamTable, {
+		fields: [teamMemberTable.teamId],
+		references: [teamTable.id],
+	}),
+	athlete: one(athleteTable, {
+		fields: [teamMemberTable.athleteId],
+		references: [athleteTable.id],
+	}),
+}));
+
+// Team staff relations
+export const teamStaffRelations = relations(teamStaffTable, ({ one }) => ({
+	team: one(teamTable, {
+		fields: [teamStaffTable.teamId],
+		references: [teamTable.id],
+	}),
+	coach: one(coachTable, {
+		fields: [teamStaffTable.coachId],
+		references: [coachTable.id],
+	}),
+	user: one(userTable, {
+		fields: [teamStaffTable.userId],
+		references: [userTable.id],
+	}),
+}));
+
+// Competition relations
+export const competitionRelations = relations(
+	competitionTable,
+	({ one, many }) => ({
+		organization: one(organizationTable, {
+			fields: [competitionTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		season: one(seasonTable, {
+			fields: [competitionTable.seasonId],
+			references: [seasonTable.id],
+		}),
+		createdByUser: one(userTable, {
+			fields: [competitionTable.createdBy],
+			references: [userTable.id],
+		}),
+		teams: many(teamCompetitionTable),
+		matches: many(matchTable),
+	}),
+);
+
+// Team competition relations
+export const teamCompetitionRelations = relations(
+	teamCompetitionTable,
+	({ one }) => ({
+		team: one(teamTable, {
+			fields: [teamCompetitionTable.teamId],
+			references: [teamTable.id],
+		}),
+		competition: one(competitionTable, {
+			fields: [teamCompetitionTable.competitionId],
+			references: [competitionTable.id],
+		}),
+	}),
+);
+
+// Match relations
+export const matchRelations = relations(matchTable, ({ one }) => ({
+	organization: one(organizationTable, {
+		fields: [matchTable.organizationId],
+		references: [organizationTable.id],
+	}),
+	competition: one(competitionTable, {
+		fields: [matchTable.competitionId],
+		references: [competitionTable.id],
+	}),
+	homeTeam: one(teamTable, {
+		fields: [matchTable.homeTeamId],
+		references: [teamTable.id],
+		relationName: "homeTeam",
+	}),
+	awayTeam: one(teamTable, {
+		fields: [matchTable.awayTeamId],
+		references: [teamTable.id],
+		relationName: "awayTeam",
+	}),
+	location: one(locationTable, {
+		fields: [matchTable.locationId],
+		references: [locationTable.id],
+	}),
+	createdByUser: one(userTable, {
+		fields: [matchTable.createdBy],
+		references: [userTable.id],
+	}),
+}));

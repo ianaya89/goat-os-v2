@@ -7,7 +7,12 @@ import type {
 	SortingState,
 } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { CreditCard, MoreHorizontalIcon } from "lucide-react";
+import {
+	CreditCardIcon,
+	EyeIcon,
+	MoreHorizontalIcon,
+	XCircleIcon,
+} from "lucide-react";
 import {
 	parseAsArrayOf,
 	parseAsInteger,
@@ -173,23 +178,25 @@ export function EventRegistrationsTable({
 		return { sortBy: "registeredAt" as const, sortOrder };
 	}, [sorting]);
 
-	const { data, isPending } = trpc.organization.sportsEvent.listRegistrations.useQuery(
-		{
-			eventId,
-			limit: pageSize || appConfig.pagination.defaultLimit,
-			offset:
-				(pageIndex || 0) * (pageSize || appConfig.pagination.defaultLimit),
-			query: searchQuery || undefined,
-			sortBy: sortParams.sortBy,
-			sortOrder: sortParams.sortOrder,
-			filters: {
-				status: (statusFilter || []) as typeof EventRegistrationStatuses[number][],
+	const { data, isPending } =
+		trpc.organization.sportsEvent.listRegistrations.useQuery(
+			{
+				eventId,
+				limit: pageSize || appConfig.pagination.defaultLimit,
+				offset:
+					(pageIndex || 0) * (pageSize || appConfig.pagination.defaultLimit),
+				query: searchQuery || undefined,
+				sortBy: sortParams.sortBy,
+				sortOrder: sortParams.sortOrder,
+				filters: {
+					status: (statusFilter ||
+						[]) as (typeof EventRegistrationStatuses)[number][],
+				},
 			},
-		},
-		{
-			placeholderData: (prev) => prev,
-		},
-	);
+			{
+				placeholderData: (prev) => prev,
+			},
+		);
 
 	const cancelRegistrationMutation =
 		trpc.organization.sportsEvent.cancelRegistration.useMutation({
@@ -271,7 +278,9 @@ export function EventRegistrationsTable({
 					row.original.price > 0
 						? Math.min(
 								100,
-								Math.round((row.original.paidAmount / row.original.price) * 100),
+								Math.round(
+									(row.original.paidAmount / row.original.price) * 100,
+								),
 							)
 						: 100;
 				return (
@@ -319,6 +328,7 @@ export function EventRegistrationsTable({
 									toast.info("Función próximamente disponible");
 								}}
 							>
+								<EyeIcon className="mr-2 size-4" />
 								Ver detalles
 							</DropdownMenuItem>
 							{row.original.price > row.original.paidAmount && (
@@ -338,7 +348,7 @@ export function EventRegistrationsTable({
 										});
 									}}
 								>
-									<CreditCard className="size-4" />
+									<CreditCardIcon className="mr-2 size-4" />
 									Registrar Pago
 								</DropdownMenuItem>
 							)}
@@ -360,6 +370,7 @@ export function EventRegistrationsTable({
 									}}
 									variant="destructive"
 								>
+									<XCircleIcon className="mr-2 size-4" />
 									Cancelar inscripción
 								</DropdownMenuItem>
 							)}

@@ -2,12 +2,12 @@ import { format, isSameDay, isSameMonth, isSameYear } from "date-fns";
 import {
 	Calendar,
 	GraduationCap,
+	type LucideIcon,
 	Target,
 	Tent,
 	Trophy,
 	Users,
 	Zap,
-	type LucideIcon,
 } from "lucide-react";
 import type { EventStatus, EventType } from "@/lib/db/schema/enums";
 
@@ -85,8 +85,7 @@ export function formatEventPrice(
 export function getEventStatusColor(status: EventStatus): string {
 	const colors: Record<EventStatus, string> = {
 		draft: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
-		published:
-			"bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+		published: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
 		registration_open:
 			"bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
 		registration_closed:
@@ -121,10 +120,12 @@ export function getEventStatusLabel(status: EventStatus): string {
  */
 export function getEventTypeColor(type: EventType): string {
 	const colors: Record<EventType, string> = {
-		campus: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
+		campus:
+			"bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
 		camp: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
 		clinic: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200",
-		showcase: "bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200",
+		showcase:
+			"bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200",
 		tournament: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200",
 		tryout: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
 		other: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
@@ -168,13 +169,13 @@ export function getEventTypeIcon(type: EventType): LucideIcon {
  * Get registration status color classes
  */
 export function getRegistrationStatusColor(status: string): string {
-	const defaultColor = "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+	const defaultColor =
+		"bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
 	const colors: Record<string, string> = {
 		pending_payment: defaultColor,
 		confirmed:
 			"bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-		waitlist:
-			"bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+		waitlist: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
 		cancelled: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
 		refunded:
 			"bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
@@ -202,11 +203,11 @@ export function getRegistrationStatusLabel(status: string): string {
  * Get payment status color classes
  */
 export function getPaymentStatusColor(status: string): string {
-	const defaultColor = "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+	const defaultColor =
+		"bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
 	const colors: Record<string, string> = {
 		pending: defaultColor,
-		processing:
-			"bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+		processing: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
 		paid: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
 		partial:
 			"bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
@@ -249,20 +250,33 @@ export function generateSlug(title: string): string {
 }
 
 /**
- * Format age range for display
+ * Format birth year range for display
+ */
+export function formatBirthYearRange(
+	minBirthYear: number | null,
+	maxBirthYear: number | null,
+): string {
+	if (minBirthYear === null && maxBirthYear === null) {
+		return "Todos los años";
+	}
+	if (minBirthYear !== null && maxBirthYear !== null) {
+		if (minBirthYear === maxBirthYear) {
+			return `${minBirthYear}`;
+		}
+		return `${minBirthYear} - ${maxBirthYear}`;
+	}
+	if (minBirthYear !== null) {
+		return `${minBirthYear} en adelante`;
+	}
+	return `Hasta ${maxBirthYear}`;
+}
+
+/**
+ * @deprecated Use formatBirthYearRange instead
  */
 export function formatAgeRange(
 	minAge: number | null,
 	maxAge: number | null,
 ): string {
-	if (minAge === null && maxAge === null) {
-		return "Todas las edades";
-	}
-	if (minAge !== null && maxAge !== null) {
-		return `${minAge} - ${maxAge} años`;
-	}
-	if (minAge !== null) {
-		return `${minAge}+ años`;
-	}
-	return `Hasta ${maxAge} años`;
+	return formatBirthYearRange(minAge, maxAge);
 }

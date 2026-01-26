@@ -2,6 +2,7 @@ import * as Sentry from "@sentry/nextjs";
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod/v4";
+import { Permissions } from "@/lib/auth/permissions";
 import { assertUserIsOrgMember, getSession } from "@/lib/auth/server";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
@@ -230,5 +231,58 @@ export const protectedOrganizationProcedure = protectedProcedure.use(
 				membership,
 			},
 		});
+	},
+);
+
+/**
+ * Protected organization admin procedure
+ *
+ * For procedures that require organization admin access (owner or admin role).
+ * Use for: settings, user management, organization config, reports.
+ */
+export const protectedOrgAdminProcedure = protectedOrganizationProcedure.use(
+	({ ctx, next }) => {
+		const capabilities = {
+			role: ctx.membership.role,
+			isCoach: false, // Not needed for admin check
+			isAthlete: false,
+		};
+
+		if (!Permissions.isOrgAdmin(capabilities)) {
+			throw new TRPCError({
+				code: "FORBIDDEN",
+				message:
+					"Admin access required. Only owners and admins can perform this action.",
+			});
+		}
+
+		return next({ ctx });
+	},
+);
+
+/**
+ * Protected organization staff procedure
+ *
+ * For procedures that require staff-level access (owner, admin, staff roles).
+ * Use for: managing athletes, sessions, day-to-day operations.
+ *
+ * Note: Users with coach profiles are also considered staff regardless of their role.
+ */
+export const protectedOrgStaffProcedure = protectedOrganizationProcedure.use(
+	({ ctx, next }) => {
+		const capabilities = {
+			role: ctx.membership.role,
+			isCoach: false, // Will be checked via coachId if needed
+			isAthlete: false,
+		};
+
+		if (!Permissions.isStaff(capabilities)) {
+			throw new TRPCError({
+				code: "FORBIDDEN",
+				message: "Staff access required.",
+			});
+		}
+
+		return next({ ctx });
 	},
 );

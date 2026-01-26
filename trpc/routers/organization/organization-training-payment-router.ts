@@ -23,15 +23,26 @@ import {
 	trainingPaymentTable,
 	trainingSessionTable,
 } from "@/lib/db/schema/tables";
+import { env } from "@/lib/env";
+import {
+	deleteObject,
+	generateStorageKey,
+	getSignedUploadUrl,
+	getSignedUrl,
+} from "@/lib/storage";
 import {
 	bulkDeleteTrainingPaymentsSchema,
 	bulkUpdateTrainingPaymentsStatusSchema,
 	createTrainingPaymentSchema,
+	deleteTrainingPaymentReceiptSchema,
 	deleteTrainingPaymentSchema,
 	getAthletePaymentsSchema,
 	getSessionPaymentsSchema,
+	getTrainingPaymentReceiptDownloadUrlSchema,
+	getTrainingPaymentReceiptUploadUrlSchema,
 	listTrainingPaymentsSchema,
 	recordPaymentSchema,
+	updateTrainingPaymentReceiptSchema,
 	updateTrainingPaymentSchema,
 } from "@/schemas/organization-training-payment-schemas";
 import { createTRPCRouter, protectedOrganizationProcedure } from "@/trpc/init";
@@ -470,4 +481,233 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 
 			return { success: true, count: updated.length };
 		}),
+
+	// ============================================================================
+	// RECEIPT UPLOAD ENDPOINTS
+	// ============================================================================
+
+	getReceiptUploadUrl: protectedOrganizationProcedure
+		.input(getTrainingPaymentReceiptUploadUrlSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify payment belongs to organization
+			const payment = await db.query.trainingPaymentTable.findFirst({
+				where: and(
+					eq(trainingPaymentTable.id, input.paymentId),
+					eq(trainingPaymentTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!payment) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Payment not found",
+				});
+			}
+
+			// Generate unique storage key
+			const key = generateStorageKey(
+				"training-payment-receipts",
+				ctx.organization.id,
+				input.filename,
+			);
+
+			const bucket = env.S3_BUCKET;
+			if (!bucket) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Storage not configured",
+				});
+			}
+
+			// Generate signed upload URL
+			const uploadUrl = await getSignedUploadUrl(key, bucket, {
+				contentType: input.contentType,
+				expiresIn: 300, // 5 minutes to upload
+			});
+
+			return {
+				uploadUrl,
+				key,
+			};
+		}),
+
+	updatePaymentReceipt: protectedOrganizationProcedure
+		.input(updateTrainingPaymentReceiptSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify payment belongs to organization
+			const payment = await db.query.trainingPaymentTable.findFirst({
+				where: and(
+					eq(trainingPaymentTable.id, input.paymentId),
+					eq(trainingPaymentTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!payment) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Payment not found",
+				});
+			}
+
+			// Delete old receipt if exists
+			if (payment.receiptImageKey) {
+				const bucket = env.S3_BUCKET;
+				if (bucket) {
+					try {
+						await deleteObject(payment.receiptImageKey, bucket);
+					} catch {
+						// Ignore deletion errors
+					}
+				}
+			}
+
+			// Update payment with new receipt
+			const [updated] = await db
+				.update(trainingPaymentTable)
+				.set({
+					receiptImageKey: input.receiptImageKey,
+				})
+				.where(eq(trainingPaymentTable.id, input.paymentId))
+				.returning();
+
+			return updated;
+		}),
+
+	deletePaymentReceipt: protectedOrganizationProcedure
+		.input(deleteTrainingPaymentReceiptSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify payment belongs to organization
+			const payment = await db.query.trainingPaymentTable.findFirst({
+				where: and(
+					eq(trainingPaymentTable.id, input.paymentId),
+					eq(trainingPaymentTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!payment) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Payment not found",
+				});
+			}
+
+			if (!payment.receiptImageKey) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Payment has no receipt image",
+				});
+			}
+
+			const bucket = env.S3_BUCKET;
+			if (bucket) {
+				try {
+					await deleteObject(payment.receiptImageKey, bucket);
+				} catch {
+					// Ignore deletion errors
+				}
+			}
+
+			// Update payment to remove receipt
+			const [updated] = await db
+				.update(trainingPaymentTable)
+				.set({
+					receiptImageKey: null,
+				})
+				.where(eq(trainingPaymentTable.id, input.paymentId))
+				.returning();
+
+			return updated;
+		}),
+
+	getReceiptDownloadUrl: protectedOrganizationProcedure
+		.input(getTrainingPaymentReceiptDownloadUrlSchema)
+		.query(async ({ ctx, input }) => {
+			// Verify payment belongs to organization
+			const payment = await db.query.trainingPaymentTable.findFirst({
+				where: and(
+					eq(trainingPaymentTable.id, input.paymentId),
+					eq(trainingPaymentTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!payment) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Payment not found",
+				});
+			}
+
+			if (!payment.receiptImageKey) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Payment has no receipt image",
+				});
+			}
+
+			const bucket = env.S3_BUCKET;
+			if (!bucket) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Storage not configured",
+				});
+			}
+
+			// Generate signed download URL (valid for 1 hour)
+			const downloadUrl = await getSignedUrl(payment.receiptImageKey, bucket, {
+				expiresIn: 3600,
+			});
+
+			return {
+				downloadUrl,
+				key: payment.receiptImageKey,
+			};
+		}),
+
+	// List payments for the current user as athlete
+	listMyPayments: protectedOrganizationProcedure.query(async ({ ctx }) => {
+		// First, find the athlete record for the current user
+		const athlete = await db.query.athleteTable.findFirst({
+			where: and(
+				eq(athleteTable.userId, ctx.user.id),
+				eq(athleteTable.organizationId, ctx.organization.id),
+			),
+		});
+
+		if (!athlete) {
+			return {
+				payments: [],
+				athlete: null,
+				summary: { total: 0, paid: 0, pending: 0 },
+			};
+		}
+
+		const payments = await db.query.trainingPaymentTable.findMany({
+			where: and(
+				eq(trainingPaymentTable.athleteId, athlete.id),
+				eq(trainingPaymentTable.organizationId, ctx.organization.id),
+			),
+			orderBy: desc(trainingPaymentTable.createdAt),
+			with: {
+				session: {
+					columns: { id: true, title: true, startTime: true },
+				},
+			},
+		});
+
+		// Calculate summary
+		const summary = payments.reduce(
+			(acc, p) => {
+				acc.total += p.amount;
+				if (p.status === "paid") {
+					acc.paid += p.paidAmount;
+				} else {
+					acc.pending += p.amount - p.paidAmount;
+				}
+				return acc;
+			},
+			{ total: 0, paid: 0, pending: 0 },
+		);
+
+		return { payments, athlete, summary };
+	}),
 });

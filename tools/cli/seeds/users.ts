@@ -1,4 +1,5 @@
 import { like } from "drizzle-orm";
+import type { DrizzleClient } from "@/lib/db/types";
 import type { SeedContext } from "../commands/seed";
 import { schema } from "../db";
 import { ENTITY_USER, ENTITY_USER_MEMBER, seedUUID } from "./utils";
@@ -39,7 +40,7 @@ const lastNames = [
 ];
 
 export async function seedUsers(
-	db: any,
+	db: DrizzleClient,
 	count: number,
 	context: SeedContext,
 ): Promise<string[]> {

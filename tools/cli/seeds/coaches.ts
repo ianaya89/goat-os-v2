@@ -1,4 +1,5 @@
 import { eq, like } from "drizzle-orm";
+import type { DrizzleClient } from "@/lib/db/types";
 import type { SeedContext } from "../commands/seed";
 import { schema } from "../db";
 import {
@@ -49,7 +50,7 @@ const lastNames = [
 ];
 
 export async function seedCoaches(
-	db: any,
+	db: DrizzleClient,
 	count: number,
 	context: SeedContext,
 ): Promise<string[]> {
@@ -94,15 +95,15 @@ export async function seedCoaches(
 			id: seedUUID(ENTITY_COACH_MEMBER, i + 1),
 			organizationId: context.organizationId,
 			userId,
-			role: "coach",
+			role: "staff",
 		});
 
 		coaches.push({
 			id: coachId,
 			organizationId: context.organizationId,
 			userId,
-			specialty: specialties[i % specialties.length],
-			bio: bios[i % bios.length],
+			specialty: specialties[i % specialties.length] ?? "fitness",
+			bio: bios[i % bios.length] ?? "Entrenador profesional",
 			status: "active",
 		});
 

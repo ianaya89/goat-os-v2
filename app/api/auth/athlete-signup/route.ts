@@ -112,7 +112,7 @@ export async function POST(request: Request) {
 				currentClub: data.currentClub,
 				category: data.category,
 				position: data.position,
-				secondaryPosition: data.secondaryPosition || null,
+				secondaryPosition: null,
 				jerseyNumber: data.jerseyNumber || null,
 				yearsOfExperience: data.yearsOfExperience || null,
 			})

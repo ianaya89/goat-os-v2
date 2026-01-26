@@ -1,4 +1,4 @@
-import { RRule, type Options as RRuleOptions, Weekday } from "rrule";
+import { RRule, type Options as RRuleOptions, type Weekday } from "rrule";
 
 /**
  * Frequency options for recurring sessions
@@ -128,7 +128,16 @@ export function getNextOccurrences(
 	const rule = parseRRule(rruleString);
 	const afterDate = after ?? new Date();
 	return rule.after(afterDate, true)
-		? [rule.after(afterDate, true)!, ...rule.between(afterDate, new Date(afterDate.getTime() + 365 * 24 * 60 * 60 * 1000), true).slice(0, count - 1)]
+		? [
+				rule.after(afterDate, true)!,
+				...rule
+					.between(
+						afterDate,
+						new Date(afterDate.getTime() + 365 * 24 * 60 * 60 * 1000),
+						true,
+					)
+					.slice(0, count - 1),
+			]
 		: [];
 }
 

@@ -86,6 +86,52 @@ export const getRevenueByPaymentMethodSchema = z.object({
 		.optional(),
 });
 
+// Revenue with cumulative (monthly + running total)
+export const getRevenueWithCumulativeSchema = z.object({
+	period: ReportPeriod.default("month"),
+	dateRange: z
+		.object({
+			from: z.coerce.date(),
+			to: z.coerce.date(),
+		})
+		.optional(),
+});
+
+// Revenue by event (sports events)
+export const getRevenueByEventSchema = z.object({
+	limit: z.number().min(1).max(50).default(10),
+	dateRange: z
+		.object({
+			from: z.coerce.date(),
+			to: z.coerce.date(),
+		})
+		.optional(),
+});
+
+// Revenue by location
+export const getRevenueByLocationSchema = z.object({
+	limit: z.number().min(1).max(50).default(10),
+	dateRange: z
+		.object({
+			from: z.coerce.date(),
+			to: z.coerce.date(),
+		})
+		.optional(),
+});
+
+// ============================================================================
+// PENDING PAYMENTS REPORTS SCHEMAS
+// ============================================================================
+
+// Pending event registrations (inscriptions pending payment)
+export const getPendingEventRegistrationsSchema = z.object({
+	limit: z.number().min(1).max(100).default(50),
+	offset: z.number().min(0).default(0),
+});
+
+// Pending payments summary (combined training + events)
+export const getPendingSummarySchema = z.object({});
+
 // ============================================================================
 // TRAINING REPORTS SCHEMAS
 // ============================================================================
@@ -176,6 +222,13 @@ export type GetOutstandingPaymentsInput = z.infer<
 export type GetRevenueByPaymentMethodInput = z.infer<
 	typeof getRevenueByPaymentMethodSchema
 >;
+export type GetRevenueWithCumulativeInput = z.infer<
+	typeof getRevenueWithCumulativeSchema
+>;
+export type GetRevenueByEventInput = z.infer<typeof getRevenueByEventSchema>;
+export type GetRevenueByLocationInput = z.infer<
+	typeof getRevenueByLocationSchema
+>;
 export type GetTrainingSummaryInput = z.infer<typeof getTrainingSummarySchema>;
 export type GetSessionsByPeriodInput = z.infer<
 	typeof getSessionsByPeriodSchema
@@ -188,3 +241,7 @@ export type GetAttendanceByGroupInput = z.infer<
 >;
 export type GetSessionsByCoachInput = z.infer<typeof getSessionsByCoachSchema>;
 export type GetAttendanceTrendInput = z.infer<typeof getAttendanceTrendSchema>;
+export type GetPendingEventRegistrationsInput = z.infer<
+	typeof getPendingEventRegistrationsSchema
+>;
+export type GetPendingSummaryInput = z.infer<typeof getPendingSummarySchema>;

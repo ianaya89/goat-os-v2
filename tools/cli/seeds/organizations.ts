@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { DrizzleClient } from "@/lib/db/types";
 import type { SeedContext } from "../commands/seed";
 import { schema } from "../db";
 
@@ -24,7 +25,7 @@ const timezones = [
 ];
 
 export async function seedOrganizations(
-	db: any,
+	db: DrizzleClient,
 	count: number,
 	context: SeedContext,
 ): Promise<string[]> {
@@ -51,12 +52,14 @@ export async function seedOrganizations(
 		// Create owner membership if we have users
 		if (context.userIds.length > 0) {
 			const ownerId = context.userIds[i % context.userIds.length];
-			members.push({
-				id: randomUUID(),
-				organizationId: id,
-				userId: ownerId,
-				role: "owner",
-			});
+			if (ownerId) {
+				members.push({
+					id: randomUUID(),
+					organizationId: id,
+					userId: ownerId,
+					role: "owner",
+				});
+			}
 		}
 	}
 

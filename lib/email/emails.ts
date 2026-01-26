@@ -179,9 +179,7 @@ export async function sendDisputeReceivedEmail(
 export async function sendCoachWelcomeEmail(
 	input: CoachWelcomeEmailProps & { recipient: string },
 ): Promise<void> {
-	const { CoachWelcomeEmail } = await import(
-		"./templates/coach-welcome-email"
-	);
+	const { CoachWelcomeEmail } = await import("./templates/coach-welcome-email");
 	const component = CoachWelcomeEmail(input);
 	const html = await render(component);
 	const text = await render(component, { plainText: true });

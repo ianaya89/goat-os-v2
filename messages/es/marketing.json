@@ -1,0 +1,89 @@
+{
+	"nav": {
+		"home": "Inicio",
+		"about": "Nosotros",
+		"pricing": "Precios",
+		"blog": "Blog",
+		"contact": "Contacto",
+		"signIn": "Iniciar sesión",
+		"signUp": "Registrarse",
+		"dashboard": "Dashboard"
+	},
+	"hero": {
+		"title": "La plataforma deportiva que tu organización necesita",
+		"subtitle": "Gestiona atletas, entrenamientos, eventos y finanzas en un solo lugar.",
+		"cta": "Comenzar gratis",
+		"secondaryCta": "Ver demo"
+	},
+	"features": {
+		"title": "Todo lo que necesitas",
+		"subtitle": "Herramientas poderosas para gestionar tu organización deportiva.",
+		"athletes": {
+			"title": "Gestión de Atletas",
+			"description": "Administra perfiles, grupos, categorías y seguimiento de progreso."
+		},
+		"training": {
+			"title": "Sesiones de Entrenamiento",
+			"description": "Programa sesiones, controla asistencia y gestiona horarios."
+		},
+		"events": {
+			"title": "Eventos y Competencias",
+			"description": "Organiza eventos, gestiona inscripciones y resultados."
+		},
+		"finance": {
+			"title": "Finanzas",
+			"description": "Control de pagos, gastos, caja y reportes financieros."
+		}
+	},
+	"pricing": {
+		"title": "Planes y Precios",
+		"subtitle": "Elige el plan que mejor se adapte a tus necesidades.",
+		"monthly": "Mensual",
+		"yearly": "Anual",
+		"perMonth": "/mes",
+		"perYear": "/año",
+		"save": "Ahorra {percent}%",
+		"popular": "Más popular",
+		"cta": "Comenzar",
+		"features": "Características incluidas"
+	},
+	"testimonials": {
+		"title": "Lo que dicen nuestros clientes",
+		"subtitle": "Organizaciones deportivas que confían en nosotros."
+	},
+	"faq": {
+		"title": "Preguntas Frecuentes",
+		"items": {
+			"trial": {
+				"question": "¿Tienen período de prueba?",
+				"answer": "Sí, ofrecemos 14 días de prueba gratuita con acceso completo a todas las funcionalidades."
+			},
+			"cancel": {
+				"question": "¿Puedo cancelar en cualquier momento?",
+				"answer": "Sí, puedes cancelar tu suscripción en cualquier momento sin penalidades."
+			},
+			"support": {
+				"question": "¿Qué tipo de soporte ofrecen?",
+				"answer": "Ofrecemos soporte por email y chat. Los planes premium incluyen soporte prioritario."
+			},
+			"data": {
+				"question": "¿Mis datos están seguros?",
+				"answer": "Utilizamos encriptación de extremo a extremo y cumplimos con las normas de protección de datos."
+			}
+		}
+	},
+	"cta": {
+		"title": "Comienza hoy",
+		"subtitle": "Únete a cientos de organizaciones deportivas que ya confían en nosotros.",
+		"button": "Crear cuenta gratis"
+	},
+	"footer": {
+		"product": "Producto",
+		"company": "Empresa",
+		"legal": "Legal",
+		"support": "Soporte",
+		"copyright": "Todos los derechos reservados.",
+		"terms": "Términos de servicio",
+		"privacy": "Política de privacidad"
+	}
+}

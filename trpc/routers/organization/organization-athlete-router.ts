@@ -12,7 +12,6 @@ import {
 	or,
 	type SQL,
 } from "drizzle-orm";
-import { nanoid } from "nanoid";
 import { appConfig } from "@/config/app.config";
 import { db } from "@/lib/db";
 import { AttendanceStatus, MemberRole } from "@/lib/db/schema/enums";
@@ -33,7 +32,7 @@ import {
 } from "@/lib/db/schema/tables";
 import { sendAthleteWelcomeEmail } from "@/lib/email";
 import { logger } from "@/lib/logger";
-import { getBaseUrl } from "@/lib/utils";
+import { generateTemporaryPassword, getBaseUrl } from "@/lib/utils";
 import {
 	bulkDeleteAthletesSchema,
 	bulkUpdateAthletesStatusSchema,
@@ -54,20 +53,41 @@ import {
 } from "@/schemas/organization-athlete-schemas";
 import { createTRPCRouter, protectedOrganizationProcedure } from "@/trpc/init";
 
-// Generate a temporary password
-function generateTemporaryPassword(): string {
-	return `Temp${nanoid(12)}!`;
-}
-
 export const organizationAthleteRouter = createTRPCRouter({
 	list: protectedOrganizationProcedure
 		.input(listAthletesSchema)
 		.query(async ({ ctx, input }) => {
 			const conditions = [eq(athleteTable.organizationId, ctx.organization.id)];
 
-			// Search query handled separately since we need to join with user table
-			if (input.query) {
-				conditions.push(ilike(athleteTable.sport, `%${input.query}%`));
+			// Search query - search by user name, email, or sport
+			if (input.query && input.query.trim() !== "") {
+				const searchTerm = `%${input.query.trim()}%`;
+
+				// Find user IDs that match the search query
+				const matchingUsers = await db
+					.select({ id: userTable.id })
+					.from(userTable)
+					.where(
+						or(
+							ilike(userTable.name, searchTerm),
+							ilike(userTable.email, searchTerm),
+						),
+					);
+
+				const matchingUserIds = matchingUsers.map((u) => u.id);
+
+				// Search by sport OR matching user IDs
+				if (matchingUserIds.length > 0) {
+					conditions.push(
+						or(
+							ilike(athleteTable.sport, searchTerm),
+							inArray(athleteTable.userId, matchingUserIds),
+						)!,
+					);
+				} else {
+					// No matching users, just search by sport
+					conditions.push(ilike(athleteTable.sport, searchTerm));
+				}
 			}
 
 			if (input.filters?.status && input.filters.status.length > 0) {
@@ -170,6 +190,17 @@ export const organizationAthleteRouter = createTRPCRouter({
 								name: true,
 								email: true,
 								image: true,
+								imageKey: true,
+							},
+						},
+						groupMemberships: {
+							with: {
+								group: {
+									columns: {
+										id: true,
+										name: true,
+									},
+								},
 							},
 						},
 					},
@@ -177,7 +208,16 @@ export const organizationAthleteRouter = createTRPCRouter({
 				db.select({ count: count() }).from(athleteTable).where(whereCondition),
 			]);
 
-			return { athletes, total: countResult[0]?.count ?? 0 };
+			// Transform to include groups directly on athlete
+			const athletesWithGroups = athletes.map((athlete) => ({
+				...athlete,
+				groups: athlete.groupMemberships.map((gm) => gm.group),
+			}));
+
+			return {
+				athletes: athletesWithGroups,
+				total: countResult[0]?.count ?? 0,
+			};
 		}),
 
 	get: protectedOrganizationProcedure
@@ -227,6 +267,7 @@ export const organizationAthleteRouter = createTRPCRouter({
 							name: true,
 							email: true,
 							image: true,
+							imageKey: true,
 						},
 					},
 				},
@@ -528,13 +569,13 @@ export const organizationAthleteRouter = createTRPCRouter({
 					await db.insert(memberTable).values({
 						organizationId: ctx.organization.id,
 						userId: existingUser.id,
-						role: MemberRole.athlete,
+						role: MemberRole.member,
 					});
 				} else if (existingMember.role === MemberRole.member) {
 					// Update existing member role to athlete
 					await db
 						.update(memberTable)
-						.set({ role: MemberRole.athlete })
+						.set({ role: MemberRole.member })
 						.where(eq(memberTable.id, existingMember.id));
 				}
 			} else {
@@ -574,7 +615,7 @@ export const organizationAthleteRouter = createTRPCRouter({
 				await db.insert(memberTable).values({
 					organizationId: ctx.organization.id,
 					userId: newUser.id,
-					role: MemberRole.athlete,
+					role: MemberRole.member,
 				});
 
 				logger.info(

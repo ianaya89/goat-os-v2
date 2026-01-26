@@ -128,7 +128,7 @@ const balanceRangeStyles: Record<
 	},
 };
 
-function getBalanceRange(balance: number): string {
+function _getBalanceRange(balance: number): string {
 	if (balance === 0) return "zero";
 	if (balance <= 1000) return "low";
 	if (balance <= 50000) return "medium";
@@ -617,7 +617,6 @@ export function OrganizationsTable(): React.JSX.Element {
 					name,
 					subscriptionId,
 					subscriptionStatus: status,
-					cancelAtPeriodEnd,
 				} = row.original;
 				return (
 					<div className="flex justify-end">

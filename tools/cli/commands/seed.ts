@@ -20,15 +20,26 @@ import {
 } from "../seeds/base";
 import { seedCashRegister } from "../seeds/cash-register";
 import { seedCoaches } from "../seeds/coaches";
+import { seedEquipmentAssignments } from "../seeds/equipment-assignments";
+import { seedEquipmentMaintenance } from "../seeds/equipment-maintenance";
+import { seedEventOrganization } from "../seeds/event-organization";
 import { seedEvents } from "../seeds/events";
 import { seedExpenses } from "../seeds/expenses";
 import { seedLocations } from "../seeds/locations";
+import { seedProducts } from "../seeds/products";
+import { seedSales } from "../seeds/sales";
+import { seedSponsors } from "../seeds/sponsors";
+import { seedTestAthlete } from "../seeds/test-athlete";
+import { seedTrainingEquipment } from "../seeds/training-equipment";
 import { seedTrainingPayments } from "../seeds/training-payments";
 import { seedTrainingSessions } from "../seeds/training-sessions";
 // Seed generators
 import { seedUsers } from "../seeds/users";
+import { seedVendors } from "../seeds/vendors";
+import { seedWaitlist } from "../seeds/waitlist";
 
 export const seedOptions = [
+	{ value: "all", label: "All Tables", hint: "Seed everything" },
 	{ value: "users", label: "Users", hint: "Additional platform users" },
 	{ value: "athletes", label: "Athletes", hint: "Athlete profiles" },
 	{ value: "coaches", label: "Coaches", hint: "Coach profiles" },
@@ -94,7 +105,56 @@ export const seedOptions = [
 		label: "Athlete Evaluations",
 		hint: "Coach evaluations",
 	},
-	{ value: "all", label: "All Tables", hint: "Seed everything" },
+	{
+		value: "sponsors",
+		label: "Sponsors",
+		hint: "Organization sponsors with contracts",
+	},
+	{
+		value: "vendors",
+		label: "Vendors",
+		hint: "Event vendors/suppliers",
+	},
+	{
+		value: "waitlist",
+		label: "Waitlist",
+		hint: "Waitlist entries for groups/schedules",
+	},
+	{
+		value: "event-organization",
+		label: "Event Organization",
+		hint: "Zones, checklists, tasks, staff, budget, sponsors, etc.",
+	},
+	{
+		value: "products",
+		label: "Products",
+		hint: "Products for sale (beverages, food, apparel)",
+	},
+	{
+		value: "training-equipment",
+		label: "Training Equipment",
+		hint: "Training equipment inventory",
+	},
+	{
+		value: "sales",
+		label: "Sales",
+		hint: "Product sales with stock transactions",
+	},
+	{
+		value: "equipment-assignments",
+		label: "Equipment Assignments",
+		hint: "Equipment assigned to groups/sessions/coaches",
+	},
+	{
+		value: "equipment-maintenance",
+		label: "Equipment Maintenance",
+		hint: "Equipment maintenance history",
+	},
+	{
+		value: "test-athlete",
+		label: "Test Athlete Data",
+		hint: "Populate data for test athlete user",
+	},
 ];
 
 export async function runSeeds(tables: string[], count: number): Promise<void> {
@@ -131,6 +191,9 @@ export async function runSeeds(tables: string[], count: number): Promise<void> {
 		ageCategoryIds: [],
 		expenseCategoryIds: [],
 		cashRegisterIds: [],
+		sponsorIds: [],
+		vendorIds: [],
+		waitlistIds: [],
 	};
 
 	for (const table of tablesToSeed) {
@@ -207,6 +270,45 @@ export async function runSeeds(tables: string[], count: number): Promise<void> {
 				case "athlete-evaluations":
 					await seedAthleteEvaluations(db, count, context);
 					break;
+				case "sponsors":
+					context.sponsorIds = await seedSponsors(db, count, context);
+					break;
+				case "vendors":
+					context.vendorIds = await seedVendors(db, count, context);
+					break;
+				case "waitlist":
+					context.waitlistIds = await seedWaitlist(db, count, context);
+					break;
+				case "event-organization":
+					await seedEventOrganization(db, count, context);
+					break;
+				case "products":
+					await seedProducts(context.organizationId, context.seedUserId);
+					break;
+				case "training-equipment":
+					await seedTrainingEquipment(
+						context.organizationId,
+						context.seedUserId,
+					);
+					break;
+				case "sales":
+					await seedSales(context.organizationId, context.seedUserId);
+					break;
+				case "equipment-assignments":
+					await seedEquipmentAssignments(
+						context.organizationId,
+						context.seedUserId,
+					);
+					break;
+				case "equipment-maintenance":
+					await seedEquipmentMaintenance(
+						context.organizationId,
+						context.seedUserId,
+					);
+					break;
+				case "test-athlete":
+					await seedTestAthlete(db, context);
+					break;
 			}
 			spinner.stop(`Seeded ${table}`);
 		} catch (error) {
@@ -230,4 +332,7 @@ export type SeedContext = {
 	ageCategoryIds: string[];
 	expenseCategoryIds: string[];
 	cashRegisterIds: string[];
+	sponsorIds: string[];
+	vendorIds: string[];
+	waitlistIds: string[];
 };

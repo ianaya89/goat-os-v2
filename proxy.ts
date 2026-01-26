@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { withQuery } from "ufo";
 import { appConfig } from "./config/app.config";
 import { authConfig } from "./config/auth.config";
+import { defaultLocale, LOCALE_COOKIE_NAME, locales } from "./lib/i18n/config";
 import type { Session } from "./types/session";
 
 async function getSession(req: NextRequest): Promise<Session | null> {
@@ -70,6 +71,38 @@ function isProtectedPath(pathname: string): boolean {
 	return pathname.startsWith("/dashboard");
 }
 
+function getLocaleFromRequest(req: NextRequest): string {
+	// Check for existing locale cookie
+	const localeCookie = req.cookies.get(LOCALE_COOKIE_NAME);
+
+	if (
+		localeCookie?.value &&
+		locales.includes(localeCookie.value as (typeof locales)[number])
+	) {
+		return localeCookie.value;
+	}
+
+	// Detect locale from Accept-Language header
+	const acceptLanguage = req.headers.get("Accept-Language");
+	if (acceptLanguage) {
+		const preferredLocale = acceptLanguage
+			.split(",")
+			.map((lang) => {
+				const parts = lang.split(";")[0]?.trim().split("-");
+				return parts?.[0] ?? "";
+			})
+			.find(
+				(lang) => lang && locales.includes(lang as (typeof locales)[number]),
+			);
+
+		if (preferredLocale) {
+			return preferredLocale;
+		}
+	}
+
+	return defaultLocale;
+}
+
 function canBypassOnboarding(pathname: string): boolean {
 	return (
 		pathname === "/dashboard/onboarding" ||
@@ -80,6 +113,20 @@ function canBypassOnboarding(pathname: string): boolean {
 
 export default async function proxy(req: NextRequest) {
 	const { pathname, origin, searchParams } = req.nextUrl;
+
+	// Handle locale detection and cookie setting
+	const localeCookie = req.cookies.get(LOCALE_COOKIE_NAME);
+	let response: NextResponse | null = null;
+
+	if (!localeCookie) {
+		const detectedLocale = getLocaleFromRequest(req);
+		response = NextResponse.next();
+		response.cookies.set(LOCALE_COOKIE_NAME, detectedLocale, {
+			path: "/",
+			maxAge: 60 * 60 * 24 * 365, // 1 year
+			sameSite: "lax",
+		});
+	}
 
 	// CWE-200: Prevent sensitive data exposure in URLs
 	// Check auth paths for sensitive parameters and return 400 to prevent logging
@@ -209,7 +256,8 @@ export default async function proxy(req: NextRequest) {
 		}
 	}
 
-	return NextResponse.next();
+	// Return response with locale cookie if it was set, otherwise return next()
+	return response ?? NextResponse.next();
 }
 
 export const config = {

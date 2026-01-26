@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import type * as React from "react";
 import { CashRegisterMovementsWrapper } from "@/components/organization/cash-register-movements-wrapper";
 import { CashRegisterStatusCard } from "@/components/organization/cash-register-status";
@@ -15,7 +16,7 @@ import {
 import { getSession } from "@/lib/auth/server";
 
 export const metadata: Metadata = {
-	title: "Caja",
+	title: "Cash Register",
 };
 
 export default async function CashRegisterPage(): Promise<React.JSX.Element> {
@@ -24,15 +25,17 @@ export default async function CashRegisterPage(): Promise<React.JSX.Element> {
 		redirect("/dashboard");
 	}
 
+	const t = await getTranslations("organization.pages");
+
 	return (
 		<Page>
 			<PageHeader>
 				<PagePrimaryBar>
 					<PageBreadcrumb
 						segments={[
-							{ label: "Home", href: "/dashboard" },
+							{ label: t("home"), href: "/dashboard" },
 							{ label: <OrganizationBreadcrumbSwitcher />, isCustom: true },
-							{ label: "Caja" },
+							{ label: t("cashRegister.title") },
 						]}
 					/>
 				</PagePrimaryBar>
@@ -41,18 +44,14 @@ export default async function CashRegisterPage(): Promise<React.JSX.Element> {
 				<div className="p-4 sm:px-6 sm:pt-6 sm:pb-24">
 					<div className="mx-auto w-full space-y-6">
 						<div>
-							<PageTitle>Caja</PageTitle>
+							<PageTitle>{t("cashRegister.title")}</PageTitle>
 							<p className="text-muted-foreground text-sm">
-								Gestiona la caja diaria y los movimientos de efectivo
+								{t("cashRegister.description")}
 							</p>
 						</div>
-						<div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-							<div>
-								<CashRegisterStatusCard />
-							</div>
-							<div className="lg:col-span-2">
-								<CashRegisterMovementsWrapper />
-							</div>
+						<div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+							<CashRegisterStatusCard />
+							<CashRegisterMovementsWrapper />
 						</div>
 					</div>
 				</div>

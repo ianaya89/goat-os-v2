@@ -1,0 +1,189 @@
+{
+	"payments": {
+		"title": "Pagos",
+		"description": "Gestiona los pagos de tu organización.",
+		"add": "Registrar pago",
+		"edit": "Editar pago",
+		"view": "Ver pago",
+		"delete": "Eliminar pago",
+		"search": "Buscar pagos...",
+		"filters": {
+			"all": "Todos",
+			"pending": "Pendientes",
+			"completed": "Completados",
+			"overdue": "Vencidos",
+			"cancelled": "Cancelados"
+		},
+		"table": {
+			"athlete": "Atleta",
+			"concept": "Concepto",
+			"amount": "Monto",
+			"dueDate": "Fecha de vencimiento",
+			"paidDate": "Fecha de pago",
+			"status": "Estado",
+			"method": "Método",
+			"actions": "Acciones"
+		},
+		"form": {
+			"athlete": "Atleta",
+			"concept": "Concepto",
+			"amount": "Monto",
+			"dueDate": "Fecha de vencimiento",
+			"method": "Método de pago",
+			"notes": "Notas"
+		},
+		"methods": {
+			"cash": "Efectivo",
+			"card": "Tarjeta",
+			"transfer": "Transferencia",
+			"check": "Cheque",
+			"other": "Otro"
+		},
+		"status": {
+			"pending": "Pendiente",
+			"completed": "Completado",
+			"overdue": "Vencido",
+			"cancelled": "Cancelado"
+		},
+		"success": {
+			"created": "Pago registrado correctamente.",
+			"updated": "Pago actualizado correctamente.",
+			"deleted": "Pago eliminado correctamente."
+		},
+		"error": {
+			"notFound": "Pago no encontrado.",
+			"createFailed": "No se pudo registrar el pago.",
+			"updateFailed": "No se pudo actualizar el pago.",
+			"deleteFailed": "No se pudo eliminar el pago."
+		}
+	},
+	"expenses": {
+		"title": "Gastos",
+		"description": "Gestiona los gastos de tu organización.",
+		"add": "Registrar gasto",
+		"edit": "Editar gasto",
+		"view": "Ver gasto",
+		"delete": "Eliminar gasto",
+		"search": "Buscar gastos...",
+		"filters": {
+			"all": "Todos",
+			"byCategory": "Por categoría",
+			"byDate": "Por fecha"
+		},
+		"table": {
+			"description": "Descripción",
+			"category": "Categoría",
+			"amount": "Monto",
+			"date": "Fecha",
+			"vendor": "Proveedor",
+			"status": "Estado",
+			"actions": "Acciones"
+		},
+		"form": {
+			"description": "Descripción",
+			"category": "Categoría",
+			"amount": "Monto",
+			"date": "Fecha",
+			"vendor": "Proveedor",
+			"receipt": "Comprobante",
+			"notes": "Notas"
+		},
+		"categories": {
+			"equipment": "Equipamiento",
+			"facilities": "Instalaciones",
+			"salaries": "Salarios",
+			"travel": "Viajes",
+			"marketing": "Marketing",
+			"utilities": "Servicios",
+			"other": "Otros"
+		},
+		"success": {
+			"created": "Gasto registrado correctamente.",
+			"updated": "Gasto actualizado correctamente.",
+			"deleted": "Gasto eliminado correctamente."
+		},
+		"error": {
+			"notFound": "Gasto no encontrado.",
+			"createFailed": "No se pudo registrar el gasto.",
+			"updateFailed": "No se pudo actualizar el gasto.",
+			"deleteFailed": "No se pudo eliminar el gasto."
+		}
+	},
+	"cashRegister": {
+		"title": "Caja",
+		"description": "Gestiona los movimientos de caja.",
+		"add": "Registrar movimiento",
+		"openRegister": "Abrir caja",
+		"closeRegister": "Cerrar caja",
+		"balance": "Saldo actual",
+		"income": "Ingresos",
+		"expense": "Egresos",
+		"table": {
+			"date": "Fecha",
+			"description": "Descripción",
+			"type": "Tipo",
+			"amount": "Monto",
+			"balance": "Saldo",
+			"user": "Usuario",
+			"actions": "Acciones"
+		},
+		"form": {
+			"type": "Tipo de movimiento",
+			"amount": "Monto",
+			"description": "Descripción",
+			"category": "Categoría"
+		},
+		"types": {
+			"income": "Ingreso",
+			"expense": "Egreso"
+		},
+		"success": {
+			"created": "Movimiento registrado correctamente.",
+			"opened": "Caja abierta correctamente.",
+			"closed": "Caja cerrada correctamente."
+		},
+		"error": {
+			"createFailed": "No se pudo registrar el movimiento.",
+			"openFailed": "No se pudo abrir la caja.",
+			"closeFailed": "No se pudo cerrar la caja."
+		}
+	},
+	"products": {
+		"title": "Productos",
+		"description": "Gestiona el inventario de productos.",
+		"add": "Agregar producto",
+		"edit": "Editar producto",
+		"delete": "Eliminar producto",
+		"search": "Buscar productos...",
+		"table": {
+			"name": "Nombre",
+			"sku": "SKU",
+			"price": "Precio",
+			"stock": "Stock",
+			"category": "Categoría",
+			"status": "Estado",
+			"actions": "Acciones"
+		},
+		"form": {
+			"name": "Nombre",
+			"description": "Descripción",
+			"sku": "SKU",
+			"price": "Precio",
+			"cost": "Costo",
+			"stock": "Stock",
+			"category": "Categoría",
+			"image": "Imagen"
+		},
+		"success": {
+			"created": "Producto creado correctamente.",
+			"updated": "Producto actualizado correctamente.",
+			"deleted": "Producto eliminado correctamente."
+		},
+		"error": {
+			"notFound": "Producto no encontrado.",
+			"createFailed": "No se pudo crear el producto.",
+			"updateFailed": "No se pudo actualizar el producto.",
+			"deleteFailed": "No se pudo eliminar el producto."
+		}
+	}
+}

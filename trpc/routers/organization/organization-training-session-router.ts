@@ -192,11 +192,11 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 	listForCalendar: protectedOrganizationProcedure
 		.input(listTrainingSessionsForCalendarSchema)
 		.query(async ({ ctx, input }) => {
-			const conditions = [
+			const conditions: SQL[] = [
 				eq(trainingSessionTable.organizationId, ctx.organization.id),
 				gte(trainingSessionTable.startTime, input.from),
 				lte(trainingSessionTable.startTime, input.to),
-				eq(trainingSessionTable.isRecurring, false), // Only non-template sessions
+				// Show all sessions (including recurring templates)
 			];
 
 			if (input.locationId) {
@@ -209,7 +209,8 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 				);
 			}
 
-			const sessions = await db.query.trainingSessionTable.findMany({
+			// First fetch all sessions matching base conditions
+			let sessions = await db.query.trainingSessionTable.findMany({
 				where: and(...conditions),
 				orderBy: asc(trainingSessionTable.startTime),
 				with: {
@@ -250,6 +251,33 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 					},
 				},
 			});
+
+			// Apply coach filter if provided (filter sessions that have this coach assigned)
+			if (input.coachId) {
+				sessions = sessions.filter((session) =>
+					session.coaches.some((c) => c.coach.id === input.coachId),
+				);
+			}
+
+			// Apply athlete filter if provided (filter sessions where this athlete is assigned directly or via group)
+			if (input.athleteId) {
+				sessions = sessions.filter((session) => {
+					// Check direct athlete assignment
+					const directAssignment = session.athletes.some(
+						(a) => a.athlete.id === input.athleteId,
+					);
+					if (directAssignment) return true;
+
+					// Check group membership
+					if (session.athleteGroup?.members) {
+						return session.athleteGroup.members.some(
+							(m) => m.athlete.id === input.athleteId,
+						);
+					}
+
+					return false;
+				});
+			}
 
 			return sessions;
 		}),
@@ -825,7 +853,6 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 			const conditions = [
 				eq(trainingSessionTable.organizationId, ctx.organization.id),
 				inArray(trainingSessionTable.id, sessionIds),
-				eq(trainingSessionTable.isRecurring, false),
 			];
 
 			// Status filter
@@ -845,6 +872,13 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 				);
 			}
 
+			// Filter by recurring status if specified
+			if (input.filters?.isRecurring !== undefined) {
+				conditions.push(
+					eq(trainingSessionTable.isRecurring, input.filters.isRecurring),
+				);
+			}
+
 			const whereCondition = and(...conditions);
 
 			const sortDirection = input.sortOrder === "desc" ? desc : asc;
@@ -857,7 +891,7 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 					offset: input.offset,
 					orderBy: orderByColumn,
 					with: {
-						location: { columns: { id: true, name: true } },
+						location: { columns: { id: true, name: true, color: true } },
 						athleteGroup: {
 							columns: { id: true, name: true },
 							with: {
@@ -959,7 +993,6 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 			const conditions = [
 				eq(trainingSessionTable.organizationId, ctx.organization.id),
 				inArray(trainingSessionTable.id, allSessionIds),
-				eq(trainingSessionTable.isRecurring, false),
 			];
 
 			// Status filter
@@ -979,19 +1012,28 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 				);
 			}
 
+			// Filter to only non-recurring sessions (or recurring templates won't be shown)
+			// Allow both recurring templates and their instances
+			if (input.filters?.isRecurring !== undefined) {
+				conditions.push(
+					eq(trainingSessionTable.isRecurring, input.filters.isRecurring),
+				);
+			}
+
 			const whereCondition = and(...conditions);
 
 			const sortDirection = input.sortOrder === "desc" ? desc : asc;
 			const orderByColumn = sortDirection(trainingSessionTable.startTime);
 
-			const [sessions, countResult] = await Promise.all([
+			// First get the sessions
+			const [sessionsRaw, countResult] = await Promise.all([
 				db.query.trainingSessionTable.findMany({
 					where: whereCondition,
 					limit: input.limit,
 					offset: input.offset,
 					orderBy: orderByColumn,
 					with: {
-						location: { columns: { id: true, name: true } },
+						location: { columns: { id: true, name: true, color: true } },
 						athleteGroup: { columns: { id: true, name: true } },
 						coaches: {
 							with: {
@@ -1002,15 +1044,6 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 								},
 							},
 						},
-						attendances: {
-							where: eq(attendanceTable.athleteId, athlete.id),
-						},
-						evaluations: {
-							where: eq(athleteEvaluationTable.athleteId, athlete.id),
-						},
-						feedback: {
-							where: eq(athleteSessionFeedbackTable.athleteId, athlete.id),
-						},
 					},
 				}),
 				db
@@ -1018,6 +1051,52 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 					.from(trainingSessionTable)
 					.where(whereCondition),
 			]);
+
+			// Get athlete-specific data for these sessions
+			const sessionIds = sessionsRaw.map((s) => s.id);
+
+			const [attendances, evaluations, feedbackList] =
+				sessionIds.length > 0
+					? await Promise.all([
+							db.query.attendanceTable.findMany({
+								where: and(
+									inArray(attendanceTable.sessionId, sessionIds),
+									eq(attendanceTable.athleteId, athlete.id),
+								),
+							}),
+							db.query.athleteEvaluationTable.findMany({
+								where: and(
+									inArray(athleteEvaluationTable.sessionId, sessionIds),
+									eq(athleteEvaluationTable.athleteId, athlete.id),
+								),
+							}),
+							db.query.athleteSessionFeedbackTable.findMany({
+								where: and(
+									inArray(athleteSessionFeedbackTable.sessionId, sessionIds),
+									eq(athleteSessionFeedbackTable.athleteId, athlete.id),
+								),
+							}),
+						])
+					: [[], [], []];
+
+			// Create maps for quick lookup
+			const attendanceMap = new Map(attendances.map((a) => [a.sessionId, a]));
+			const evaluationMap = new Map(evaluations.map((e) => [e.sessionId, e]));
+			const feedbackMap = new Map(feedbackList.map((f) => [f.sessionId, f]));
+
+			// Merge athlete-specific data into sessions
+			const sessions = sessionsRaw.map((session) => ({
+				...session,
+				attendances: attendanceMap.has(session.id)
+					? [attendanceMap.get(session.id)!]
+					: [],
+				evaluations: evaluationMap.has(session.id)
+					? [evaluationMap.get(session.id)!]
+					: [],
+				feedback: feedbackMap.has(session.id)
+					? [feedbackMap.get(session.id)!]
+					: [],
+			}));
 
 			return { sessions, total: countResult[0]?.count ?? 0, athlete };
 		}),

@@ -13,8 +13,13 @@ import {
 	CoachStatus,
 	TrainingPaymentStatus,
 	TrainingSessionStatus,
+	WaitlistEntryStatus,
 } from "@/lib/db/schema";
-import { trainingPaymentTable } from "@/lib/db/schema/tables";
+import {
+	sportsEventTable,
+	trainingPaymentTable,
+	waitlistEntryTable,
+} from "@/lib/db/schema/tables";
 import { createTRPCRouter, protectedOrganizationProcedure } from "@/trpc/init";
 
 // Helper functions for date ranges
@@ -666,6 +671,300 @@ export const organizationDashboardRouter = createTRPCRouter({
 				count: Number(weekPayments[0]?.paymentCount ?? 0),
 			},
 			dailyBreakdown,
+		};
+	}),
+
+	// Upcoming events (next 30 days)
+	getUpcomingEvents: protectedOrganizationProcedure.query(async ({ ctx }) => {
+		const organizationId = ctx.organization.id;
+		const now = new Date();
+		const thirtyDaysFromNow = new Date();
+		thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+
+		const events = await db.query.sportsEventTable.findMany({
+			where: and(
+				eq(sportsEventTable.organizationId, organizationId),
+				gte(sportsEventTable.startDate, now),
+				lte(sportsEventTable.startDate, thirtyDaysFromNow),
+				sql`${sportsEventTable.status} IN ('draft', 'published', 'open', 'registration_closed')`,
+			),
+			orderBy: sportsEventTable.startDate,
+			limit: 5,
+			with: {
+				location: { columns: { id: true, name: true } },
+			},
+		});
+
+		// Get total count of upcoming events
+		const totalCount = await db
+			.select({ count: count() })
+			.from(sportsEventTable)
+			.where(
+				and(
+					eq(sportsEventTable.organizationId, organizationId),
+					gte(sportsEventTable.startDate, now),
+					sql`${sportsEventTable.status} IN ('draft', 'published', 'open', 'registration_closed')`,
+				),
+			)
+			.then((r) => r[0]?.count ?? 0);
+
+		return {
+			events: events.map((e) => ({
+				id: e.id,
+				title: e.title,
+				eventType: e.eventType,
+				startDate: e.startDate,
+				endDate: e.endDate,
+				status: e.status,
+				currentRegistrations: e.currentRegistrations,
+				maxCapacity: e.maxCapacity,
+				location: e.location,
+			})),
+			totalCount,
+		};
+	}),
+
+	// Session occupancy stats
+	getSessionOccupancy: protectedOrganizationProcedure.query(async ({ ctx }) => {
+		const organizationId = ctx.organization.id;
+		const now = new Date();
+		const weekStart = getStartOfWeek(now);
+		const weekEnd = getEndOfWeek(now);
+
+		// Get sessions for this week with attendance count and group capacity
+		const sessions = await db
+			.select({
+				sessionId: trainingSessionTable.id,
+				title: trainingSessionTable.title,
+				startTime: trainingSessionTable.startTime,
+				status: trainingSessionTable.status,
+				groupCapacity: athleteGroupTable.maxCapacity,
+				attendanceCount: sql<number>`(
+					SELECT COUNT(*) FROM ${attendanceTable}
+					WHERE ${attendanceTable.sessionId} = ${trainingSessionTable.id}
+				)`.as("attendance_count"),
+			})
+			.from(trainingSessionTable)
+			.leftJoin(
+				athleteGroupTable,
+				eq(trainingSessionTable.athleteGroupId, athleteGroupTable.id),
+			)
+			.where(
+				and(
+					eq(trainingSessionTable.organizationId, organizationId),
+					gte(trainingSessionTable.startTime, weekStart),
+					lte(trainingSessionTable.startTime, weekEnd),
+					eq(trainingSessionTable.isRecurring, false),
+				),
+			)
+			.orderBy(trainingSessionTable.startTime);
+
+		// Calculate occupancy stats
+		let totalCapacity = 0;
+		let totalAttendance = 0;
+		let sessionsWithCapacity = 0;
+
+		const sessionDetails = sessions.map((s) => {
+			const capacity = s.groupCapacity ?? 0;
+			const attendance = Number(s.attendanceCount) || 0;
+
+			if (capacity > 0) {
+				totalCapacity += capacity;
+				totalAttendance += Math.min(attendance, capacity);
+				sessionsWithCapacity++;
+			}
+
+			return {
+				id: s.sessionId,
+				title: s.title,
+				capacity,
+				attendance,
+				occupancyRate: capacity > 0 ? (attendance / capacity) * 100 : 0,
+				startTime: s.startTime,
+				status: s.status,
+			};
+		});
+
+		const averageOccupancy =
+			totalCapacity > 0 ? (totalAttendance / totalCapacity) * 100 : 0;
+
+		return {
+			totalSessions: sessions.length,
+			sessionsWithCapacity,
+			totalCapacity,
+			totalAttendance,
+			averageOccupancy: Math.round(averageOccupancy * 10) / 10,
+			sessions: sessionDetails.slice(0, 5),
+		};
+	}),
+
+	// Waitlist summary by group
+	getWaitlistSummary: protectedOrganizationProcedure.query(async ({ ctx }) => {
+		const organizationId = ctx.organization.id;
+
+		// Get waitlist counts by group
+		const waitlistByGroup = await db
+			.select({
+				groupId: waitlistEntryTable.athleteGroupId,
+				groupName: athleteGroupTable.name,
+				count: count(),
+			})
+			.from(waitlistEntryTable)
+			.leftJoin(
+				athleteGroupTable,
+				eq(waitlistEntryTable.athleteGroupId, athleteGroupTable.id),
+			)
+			.where(
+				and(
+					eq(waitlistEntryTable.organizationId, organizationId),
+					eq(waitlistEntryTable.status, WaitlistEntryStatus.waiting),
+				),
+			)
+			.groupBy(waitlistEntryTable.athleteGroupId, athleteGroupTable.name);
+
+		// Get total waitlist count
+		const totalCount = await db
+			.select({ count: count() })
+			.from(waitlistEntryTable)
+			.where(
+				and(
+					eq(waitlistEntryTable.organizationId, organizationId),
+					eq(waitlistEntryTable.status, WaitlistEntryStatus.waiting),
+				),
+			)
+			.then((r) => r[0]?.count ?? 0);
+
+		return {
+			totalCount,
+			byGroup: waitlistByGroup.map((w) => ({
+				groupId: w.groupId,
+				groupName: w.groupName ?? "Sin asignar",
+				count: Number(w.count),
+			})),
+		};
+	}),
+
+	// Athlete retention metrics based on attendance this month
+	getAthleteRetention: protectedOrganizationProcedure.query(async ({ ctx }) => {
+		const organizationId = ctx.organization.id;
+
+		// Get start of current month
+		const now = new Date();
+		const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+		const monthEnd = new Date(
+			now.getFullYear(),
+			now.getMonth() + 1,
+			0,
+			23,
+			59,
+			59,
+			999,
+		);
+
+		// Get start of previous month
+		const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+		const prevMonthEnd = new Date(
+			now.getFullYear(),
+			now.getMonth(),
+			0,
+			23,
+			59,
+			59,
+			999,
+		);
+
+		// Total active athletes (status = active)
+		const totalActive = await db
+			.select({ count: count() })
+			.from(athleteTable)
+			.where(
+				and(
+					eq(athleteTable.organizationId, organizationId),
+					eq(athleteTable.status, AthleteStatus.active),
+				),
+			)
+			.then((r) => r[0]?.count ?? 0);
+
+		// Athletes with attendance this month (actively training)
+		const athletesWithAttendanceThisMonth = await db
+			.selectDistinct({ athleteId: attendanceTable.athleteId })
+			.from(attendanceTable)
+			.innerJoin(
+				trainingSessionTable,
+				eq(attendanceTable.sessionId, trainingSessionTable.id),
+			)
+			.where(
+				and(
+					eq(trainingSessionTable.organizationId, organizationId),
+					gte(trainingSessionTable.startTime, monthStart),
+					lte(trainingSessionTable.startTime, monthEnd),
+				),
+			);
+
+		const activeThisMonth = athletesWithAttendanceThisMonth.length;
+
+		// Athletes with attendance last month
+		const athletesWithAttendanceLastMonth = await db
+			.selectDistinct({ athleteId: attendanceTable.athleteId })
+			.from(attendanceTable)
+			.innerJoin(
+				trainingSessionTable,
+				eq(attendanceTable.sessionId, trainingSessionTable.id),
+			)
+			.where(
+				and(
+					eq(trainingSessionTable.organizationId, organizationId),
+					gte(trainingSessionTable.startTime, prevMonthStart),
+					lte(trainingSessionTable.startTime, prevMonthEnd),
+				),
+			);
+
+		const activeLastMonth = athletesWithAttendanceLastMonth.length;
+
+		// Inactive = total active athletes - those who trained this month
+		const inactiveThisMonth = Math.max(0, totalActive - activeThisMonth);
+
+		// New athletes this month
+		const newAthletes = await db
+			.select({ count: count() })
+			.from(athleteTable)
+			.where(
+				and(
+					eq(athleteTable.organizationId, organizationId),
+					gte(athleteTable.createdAt, monthStart),
+				),
+			)
+			.then((r) => r[0]?.count ?? 0);
+
+		// Athletes who trained last month but not this month (churned)
+		const lastMonthAthleteIds = new Set(
+			athletesWithAttendanceLastMonth.map((a) => a.athleteId),
+		);
+		const thisMonthAthleteIds = new Set(
+			athletesWithAttendanceThisMonth.map((a) => a.athleteId),
+		);
+
+		let churnedFromLastMonth = 0;
+		for (const id of lastMonthAthleteIds) {
+			if (!thisMonthAthleteIds.has(id)) {
+				churnedFromLastMonth++;
+			}
+		}
+
+		const retentionRate =
+			totalActive > 0 ? (activeThisMonth / totalActive) * 100 : 0;
+		const churnRate =
+			activeLastMonth > 0 ? (churnedFromLastMonth / activeLastMonth) * 100 : 0;
+
+		return {
+			total: totalActive,
+			active: activeThisMonth,
+			inactive: inactiveThisMonth,
+			churned: churnedFromLastMonth,
+			newLast30Days: newAthletes,
+			churnedLast30Days: churnedFromLastMonth,
+			retentionRate: Math.round(retentionRate * 10) / 10,
+			churnRate: Math.round(churnRate * 10) / 10,
 		};
 	}),
 });

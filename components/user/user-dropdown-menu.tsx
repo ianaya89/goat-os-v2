@@ -4,11 +4,14 @@ import NiceModal from "@ebay/nice-modal-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
 	ExternalLinkIcon,
+	GlobeIcon,
 	LaptopIcon,
+	MedalIcon,
 	MoonIcon,
 	MoreHorizontalIcon,
 	SunIcon,
 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import * as React from "react";
 import {
@@ -40,7 +43,9 @@ import { authConfig } from "@/config/auth.config";
 import { useProgressRouter } from "@/hooks/use-progress-router";
 import { useSession } from "@/hooks/use-session";
 import { authClient } from "@/lib/auth/client";
+import { LOCALE_COOKIE_NAME, type Locale, locales } from "@/lib/i18n/config";
 import { capitalize, cn } from "@/lib/utils";
+import { trpc } from "@/trpc/client";
 
 function isDialogOpen(): boolean {
 	return !!document.querySelector('[role="dialog"]');
@@ -90,6 +95,11 @@ function isMac(): boolean {
 // Build available theme modes from config + system option
 const MODES = ["system", ...appConfig.theme.available];
 
+const localeConfig: Record<Locale, { name: string; flag: string }> = {
+	es: { name: "Español", flag: "🇪🇸" },
+	en: { name: "English", flag: "🇺🇸" },
+};
+
 function Icon({ theme }: { theme: string | undefined }) {
 	switch (theme) {
 		case "light":
@@ -104,12 +114,19 @@ function Icon({ theme }: { theme: string | undefined }) {
 export function UserDropDownMenu(
 	props: SidebarGroupProps,
 ): React.JSX.Element | null {
+	const t = useTranslations("settings.user");
+	const tAuth = useTranslations("auth");
+	const tMenu = useTranslations("common.menu");
 	const { user } = useSession();
 	const { setTheme, theme } = useTheme();
 	const router = useProgressRouter();
 	const queryClient = useQueryClient();
 	const { state: sidebarState } = useSidebar();
+	const locale = useLocale() as Locale;
 	const [mounted, setMounted] = React.useState(false);
+
+	// Check if user is an athlete
+	const { data: isAthlete } = trpc.athlete.isAthlete.useQuery();
 
 	React.useEffect(() => {
 		setMounted(true);
@@ -141,8 +158,18 @@ export function UserDropDownMenu(
 		router.push("/dashboard/settings?tab=profile");
 	};
 
+	const handleNavigateToAthleteProfile = (): void => {
+		router.push("/dashboard/my-profile");
+	};
+
 	const handleShowCommandMenu = (): void => {
 		NiceModal.show(CommandMenu);
+	};
+
+	const handleLocaleChange = (newLocale: Locale) => {
+		document.cookie = `${LOCALE_COOKIE_NAME}=${newLocale}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
+		// Full page reload to apply new locale (router.refresh doesn't re-read cookies)
+		window.location.reload();
 	};
 
 	const handleSignOut = async () => {
@@ -271,11 +298,20 @@ export function UserDropDownMenu(
 							</DropdownMenuLabel>
 							<DropdownMenuSeparator />
 							<DropdownMenuGroup>
+								{isAthlete && (
+									<DropdownMenuItem
+										className="cursor-pointer"
+										onClick={handleNavigateToAthleteProfile}
+									>
+										<MedalIcon className="mr-2 size-4" />
+										{tMenu("athleteProfile")}
+									</DropdownMenuItem>
+								)}
 								<DropdownMenuItem
 									className="cursor-pointer"
 									onClick={handleNavigateToProfile}
 								>
-									Profile
+									{t("profile.title")}
 									<DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
 								</DropdownMenuItem>
 								<DropdownMenuItem
@@ -294,7 +330,7 @@ export function UserDropDownMenu(
 													"hidden w-full items-center justify-between gap-x-3 lg:flex"
 												}
 											>
-												<p>Theme</p>
+												<p>{t("preferences.theme")}</p>
 											</DropdownMenuSubTrigger>
 											<DropdownMenuSubContent>
 												{MenuItems}
@@ -303,11 +339,32 @@ export function UserDropDownMenu(
 										<DropdownMenuSeparator />
 									</>
 								)}
+								<DropdownMenuSub>
+									<DropdownMenuSubTrigger className="hidden w-full items-center justify-between gap-x-3 lg:flex">
+										<GlobeIcon className="mr-2 size-4" />
+										<p>{t("preferences.language")}</p>
+									</DropdownMenuSubTrigger>
+									<DropdownMenuSubContent>
+										{locales.map((loc) => (
+											<DropdownMenuItem
+												key={loc}
+												className={cn("cursor-pointer", {
+													"bg-muted": locale === loc,
+												})}
+												onClick={() => handleLocaleChange(loc)}
+											>
+												<span className="mr-2">{localeConfig[loc].flag}</span>
+												{localeConfig[loc].name}
+											</DropdownMenuItem>
+										))}
+									</DropdownMenuSubContent>
+								</DropdownMenuSub>
+								<DropdownMenuSeparator />
 								<DropdownMenuItem
 									className="cursor-pointer"
 									onClick={() => window.open("/", "_blank")}
 								>
-									Homepage
+									{tAuth("menu.homepage")}
 									<ExternalLinkIcon className="ml-auto size-4 text-muted-foreground" />
 								</DropdownMenuItem>
 							</DropdownMenuGroup>
@@ -316,7 +373,7 @@ export function UserDropDownMenu(
 								className="cursor-pointer"
 								onClick={handleSignOut}
 							>
-								Sign out
+								{tAuth("menu.signOut")}
 								<DropdownMenuShortcut>⇧⌘S</DropdownMenuShortcut>
 							</DropdownMenuItem>
 						</DropdownMenuContent>

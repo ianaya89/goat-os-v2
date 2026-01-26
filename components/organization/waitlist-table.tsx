@@ -11,8 +11,10 @@ import {
 	CheckIcon,
 	ClockIcon,
 	MoreHorizontalIcon,
+	PencilIcon,
 	PlusIcon,
 	UsersIcon,
+	XCircleIcon,
 } from "lucide-react";
 import {
 	parseAsArrayOf,
@@ -44,6 +46,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { appConfig } from "@/config/app.config";
 import {
+	DayOfWeek,
 	WaitlistEntryStatus,
 	WaitlistPriority,
 	WaitlistReferenceType,
@@ -59,7 +62,9 @@ interface WaitlistEntry {
 	organizationId: string;
 	athleteId: string;
 	referenceType: WaitlistReferenceType;
-	trainingSessionId: string | null;
+	preferredDays: DayOfWeek[] | null;
+	preferredStartTime: string | null;
+	preferredEndTime: string | null;
 	athleteGroupId: string | null;
 	priority: WaitlistPriority;
 	status: WaitlistEntryStatus;
@@ -79,12 +84,6 @@ interface WaitlistEntry {
 			image: string | null;
 		} | null;
 	};
-	trainingSession: {
-		id: string;
-		title: string;
-		startTime: Date;
-		endTime: Date;
-	} | null;
 	athleteGroup: {
 		id: string;
 		name: string;
@@ -98,6 +97,16 @@ interface WaitlistEntry {
 		name: string;
 	} | null;
 }
+
+const dayLabels: Record<DayOfWeek, string> = {
+	[DayOfWeek.monday]: "Lun",
+	[DayOfWeek.tuesday]: "Mar",
+	[DayOfWeek.wednesday]: "Mie",
+	[DayOfWeek.thursday]: "Jue",
+	[DayOfWeek.friday]: "Vie",
+	[DayOfWeek.saturday]: "Sab",
+	[DayOfWeek.sunday]: "Dom",
+};
 
 const priorityColors: Record<WaitlistPriority, string> = {
 	[WaitlistPriority.high]:
@@ -133,7 +142,7 @@ const statusLabels: Record<WaitlistEntryStatus, string> = {
 };
 
 const referenceTypeLabels: Record<WaitlistReferenceType, string> = {
-	[WaitlistReferenceType.trainingSession]: "Sesion",
+	[WaitlistReferenceType.schedule]: "Horario",
 	[WaitlistReferenceType.athleteGroup]: "Grupo",
 };
 
@@ -290,7 +299,6 @@ export function WaitlistTable(): React.JSX.Element {
 		onSuccess: () => {
 			toast.success("Atleta asignado exitosamente");
 			utils.organization.waitlist.list.invalidate();
-			utils.organization.trainingSession.list.invalidate();
 			utils.organization.athleteGroup.list.invalidate();
 		},
 		onError: (error) => {
@@ -340,8 +348,7 @@ export function WaitlistTable(): React.JSX.Element {
 					className="border-none px-2 py-0.5 font-medium text-xs shadow-none"
 					variant="outline"
 				>
-					{row.original.referenceType ===
-					WaitlistReferenceType.trainingSession ? (
+					{row.original.referenceType === WaitlistReferenceType.schedule ? (
 						<>
 							<ClockIcon className="mr-1 size-3" />
 							{referenceTypeLabels[row.original.referenceType]}
@@ -357,15 +364,25 @@ export function WaitlistTable(): React.JSX.Element {
 		},
 		{
 			id: "reference",
-			header: "Referencia",
+			header: "Preferencia",
 			cell: ({ row }) => {
-				if (row.original.trainingSession) {
+				if (row.original.referenceType === WaitlistReferenceType.schedule) {
+					const days = row.original.preferredDays;
+					const startTime = row.original.preferredStartTime;
+					const endTime = row.original.preferredEndTime;
+
+					const daysText = days?.map((d) => dayLabels[d]).join(", ") ?? "-";
+					const timeText =
+						startTime && endTime ? `${startTime} - ${endTime}` : "";
+
+					const fullText = timeText ? `${daysText} (${timeText})` : daysText;
+
 					return (
 						<span
 							className="block max-w-[180px] truncate text-foreground/80"
-							title={row.original.trainingSession.title}
+							title={fullText}
 						>
-							{row.original.trainingSession.title}
+							{fullText}
 						</span>
 					);
 				}
@@ -461,15 +478,22 @@ export function WaitlistTable(): React.JSX.Element {
 									NiceModal.show(WaitlistModal, { entry: row.original });
 								}}
 							>
+								<PencilIcon className="mr-2 size-4" />
 								Editar
 							</DropdownMenuItem>
 							{row.original.status === WaitlistEntryStatus.waiting && (
 								<>
 									<DropdownMenuItem
 										onClick={() => {
+											const targetName =
+												row.original.referenceType ===
+												WaitlistReferenceType.schedule
+													? `horario preferido (${row.original.preferredDays?.map((d) => dayLabels[d]).join(", ") ?? "dias"})`
+													: (row.original.athleteGroup?.name ??
+														"la referencia");
 											NiceModal.show(ConfirmationModal, {
 												title: "Asignar atleta?",
-												message: `Se asignara a ${row.original.athlete.user?.name ?? "el atleta"} a ${row.original.trainingSession?.title ?? row.original.athleteGroup?.name ?? "la referencia"}. Esta seguro?`,
+												message: `Se asignara a ${row.original.athlete.user?.name ?? "el atleta"} a ${targetName}. Esta seguro?`,
 												confirmLabel: "Asignar",
 												onConfirm: () =>
 													assignMutation.mutate({ id: row.original.id }),
@@ -494,6 +518,7 @@ export function WaitlistTable(): React.JSX.Element {
 										}}
 										variant="destructive"
 									>
+										<XCircleIcon className="mr-2 size-4" />
 										Cancelar
 									</DropdownMenuItem>
 								</>
@@ -529,7 +554,7 @@ export function WaitlistTable(): React.JSX.Element {
 			key: "referenceType",
 			title: "Tipo",
 			options: [
-				{ value: WaitlistReferenceType.trainingSession, label: "Sesion" },
+				{ value: WaitlistReferenceType.schedule, label: "Horario" },
 				{ value: WaitlistReferenceType.athleteGroup, label: "Grupo" },
 			],
 		},

@@ -1,4 +1,5 @@
 import { eq, like } from "drizzle-orm";
+import type { DrizzleClient } from "@/lib/db/types";
 import type { SeedContext } from "../commands/seed";
 import { schema } from "../db";
 import {
@@ -67,7 +68,7 @@ function seedBirthDate(index: number): Date {
 }
 
 export async function seedAthletes(
-	db: any,
+	db: DrizzleClient,
 	count: number,
 	context: SeedContext,
 ): Promise<string[]> {
@@ -113,22 +114,22 @@ export async function seedAthletes(
 			id: seedUUID(ENTITY_ATHLETE_MEMBER, i + 1),
 			organizationId: context.organizationId,
 			userId,
-			role: "athlete",
+			role: "member",
 		});
 
 		athletes.push({
 			id: athleteId,
 			organizationId: context.organizationId,
 			userId,
-			sport: sports[i % sports.length],
+			sport: sports[i % sports.length] ?? "football",
 			birthDate,
-			level: levels[i % levels.length],
+			level: levels[i % levels.length] ?? "intermediate",
 			status: "active",
 			height: 140 + (i % 60),
 			weight: 40000 + i * 1000,
-			dominantFoot: dominantSides[i % dominantSides.length],
-			nationality: nationalities[i % nationalities.length],
-			position: positions[i % positions.length],
+			dominantFoot: dominantSides[i % dominantSides.length] ?? "right",
+			nationality: nationalities[i % nationalities.length] ?? "AR",
+			position: positions[i % positions.length] ?? "midfielder",
 			jerseyNumber: (i % 99) + 1,
 			yearsOfExperience: i % 10,
 		});

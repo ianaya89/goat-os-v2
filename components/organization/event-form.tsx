@@ -4,7 +4,14 @@ import { useRouter } from "next/navigation";
 import * as React from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from "@/components/ui/custom/date-picker";
 import { Field } from "@/components/ui/field";
 import {
@@ -17,6 +24,7 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
 	Select,
 	SelectContent,
@@ -28,7 +36,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useZodForm } from "@/hooks/use-zod-form";
 import {
-	EventPaymentMethod,
+	type EventPaymentMethod,
 	EventPaymentMethods,
 	EventStatus,
 	EventStatuses,
@@ -45,8 +53,6 @@ import {
 	updateSportsEventSchema,
 } from "@/schemas/organization-sports-event-schemas";
 import { trpc } from "@/trpc/client";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 
 interface SportsEventData {
 	id: string;
@@ -73,6 +79,10 @@ interface SportsEventData {
 	contactEmail: string | null;
 	contactPhone: string | null;
 	coverImageUrl: string | null;
+	ageCategories?: Array<{
+		ageCategoryId: string;
+		ageCategory: { id: string; displayName: string };
+	}>;
 }
 
 interface EventFormProps {
@@ -92,7 +102,10 @@ function getPaymentMethodLabel(method: EventPaymentMethod): string {
 	return labels[method] || method;
 }
 
-export function EventForm({ event, eventId }: EventFormProps): React.JSX.Element {
+export function EventForm({
+	event,
+	eventId,
+}: EventFormProps): React.JSX.Element {
 	const router = useRouter();
 	const utils = trpc.useUtils();
 	const isEditing = !!event;
@@ -104,12 +117,13 @@ export function EventForm({ event, eventId }: EventFormProps): React.JSX.Element
 	});
 
 	// Fetch age categories for the select
-	const { data: ageCategoriesData } = trpc.organization.sportsEvent.listAgeCategories.useQuery({
-		includeInactive: false,
-	});
+	const { data: ageCategoriesData } =
+		trpc.organization.sportsEvent.listAgeCategories.useQuery({
+			includeInactive: false,
+		});
 
 	// Fetch coaches for the select
-	const { data: coachesData } = trpc.organization.coach.list.useQuery({
+	const { data: _coachesData } = trpc.organization.coach.list.useQuery({
 		limit: 100,
 		offset: 0,
 		filters: { status: ["active"] },
@@ -151,49 +165,55 @@ export function EventForm({ event, eventId }: EventFormProps): React.JSX.Element
 
 	const form = useZodForm({
 		schema: isEditing ? updateSportsEventSchema : createSportsEventSchema,
-		defaultValues: isEditing && event
-			? {
-					id: event.id,
-					title: event.title,
-					slug: event.slug,
-					description: event.description ?? "",
-					eventType: event.eventType as EventType,
-					status: event.status as EventStatus,
-					startDate: event.startDate,
-					endDate: event.endDate,
-					registrationOpenDate: event.registrationOpenDate ?? undefined,
-					registrationCloseDate: event.registrationCloseDate ?? undefined,
-					locationId: event.locationId ?? undefined,
-					venueDetails: event.venueDetails ?? "",
-					maxCapacity: event.maxCapacity ?? undefined,
-					enableWaitlist: event.enableWaitlist,
-					maxWaitlistSize: event.maxWaitlistSize ?? undefined,
-					allowPublicRegistration: event.allowPublicRegistration,
-					allowEarlyAccessForMembers: event.allowEarlyAccessForMembers,
-					memberEarlyAccessDays: event.memberEarlyAccessDays ?? 7,
-					requiresApproval: event.requiresApproval,
-					currency: event.currency,
-					acceptedPaymentMethods: parsePaymentMethods(event.acceptedPaymentMethods),
-					contactEmail: event.contactEmail ?? "",
-					contactPhone: event.contactPhone ?? "",
-					coverImageUrl: event.coverImageUrl ?? undefined,
-				}
-			: {
-					title: "",
-					slug: "",
-					description: "",
-					eventType: EventType.campus,
-					status: EventStatus.draft,
-					startDate: new Date(),
-					endDate: new Date(),
-					enableWaitlist: true,
-					allowPublicRegistration: true,
-					allowEarlyAccessForMembers: false,
-					memberEarlyAccessDays: 7,
-					requiresApproval: false,
-					currency: "ARS",
-					acceptedPaymentMethods: [],
-				},
+		defaultValues:
+			isEditing && event
+				? {
+						id: event.id,
+						title: event.title,
+						slug: event.slug,
+						description: event.description ?? "",
+						eventType: event.eventType as EventType,
+						status: event.status as EventStatus,
+						startDate: event.startDate,
+						endDate: event.endDate,
+						registrationOpenDate: event.registrationOpenDate ?? undefined,
+						registrationCloseDate: event.registrationCloseDate ?? undefined,
+						locationId: event.locationId ?? undefined,
+						venueDetails: event.venueDetails ?? "",
+						maxCapacity: event.maxCapacity ?? undefined,
+						enableWaitlist: event.enableWaitlist,
+						maxWaitlistSize: event.maxWaitlistSize ?? undefined,
+						allowPublicRegistration: event.allowPublicRegistration,
+						allowEarlyAccessForMembers: event.allowEarlyAccessForMembers,
+						memberEarlyAccessDays: event.memberEarlyAccessDays ?? 7,
+						requiresApproval: event.requiresApproval,
+						currency: event.currency,
+						acceptedPaymentMethods: parsePaymentMethods(
+							event.acceptedPaymentMethods,
+						),
+						contactEmail: event.contactEmail ?? "",
+						contactPhone: event.contactPhone ?? "",
+						coverImageUrl: event.coverImageUrl ?? undefined,
+						ageCategoryIds:
+							event.ageCategories?.map((ac) => ac.ageCategoryId) ?? [],
+					}
+				: {
+						title: "",
+						slug: "",
+						description: "",
+						eventType: EventType.campus,
+						status: EventStatus.draft,
+						startDate: new Date(),
+						endDate: new Date(),
+						enableWaitlist: true,
+						allowPublicRegistration: true,
+						allowEarlyAccessForMembers: false,
+						memberEarlyAccessDays: 7,
+						requiresApproval: false,
+						currency: "ARS",
+						acceptedPaymentMethods: [],
+						ageCategoryIds: [],
+					},
 	});
 
 	// Auto-generate slug from title
@@ -217,7 +237,8 @@ export function EventForm({ event, eventId }: EventFormProps): React.JSX.Element
 		}
 	});
 
-	const isPending = createEventMutation.isPending || updateEventMutation.isPending;
+	const isPending =
+		createEventMutation.isPending || updateEventMutation.isPending;
 
 	const enableWaitlist = form.watch("enableWaitlist");
 	const allowEarlyAccessForMembers = form.watch("allowEarlyAccessForMembers");
@@ -229,9 +250,7 @@ export function EventForm({ event, eventId }: EventFormProps): React.JSX.Element
 				<Card>
 					<CardHeader>
 						<CardTitle>Información Básica</CardTitle>
-						<CardDescription>
-							Datos principales del evento
-						</CardDescription>
+						<CardDescription>Datos principales del evento</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<FormField
@@ -365,6 +384,66 @@ export function EventForm({ event, eventId }: EventFormProps): React.JSX.Element
 					</CardContent>
 				</Card>
 
+				{/* Age Categories */}
+				{ageCategoriesData && ageCategoriesData.length > 0 && (
+					<Card>
+						<CardHeader>
+							<CardTitle>Categorías de Edad</CardTitle>
+							<CardDescription>
+								Selecciona las categorías de edad que participarán en este
+								evento
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<FormField
+								control={form.control}
+								name="ageCategoryIds"
+								render={({ field }) => (
+									<FormItem>
+										<div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+											{ageCategoriesData.map((category) => {
+												const isChecked = field.value?.includes(category.id);
+												return (
+													<div
+														key={category.id}
+														className="flex items-center space-x-2"
+													>
+														<Checkbox
+															id={`category-${category.id}`}
+															checked={isChecked}
+															onCheckedChange={(checked) => {
+																const current = field.value || [];
+																if (checked) {
+																	field.onChange([...current, category.id]);
+																} else {
+																	field.onChange(
+																		current.filter((id) => id !== category.id),
+																	);
+																}
+															}}
+														/>
+														<Label
+															htmlFor={`category-${category.id}`}
+															className="text-sm cursor-pointer"
+														>
+															{category.displayName}
+														</Label>
+													</div>
+												);
+											})}
+										</div>
+										<FormDescription className="mt-3">
+											Si no seleccionas ninguna, el evento estará abierto a
+											todas las edades
+										</FormDescription>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+						</CardContent>
+					</Card>
+				)}
+
 				{/* Dates and Location */}
 				<Card>
 					<CardHeader>
@@ -384,7 +463,11 @@ export function EventForm({ event, eventId }: EventFormProps): React.JSX.Element
 											<FormLabel>Fecha de Inicio</FormLabel>
 											<FormControl>
 												<DatePicker
-													date={field.value instanceof Date ? field.value : new Date()}
+													date={
+														field.value instanceof Date
+															? field.value
+															: new Date()
+													}
 													onDateChange={field.onChange}
 													placeholder="Seleccionar fecha"
 													className="w-full"
@@ -405,7 +488,11 @@ export function EventForm({ event, eventId }: EventFormProps): React.JSX.Element
 											<FormLabel>Fecha de Fin</FormLabel>
 											<FormControl>
 												<DatePicker
-													date={field.value instanceof Date ? field.value : new Date()}
+													date={
+														field.value instanceof Date
+															? field.value
+															: new Date()
+													}
 													onDateChange={field.onChange}
 													placeholder="Seleccionar fecha"
 													className="w-full"
@@ -428,7 +515,11 @@ export function EventForm({ event, eventId }: EventFormProps): React.JSX.Element
 											<FormLabel>Apertura de Inscripciones</FormLabel>
 											<FormControl>
 												<DatePicker
-													date={field.value instanceof Date ? field.value : undefined}
+													date={
+														field.value instanceof Date
+															? field.value
+															: undefined
+													}
 													onDateChange={field.onChange}
 													placeholder="Opcional"
 													className="w-full"
@@ -449,7 +540,11 @@ export function EventForm({ event, eventId }: EventFormProps): React.JSX.Element
 											<FormLabel>Cierre de Inscripciones</FormLabel>
 											<FormControl>
 												<DatePicker
-													date={field.value instanceof Date ? field.value : undefined}
+													date={
+														field.value instanceof Date
+															? field.value
+															: undefined
+													}
 													onDateChange={field.onChange}
 													placeholder="Opcional"
 													className="w-full"
@@ -562,7 +657,9 @@ export function EventForm({ event, eventId }: EventFormProps): React.JSX.Element
 								<FormItem>
 									<div className="flex items-center justify-between rounded-lg border p-4">
 										<div className="space-y-0.5">
-											<FormLabel className="text-base">Lista de Espera</FormLabel>
+											<FormLabel className="text-base">
+												Lista de Espera
+											</FormLabel>
 											<FormDescription>
 												Permitir inscripciones en lista de espera cuando se
 												alcance la capacidad
@@ -739,8 +836,12 @@ export function EventForm({ event, eventId }: EventFormProps): React.JSX.Element
 												</SelectTrigger>
 											</FormControl>
 											<SelectContent>
-												<SelectItem value="ARS">ARS - Peso Argentino</SelectItem>
-												<SelectItem value="USD">USD - Dólar Estadounidense</SelectItem>
+												<SelectItem value="ARS">
+													ARS - Peso Argentino
+												</SelectItem>
+												<SelectItem value="USD">
+													USD - Dólar Estadounidense
+												</SelectItem>
 											</SelectContent>
 										</Select>
 										<FormMessage />
@@ -757,13 +858,12 @@ export function EventForm({ event, eventId }: EventFormProps): React.JSX.Element
 									<FormLabel>Métodos de Pago Aceptados</FormLabel>
 									<div className="grid grid-cols-2 gap-3 pt-2">
 										{EventPaymentMethods.map((method) => (
-											<div
-												key={method}
-												className="flex items-center space-x-2"
-											>
+											<div key={method} className="flex items-center space-x-2">
 												<Checkbox
 													id={`payment-${method}`}
-													checked={(field.value ?? []).includes(method as EventPaymentMethod)}
+													checked={(field.value ?? []).includes(
+														method as EventPaymentMethod,
+													)}
 													onCheckedChange={(checked) => {
 														const current = field.value ?? [];
 														if (checked) {

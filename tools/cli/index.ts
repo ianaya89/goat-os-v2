@@ -1,9 +1,11 @@
 #!/usr/bin/env tsx
 import * as p from "@clack/prompts";
 import { runMigrations } from "./commands/migrate";
+import { pushSchema } from "./commands/push";
 import { resetDatabase } from "./commands/reset";
 import { runSeeds, seedOptions } from "./commands/seed";
 import { type Environment, getEnvConfig } from "./env";
+import { runRealLifeSeed } from "./seeds/real-life";
 
 async function main() {
 	p.intro("🐐 GOAT OS Database CLI");
@@ -27,6 +29,11 @@ async function main() {
 				hint: "Apply pending migrations",
 			},
 			{
+				value: "push",
+				label: "Push Schema",
+				hint: "Push schema directly (no migration files)",
+			},
+			{
 				value: "reset",
 				label: "Reset Database",
 				hint: "Drop all tables and re-migrate (dangerous!)",
@@ -46,6 +53,9 @@ async function main() {
 		case "migrate":
 			await handleMigrate(env);
 			break;
+		case "push":
+			await handlePush(env);
+			break;
 		case "reset":
 			await handleReset(env);
 			break;
@@ -55,10 +65,50 @@ async function main() {
 }
 
 async function handleSeed(env: Environment) {
+	const seedMode = await p.select({
+		message: "Select seed mode:",
+		options: [
+			{
+				value: "random",
+				label: "Random Data",
+				hint: "Generate random test data",
+			},
+			{
+				value: "real-life",
+				label: "Real Life",
+				hint: "GOAT Sports org with nacho@goat.ar, 2 locations, 3 coaches",
+			},
+		],
+	});
+
+	if (p.isCancel(seedMode)) {
+		p.cancel("Operation cancelled.");
+		process.exit(0);
+	}
+
+	if (env.name === "production") {
+		const confirm = await p.confirm({
+			message: "⚠️ You are about to seed PRODUCTION database. Are you sure?",
+			initialValue: false,
+		});
+
+		if (p.isCancel(confirm) || !confirm) {
+			p.cancel("Operation cancelled.");
+			process.exit(0);
+		}
+	}
+
+	if (seedMode === "real-life") {
+		await runRealLifeSeed();
+		return;
+	}
+
+	// Random data mode - original flow
 	const tables = await p.multiselect({
 		message: "Select tables to seed:",
 		options: seedOptions,
 		required: true,
+		initialValues: ["all"],
 	});
 
 	if (p.isCancel(tables)) {
@@ -83,18 +133,6 @@ async function handleSeed(env: Environment) {
 		process.exit(0);
 	}
 
-	if (env.name === "production") {
-		const confirm = await p.confirm({
-			message: "⚠️ You are about to seed PRODUCTION database. Are you sure?",
-			initialValue: false,
-		});
-
-		if (p.isCancel(confirm) || !confirm) {
-			p.cancel("Operation cancelled.");
-			process.exit(0);
-		}
-	}
-
 	await runSeeds(tables as string[], Number.parseInt(count as string, 10));
 }
 
@@ -113,6 +151,26 @@ async function handleMigrate(env: Environment) {
 	}
 
 	await runMigrations();
+}
+
+async function handlePush(env: Environment) {
+	if (env.name === "production") {
+		p.log.error("Cannot push schema to production! Use migrations instead.");
+		process.exit(1);
+	}
+
+	const confirm = await p.confirm({
+		message:
+			"⚠️ This will push schema changes directly without migration files. Continue?",
+		initialValue: true,
+	});
+
+	if (p.isCancel(confirm) || !confirm) {
+		p.cancel("Operation cancelled.");
+		process.exit(0);
+	}
+
+	await pushSchema();
 }
 
 async function handleReset(env: Environment) {

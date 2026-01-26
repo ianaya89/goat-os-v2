@@ -1,10 +1,18 @@
 "use client";
 
 import NiceModal, { type NiceModalHocProps } from "@ebay/nice-modal-react";
+import { UsersIcon } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Field } from "@/components/ui/field";
 import {
 	Form,
@@ -36,10 +44,12 @@ import { useZodForm } from "@/hooks/use-zod-form";
 import {
 	AthleteLevel,
 	AthleteLevels,
+	AthleteSport,
+	AthleteSports,
 	AthleteStatus,
 	AthleteStatuses,
 } from "@/lib/db/schema/enums";
-import { capitalize } from "@/lib/utils";
+import { capitalize, cn } from "@/lib/utils";
 import {
 	createAthleteSchema,
 	updateAthleteSchema,
@@ -59,6 +69,10 @@ export type AthletesModalProps = NiceModalHocProps & {
 			email: string;
 			image: string | null;
 		} | null;
+		groups?: Array<{
+			id: string;
+			name: string;
+		}>;
 	};
 	prefillUser?: {
 		id: string;
@@ -75,9 +89,60 @@ export const AthletesModal = NiceModal.create<AthletesModalProps>(
 		const [temporaryPassword, setTemporaryPassword] = React.useState<
 			string | null
 		>(null);
+		const [isGroupsOpen, setIsGroupsOpen] = React.useState(false);
+
+		// Groups management
+		const initialGroupIds = React.useMemo(
+			() => new Set(athlete?.groups?.map((g) => g.id) ?? []),
+			[athlete?.groups],
+		);
+		const [selectedGroupIds, setSelectedGroupIds] = React.useState<Set<string>>(
+			() => new Set(initialGroupIds),
+		);
+		const [, setNewAthleteId] = React.useState<string | null>(null);
+
+		// Query for available groups
+		const { data: availableGroups, isLoading: isLoadingGroups } =
+			trpc.organization.athleteGroup.listActive.useQuery();
+
+		// Mutations for group management
+		const addToGroupMutation =
+			trpc.organization.athleteGroup.addMembers.useMutation();
+		const removeFromGroupMutation =
+			trpc.organization.athleteGroup.removeMembers.useMutation();
+
+		const toggleGroup = (groupId: string) => {
+			setSelectedGroupIds((prev) => {
+				const next = new Set(prev);
+				if (next.has(groupId)) {
+					next.delete(groupId);
+				} else {
+					next.add(groupId);
+				}
+				return next;
+			});
+		};
 
 		const createAthleteMutation = trpc.organization.athlete.create.useMutation({
-			onSuccess: (data) => {
+			onSuccess: async (data) => {
+				// Store the new athlete ID for adding to groups
+				if (data.athlete?.id) {
+					setNewAthleteId(data.athlete.id);
+
+					// Add to selected groups
+					if (selectedGroupIds.size > 0) {
+						const groupPromises = [...selectedGroupIds].map((groupId) =>
+							addToGroupMutation.mutateAsync({
+								groupId,
+								athleteIds: [data.athlete!.id],
+							}),
+						);
+						await Promise.all(groupPromises).catch(() => {
+							toast.error("Error al agregar a algunos grupos");
+						});
+					}
+				}
+
 				if (data.temporaryPassword) {
 					setTemporaryPassword(data.temporaryPassword);
 					toast.success(
@@ -86,6 +151,7 @@ export const AthletesModal = NiceModal.create<AthletesModalProps>(
 				} else {
 					toast.success("Athlete created successfully");
 					utils.organization.athlete.list.invalidate();
+					utils.organization.athleteGroup.listActive.invalidate();
 					modal.handleClose();
 				}
 			},
@@ -110,7 +176,7 @@ export const AthletesModal = NiceModal.create<AthletesModalProps>(
 			defaultValues: isEditing
 				? {
 						id: athlete.id,
-						sport: athlete.sport,
+						sport: athlete.sport as AthleteSport,
 						birthDate: athlete.birthDate ?? undefined,
 						level: athlete.level as AthleteLevel,
 						status: athlete.status as AthleteStatus,
@@ -118,7 +184,7 @@ export const AthletesModal = NiceModal.create<AthletesModalProps>(
 				: {
 						name: prefillUser?.name ?? "",
 						email: prefillUser?.email ?? "",
-						sport: "",
+						sport: AthleteSport.soccer,
 						birthDate: undefined,
 						level: AthleteLevel.beginner,
 						status: AthleteStatus.active,
@@ -127,8 +193,43 @@ export const AthletesModal = NiceModal.create<AthletesModalProps>(
 
 		const hasPrefillUser = !!prefillUser;
 
-		const onSubmit = form.handleSubmit((data) => {
-			if (isEditing) {
+		const onSubmit = form.handleSubmit(async (data) => {
+			if (isEditing && athlete) {
+				// Calculate group changes
+				const groupsToAdd = [...selectedGroupIds].filter(
+					(id) => !initialGroupIds.has(id),
+				);
+				const groupsToRemove = [...initialGroupIds].filter(
+					(id) => !selectedGroupIds.has(id),
+				);
+
+				// Update group memberships
+				const groupPromises: Promise<unknown>[] = [];
+
+				for (const groupId of groupsToAdd) {
+					groupPromises.push(
+						addToGroupMutation.mutateAsync({
+							groupId,
+							athleteIds: [athlete.id],
+						}),
+					);
+				}
+
+				for (const groupId of groupsToRemove) {
+					groupPromises.push(
+						removeFromGroupMutation.mutateAsync({
+							groupId,
+							athleteIds: [athlete.id],
+						}),
+					);
+				}
+
+				// Wait for all group updates
+				if (groupPromises.length > 0) {
+					await Promise.all(groupPromises);
+					utils.organization.athleteGroup.listActive.invalidate();
+				}
+
 				updateAthleteMutation.mutate(
 					data as Parameters<typeof updateAthleteMutation.mutate>[0],
 				);
@@ -140,11 +241,15 @@ export const AthletesModal = NiceModal.create<AthletesModalProps>(
 		});
 
 		const isPending =
-			createAthleteMutation.isPending || updateAthleteMutation.isPending;
+			createAthleteMutation.isPending ||
+			updateAthleteMutation.isPending ||
+			addToGroupMutation.isPending ||
+			removeFromGroupMutation.isPending;
 
 		const handleCloseAfterPassword = () => {
 			setTemporaryPassword(null);
 			utils.organization.athlete.list.invalidate();
+			utils.organization.athleteGroup.listActive.invalidate();
 			modal.handleClose();
 		};
 
@@ -238,7 +343,9 @@ export const AthletesModal = NiceModal.create<AthletesModalProps>(
 										<>
 											{hasPrefillUser && (
 												<div className="rounded-lg border bg-muted/50 p-4">
-													<p className="font-medium text-sm">{prefillUser.name}</p>
+													<p className="font-medium text-sm">
+														{prefillUser.name}
+													</p>
 													<p className="text-muted-foreground text-sm">
 														{prefillUser.email}
 													</p>
@@ -307,13 +414,23 @@ export const AthletesModal = NiceModal.create<AthletesModalProps>(
 											<FormItem asChild>
 												<Field>
 													<FormLabel>Sport</FormLabel>
-													<FormControl>
-														<Input
-															placeholder="e.g., Swimming, Basketball"
-															autoComplete="off"
-															{...field}
-														/>
-													</FormControl>
+													<Select
+														onValueChange={field.onChange}
+														defaultValue={field.value}
+													>
+														<FormControl>
+															<SelectTrigger className="w-full">
+																<SelectValue placeholder="Select sport" />
+															</SelectTrigger>
+														</FormControl>
+														<SelectContent>
+															{AthleteSports.map((sport) => (
+																<SelectItem key={sport} value={sport}>
+																	{capitalize(sport.replace("_", " "))}
+																</SelectItem>
+															))}
+														</SelectContent>
+													</Select>
 													<FormMessage />
 												</Field>
 											</FormItem>
@@ -411,6 +528,78 @@ export const AthletesModal = NiceModal.create<AthletesModalProps>(
 											</FormItem>
 										)}
 									/>
+
+									{/* Groups Section */}
+									{availableGroups && availableGroups.length > 0 && (
+										<Collapsible
+											open={isGroupsOpen}
+											onOpenChange={setIsGroupsOpen}
+											className="rounded-lg border"
+										>
+											<CollapsibleTrigger className="flex w-full items-center justify-between p-3 hover:bg-muted/50">
+												<div className="flex items-center gap-2">
+													<UsersIcon className="size-4" />
+													<span className="font-medium text-sm">Grupos</span>
+													{selectedGroupIds.size > 0 && (
+														<Badge variant="secondary" className="ml-1">
+															{selectedGroupIds.size}
+														</Badge>
+													)}
+												</div>
+												<span className="text-muted-foreground text-xs">
+													{isGroupsOpen ? "Ocultar" : "Mostrar"}
+												</span>
+											</CollapsibleTrigger>
+											<CollapsibleContent>
+												<div className="space-y-2 border-t p-3">
+													{isLoadingGroups ? (
+														<div className="py-4 text-center text-muted-foreground text-sm">
+															Cargando grupos...
+														</div>
+													) : (
+														availableGroups.map((group) => {
+															const isSelected = selectedGroupIds.has(group.id);
+															const memberCount = group.members?.length ?? 0;
+
+															return (
+																<div
+																	key={group.id}
+																	className={cn(
+																		"flex items-center gap-3 rounded-md p-2 transition-colors",
+																		isSelected
+																			? "bg-primary/10"
+																			: "hover:bg-muted/50",
+																	)}
+																>
+																	<Checkbox
+																		id={`modal-group-${group.id}`}
+																		checked={isSelected}
+																		onCheckedChange={() =>
+																			toggleGroup(group.id)
+																		}
+																	/>
+																	<label
+																		htmlFor={`modal-group-${group.id}`}
+																		className="flex flex-1 cursor-pointer items-center justify-between"
+																	>
+																		<span className="text-sm">
+																			{group.name}
+																		</span>
+																		<Badge
+																			variant="outline"
+																			className="text-xs"
+																		>
+																			{memberCount}
+																		</Badge>
+																	</label>
+																</div>
+															);
+														})
+													)}
+												</div>
+											</CollapsibleContent>
+										</Collapsible>
+									)}
 								</div>
 							</ScrollArea>
 

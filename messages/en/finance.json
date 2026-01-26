@@ -1,0 +1,189 @@
+{
+	"payments": {
+		"title": "Payments",
+		"description": "Manage your organization's payments.",
+		"add": "Record payment",
+		"edit": "Edit payment",
+		"view": "View payment",
+		"delete": "Delete payment",
+		"search": "Search payments...",
+		"filters": {
+			"all": "All",
+			"pending": "Pending",
+			"completed": "Completed",
+			"overdue": "Overdue",
+			"cancelled": "Cancelled"
+		},
+		"table": {
+			"athlete": "Athlete",
+			"concept": "Concept",
+			"amount": "Amount",
+			"dueDate": "Due date",
+			"paidDate": "Paid date",
+			"status": "Status",
+			"method": "Method",
+			"actions": "Actions"
+		},
+		"form": {
+			"athlete": "Athlete",
+			"concept": "Concept",
+			"amount": "Amount",
+			"dueDate": "Due date",
+			"method": "Payment method",
+			"notes": "Notes"
+		},
+		"methods": {
+			"cash": "Cash",
+			"card": "Card",
+			"transfer": "Transfer",
+			"check": "Check",
+			"other": "Other"
+		},
+		"status": {
+			"pending": "Pending",
+			"completed": "Completed",
+			"overdue": "Overdue",
+			"cancelled": "Cancelled"
+		},
+		"success": {
+			"created": "Payment recorded successfully.",
+			"updated": "Payment updated successfully.",
+			"deleted": "Payment deleted successfully."
+		},
+		"error": {
+			"notFound": "Payment not found.",
+			"createFailed": "Failed to record payment.",
+			"updateFailed": "Failed to update payment.",
+			"deleteFailed": "Failed to delete payment."
+		}
+	},
+	"expenses": {
+		"title": "Expenses",
+		"description": "Manage your organization's expenses.",
+		"add": "Record expense",
+		"edit": "Edit expense",
+		"view": "View expense",
+		"delete": "Delete expense",
+		"search": "Search expenses...",
+		"filters": {
+			"all": "All",
+			"byCategory": "By category",
+			"byDate": "By date"
+		},
+		"table": {
+			"description": "Description",
+			"category": "Category",
+			"amount": "Amount",
+			"date": "Date",
+			"vendor": "Vendor",
+			"status": "Status",
+			"actions": "Actions"
+		},
+		"form": {
+			"description": "Description",
+			"category": "Category",
+			"amount": "Amount",
+			"date": "Date",
+			"vendor": "Vendor",
+			"receipt": "Receipt",
+			"notes": "Notes"
+		},
+		"categories": {
+			"equipment": "Equipment",
+			"facilities": "Facilities",
+			"salaries": "Salaries",
+			"travel": "Travel",
+			"marketing": "Marketing",
+			"utilities": "Utilities",
+			"other": "Other"
+		},
+		"success": {
+			"created": "Expense recorded successfully.",
+			"updated": "Expense updated successfully.",
+			"deleted": "Expense deleted successfully."
+		},
+		"error": {
+			"notFound": "Expense not found.",
+			"createFailed": "Failed to record expense.",
+			"updateFailed": "Failed to update expense.",
+			"deleteFailed": "Failed to delete expense."
+		}
+	},
+	"cashRegister": {
+		"title": "Cash Register",
+		"description": "Manage cash register movements.",
+		"add": "Record movement",
+		"openRegister": "Open register",
+		"closeRegister": "Close register",
+		"balance": "Current balance",
+		"income": "Income",
+		"expense": "Expense",
+		"table": {
+			"date": "Date",
+			"description": "Description",
+			"type": "Type",
+			"amount": "Amount",
+			"balance": "Balance",
+			"user": "User",
+			"actions": "Actions"
+		},
+		"form": {
+			"type": "Movement type",
+			"amount": "Amount",
+			"description": "Description",
+			"category": "Category"
+		},
+		"types": {
+			"income": "Income",
+			"expense": "Expense"
+		},
+		"success": {
+			"created": "Movement recorded successfully.",
+			"opened": "Register opened successfully.",
+			"closed": "Register closed successfully."
+		},
+		"error": {
+			"createFailed": "Failed to record movement.",
+			"openFailed": "Failed to open register.",
+			"closeFailed": "Failed to close register."
+		}
+	},
+	"products": {
+		"title": "Products",
+		"description": "Manage product inventory.",
+		"add": "Add product",
+		"edit": "Edit product",
+		"delete": "Delete product",
+		"search": "Search products...",
+		"table": {
+			"name": "Name",
+			"sku": "SKU",
+			"price": "Price",
+			"stock": "Stock",
+			"category": "Category",
+			"status": "Status",
+			"actions": "Actions"
+		},
+		"form": {
+			"name": "Name",
+			"description": "Description",
+			"sku": "SKU",
+			"price": "Price",
+			"cost": "Cost",
+			"stock": "Stock",
+			"category": "Category",
+			"image": "Image"
+		},
+		"success": {
+			"created": "Product created successfully.",
+			"updated": "Product updated successfully.",
+			"deleted": "Product deleted successfully."
+		},
+		"error": {
+			"notFound": "Product not found.",
+			"createFailed": "Failed to create product.",
+			"updateFailed": "Failed to update product.",
+			"deleteFailed": "Failed to delete product."
+		}
+	}
+}

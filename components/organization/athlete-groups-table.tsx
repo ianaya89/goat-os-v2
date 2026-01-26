@@ -7,7 +7,15 @@ import type {
 	SortingState,
 } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { MoreHorizontalIcon, PlusIcon, UsersIcon } from "lucide-react";
+import {
+	EyeIcon,
+	MoreHorizontalIcon,
+	PencilIcon,
+	PlusIcon,
+	Trash2Icon,
+	UsersIcon,
+} from "lucide-react";
+import Link from "next/link";
 import {
 	parseAsArrayOf,
 	parseAsInteger,
@@ -192,8 +200,8 @@ export function AthleteGroupsTable(): React.JSX.Element {
 		},
 	);
 
-	const deleteGroupMutation =
-		trpc.organization.athleteGroup.delete.useMutation({
+	const deleteGroupMutation = trpc.organization.athleteGroup.delete.useMutation(
+		{
 			onSuccess: () => {
 				toast.success("Group deleted successfully");
 				utils.organization.athleteGroup.list.invalidate();
@@ -202,7 +210,8 @@ export function AthleteGroupsTable(): React.JSX.Element {
 			onError: (error) => {
 				toast.error(error.message || "Failed to delete group");
 			},
-		});
+		},
+	);
 
 	const handleSearchQueryChange = (value: string): void => {
 		if (value !== searchQuery) {
@@ -221,12 +230,13 @@ export function AthleteGroupsTable(): React.JSX.Element {
 				<SortableColumnHeader column={column} title="Name" />
 			),
 			cell: ({ row }) => (
-				<span
-					className="block max-w-[200px] truncate font-medium text-foreground"
+				<Link
+					href={`/dashboard/organization/athlete-groups/${row.original.id}`}
+					className="block max-w-[200px] truncate font-medium text-foreground hover:text-primary hover:underline"
 					title={row.original.name}
 				>
 					{row.original.name}
-				</span>
+				</Link>
 			),
 		},
 		{
@@ -262,9 +272,7 @@ export function AthleteGroupsTable(): React.JSX.Element {
 				<Badge
 					className={cn(
 						"border-none px-2 py-0.5 font-medium text-foreground text-xs shadow-none",
-						row.original.isActive
-							? statusColors.active
-							: statusColors.inactive,
+						row.original.isActive ? statusColors.active : statusColors.inactive,
 					)}
 					variant="outline"
 				>
@@ -300,11 +308,20 @@ export function AthleteGroupsTable(): React.JSX.Element {
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
+							<DropdownMenuItem asChild>
+								<Link
+									href={`/dashboard/organization/athlete-groups/${row.original.id}`}
+								>
+									<EyeIcon className="mr-2 size-4" />
+									View
+								</Link>
+							</DropdownMenuItem>
 							<DropdownMenuItem
 								onClick={() => {
 									NiceModal.show(AthleteGroupsModal, { group: row.original });
 								}}
 							>
+								<PencilIcon className="mr-2 size-4" />
 								Edit
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
@@ -322,6 +339,7 @@ export function AthleteGroupsTable(): React.JSX.Element {
 								}}
 								variant="destructive"
 							>
+								<Trash2Icon className="mr-2 size-4" />
 								Delete
 							</DropdownMenuItem>
 						</DropdownMenuContent>

@@ -4,6 +4,7 @@ import NiceModal, { type NiceModalHocProps } from "@ebay/nice-modal-react";
 import * as React from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Command,
 	CommandEmpty,
@@ -21,6 +22,7 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
 	Popover,
 	PopoverContent,
@@ -46,7 +48,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 import { useZodForm } from "@/hooks/use-zod-form";
-import { WaitlistPriority, WaitlistReferenceType } from "@/lib/db/schema/enums";
+import {
+	DayOfWeek,
+	WaitlistPriority,
+	WaitlistReferenceType,
+} from "@/lib/db/schema/enums";
 import { cn } from "@/lib/utils";
 import {
 	createWaitlistEntrySchema,
@@ -59,7 +65,9 @@ export type WaitlistModalProps = NiceModalHocProps & {
 		id: string;
 		athleteId: string;
 		referenceType: WaitlistReferenceType;
-		trainingSessionId: string | null;
+		preferredDays: DayOfWeek[] | null;
+		preferredStartTime: string | null;
+		preferredEndTime: string | null;
 		athleteGroupId: string | null;
 		priority: WaitlistPriority;
 		reason: string | null;
@@ -83,6 +91,26 @@ const priorityLabels: Record<WaitlistPriority, string> = {
 	[WaitlistPriority.low]: "Baja",
 };
 
+const dayLabels: Record<DayOfWeek, string> = {
+	[DayOfWeek.monday]: "Lunes",
+	[DayOfWeek.tuesday]: "Martes",
+	[DayOfWeek.wednesday]: "Miercoles",
+	[DayOfWeek.thursday]: "Jueves",
+	[DayOfWeek.friday]: "Viernes",
+	[DayOfWeek.saturday]: "Sabado",
+	[DayOfWeek.sunday]: "Domingo",
+};
+
+const daysOrder: DayOfWeek[] = [
+	DayOfWeek.monday,
+	DayOfWeek.tuesday,
+	DayOfWeek.wednesday,
+	DayOfWeek.thursday,
+	DayOfWeek.friday,
+	DayOfWeek.saturday,
+	DayOfWeek.sunday,
+];
+
 export const WaitlistModal = NiceModal.create<WaitlistModalProps>(
 	({ entry }) => {
 		const modal = useEnhancedModal();
@@ -95,30 +123,16 @@ export const WaitlistModal = NiceModal.create<WaitlistModalProps>(
 		const [referencePopoverOpen, setReferencePopoverOpen] =
 			React.useState(false);
 
-		// Get all athletes for selection
+		// Get all athletes for selection (no status filter to include all athletes)
 		const { data: athletesData } = trpc.organization.athlete.list.useQuery(
 			{
-				limit: 500,
+				limit: 100,
 				offset: 0,
-				filters: { status: ["active"] },
 			},
 			{
 				staleTime: 30000,
 			},
 		);
-
-		// Get training sessions for selection
-		const { data: sessionsData } =
-			trpc.organization.trainingSession.list.useQuery(
-				{
-					limit: 500,
-					offset: 0,
-					filters: { status: ["pending", "confirmed"] },
-				},
-				{
-					staleTime: 30000,
-				},
-			);
 
 		// Get athlete groups for selection
 		const { data: groupsData } =
@@ -127,7 +141,6 @@ export const WaitlistModal = NiceModal.create<WaitlistModalProps>(
 			});
 
 		const athletes = athletesData?.athletes ?? [];
-		const sessions = sessionsData?.sessions ?? [];
 		const groups = groupsData ?? [];
 
 		const createMutation = trpc.organization.waitlist.create.useMutation({
@@ -158,13 +171,18 @@ export const WaitlistModal = NiceModal.create<WaitlistModalProps>(
 				? {
 						id: entry.id,
 						priority: entry.priority,
+						preferredDays: entry.preferredDays ?? undefined,
+						preferredStartTime: entry.preferredStartTime ?? undefined,
+						preferredEndTime: entry.preferredEndTime ?? undefined,
 						reason: entry.reason ?? "",
 						notes: entry.notes ?? "",
 					}
 				: {
 						athleteId: "",
-						referenceType: WaitlistReferenceType.trainingSession,
-						trainingSessionId: undefined,
+						referenceType: WaitlistReferenceType.schedule,
+						preferredDays: [],
+						preferredStartTime: undefined,
+						preferredEndTime: undefined,
 						athleteGroupId: undefined,
 						priority: WaitlistPriority.medium,
 						reason: "",
@@ -316,13 +334,17 @@ export const WaitlistModal = NiceModal.create<WaitlistModalProps>(
 																	field.onChange(value);
 																	// Clear the other reference when type changes
 																	if (
-																		value ===
-																		WaitlistReferenceType.trainingSession
+																		value === WaitlistReferenceType.schedule
 																	) {
 																		form.setValue("athleteGroupId", undefined);
 																	} else {
+																		form.setValue("preferredDays", undefined);
 																		form.setValue(
-																			"trainingSessionId",
+																			"preferredStartTime",
+																			undefined,
+																		);
+																		form.setValue(
+																			"preferredEndTime",
 																			undefined,
 																		);
 																	}
@@ -335,11 +357,9 @@ export const WaitlistModal = NiceModal.create<WaitlistModalProps>(
 																</FormControl>
 																<SelectContent>
 																	<SelectItem
-																		value={
-																			WaitlistReferenceType.trainingSession
-																		}
+																		value={WaitlistReferenceType.schedule}
 																	>
-																		Sesion de Entrenamiento
+																		Horario Preferido
 																	</SelectItem>
 																	<SelectItem
 																		value={WaitlistReferenceType.athleteGroup}
@@ -354,67 +374,97 @@ export const WaitlistModal = NiceModal.create<WaitlistModalProps>(
 												)}
 											/>
 
-											{/* Reference Selection */}
-											{referenceType ===
-												WaitlistReferenceType.trainingSession && (
-												<FormField
-													control={form.control}
-													name="trainingSessionId"
-													render={({ field }) => (
-														<FormItem asChild>
-															<Field>
-																<FormLabel>Sesion</FormLabel>
-																<Popover
-																	open={referencePopoverOpen}
-																	onOpenChange={setReferencePopoverOpen}
-																>
-																	<PopoverTrigger asChild>
-																		<Button
-																			variant="outline"
-																			className="w-full justify-start font-normal"
-																		>
-																			{field.value
-																				? (sessions.find(
-																						(s) => s.id === field.value,
-																					)?.title ?? "Seleccionar sesion...")
-																				: "Seleccionar sesion..."}
-																		</Button>
-																	</PopoverTrigger>
-																	<PopoverContent
-																		className="w-[300px] p-0"
-																		align="start"
-																	>
-																		<Command>
-																			<CommandInput placeholder="Buscar sesion..." />
-																			<CommandList>
-																				<CommandEmpty>
-																					No se encontraron sesiones.
-																				</CommandEmpty>
-																				<CommandGroup>
-																					{sessions.map((session) => (
-																						<CommandItem
-																							key={session.id}
-																							value={session.title}
-																							onSelect={() => {
-																								field.onChange(session.id);
-																								setReferencePopoverOpen(false);
-																							}}
-																						>
-																							<span className="truncate">
-																								{session.title}
-																							</span>
-																						</CommandItem>
-																					))}
-																				</CommandGroup>
-																			</CommandList>
-																		</Command>
-																	</PopoverContent>
-																</Popover>
-																<FormMessage />
-															</Field>
-														</FormItem>
-													)}
-												/>
+											{/* Schedule Selection - Days */}
+											{referenceType === WaitlistReferenceType.schedule && (
+												<>
+													<FormField
+														control={form.control}
+														name="preferredDays"
+														render={({ field }) => (
+															<FormItem asChild>
+																<Field>
+																	<FormLabel>Dias Preferidos</FormLabel>
+																	<div className="grid grid-cols-2 gap-2">
+																		{daysOrder.map((day) => (
+																			<div
+																				key={day}
+																				className="flex items-center space-x-2"
+																			>
+																				<Checkbox
+																					id={`day-${day}`}
+																					checked={field.value?.includes(day)}
+																					onCheckedChange={(checked) => {
+																						const current = field.value ?? [];
+																						if (checked) {
+																							field.onChange([...current, day]);
+																						} else {
+																							field.onChange(
+																								current.filter(
+																									(d) => d !== day,
+																								),
+																							);
+																						}
+																					}}
+																				/>
+																				<label
+																					htmlFor={`day-${day}`}
+																					className="cursor-pointer text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+																				>
+																					{dayLabels[day]}
+																				</label>
+																			</div>
+																		))}
+																	</div>
+																	<FormMessage />
+																</Field>
+															</FormItem>
+														)}
+													/>
+
+													{/* Time Range */}
+													<div className="grid grid-cols-2 gap-4">
+														<FormField
+															control={form.control}
+															name="preferredStartTime"
+															render={({ field }) => (
+																<FormItem asChild>
+																	<Field>
+																		<FormLabel>Hora Inicio</FormLabel>
+																		<FormControl>
+																			<Input
+																				type="time"
+																				placeholder="HH:MM"
+																				{...field}
+																				value={field.value ?? ""}
+																			/>
+																		</FormControl>
+																		<FormMessage />
+																	</Field>
+																</FormItem>
+															)}
+														/>
+														<FormField
+															control={form.control}
+															name="preferredEndTime"
+															render={({ field }) => (
+																<FormItem asChild>
+																	<Field>
+																		<FormLabel>Hora Fin</FormLabel>
+																		<FormControl>
+																			<Input
+																				type="time"
+																				placeholder="HH:MM"
+																				{...field}
+																				value={field.value ?? ""}
+																			/>
+																		</FormControl>
+																		<FormMessage />
+																	</Field>
+																</FormItem>
+															)}
+														/>
+													</div>
+												</>
 											)}
 
 											{referenceType === WaitlistReferenceType.athleteGroup && (

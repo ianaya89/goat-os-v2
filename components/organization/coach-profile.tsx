@@ -6,16 +6,19 @@ import {
 	ArrowLeftIcon,
 	CalendarIcon,
 	CheckCircleIcon,
+	ClipboardCheckIcon,
 	ClipboardListIcon,
 	ClockIcon,
 	EditIcon,
 	MapPinIcon,
+	PlusIcon,
 	StarIcon,
 	TrendingUpIcon,
 	UsersIcon,
 } from "lucide-react";
 import Link from "next/link";
 import * as React from "react";
+import { CoachSessionModal } from "@/components/organization/coach-session-modal";
 import { CoachesModal } from "@/components/organization/coaches-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -207,6 +210,9 @@ export function CoachProfile({ coachId }: CoachProfileProps) {
 					<TabsTrigger value="recent">
 						Recent Sessions ({recentSessions.length})
 					</TabsTrigger>
+					<TabsTrigger value="attendance">
+						Attendance ({stats.attendance?.total ?? 0})
+					</TabsTrigger>
 					<TabsTrigger value="athletes">
 						Athletes ({athletes.length})
 					</TabsTrigger>
@@ -302,54 +308,76 @@ export function CoachProfile({ coachId }: CoachProfileProps) {
 								</p>
 							) : (
 								<div className="space-y-3">
-									{recentSessions.slice(0, 20).map((session) => (
-										<Link
-											key={session.id}
-											href={`/dashboard/organization/training-sessions/${session.id}`}
-											className="block"
-										>
-											<div className="flex items-center justify-between rounded-lg border p-3 transition-colors hover:bg-muted/50">
-												<div className="space-y-1">
-													<div className="flex items-center gap-2">
-														<span className="font-medium">{session.title}</span>
-														<Badge
-															className={cn(
-																"border-none",
-																sessionStatusColors[session.status],
-															)}
-														>
-															{capitalize(session.status)}
-														</Badge>
-														{session.isPrimary && (
-															<Badge variant="secondary" className="text-xs">
-																Primary
-															</Badge>
-														)}
-													</div>
-													<div className="flex items-center gap-4 text-muted-foreground text-sm">
-														<div className="flex items-center gap-1">
-															<CalendarIcon className="size-3.5" />
-															<span>
-																{format(
-																	new Date(session.startTime),
-																	"MMM d, yyyy",
+									{recentSessions.slice(0, 20).map((session) => {
+										const attendanceCount = session.attendances?.length ?? 0;
+										const presentCount =
+											session.attendances?.filter((a) => a.status === "present")
+												.length ?? 0;
+
+										return (
+											<div
+												key={session.id}
+												className="flex items-center justify-between rounded-lg border p-3"
+											>
+												<Link
+													href={`/dashboard/organization/training-sessions/${session.id}`}
+													className="flex-1"
+												>
+													<div className="space-y-1">
+														<div className="flex items-center gap-2">
+															<span className="font-medium hover:underline">
+																{session.title}
+															</span>
+															<Badge
+																className={cn(
+																	"border-none",
+																	sessionStatusColors[session.status],
 																)}
-															</span>
+															>
+																{capitalize(session.status)}
+															</Badge>
+															{session.isPrimary && (
+																<Badge variant="secondary" className="text-xs">
+																	Primary
+																</Badge>
+															)}
 														</div>
-														<div className="flex items-center gap-1">
-															<ClockIcon className="size-3.5" />
-															<span>
-																{format(new Date(session.startTime), "h:mm a")}
-															</span>
-														</div>
-														{session.location && (
+														<div className="flex items-center gap-4 text-muted-foreground text-sm">
 															<div className="flex items-center gap-1">
-																<MapPinIcon className="size-3.5" />
-																<span>{session.location.name}</span>
+																<CalendarIcon className="size-3.5" />
+																<span>
+																	{format(
+																		new Date(session.startTime),
+																		"MMM d, yyyy",
+																	)}
+																</span>
 															</div>
-														)}
+															<div className="flex items-center gap-1">
+																<ClockIcon className="size-3.5" />
+																<span>
+																	{format(
+																		new Date(session.startTime),
+																		"h:mm a",
+																	)}
+																</span>
+															</div>
+															{session.location && (
+																<div className="flex items-center gap-1">
+																	<MapPinIcon className="size-3.5" />
+																	<span>{session.location.name}</span>
+																</div>
+															)}
+															{attendanceCount > 0 && (
+																<div className="flex items-center gap-1">
+																	<ClipboardCheckIcon className="size-3.5" />
+																	<span>
+																		{presentCount}/{attendanceCount} present
+																	</span>
+																</div>
+															)}
+														</div>
 													</div>
-												</div>
+												</Link>
 												<div className="flex items-center gap-2">
 													{session.athleteGroup && (
 														<Badge variant="outline">
@@ -357,19 +385,173 @@ export function CoachProfile({ coachId }: CoachProfileProps) {
 															{session.athleteGroup.name}
 														</Badge>
 													)}
-													<span className="text-muted-foreground text-xs">
-														{session.athletes.length} athletes
-													</span>
+													<Button
+														variant="outline"
+														size="sm"
+														onClick={(e) => {
+															e.preventDefault();
+															NiceModal.show(CoachSessionModal, {
+																session,
+																defaultTab: "attendance",
+															});
+														}}
+													>
+														<ClipboardCheckIcon className="size-4" />
+													</Button>
+													<Button
+														variant="outline"
+														size="sm"
+														onClick={(e) => {
+															e.preventDefault();
+															NiceModal.show(CoachSessionModal, {
+																session,
+																defaultTab: "evaluations",
+															});
+														}}
+													>
+														<ClipboardListIcon className="size-4" />
+													</Button>
 												</div>
 											</div>
-										</Link>
-									))}
+										);
+									})}
 									{recentSessions.length > 20 && (
 										<p className="pt-2 text-center text-muted-foreground text-sm">
 											Showing 20 of {recentSessions.length} sessions
 										</p>
 									)}
 								</div>
+							)}
+						</CardContent>
+					</Card>
+				</TabsContent>
+
+				<TabsContent value="attendance">
+					<Card>
+						<CardHeader>
+							<CardTitle>Attendance Overview</CardTitle>
+						</CardHeader>
+						<CardContent>
+							{stats.attendance && stats.attendance.total > 0 ? (
+								<div className="space-y-6">
+									{/* Summary Stats */}
+									<div className="grid gap-4 sm:grid-cols-4">
+										<div className="rounded-lg border p-4">
+											<p className="text-muted-foreground text-sm">
+												Total Records
+											</p>
+											<p className="font-bold text-2xl">
+												{stats.attendance.total}
+											</p>
+										</div>
+										<div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20">
+											<p className="text-muted-foreground text-sm">Present</p>
+											<p className="font-bold text-2xl text-green-600 dark:text-green-400">
+												{stats.attendance.present}
+											</p>
+											<p className="text-muted-foreground text-xs">
+												{stats.attendance.total > 0
+													? Math.round(
+															(stats.attendance.present /
+																stats.attendance.total) *
+																100,
+														)
+													: 0}
+												%
+											</p>
+										</div>
+										<div className="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
+											<p className="text-muted-foreground text-sm">Absent</p>
+											<p className="font-bold text-2xl text-red-600 dark:text-red-400">
+												{stats.attendance.absent}
+											</p>
+											<p className="text-muted-foreground text-xs">
+												{stats.attendance.total > 0
+													? Math.round(
+															(stats.attendance.absent /
+																stats.attendance.total) *
+																100,
+														)
+													: 0}
+												%
+											</p>
+										</div>
+										<div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-900/20">
+											<p className="text-muted-foreground text-sm">
+												Late / Excused
+											</p>
+											<p className="font-bold text-2xl text-yellow-600 dark:text-yellow-400">
+												{stats.attendance.late + stats.attendance.excused}
+											</p>
+										</div>
+									</div>
+
+									{/* Sessions with Attendance */}
+									<div>
+										<h4 className="mb-3 font-medium">
+											Sessions with Attendance
+										</h4>
+										<div className="space-y-2">
+											{sessions
+												.filter((s) => (s.attendances?.length ?? 0) > 0)
+												.slice(0, 10)
+												.map((session) => {
+													const present =
+														session.attendances?.filter(
+															(a) => a.status === "present",
+														).length ?? 0;
+													const total = session.attendances?.length ?? 0;
+													const percentage =
+														total > 0 ? Math.round((present / total) * 100) : 0;
+
+													return (
+														<div
+															key={session.id}
+															className="flex items-center justify-between rounded-lg border p-3"
+														>
+															<div className="flex items-center gap-4">
+																<div>
+																	<p className="font-medium">{session.title}</p>
+																	<p className="text-muted-foreground text-sm">
+																		{format(
+																			new Date(session.startTime),
+																			"MMM d, yyyy",
+																		)}
+																	</p>
+																</div>
+															</div>
+															<div className="flex items-center gap-4">
+																<div className="text-right">
+																	<p className="font-medium">
+																		{present}/{total}
+																	</p>
+																	<p className="text-muted-foreground text-sm">
+																		{percentage}% attendance
+																	</p>
+																</div>
+																<Button
+																	variant="outline"
+																	size="sm"
+																	onClick={() => {
+																		NiceModal.show(CoachSessionModal, {
+																			session,
+																			defaultTab: "attendance",
+																		});
+																	}}
+																>
+																	View
+																</Button>
+															</div>
+														</div>
+													);
+												})}
+										</div>
+									</div>
+								</div>
+							) : (
+								<p className="py-6 text-center text-muted-foreground">
+									No attendance records found
+								</p>
 							)}
 						</CardContent>
 					</Card>
@@ -416,103 +598,145 @@ export function CoachProfile({ coachId }: CoachProfileProps) {
 				</TabsContent>
 
 				<TabsContent value="evaluations">
-					<Card>
-						<CardHeader>
-							<CardTitle>Evaluations Given</CardTitle>
-						</CardHeader>
-						<CardContent>
-							{evaluations.length === 0 ? (
-								<p className="py-6 text-center text-muted-foreground">
-									No evaluations yet
-								</p>
-							) : (
-								<div className="space-y-4">
-									{evaluations.map((evaluation) => (
-										<div key={evaluation.id} className="rounded-lg border p-4">
-											<div className="flex items-center justify-between">
-												<div className="flex items-center gap-3">
-													<UserAvatar
-														className="size-8"
-														name={evaluation.athlete.user?.name ?? ""}
-														src={evaluation.athlete.user?.image ?? undefined}
-													/>
-													<div>
-														<Link
-															href={`/dashboard/organization/athletes/${evaluation.athlete.id}`}
-															className="font-medium hover:underline"
-														>
-															{evaluation.athlete.user?.name ?? "Unknown"}
-														</Link>
-														<p className="text-muted-foreground text-xs">
-															{evaluation.session?.title} •{" "}
-															{evaluation.session?.startTime
-																? format(
-																		new Date(evaluation.session.startTime),
-																		"MMM d, yyyy",
-																	)
-																: ""}
-														</p>
+					<div className="space-y-4">
+						{/* Sessions needing evaluations */}
+						{recentSessions.length > 0 && (
+							<Card>
+								<CardHeader>
+									<CardTitle>Add Evaluations</CardTitle>
+								</CardHeader>
+								<CardContent>
+									<p className="mb-4 text-muted-foreground text-sm">
+										Select a session to add or edit evaluations for athletes
+									</p>
+									<div className="flex flex-wrap gap-2">
+										{recentSessions.slice(0, 8).map((session) => (
+											<Button
+												key={session.id}
+												variant="outline"
+												size="sm"
+												onClick={() => {
+													NiceModal.show(CoachSessionModal, {
+														session,
+														defaultTab: "evaluations",
+													});
+												}}
+											>
+												<PlusIcon className="mr-1 size-3" />
+												{session.title} (
+												{format(new Date(session.startTime), "MMM d")})
+											</Button>
+										))}
+									</div>
+								</CardContent>
+							</Card>
+						)}
+
+						{/* Existing evaluations */}
+						<Card>
+							<CardHeader>
+								<CardTitle>Evaluations Given</CardTitle>
+							</CardHeader>
+							<CardContent>
+								{evaluations.length === 0 ? (
+									<p className="py-6 text-center text-muted-foreground">
+										No evaluations yet. Select a session above to add
+										evaluations.
+									</p>
+								) : (
+									<div className="space-y-4">
+										{evaluations.map((evaluation) => (
+											<div
+												key={evaluation.id}
+												className="rounded-lg border p-4"
+											>
+												<div className="flex items-center justify-between">
+													<div className="flex items-center gap-3">
+														<UserAvatar
+															className="size-8"
+															name={evaluation.athlete.user?.name ?? ""}
+															src={evaluation.athlete.user?.image ?? undefined}
+														/>
+														<div>
+															<Link
+																href={`/dashboard/organization/athletes/${evaluation.athlete.id}`}
+																className="font-medium hover:underline"
+															>
+																{evaluation.athlete.user?.name ?? "Unknown"}
+															</Link>
+															<p className="text-muted-foreground text-xs">
+																{evaluation.session?.title} •{" "}
+																{evaluation.session?.startTime
+																	? format(
+																			new Date(evaluation.session.startTime),
+																			"MMM d, yyyy",
+																		)
+																	: ""}
+															</p>
+														</div>
+													</div>
+													<div className="flex items-center gap-4">
+														{evaluation.performanceRating && (
+															<div className="text-right">
+																<p className="text-muted-foreground text-xs">
+																	Performance
+																</p>
+																<div className="flex items-center gap-1">
+																	<StarIcon className="size-4 fill-yellow-400 text-yellow-400" />
+																	<span className="font-medium">
+																		{evaluation.performanceRating}/5
+																	</span>
+																</div>
+															</div>
+														)}
+														{evaluation.attitudeRating && (
+															<div className="text-right">
+																<p className="text-muted-foreground text-xs">
+																	Attitude
+																</p>
+																<div className="flex items-center gap-1">
+																	<StarIcon className="size-4 fill-yellow-400 text-yellow-400" />
+																	<span className="font-medium">
+																		{evaluation.attitudeRating}/5
+																	</span>
+																</div>
+															</div>
+														)}
 													</div>
 												</div>
-												<div className="flex items-center gap-4">
-													{evaluation.performanceRating && (
-														<div className="text-right">
-															<p className="text-muted-foreground text-xs">
-																Performance
-															</p>
-															<div className="flex items-center gap-1">
-																<StarIcon className="size-4 fill-yellow-400 text-yellow-400" />
+												{(evaluation.performanceNotes ||
+													evaluation.attitudeNotes ||
+													evaluation.generalNotes) && (
+													<div className="mt-3 space-y-1 text-sm">
+														{evaluation.performanceNotes && (
+															<p>
 																<span className="font-medium">
-																	{evaluation.performanceRating}/5
+																	Performance:{" "}
 																</span>
-															</div>
-														</div>
-													)}
-													{evaluation.attitudeRating && (
-														<div className="text-right">
-															<p className="text-muted-foreground text-xs">
-																Attitude
+																{evaluation.performanceNotes}
 															</p>
-															<div className="flex items-center gap-1">
-																<StarIcon className="size-4 fill-yellow-400 text-yellow-400" />
-																<span className="font-medium">
-																	{evaluation.attitudeRating}/5
-																</span>
-															</div>
-														</div>
-													)}
-												</div>
+														)}
+														{evaluation.attitudeNotes && (
+															<p>
+																<span className="font-medium">Attitude: </span>
+																{evaluation.attitudeNotes}
+															</p>
+														)}
+														{evaluation.generalNotes && (
+															<p>
+																<span className="font-medium">Notes: </span>
+																{evaluation.generalNotes}
+															</p>
+														)}
+													</div>
+												)}
 											</div>
-											{(evaluation.performanceNotes ||
-												evaluation.attitudeNotes ||
-												evaluation.generalNotes) && (
-												<div className="mt-3 space-y-1 text-sm">
-													{evaluation.performanceNotes && (
-														<p>
-															<span className="font-medium">Performance: </span>
-															{evaluation.performanceNotes}
-														</p>
-													)}
-													{evaluation.attitudeNotes && (
-														<p>
-															<span className="font-medium">Attitude: </span>
-															{evaluation.attitudeNotes}
-														</p>
-													)}
-													{evaluation.generalNotes && (
-														<p>
-															<span className="font-medium">Notes: </span>
-															{evaluation.generalNotes}
-														</p>
-													)}
-												</div>
-											)}
-										</div>
-									))}
-								</div>
-							)}
-						</CardContent>
-					</Card>
+										))}
+									</div>
+								)}
+							</CardContent>
+						</Card>
+					</div>
 				</TabsContent>
 			</Tabs>
 		</div>

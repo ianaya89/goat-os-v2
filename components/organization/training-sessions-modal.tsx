@@ -1,14 +1,21 @@
 "use client";
 
 import NiceModal, { type NiceModalHocProps } from "@ebay/nice-modal-react";
-import { format } from "date-fns";
-import { CheckIcon, RepeatIcon, XIcon } from "lucide-react";
+import { format, setHours, setMinutes } from "date-fns";
+import {
+	CalendarIcon,
+	CheckIcon,
+	ClockIcon,
+	RepeatIcon,
+	XIcon,
+} from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 import { RecurringSessionForm } from "@/components/organization/recurring-session-form";
 import { SessionAttachmentUpload } from "@/components/organization/session-attachment-upload";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
 	Command,
 	CommandEmpty,
@@ -214,8 +221,39 @@ export const TrainingSessionsModal =
 				},
 			});
 
-		const formatDateTimeLocal = (date: Date): string => {
-			return format(date, "yyyy-MM-dd'T'HH:mm");
+		// Generate time options in 15-minute intervals (from 05:00 to 23:00)
+		const timeOptions = React.useMemo(() => {
+			const options: { value: string; label: string }[] = [];
+			for (let hour = 5; hour <= 23; hour++) {
+				for (let minute = 0; minute < 60; minute += 15) {
+					const h = hour.toString().padStart(2, "0");
+					const m = minute.toString().padStart(2, "0");
+					options.push({
+						value: `${h}:${m}`,
+						label: `${h}:${m}`,
+					});
+				}
+			}
+			return options;
+		}, []);
+
+		// Get current time value from form
+		const getTimeFromDate = (date: Date | undefined): string => {
+			if (!date) return "09:00";
+			const d = new Date(date);
+			const h = d.getHours().toString().padStart(2, "0");
+			const m = ((Math.round(d.getMinutes() / 15) * 15) % 60)
+				.toString()
+				.padStart(2, "0");
+			return `${h}:${m}`;
+		};
+
+		// Combine date and time into a single Date
+		const combineDateAndTime = (date: Date, timeString: string): Date => {
+			const parts = timeString.split(":");
+			const hours = parseInt(parts[0] ?? "9", 10);
+			const minutes = parseInt(parts[1] ?? "0", 10);
+			return setMinutes(setHours(new Date(date), hours), minutes);
 		};
 
 		const form = useZodForm({
@@ -416,6 +454,80 @@ export const TrainingSessionsModal =
 											)}
 										/>
 
+										{/* Date Picker */}
+										<FormField
+											control={form.control}
+											name="startTime"
+											render={({ field }) => (
+												<FormItem asChild>
+													<Field>
+														<FormLabel>Date</FormLabel>
+														<Popover>
+															<PopoverTrigger asChild>
+																<FormControl>
+																	<Button
+																		variant="outline"
+																		className={cn(
+																			"w-full justify-start text-left font-normal",
+																			!field.value && "text-muted-foreground",
+																		)}
+																	>
+																		<CalendarIcon className="mr-2 size-4" />
+																		{field.value
+																			? format(
+																					new Date(
+																						field.value as
+																							| string
+																							| number
+																							| Date,
+																					),
+																					"EEE, dd MMM yyyy",
+																				)
+																			: "Select date"}
+																	</Button>
+																</FormControl>
+															</PopoverTrigger>
+															<PopoverContent
+																className="w-auto p-0"
+																align="start"
+															>
+																<Calendar
+																	mode="single"
+																	selected={
+																		field.value
+																			? new Date(
+																					field.value as string | number | Date,
+																				)
+																			: undefined
+																	}
+																	onSelect={(date) => {
+																		if (date) {
+																			const currentTime = getTimeFromDate(
+																				field.value
+																					? new Date(
+																							field.value as
+																								| string
+																								| number
+																								| Date,
+																						)
+																					: undefined,
+																			);
+																			field.onChange(
+																				combineDateAndTime(date, currentTime),
+																			);
+																		}
+																	}}
+																	initialFocus
+																/>
+															</PopoverContent>
+														</Popover>
+														<FormMessage />
+													</Field>
+												</FormItem>
+											)}
+										/>
+
+										{/* Time and Duration row */}
 										<div className="grid grid-cols-2 gap-4">
 											<FormField
 												control={form.control}
@@ -423,28 +535,43 @@ export const TrainingSessionsModal =
 												render={({ field }) => (
 													<FormItem asChild>
 														<Field>
-															<FormLabel>Start Time</FormLabel>
-															<FormControl>
-																<Input
-																	type="datetime-local"
-																	{...field}
-																	value={
-																		field.value
-																			? formatDateTimeLocal(
-																					new Date(
-																						field.value as
-																							| string
-																							| number
-																							| Date,
-																					),
-																				)
-																			: ""
-																	}
-																	onChange={(e) =>
-																		field.onChange(new Date(e.target.value))
-																	}
-																/>
-															</FormControl>
+															<FormLabel>Time</FormLabel>
+															<Select
+																value={getTimeFromDate(
+																	field.value
+																		? new Date(
+																				field.value as string | number | Date,
+																			)
+																		: undefined,
+																)}
+																onValueChange={(time) => {
+																	const currentDate = field.value
+																		? new Date(
+																				field.value as string | number | Date,
+																			)
+																		: new Date();
+																	field.onChange(
+																		combineDateAndTime(currentDate, time),
+																	);
+																}}
+															>
+																<FormControl>
+																	<SelectTrigger>
+																		<ClockIcon className="mr-2 size-4 text-muted-foreground" />
+																		<SelectValue placeholder="Select time" />
+																	</SelectTrigger>
+																</FormControl>
+																<SelectContent className="max-h-[280px]">
+																	{timeOptions.map((option) => (
+																		<SelectItem
+																			key={option.value}
+																			value={option.value}
+																		>
+																			{option.label}
+																		</SelectItem>
+																	))}
+																</SelectContent>
+															</Select>
 															<FormMessage />
 														</Field>
 													</FormItem>
@@ -463,11 +590,15 @@ export const TrainingSessionsModal =
 														<SelectValue placeholder="Select duration" />
 													</SelectTrigger>
 													<SelectContent>
-														<SelectItem value="30">30 minutes</SelectItem>
-														<SelectItem value="45">45 minutes</SelectItem>
+														<SelectItem value="15">15 min</SelectItem>
+														<SelectItem value="30">30 min</SelectItem>
+														<SelectItem value="45">45 min</SelectItem>
 														<SelectItem value="60">1 hour</SelectItem>
-														<SelectItem value="90">1.5 hours</SelectItem>
+														<SelectItem value="75">1h 15min</SelectItem>
+														<SelectItem value="90">1h 30min</SelectItem>
+														<SelectItem value="105">1h 45min</SelectItem>
 														<SelectItem value="120">2 hours</SelectItem>
+														<SelectItem value="150">2h 30min</SelectItem>
 														<SelectItem value="180">3 hours</SelectItem>
 													</SelectContent>
 												</Select>

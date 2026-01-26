@@ -10,7 +10,9 @@ import { format } from "date-fns";
 import {
 	BanknoteIcon,
 	MoreHorizontalIcon,
+	PencilIcon,
 	PlusIcon,
+	Trash2Icon,
 	UserIcon,
 } from "lucide-react";
 import {
@@ -42,9 +44,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { appConfig } from "@/config/app.config";
 import {
-	TrainingPaymentMethod,
+	type TrainingPaymentMethod,
 	TrainingPaymentMethods,
-	TrainingPaymentStatus,
+	type TrainingPaymentStatus,
 	TrainingPaymentStatuses,
 } from "@/lib/db/schema/enums";
 import { capitalize, cn } from "@/lib/utils";
@@ -293,7 +295,8 @@ export function PaymentsTable(): React.JSX.Element {
 					</span>
 					{row.original.status === "partial" && (
 						<span className="text-foreground/70 text-xs">
-							Paid: {formatAmount(row.original.paidAmount, row.original.currency)}
+							Paid:{" "}
+							{formatAmount(row.original.paidAmount, row.original.currency)}
 						</span>
 					)}
 				</div>
@@ -367,6 +370,7 @@ export function PaymentsTable(): React.JSX.Element {
 									NiceModal.show(PaymentsModal, { payment: row.original });
 								}}
 							>
+								<PencilIcon className="mr-2 size-4" />
 								Edit
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
@@ -384,6 +388,7 @@ export function PaymentsTable(): React.JSX.Element {
 								}}
 								variant="destructive"
 							>
+								<Trash2Icon className="mr-2 size-4" />
 								Delete
 							</DropdownMenuItem>
 						</DropdownMenuContent>

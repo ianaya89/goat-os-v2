@@ -1,7 +1,7 @@
 "use client";
 
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { enUS, es } from "date-fns/locale";
 import {
 	BanknoteIcon,
 	CalendarCheckIcon,
@@ -11,6 +11,7 @@ import {
 	UsersIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import type * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,11 +27,15 @@ import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
 export function DailySummaryCard(): React.JSX.Element {
+	const t = useTranslations("dashboard.daily");
+	const locale = useLocale();
+	const dateLocale = locale === "es" ? es : enUS;
+
 	const { data, isLoading } =
 		trpc.organization.dashboard.getDailyActivity.useQuery();
 
 	const formatAmount = (amount: number) => {
-		return new Intl.NumberFormat("es-AR", {
+		return new Intl.NumberFormat(locale === "es" ? "es-AR" : "en-US", {
 			style: "currency",
 			currency: "ARS",
 		}).format(amount / 100);
@@ -54,12 +59,15 @@ export function DailySummaryCard(): React.JSX.Element {
 		return (
 			<Card>
 				<CardHeader>
-					<CardTitle>Actividad de Hoy</CardTitle>
-					<CardDescription>No hay datos disponibles</CardDescription>
+					<CardTitle>{t("title")}</CardTitle>
+					<CardDescription>{t("noData")}</CardDescription>
 				</CardHeader>
 			</Card>
 		);
 	}
+
+	const dateFormat =
+		locale === "es" ? "EEEE, d 'de' MMMM 'de' yyyy" : "EEEE, MMMM d, yyyy";
 
 	return (
 		<Card>
@@ -68,10 +76,10 @@ export function DailySummaryCard(): React.JSX.Element {
 					<div>
 						<CardTitle className="flex items-center gap-2">
 							<CalendarIcon className="size-5 text-primary" />
-							Actividad de Hoy
+							{t("title")}
 						</CardTitle>
 						<CardDescription>
-							{format(data.date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}
+							{format(data.date, dateFormat, { locale: dateLocale })}
 						</CardDescription>
 					</div>
 				</div>
@@ -82,17 +90,21 @@ export function DailySummaryCard(): React.JSX.Element {
 					<div className="flex flex-col items-center rounded-lg bg-muted/50 p-3">
 						<CalendarCheckIcon className="size-5 text-blue-500 mb-1" />
 						<span className="text-2xl font-bold">{data.sessions.total}</span>
-						<span className="text-muted-foreground text-xs">Sesiones</span>
+						<span className="text-muted-foreground text-xs">
+							{t("sessions")}
+						</span>
 						<span className="text-green-600 text-xs">
-							{data.sessions.completed} completadas
+							{data.sessions.completed} {t("completed")}
 						</span>
 					</div>
 					<div className="flex flex-col items-center rounded-lg bg-muted/50 p-3">
 						<UsersIcon className="size-5 text-purple-500 mb-1" />
 						<span className="text-2xl font-bold">{data.attendance.total}</span>
-						<span className="text-muted-foreground text-xs">Asistencias</span>
+						<span className="text-muted-foreground text-xs">
+							{t("attendance")}
+						</span>
 						<span className="text-green-600 text-xs">
-							{data.attendance.rate}% presentes
+							{data.attendance.rate}% {t("present")}
 						</span>
 					</div>
 					<div className="flex flex-col items-center rounded-lg bg-muted/50 p-3">
@@ -100,9 +112,9 @@ export function DailySummaryCard(): React.JSX.Element {
 						<span className="text-xl font-bold">
 							{formatAmount(data.income.total)}
 						</span>
-						<span className="text-muted-foreground text-xs">Ingresos</span>
+						<span className="text-muted-foreground text-xs">{t("income")}</span>
 						<span className="text-muted-foreground text-xs">
-							{data.income.count} pagos
+							{data.income.count} {t("payments")}
 						</span>
 					</div>
 				</div>
@@ -111,7 +123,7 @@ export function DailySummaryCard(): React.JSX.Element {
 				{data.sessions.list.length > 0 ? (
 					<div className="space-y-2">
 						<h4 className="text-sm font-medium text-muted-foreground">
-							Sesiones de hoy
+							{t("todaySessions")}
 						</h4>
 						<div className="space-y-2">
 							{data.sessions.list.slice(0, 5).map((session) => (
@@ -164,10 +176,10 @@ export function DailySummaryCard(): React.JSX.Element {
 										className="text-xs"
 									>
 										{session.status === "completed"
-											? "Completada"
+											? t("statusCompleted")
 											: session.status === "confirmed"
-												? "Confirmada"
-												: "Pendiente"}
+												? t("statusConfirmed")
+												: t("statusPending")}
 									</Badge>
 								</Link>
 							))}
@@ -175,7 +187,7 @@ export function DailySummaryCard(): React.JSX.Element {
 						{data.sessions.list.length > 5 && (
 							<Button variant="ghost" size="sm" asChild className="w-full">
 								<Link href="/dashboard/organization/training-sessions">
-									Ver todas ({data.sessions.list.length} sesiones)
+									{t("viewAll", { count: data.sessions.list.length })}
 								</Link>
 							</Button>
 						)}
@@ -183,12 +195,10 @@ export function DailySummaryCard(): React.JSX.Element {
 				) : (
 					<div className="flex flex-col items-center py-6 text-center">
 						<CalendarIcon className="size-10 text-muted-foreground/50 mb-2" />
-						<p className="text-muted-foreground text-sm">
-							No hay sesiones programadas para hoy
-						</p>
+						<p className="text-muted-foreground text-sm">{t("noSessions")}</p>
 						<Button variant="link" size="sm" asChild className="mt-2">
 							<Link href="/dashboard/organization/training-sessions">
-								Ver calendario de sesiones
+								{t("viewCalendar")}
 							</Link>
 						</Button>
 					</div>

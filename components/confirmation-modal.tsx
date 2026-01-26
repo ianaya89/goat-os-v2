@@ -24,10 +24,10 @@ export type ConfirmationModalProps = NiceModalHocProps & {
 	destructive?: boolean;
 	requiredText?: string;
 	onConfirm: () =>
-		| void
+		| undefined
 		| boolean
 		| undefined
-		| Promise<void | boolean | undefined>;
+		| Promise<undefined | boolean | undefined>;
 	dismissible?: boolean;
 };
 
@@ -40,7 +40,7 @@ export const ConfirmationModal = NiceModal.create<ConfirmationModalProps>(
 		destructive,
 		requiredText,
 		onConfirm,
-		dismissible = true,
+		dismissible: _dismissible = true,
 	}) => {
 		const modal = useEnhancedModal();
 		const [textInput, setTextInput] = useState("");

@@ -226,6 +226,13 @@ export function OrganizationSwitcher({
 		return null;
 	}
 
+	// Hide the switcher if user has no organizations (only personal account)
+	const hasOrganizations =
+		Array.isArray(allOrganizations) && allOrganizations.length > 0;
+	if (!hasOrganizations && !isAdminArea && user.role !== "admin") {
+		return null;
+	}
+
 	// Topbar variant - compact button style
 	if (variant === "topbar") {
 		return (

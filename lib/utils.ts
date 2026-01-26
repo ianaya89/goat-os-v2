@@ -1,9 +1,18 @@
 import { type ClassValue, clsx } from "clsx";
+import { nanoid } from "nanoid";
 import { twMerge } from "tailwind-merge";
 import { env } from "@/lib/env";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
+}
+
+/**
+ * Generates a secure temporary password for new users.
+ * Format: Temp<12 random chars>!
+ */
+export function generateTemporaryPassword(): string {
+	return `Temp${nanoid(12)}!`;
 }
 
 export function capitalize(str: string): string {

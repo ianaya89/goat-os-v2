@@ -10,9 +10,7 @@ export function logEmailToConsole(payload: EmailPayload, from: string): void {
 
 	console.log("\n");
 	console.log(`╔${separator}╗`);
-	console.log(
-		`║  📧 EMAIL (Dev Mode - Not Sent)                            ║`,
-	);
+	console.log(`║  📧 EMAIL (Dev Mode - Not Sent)                            ║`);
 	console.log(`╠${separator}╣`);
 	console.log(`║  From:    ${from.padEnd(48)}║`);
 	console.log(`║  To:      ${payload.recipient.padEnd(48)}║`);
@@ -21,9 +19,7 @@ export function logEmailToConsole(payload: EmailPayload, from: string): void {
 		console.log(`║  ReplyTo: ${payload.replyTo.padEnd(48)}║`);
 	}
 	console.log(`╠${separator}╣`);
-	console.log(
-		`║  TEXT CONTENT                                              ║`,
-	);
+	console.log(`║  TEXT CONTENT                                              ║`);
 	console.log(`╟${thinSeparator}╢`);
 
 	// Log text content with proper formatting
@@ -34,11 +30,10 @@ export function logEmailToConsole(payload: EmailPayload, from: string): void {
 	}
 	if (textLines.length > 20) {
 		console.log(
-			`║  ... (${textLines.length - 20} more lines)`.padEnd(60) + "║",
+			`${`║  ... (${textLines.length - 20} more lines)`.padEnd(60)}║`,
 		);
 	}
 
 	console.log(`╚${separator}╝`);
 	console.log("\n");
 }
-

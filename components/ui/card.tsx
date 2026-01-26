@@ -45,7 +45,10 @@ function CardTitle({ className, ...props }: CardTitleProps): React.JSX.Element {
 	return (
 		<div
 			data-slot="card-title"
-			className={cn("font-semibold text-lg leading-tight tracking-tight", className)}
+			className={cn(
+				"font-semibold text-lg leading-tight tracking-tight",
+				className,
+			)}
 			{...props}
 		/>
 	);

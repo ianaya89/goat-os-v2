@@ -2,12 +2,14 @@
 
 import {
 	HomeIcon,
+	MedalIcon,
 	MonitorSmartphoneIcon,
 	ShieldIcon,
 	UserIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -18,6 +20,7 @@ import {
 	SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import { trpc } from "@/trpc/client";
 
 type MenuItem = {
 	label: string;
@@ -32,16 +35,49 @@ type MenuGroup = {
 };
 
 export function UserMenuItems(): React.JSX.Element {
+	const t = useTranslations("common.menu");
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 
-	// Define menu groups directly, no subGroups or accordion
+	// Check if user is an athlete
+	const { data: isAthlete } = trpc.athlete.isAthlete.useQuery();
+
+	// Build settings items
+	const settingsItems: MenuItem[] = [];
+
+	// Add athlete profile link first if user is an athlete
+	if (isAthlete) {
+		settingsItems.push({
+			label: t("athleteProfile"),
+			href: "/dashboard/my-profile",
+			icon: MedalIcon,
+		});
+	}
+
+	settingsItems.push(
+		{
+			label: t("profile"),
+			href: "/dashboard/settings?tab=profile",
+			icon: UserIcon,
+		},
+		{
+			label: t("security"),
+			href: "/dashboard/settings?tab=security",
+			icon: ShieldIcon,
+		},
+		{
+			label: t("sessions"),
+			href: "/dashboard/settings?tab=sessions",
+			icon: MonitorSmartphoneIcon,
+		},
+	);
+
 	const menuGroups: MenuGroup[] = [
 		{
-			label: "Application",
+			label: t("application"),
 			items: [
 				{
-					label: "Home",
+					label: t("home"),
 					href: "/dashboard",
 					icon: HomeIcon,
 					exactMatch: true,
@@ -49,24 +85,8 @@ export function UserMenuItems(): React.JSX.Element {
 			],
 		},
 		{
-			label: "Settings",
-			items: [
-				{
-					label: "Profile",
-					href: "/dashboard/settings?tab=profile",
-					icon: UserIcon,
-				},
-				{
-					label: "Security",
-					href: "/dashboard/settings?tab=security",
-					icon: ShieldIcon,
-				},
-				{
-					label: "Sessions",
-					href: "/dashboard/settings?tab=sessions",
-					icon: MonitorSmartphoneIcon,
-				},
-			],
+			label: t("settings"),
+			items: settingsItems,
 		},
 	];
 

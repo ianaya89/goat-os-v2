@@ -1,0 +1,283 @@
+{
+	"menu": {
+		"dashboard": "Dashboard",
+		"athletes": "Atletas",
+		"athleteGroups": "Grupos de Atletas",
+		"coaches": "Entrenadores",
+		"trainingSessions": "Sesiones de Entrenamiento",
+		"events": "Eventos",
+		"eventTemplates": "Templates de Eventos",
+		"ageCategories": "Categorías de Edad",
+		"waitlist": "Lista de Espera",
+		"equipment": "Equipamiento",
+		"inventoryAudit": "Auditoría de Inventario",
+		"mySessionsCoach": "Mis Sesiones (Entrenador)",
+		"mySessionsAthlete": "Mis Sesiones (Atleta)",
+		"myCalendar": "Mi Calendario",
+		"mySessions": "Mis Sesiones",
+		"myGroups": "Mis Grupos",
+		"myPayments": "Mis Pagos",
+		"myEvents": "Mis Eventos",
+		"calendar": "Calendario",
+		"sessions": "Sesiones",
+		"groupsItem": "Grupos",
+		"paymentsSimple": "Pagos",
+		"eventsSimple": "Eventos",
+		"profile": "Perfil",
+		"payments": "Pagos",
+		"expenses": "Gastos",
+		"cashRegister": "Caja",
+		"products": "Productos",
+		"payroll": "Liquidaciones",
+		"financialReports": "Reportes Financieros",
+		"sportsReports": "Reportes Deportivos",
+		"locations": "Ubicaciones",
+		"users": "Usuarios",
+		"vendors": "Proveedores",
+		"sponsors": "Patrocinadores",
+		"chatbot": "Chatbot IA",
+		"settingsGeneral": "General",
+		"settingsMembers": "Miembros",
+		"settingsSubscription": "Suscripción",
+		"settingsCredits": "Créditos",
+		"seasons": "Temporadas",
+		"teams": "Equipos",
+		"competitions": "Competencias",
+		"matches": "Partidos",
+		"groups": {
+			"sports": "Deporte",
+			"competitions": "Competencias",
+			"finance": "Finanzas",
+			"reports": "Reportes",
+			"general": "General",
+			"settings": "Configuración",
+			"myArea": "Mi Área",
+			"activity": "Actividad"
+		}
+	},
+	"pages": {
+		"home": "Inicio",
+		"myCalendar": {
+			"title": "Mi Calendario",
+			"pageTitle": "Mi Calendario de Entrenamientos"
+		},
+		"myGroups": {
+			"title": "Mis Grupos",
+			"pageTitle": "Mis Grupos de Entrenamiento"
+		},
+		"myPayments": {
+			"title": "Mis Pagos",
+			"pageTitle": "Mis Pagos"
+		},
+		"myEvents": {
+			"title": "Mis Eventos",
+			"pageTitle": "Mis Eventos"
+		},
+		"waitlist": {
+			"title": "Lista de Espera",
+			"description": "Gestiona la lista de espera de tu organización"
+		},
+		"athletes": {
+			"title": "Atletas",
+			"description": "Gestiona los atletas de tu organización",
+			"profile": "Perfil",
+			"profileTitle": "Perfil del Atleta"
+		},
+		"athleteGroups": {
+			"title": "Grupos de Atletas",
+			"description": "Gestiona los grupos de atletas"
+		},
+		"coaches": {
+			"title": "Entrenadores",
+			"description": "Gestiona los entrenadores de tu organización",
+			"profile": "Perfil",
+			"profileTitle": "Perfil del Entrenador"
+		},
+		"trainingSessions": {
+			"title": "Sesiones de Entrenamiento",
+			"description": "Gestiona las sesiones de entrenamiento",
+			"detail": "Detalle de Sesión"
+		},
+		"events": {
+			"title": "Eventos",
+			"description": "Gestiona los eventos de tu organización",
+			"new": "Nuevo Evento",
+			"edit": "Editar",
+			"editTitle": "Editar: {title}",
+			"detail": "Detalle del Evento",
+			"eventFallback": "Evento",
+			"organization": "Organización"
+		},
+		"ageCategories": {
+			"title": "Categorías de Edad",
+			"description": "Gestiona las categorías de edad"
+		},
+		"equipment": {
+			"title": "Equipamiento",
+			"description": "Gestiona el equipamiento de entrenamiento"
+		},
+		"payments": {
+			"title": "Pagos",
+			"description": "Gestiona los pagos"
+		},
+		"expenses": {
+			"title": "Gastos",
+			"description": "Gestiona los gastos",
+			"categories": "Categorías de Gastos"
+		},
+		"cashRegister": {
+			"title": "Caja",
+			"description": "Gestiona la caja",
+			"history": "Historial de Caja"
+		},
+		"products": {
+			"title": "Productos",
+			"description": "Gestiona los productos"
+		},
+		"payroll": {
+			"title": "Liquidaciones",
+			"description": "Gestiona las liquidaciones"
+		},
+		"locations": {
+			"title": "Ubicaciones",
+			"description": "Gestiona las ubicaciones"
+		},
+		"users": {
+			"title": "Usuarios",
+			"description": "Gestiona los usuarios de la organización"
+		},
+		"vendors": {
+			"title": "Proveedores",
+			"description": "Gestiona los proveedores"
+		},
+		"sponsors": {
+			"title": "Patrocinadores",
+			"description": "Gestiona los patrocinadores"
+		},
+		"chatbot": {
+			"title": "Chatbot IA",
+			"description": "Chatea con el asistente de IA"
+		},
+		"reports": {
+			"title": "Reportes",
+			"financial": {
+				"title": "Reportes Financieros",
+				"description": "Análisis de ingresos, gastos y flujo de caja de tu organización"
+			},
+			"sports": {
+				"title": "Reportes Deportivos",
+				"description": "Análisis de entrenamientos, asistencia y rendimiento de atletas"
+			},
+			"pending": {
+				"title": "Pagos Pendientes",
+				"description": "Sesiones de entrenamiento e inscripciones a eventos pendientes de pago"
+			}
+		},
+		"mySessions": {
+			"coach": {
+				"title": "Mis Sesiones (Entrenador)",
+				"pageTitle": "Mis Sesiones"
+			},
+			"athlete": {
+				"title": "Mis Sesiones (Atleta)",
+				"pageTitle": "Mis Sesiones de Entrenamiento"
+			}
+		},
+		"settings": {
+			"title": "Configuración",
+			"pageTitle": "Configuración de la Organización"
+		}
+	},
+	"switcher": {
+		"title": "Cambiar organización",
+		"create": "Crear organización",
+		"noOrganizations": "No tienes organizaciones"
+	},
+	"create": {
+		"title": "Crear organización",
+		"description": "Configura tu nueva organización deportiva.",
+		"name": "Nombre de la organización",
+		"slug": "URL personalizada",
+		"submit": "Crear organización"
+	},
+	"settings": {
+		"title": "Configuración",
+		"tabs": {
+			"general": "General",
+			"members": "Miembros",
+			"subscription": "Suscripción",
+			"credits": "Créditos"
+		},
+		"general": {
+			"title": "Configuración general",
+			"name": "Nombre",
+			"slug": "URL",
+			"logo": "Logo",
+			"save": "Guardar cambios"
+		},
+		"members": {
+			"title": "Miembros",
+			"invite": "Invitar miembro",
+			"role": "Rol",
+			"status": "Estado",
+			"actions": "Acciones",
+			"remove": "Eliminar miembro",
+			"changeRole": "Cambiar rol"
+		},
+		"subscription": {
+			"title": "Suscripción",
+			"currentPlan": "Plan actual",
+			"upgrade": "Mejorar plan",
+			"cancel": "Cancelar suscripción"
+		},
+		"credits": {
+			"title": "Créditos",
+			"balance": "Saldo actual",
+			"buy": "Comprar créditos",
+			"history": "Historial"
+		},
+		"features": {
+			"title": "Funcionalidades de la Organización",
+			"description": "Activa o desactiva funcionalidades para tu organización. Las funcionalidades desactivadas se ocultarán del menú y no serán accesibles.",
+			"updateSuccess": "Funcionalidad actualizada correctamente",
+			"categories": {
+				"sports": "Deporte",
+				"finance": "Finanzas",
+				"reports": "Reportes",
+				"general": "General"
+			},
+			"items": {
+				"athletes": "Atletas",
+				"athlete_groups": "Grupos de Atletas",
+				"coaches": "Entrenadores",
+				"training_sessions": "Sesiones de Entrenamiento",
+				"events": "Eventos",
+				"event_templates": "Templates de Eventos",
+				"age_categories": "Categorías de Edad",
+				"waitlist": "Lista de Espera",
+				"equipment": "Equipamiento",
+				"equipment_audit": "Auditoría de Equipamiento",
+				"payments": "Pagos",
+				"expenses": "Gastos",
+				"cash_register": "Caja",
+				"products": "Productos",
+				"payroll": "Liquidaciones",
+				"financial_reports": "Reportes Financieros",
+				"sports_reports": "Reportes Deportivos",
+				"pending_reports": "Reporte de Pagos Pendientes",
+				"locations": "Ubicaciones",
+				"vendors": "Proveedores",
+				"sponsors": "Patrocinadores",
+				"chatbot": "Chatbot IA"
+			}
+		}
+	},
+	"invitation": {
+		"title": "Invitación a organización",
+		"description": "Has sido invitado a unirte a {organization}.",
+		"accept": "Aceptar invitación",
+		"decline": "Rechazar",
+		"expired": "Esta invitación ha expirado.",
+		"invalid": "Esta invitación no es válida."
+	}
+}

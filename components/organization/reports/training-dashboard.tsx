@@ -1,9 +1,7 @@
 "use client";
 
 import {
-	addDays,
 	addMonths,
-	addWeeks,
 	endOfMonth,
 	endOfWeek,
 	startOfMonth,
@@ -22,7 +20,9 @@ import {
 } from "@/components/ui/select";
 import { AttendanceByAthleteChart } from "./attendance-by-athlete-chart";
 import { AttendanceByGroupChart } from "./attendance-by-group-chart";
+import { AttendanceDistributionChart } from "./attendance-distribution-chart";
 import { AttendanceTrendChart } from "./attendance-trend-chart";
+import { GroupPerformanceRadar } from "./group-performance-radar";
 import { SessionsByCoachChart } from "./sessions-by-coach-chart";
 import { SessionsTrendChart } from "./sessions-trend-chart";
 import { TrainingSummaryCards } from "./training-summary-cards";
@@ -124,7 +124,7 @@ export function TrainingDashboard(): React.JSX.Element {
 						<SelectValue placeholder="Agrupar por" />
 					</SelectTrigger>
 					<SelectContent>
-						<SelectItem value="day">Por día</SelectItem>
+						<SelectItem value="day">Por dia</SelectItem>
 						<SelectItem value="week">Por semana</SelectItem>
 						<SelectItem value="month">Por mes</SelectItem>
 						<SelectItem value="year">Por año</SelectItem>
@@ -132,15 +132,25 @@ export function TrainingDashboard(): React.JSX.Element {
 				</Select>
 			</div>
 
+			{/* Summary Cards */}
 			<TrainingSummaryCards dateRange={dateRange} />
 
+			{/* Main Charts - Sessions and Attendance Trends */}
 			<div className="grid gap-6 lg:grid-cols-2">
 				<SessionsTrendChart dateRange={dateRange} period={period} />
 				<AttendanceTrendChart dateRange={dateRange} period={period} />
 			</div>
 
+			{/* Distribution and Radar Charts */}
+			<div className="grid gap-6 lg:grid-cols-2">
+				<AttendanceDistributionChart dateRange={dateRange} />
+				<GroupPerformanceRadar dateRange={dateRange} />
+			</div>
+
+			{/* Attendance by Athlete - Full Width */}
 			<AttendanceByAthleteChart dateRange={dateRange} />
 
+			{/* Group and Coach Charts */}
 			<div className="grid gap-6 lg:grid-cols-2">
 				<AttendanceByGroupChart dateRange={dateRange} />
 				<SessionsByCoachChart dateRange={dateRange} />

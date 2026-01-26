@@ -156,13 +156,15 @@ export function AiChat({ organizationId }: AiChatProps) {
 	});
 
 	const getConsolidatedMessages = useCallback(
-		(currentLocalMessages: any[]): ChatMessage[] => {
+		(
+			currentLocalMessages: ReturnType<typeof useChat>["messages"],
+		): ChatMessage[] => {
 			const local: ChatMessage[] = currentLocalMessages.map((m) => ({
 				role: (m.role as "user" | "assistant" | "system") || "user",
 				content: getMessageText(m),
-				isError: !!(m as any).isError,
+				isError: "isError" in m ? !!m.isError : false,
 			}));
-			const dbHistory = (currentChat?.messages as any as ChatMessage[]) || [];
+			const dbHistory = (currentChat?.messages ?? []) as ChatMessage[];
 
 			if (local.length === 0) return dbHistory;
 			if (dbHistory.length === 0) return local;

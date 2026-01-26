@@ -104,6 +104,29 @@ export const bulkUpdateTrainingPaymentsStatusSchema = z.object({
 	status: z.nativeEnum(TrainingPaymentStatus),
 });
 
+// Receipt upload URL
+export const getTrainingPaymentReceiptUploadUrlSchema = z.object({
+	paymentId: z.string().uuid(),
+	filename: z.string().min(1),
+	contentType: z.enum(["image/jpeg", "image/png", "application/pdf"]),
+});
+
+// Update payment receipt
+export const updateTrainingPaymentReceiptSchema = z.object({
+	paymentId: z.string().uuid(),
+	receiptImageKey: z.string().min(1),
+});
+
+// Delete payment receipt
+export const deleteTrainingPaymentReceiptSchema = z.object({
+	paymentId: z.string().uuid(),
+});
+
+// Get receipt download URL
+export const getTrainingPaymentReceiptDownloadUrlSchema = z.object({
+	paymentId: z.string().uuid(),
+});
+
 // Type exports
 export type ListTrainingPaymentsInput = z.infer<
 	typeof listTrainingPaymentsSchema
@@ -125,4 +148,16 @@ export type BulkDeleteTrainingPaymentsInput = z.infer<
 >;
 export type BulkUpdateTrainingPaymentsStatusInput = z.infer<
 	typeof bulkUpdateTrainingPaymentsStatusSchema
+>;
+export type GetTrainingPaymentReceiptUploadUrlInput = z.infer<
+	typeof getTrainingPaymentReceiptUploadUrlSchema
+>;
+export type UpdateTrainingPaymentReceiptInput = z.infer<
+	typeof updateTrainingPaymentReceiptSchema
+>;
+export type DeleteTrainingPaymentReceiptInput = z.infer<
+	typeof deleteTrainingPaymentReceiptSchema
+>;
+export type GetTrainingPaymentReceiptDownloadUrlInput = z.infer<
+	typeof getTrainingPaymentReceiptDownloadUrlSchema
 >;

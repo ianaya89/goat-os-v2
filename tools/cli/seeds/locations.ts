@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import type { DrizzleClient } from "@/lib/db/types";
 import type { SeedContext } from "../commands/seed";
 import { schema } from "../db";
 import { ENTITY_LOCATION, seedUUID } from "./utils";
@@ -34,7 +35,7 @@ const states = [
 ];
 
 export async function seedLocations(
-	db: any,
+	db: DrizzleClient,
 	count: number,
 	context: SeedContext,
 ): Promise<string[]> {

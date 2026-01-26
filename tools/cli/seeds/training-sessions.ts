@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import type { DrizzleClient } from "@/lib/db/types";
 import type { SeedContext } from "../commands/seed";
 import { schema } from "../db";
 import {
@@ -40,7 +41,7 @@ function addDays(date: Date, days: number): Date {
 }
 
 export async function seedTrainingSessions(
-	db: any,
+	db: DrizzleClient,
 	count: number,
 	context: SeedContext,
 ): Promise<string[]> {
@@ -103,9 +104,10 @@ export async function seedTrainingSessions(
 	}
 
 	// Add coaches to sessions if not already added
-	if (context.coachIds.length > 0 && sessionIds.length > 0) {
+	const firstSessionId = sessionIds[0];
+	if (context.coachIds.length > 0 && sessionIds.length > 0 && firstSessionId) {
 		const existingCoaches = await db.query.trainingSessionCoachTable.findMany({
-			where: eq(schema.trainingSessionCoachTable.sessionId, sessionIds[0]),
+			where: eq(schema.trainingSessionCoachTable.sessionId, firstSessionId),
 		});
 
 		if (existingCoaches.length === 0) {
@@ -115,14 +117,17 @@ export async function seedTrainingSessions(
 
 			for (let s = 0; s < sessionIds.length; s++) {
 				const sessionId = sessionIds[s];
+				if (!sessionId) continue;
 				const numCoaches = Math.min(2, context.coachIds.length);
 
 				for (let i = 0; i < numCoaches; i++) {
 					const coachIndex = (s + i) % context.coachIds.length;
+					const coachId = context.coachIds[coachIndex];
+					if (!coachId) continue;
 					sessionCoaches.push({
 						id: seedUUID(ENTITY_SESSION_COACH, s * 100 + i + 1),
 						sessionId,
-						coachId: context.coachIds[coachIndex],
+						coachId,
 						isPrimary: i === 0,
 					});
 				}
@@ -138,12 +143,38 @@ export async function seedTrainingSessions(
 	}
 
 	// Add attendance records for completed sessions if not already added
-	if (context.athleteIds.length > 0 && sessionIds.length > 0) {
-		const existingAttendance = await db.query.attendanceTable.findMany({
-			where: eq(schema.attendanceTable.sessionId, sessionIds[0]),
-		});
+	// First, get all completed sessions (both existing and new)
+	const allCompletedSessions = await db.query.trainingSessionTable.findMany({
+		where: eq(
+			schema.trainingSessionTable.organizationId,
+			context.organizationId,
+		),
+	});
 
-		if (existingAttendance.length === 0) {
+	const completedSessionsWithoutAttendance = allCompletedSessions.filter(
+		(s: any) => s.status === "completed",
+	);
+
+	if (
+		context.athleteIds.length > 0 &&
+		completedSessionsWithoutAttendance.length > 0
+	) {
+		// Check which sessions already have attendance
+		const sessionsWithAttendance = new Set<string>();
+		for (const session of completedSessionsWithoutAttendance) {
+			const existing = await db.query.attendanceTable.findFirst({
+				where: eq(schema.attendanceTable.sessionId, session.id),
+			});
+			if (existing) {
+				sessionsWithAttendance.add(session.id);
+			}
+		}
+
+		const sessionsNeedingAttendance = completedSessionsWithoutAttendance.filter(
+			(s: any) => !sessionsWithAttendance.has(s.id),
+		);
+
+		if (sessionsNeedingAttendance.length > 0) {
 			const attendances: Array<typeof schema.attendanceTable.$inferInsert> = [];
 			const attendanceStatuses = [
 				"present",
@@ -152,21 +183,24 @@ export async function seedTrainingSessions(
 				"excused",
 			] as const;
 
-			for (let s = 0; s < sessions.length; s++) {
-				const session = sessions[s];
-				if (session.status === "completed") {
-					const numAthletes = Math.min(8, context.athleteIds.length);
+			for (let s = 0; s < sessionsNeedingAttendance.length; s++) {
+				const session = sessionsNeedingAttendance[s];
+				if (!session) continue;
 
-					for (let j = 0; j < numAthletes; j++) {
-						const athleteIndex = (s + j) % context.athleteIds.length;
-						attendances.push({
-							id: seedUUID(ENTITY_ATTENDANCE, s * 100 + j + 1),
-							sessionId: sessionIds[s],
-							athleteId: context.athleteIds[athleteIndex],
-							status: attendanceStatuses[j % attendanceStatuses.length],
-							recordedBy: context.seedUserId,
-						});
-					}
+				const numAthletes = Math.min(8, context.athleteIds.length);
+
+				for (let j = 0; j < numAthletes; j++) {
+					const athleteIndex = (s + j) % context.athleteIds.length;
+					const athleteId = context.athleteIds[athleteIndex];
+					if (!athleteId) continue;
+					attendances.push({
+						id: seedUUID(ENTITY_ATTENDANCE, s * 100 + j + 1),
+						sessionId: session.id,
+						athleteId,
+						status:
+							attendanceStatuses[j % attendanceStatuses.length] ?? "present",
+						recordedBy: context.seedUserId,
+					});
 				}
 			}
 

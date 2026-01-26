@@ -1,0 +1,103 @@
+{
+	"sessions": {
+		"title": "Sesiones de Entrenamiento"
+	},
+	"title": "Sesiones de Entrenamiento",
+	"description": "Gestiona las sesiones de entrenamiento de tu organización.",
+	"add": "Crear sesión",
+	"edit": "Editar sesión",
+	"view": "Ver sesión",
+	"delete": "Eliminar sesión",
+	"cancel": "Cancelar sesión",
+	"search": "Buscar sesiones...",
+	"filters": {
+		"all": "Todas",
+		"upcoming": "Próximas",
+		"past": "Pasadas",
+		"cancelled": "Canceladas",
+		"byCoach": "Por entrenador",
+		"byLocation": "Por ubicación"
+	},
+	"table": {
+		"title": "Título",
+		"date": "Fecha",
+		"time": "Hora",
+		"duration": "Duración",
+		"coach": "Entrenador",
+		"location": "Ubicación",
+		"attendees": "Asistentes",
+		"status": "Estado",
+		"actions": "Acciones"
+	},
+	"form": {
+		"basicInfo": "Información básica",
+		"title": "Título",
+		"description": "Descripción",
+		"schedule": "Horario",
+		"date": "Fecha",
+		"startTime": "Hora de inicio",
+		"endTime": "Hora de fin",
+		"duration": "Duración",
+		"location": "Ubicación",
+		"coach": "Entrenador",
+		"maxAttendees": "Máximo de asistentes",
+		"recurring": "Recurrente",
+		"recurringPattern": "Patrón de recurrencia",
+		"athletes": "Atletas",
+		"selectAthletes": "Seleccionar atletas"
+	},
+	"status": {
+		"scheduled": "Programada",
+		"inProgress": "En progreso",
+		"completed": "Completada",
+		"cancelled": "Cancelada"
+	},
+	"attendance": {
+		"title": "Asistencia",
+		"present": "Presente",
+		"absent": "Ausente",
+		"late": "Tarde",
+		"excused": "Justificado",
+		"markAttendance": "Marcar asistencia"
+	},
+	"detail": {
+		"overview": "Resumen",
+		"attendance": "Asistencia",
+		"notes": "Notas",
+		"exercises": "Ejercicios"
+	},
+	"success": {
+		"created": "Sesión creada correctamente.",
+		"updated": "Sesión actualizada correctamente.",
+		"deleted": "Sesión eliminada correctamente.",
+		"cancelled": "Sesión cancelada correctamente."
+	},
+	"error": {
+		"notFound": "Sesión no encontrada.",
+		"createFailed": "No se pudo crear la sesión.",
+		"updateFailed": "No se pudo actualizar la sesión.",
+		"deleteFailed": "No se pudo eliminar la sesión.",
+		"cancelFailed": "No se pudo cancelar la sesión."
+	},
+	"athleteView": {
+		"todaySessions": "Sesiones de Hoy",
+		"sessionScheduled": "{count, plural, one {sesion programada} other {sesiones programadas}}",
+		"upcomingSessions": "Proximas Sesiones",
+		"pendingConfirmed": "pendientes y confirmadas",
+		"sessionsAttended": "Sesiones Asistidas",
+		"allTime": "total",
+		"averageRating": "Calificacion Promedio",
+		"outOf5": "de 5",
+		"noEvaluationsYet": "sin evaluaciones aun",
+		"myTrainingSessions": "Mis Sesiones de Entrenamiento",
+		"upcoming": "Proximas",
+		"past": "Pasadas",
+		"all": "Todas",
+		"noSessionsFound": "No se encontraron sesiones {filter}.",
+		"noAthleteProfile": "No se encontro perfil de atleta para tu cuenta en esta organizacion.",
+		"contactAdmin": "Contacta al administrador de tu organizacion para ser agregado como atleta.",
+		"today": "Hoy",
+		"addFeedback": "Agregar Feedback",
+		"unknownCoach": "Entrenador desconocido"
+	}
+}

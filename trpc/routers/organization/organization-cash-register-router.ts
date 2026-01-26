@@ -1,14 +1,29 @@
 import { TRPCError } from "@trpc/server";
-import { and, asc, count, desc, eq, gte, lte, sql, sum } from "drizzle-orm";
+import {
+	and,
+	asc,
+	count,
+	desc,
+	eq,
+	gte,
+	inArray,
+	lte,
+	sql,
+	sum,
+} from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
+	CashMovementReferenceType,
 	CashMovementType,
 	CashRegisterStatus,
+	StockTransactionType,
 	TrainingPaymentStatus,
 } from "@/lib/db/schema/enums";
 import {
 	cashMovementTable,
 	cashRegisterTable,
+	productTable,
+	stockTransactionTable,
 	trainingPaymentTable,
 } from "@/lib/db/schema/tables";
 import {
@@ -50,7 +65,7 @@ export const organizationCashRegisterRouter = createTRPCRouter({
 			},
 		});
 
-		return cashRegister;
+		return cashRegister ?? null;
 	}),
 
 	// Open cash register for today
@@ -235,6 +250,44 @@ export const organizationCashRegisterRouter = createTRPCRouter({
 				});
 			}
 
+			// If products are included, validate stock availability
+			let productsMap: Map<string, typeof productTable.$inferSelect> | null =
+				null;
+
+			if (input.products && input.products.length > 0) {
+				const productIds = input.products.map((p) => p.productId);
+
+				const products = await db.query.productTable.findMany({
+					where: and(
+						eq(productTable.organizationId, ctx.organization.id),
+						inArray(productTable.id, productIds),
+						eq(productTable.isActive, true),
+					),
+				});
+
+				productsMap = new Map(products.map((p) => [p.id, p]));
+
+				// Validate all products exist and have sufficient stock
+				for (const item of input.products) {
+					const product = productsMap.get(item.productId);
+
+					if (!product) {
+						throw new TRPCError({
+							code: "NOT_FOUND",
+							message: `Producto no encontrado: ${item.productId}`,
+						});
+					}
+
+					if (product.trackStock && product.currentStock < item.quantity) {
+						throw new TRPCError({
+							code: "BAD_REQUEST",
+							message: `Stock insuficiente para "${product.name}". Disponible: ${product.currentStock}, Solicitado: ${item.quantity}`,
+						});
+					}
+				}
+			}
+
+			// Create the cash movement
 			const [movement] = await db
 				.insert(cashMovementTable)
 				.values({
@@ -243,10 +296,50 @@ export const organizationCashRegisterRouter = createTRPCRouter({
 					type: input.type,
 					amount: input.amount,
 					description: input.description,
-					referenceType: "manual",
+					referenceType:
+						input.products && input.products.length > 0
+							? CashMovementReferenceType.productSale
+							: CashMovementReferenceType.manual,
 					recordedBy: ctx.user.id,
 				})
 				.returning();
+
+			if (!movement) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Error al crear el movimiento de caja",
+				});
+			}
+
+			// If products were included, decrement stock and create transaction records
+			if (input.products && input.products.length > 0 && productsMap) {
+				for (const item of input.products) {
+					const product = productsMap.get(item.productId);
+
+					if (product?.trackStock) {
+						const newStock = product.currentStock - item.quantity;
+
+						// Update product stock
+						await db
+							.update(productTable)
+							.set({ currentStock: newStock })
+							.where(eq(productTable.id, item.productId));
+
+						// Create stock transaction record for audit
+						await db.insert(stockTransactionTable).values({
+							organizationId: ctx.organization.id,
+							productId: item.productId,
+							type: StockTransactionType.sale,
+							quantity: -item.quantity,
+							previousStock: product.currentStock,
+							newStock: newStock,
+							referenceType: "cash_movement",
+							referenceId: movement.id,
+							recordedBy: ctx.user.id,
+						});
+					}
+				}
+			}
 
 			return movement;
 		}),

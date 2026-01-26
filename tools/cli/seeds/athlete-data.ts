@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { DrizzleClient } from "@/lib/db/types";
 import type { SeedContext } from "../commands/seed";
 import { schema } from "../db";
 
@@ -54,7 +55,7 @@ function addDays(date: Date, days: number): Date {
 }
 
 export async function seedAthletePhysicalMetrics(
-	db: any,
+	db: DrizzleClient,
 	count: number,
 	context: SeedContext,
 ): Promise<string[]> {
@@ -93,8 +94,8 @@ export async function seedAthletePhysicalMetrics(
 }
 
 export async function seedAthleteFitnessTests(
-	db: any,
-	count: number,
+	db: DrizzleClient,
+	_count: number,
 	context: SeedContext,
 ): Promise<string[]> {
 	if (context.athleteIds.length === 0) return [];
@@ -153,7 +154,7 @@ export async function seedAthleteFitnessTests(
 				testDate,
 				testType,
 				result,
-				unit: fitnessTestUnits[testType],
+				unit: fitnessTestUnits[testType] ?? "units",
 				evaluatedBy: context.seedUserId,
 			});
 		}
@@ -168,8 +169,8 @@ export async function seedAthleteFitnessTests(
 }
 
 export async function seedAthleteCareerHistory(
-	db: any,
-	count: number,
+	db: DrizzleClient,
+	_count: number,
 	context: SeedContext,
 ): Promise<string[]> {
 	if (context.athleteIds.length === 0) return [];
@@ -193,10 +194,12 @@ export async function seedAthleteCareerHistory(
 				history.push({
 					id: randomUUID(),
 					athleteId,
-					clubName: clubNames[Math.floor(Math.random() * clubNames.length)],
+					clubName:
+						clubNames[Math.floor(Math.random() * clubNames.length)] ?? "Club",
 					startDate,
 					endDate,
-					position: positions[Math.floor(Math.random() * positions.length)],
+					position:
+						positions[Math.floor(Math.random() * positions.length)] ?? "N/A",
 					achievements:
 						Math.random() > 0.7
 							? "Campeón juvenil, Mejor jugador del torneo"
@@ -219,7 +222,7 @@ export async function seedAthleteCareerHistory(
 }
 
 export async function seedAthleteWellnessSurveys(
-	db: any,
+	db: DrizzleClient,
 	count: number,
 	context: SeedContext,
 ): Promise<string[]> {
@@ -263,8 +266,8 @@ export async function seedAthleteWellnessSurveys(
 }
 
 export async function seedAthleteSessionFeedback(
-	db: any,
-	count: number,
+	db: DrizzleClient,
+	_count: number,
 	context: SeedContext,
 ): Promise<string[]> {
 	if (
@@ -309,8 +312,8 @@ export async function seedAthleteSessionFeedback(
 }
 
 export async function seedAthleteEvaluations(
-	db: any,
-	count: number,
+	db: DrizzleClient,
+	_count: number,
 	context: SeedContext,
 ): Promise<string[]> {
 	if (

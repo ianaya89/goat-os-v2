@@ -1,0 +1,67 @@
+{
+	"title": "Settings",
+	"user": {
+		"title": "User settings",
+		"profile": {
+			"title": "Profile",
+			"description": "Manage your personal information.",
+			"name": "Name",
+			"email": "Email",
+			"phone": "Phone",
+			"avatar": "Avatar",
+			"changeAvatar": "Change avatar",
+			"removeAvatar": "Remove avatar"
+		},
+		"security": {
+			"title": "Security",
+			"description": "Manage your account security.",
+			"changePassword": "Change password",
+			"currentPassword": "Current password",
+			"newPassword": "New password",
+			"confirmPassword": "Confirm password",
+			"twoFactor": "Two-factor authentication",
+			"enable2FA": "Enable 2FA",
+			"disable2FA": "Disable 2FA",
+			"sessions": "Active sessions",
+			"revokeSession": "Sign out",
+			"revokeAllSessions": "Sign out all sessions"
+		},
+		"notifications": {
+			"title": "Notifications",
+			"description": "Configure your notification preferences.",
+			"email": "Email notifications",
+			"push": "Push notifications",
+			"types": {
+				"payments": "Payments",
+				"sessions": "Sessions",
+				"events": "Events",
+				"news": "News"
+			}
+		},
+		"preferences": {
+			"title": "Preferences",
+			"language": "Language",
+			"timezone": "Timezone",
+			"dateFormat": "Date format",
+			"theme": "Theme",
+			"themes": {
+				"light": "Light",
+				"dark": "Dark",
+				"system": "System"
+			}
+		}
+	},
+	"success": {
+		"saved": "Settings saved successfully.",
+		"passwordChanged": "Password changed successfully.",
+		"avatarUpdated": "Avatar updated successfully.",
+		"2faEnabled": "Two-factor authentication enabled.",
+		"2faDisabled": "Two-factor authentication disabled."
+	},
+	"error": {
+		"saveFailed": "Failed to save settings.",
+		"passwordChangeFailed": "Failed to change password.",
+		"avatarUpdateFailed": "Failed to update avatar.",
+		"wrongPassword": "Current password is incorrect."
+	}
+}

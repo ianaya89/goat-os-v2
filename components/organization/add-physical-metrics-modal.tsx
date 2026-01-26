@@ -40,8 +40,8 @@ interface AddPhysicalMetricsModalProps {
 	athleteId: string;
 }
 
-export const AddPhysicalMetricsModal = NiceModal.create<AddPhysicalMetricsModalProps>(
-	({ athleteId }) => {
+export const AddPhysicalMetricsModal =
+	NiceModal.create<AddPhysicalMetricsModalProps>(({ athleteId }) => {
 		const modal = useModal();
 		const utils = trpc.useUtils();
 
@@ -57,28 +57,35 @@ export const AddPhysicalMetricsModal = NiceModal.create<AddPhysicalMetricsModalP
 			},
 		});
 
-		const createMutation = trpc.organization.athlete.createPhysicalMetrics.useMutation({
-			onSuccess: () => {
-				toast.success("Physical metrics have been recorded successfully.");
-				utils.organization.athlete.getProfile.invalidate({ id: athleteId });
-				modal.hide();
-			},
-			onError: (error) => {
-				toast.error(error.message);
-			},
-		});
+		const createMutation =
+			trpc.organization.athlete.createPhysicalMetrics.useMutation({
+				onSuccess: () => {
+					toast.success("Physical metrics have been recorded successfully.");
+					utils.organization.athlete.getProfile.invalidate({ id: athleteId });
+					modal.hide();
+				},
+				onError: (error) => {
+					toast.error(error.message);
+				},
+			});
 
 		const onSubmit = (values: FormValues) => {
 			const height = values.height ? parseInt(values.height, 10) : undefined;
-			const weight = values.weight ? Math.round(parseFloat(values.weight) * 1000) : undefined;
+			const weight = values.weight
+				? Math.round(parseFloat(values.weight) * 1000)
+				: undefined;
 			const bodyFatPercentage = values.bodyFatPercentage
 				? Math.round(parseFloat(values.bodyFatPercentage) * 10)
 				: undefined;
 			const muscleMass = values.muscleMass
 				? Math.round(parseFloat(values.muscleMass) * 1000)
 				: undefined;
-			const wingspan = values.wingspan ? parseInt(values.wingspan, 10) : undefined;
-			const standingReach = values.standingReach ? parseInt(values.standingReach, 10) : undefined;
+			const wingspan = values.wingspan
+				? parseInt(values.wingspan, 10)
+				: undefined;
+			const standingReach = values.standingReach
+				? parseInt(values.standingReach, 10)
+				: undefined;
 
 			createMutation.mutate({
 				athleteId,
@@ -111,7 +118,10 @@ export const AddPhysicalMetricsModal = NiceModal.create<AddPhysicalMetricsModalP
 					</SheetHeader>
 
 					<Form {...form}>
-						<form onSubmit={form.handleSubmit(onSubmit)} className="mt-6 space-y-4">
+						<form
+							onSubmit={form.handleSubmit(onSubmit)}
+							className="mt-6 space-y-4"
+						>
 							<div className="grid grid-cols-2 gap-4">
 								<FormField
 									control={form.control}
@@ -120,11 +130,7 @@ export const AddPhysicalMetricsModal = NiceModal.create<AddPhysicalMetricsModalP
 										<FormItem>
 											<FormLabel>Height (cm)</FormLabel>
 											<FormControl>
-												<Input
-													type="number"
-													placeholder="175"
-													{...field}
-												/>
+												<Input type="number" placeholder="175" {...field} />
 											</FormControl>
 											<FormMessage />
 										</FormItem>
@@ -199,11 +205,7 @@ export const AddPhysicalMetricsModal = NiceModal.create<AddPhysicalMetricsModalP
 										<FormItem>
 											<FormLabel>Wingspan (cm)</FormLabel>
 											<FormControl>
-												<Input
-													type="number"
-													placeholder="180"
-													{...field}
-												/>
+												<Input type="number" placeholder="180" {...field} />
 											</FormControl>
 											<FormDescription className="text-xs">
 												Arm span measurement
@@ -220,11 +222,7 @@ export const AddPhysicalMetricsModal = NiceModal.create<AddPhysicalMetricsModalP
 										<FormItem>
 											<FormLabel>Standing Reach (cm)</FormLabel>
 											<FormControl>
-												<Input
-													type="number"
-													placeholder="230"
-													{...field}
-												/>
+												<Input type="number" placeholder="230" {...field} />
 											</FormControl>
 											<FormDescription className="text-xs">
 												Max reach while standing
@@ -275,5 +273,4 @@ export const AddPhysicalMetricsModal = NiceModal.create<AddPhysicalMetricsModalP
 				</SheetContent>
 			</Sheet>
 		);
-	}
-);
+	});

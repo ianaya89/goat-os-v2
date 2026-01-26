@@ -1,9 +1,8 @@
 "use client";
 
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { enUS, es } from "date-fns/locale";
 import {
-	ArrowUpIcon,
 	BanknoteIcon,
 	CalendarIcon,
 	CheckCircleIcon,
@@ -12,8 +11,8 @@ import {
 	XCircleIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import type * as React from "react";
-import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -27,11 +26,15 @@ import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
 export function WeeklySummaryCard(): React.JSX.Element {
+	const t = useTranslations("dashboard.weekly");
+	const locale = useLocale();
+	const dateLocale = locale === "es" ? es : enUS;
+
 	const { data, isLoading } =
 		trpc.organization.dashboard.getWeeklyActivity.useQuery();
 
 	const formatAmount = (amount: number) => {
-		return new Intl.NumberFormat("es-AR", {
+		return new Intl.NumberFormat(locale === "es" ? "es-AR" : "en-US", {
 			style: "currency",
 			currency: "ARS",
 		}).format(amount / 100);
@@ -55,8 +58,8 @@ export function WeeklySummaryCard(): React.JSX.Element {
 		return (
 			<Card>
 				<CardHeader>
-					<CardTitle>Resumen Semanal</CardTitle>
-					<CardDescription>No hay datos disponibles</CardDescription>
+					<CardTitle>{t("title")}</CardTitle>
+					<CardDescription>{t("noData")}</CardDescription>
 				</CardHeader>
 			</Card>
 		);
@@ -66,7 +69,7 @@ export function WeeklySummaryCard(): React.JSX.Element {
 	const chartData = data.dailyBreakdown.map((day) => ({
 		date: day.date,
 		sessions: day.sessions,
-		label: format(new Date(day.date), "EEE", { locale: es }),
+		label: format(new Date(day.date), "EEE", { locale: dateLocale }),
 	}));
 
 	return (
@@ -76,15 +79,17 @@ export function WeeklySummaryCard(): React.JSX.Element {
 					<div>
 						<CardTitle className="flex items-center gap-2">
 							<TrendingUpIcon className="size-5 text-primary" />
-							Resumen Semanal
+							{t("title")}
 						</CardTitle>
 						<CardDescription>
-							{format(data.period.from, "d MMM", { locale: es })} -{" "}
-							{format(data.period.to, "d MMM yyyy", { locale: es })}
+							{format(data.period.from, "d MMM", { locale: dateLocale })} -{" "}
+							{format(data.period.to, "d MMM yyyy", { locale: dateLocale })}
 						</CardDescription>
 					</div>
 					<Button variant="outline" size="sm" asChild>
-						<Link href="/dashboard/organization/reports">Ver reportes</Link>
+						<Link href="/dashboard/organization/reports">
+							{t("viewReports")}
+						</Link>
 					</Button>
 				</div>
 			</CardHeader>
@@ -94,7 +99,7 @@ export function WeeklySummaryCard(): React.JSX.Element {
 					<div className="space-y-1">
 						<div className="flex items-center gap-2 text-muted-foreground text-sm">
 							<CalendarIcon className="size-4" />
-							Sesiones
+							{t("sessions")}
 						</div>
 						<p className="text-2xl font-bold">{data.sessions.total}</p>
 						<div className="flex items-center gap-2 text-xs">
@@ -102,19 +107,19 @@ export function WeeklySummaryCard(): React.JSX.Element {
 								<CheckCircleIcon className="size-3" />
 								{data.sessions.completed}
 							</span>
-							<span className="text-muted-foreground">completadas</span>
+							<span className="text-muted-foreground">{t("completed")}</span>
 						</div>
 					</div>
 
 					<div className="space-y-1">
 						<div className="flex items-center gap-2 text-muted-foreground text-sm">
 							<UsersIcon className="size-4" />
-							Asistencia
+							{t("attendance")}
 						</div>
 						<p className="text-2xl font-bold">{data.attendance.rate}%</p>
 						<div className="flex items-center gap-2 text-xs">
 							<span className="text-muted-foreground">
-								{data.attendance.present + data.attendance.late} de{" "}
+								{data.attendance.present + data.attendance.late} /{" "}
 								{data.attendance.total}
 							</span>
 						</div>
@@ -123,14 +128,14 @@ export function WeeklySummaryCard(): React.JSX.Element {
 					<div className="space-y-1">
 						<div className="flex items-center gap-2 text-muted-foreground text-sm">
 							<BanknoteIcon className="size-4" />
-							Ingresos
+							{t("income")}
 						</div>
 						<p className="text-xl font-bold text-green-600">
 							{formatAmount(data.income.total)}
 						</p>
 						<div className="flex items-center gap-2 text-xs">
 							<span className="text-muted-foreground">
-								{data.income.count} pagos
+								{data.income.count} {t("payments")}
 							</span>
 						</div>
 					</div>
@@ -138,7 +143,7 @@ export function WeeklySummaryCard(): React.JSX.Element {
 					<div className="space-y-1">
 						<div className="flex items-center gap-2 text-muted-foreground text-sm">
 							<XCircleIcon className="size-4" />
-							Canceladas
+							{t("cancelled")}
 						</div>
 						<p className="text-2xl font-bold text-muted-foreground">
 							{data.sessions.cancelled}
@@ -158,49 +163,53 @@ export function WeeklySummaryCard(): React.JSX.Element {
 
 				{/* Daily Sessions Chart */}
 				{chartData.length > 0 && (
-					<div className="space-y-2">
+					<div className="space-y-3">
 						<h4 className="text-sm font-medium text-muted-foreground">
-							Sesiones por dia
+							{t("sessionsPerDay")}
 						</h4>
-						<div className="h-32 w-full">
-							<ResponsiveContainer width="100%" height="100%">
-								<BarChart data={chartData}>
-									<XAxis
-										dataKey="label"
-										axisLine={false}
-										tickLine={false}
-										tick={{ fontSize: 12 }}
-									/>
-									<Tooltip
-										content={({ active, payload }) => {
-											if (
-												active &&
-												payload &&
-												payload.length > 0 &&
-												payload[0]
-											) {
-												const item = payload[0];
-												return (
-													<div className="rounded-lg border bg-background p-2 shadow-sm">
-														<p className="text-sm font-medium">
-															{(item.payload as { label: string }).label}
-														</p>
-														<p className="text-muted-foreground text-xs">
-															{item.value} sesiones
-														</p>
-													</div>
-												);
-											}
-											return null;
-										}}
-									/>
-									<Bar
-										dataKey="sessions"
-										fill="hsl(var(--primary))"
-										radius={[4, 4, 0, 0]}
-									/>
-								</BarChart>
-							</ResponsiveContainer>
+						<div className="flex items-end justify-between gap-2">
+							{chartData.map((day) => {
+								const maxSessions = Math.max(
+									...chartData.map((d) => d.sessions),
+									1,
+								);
+								const heightPercent = (day.sessions / maxSessions) * 100;
+								const hasSession = day.sessions > 0;
+
+								return (
+									<div
+										key={day.date}
+										className="flex flex-1 flex-col items-center gap-1"
+									>
+										<span
+											className={cn(
+												"text-xs font-medium",
+												hasSession ? "text-primary" : "text-muted-foreground",
+											)}
+										>
+											{day.sessions}
+										</span>
+										<div className="relative h-20 w-full">
+											<div
+												className={cn(
+													"absolute bottom-0 left-1/2 w-10 -translate-x-1/2 rounded-t-md transition-all",
+													hasSession
+														? "bg-primary/80 hover:bg-primary"
+														: "bg-muted",
+												)}
+												style={{
+													height: hasSession
+														? `${Math.max(heightPercent, 15)}%`
+														: "8px",
+												}}
+											/>
+										</div>
+										<span className="text-xs text-muted-foreground capitalize">
+											{day.label}
+										</span>
+									</div>
+								);
+							})}
 						</div>
 					</div>
 				)}
@@ -209,7 +218,7 @@ export function WeeklySummaryCard(): React.JSX.Element {
 				{data.attendance.total > 0 && (
 					<div className="space-y-2">
 						<h4 className="text-sm font-medium text-muted-foreground">
-							Desglose de asistencia
+							{t("attendanceBreakdown")}
 						</h4>
 						<div className="grid grid-cols-4 gap-2">
 							<div
@@ -221,7 +230,9 @@ export function WeeklySummaryCard(): React.JSX.Element {
 								<p className="font-bold text-green-600">
 									{data.attendance.present}
 								</p>
-								<p className="text-muted-foreground text-xs">Presentes</p>
+								<p className="text-muted-foreground text-xs">
+									{t("presentLabel")}
+								</p>
 							</div>
 							<div
 								className={cn(
@@ -232,7 +243,9 @@ export function WeeklySummaryCard(): React.JSX.Element {
 								<p className="font-bold text-yellow-600">
 									{data.attendance.late}
 								</p>
-								<p className="text-muted-foreground text-xs">Tarde</p>
+								<p className="text-muted-foreground text-xs">
+									{t("lateLabel")}
+								</p>
 							</div>
 							<div
 								className={cn(
@@ -243,7 +256,9 @@ export function WeeklySummaryCard(): React.JSX.Element {
 								<p className="font-bold text-red-600">
 									{data.attendance.absent}
 								</p>
-								<p className="text-muted-foreground text-xs">Ausentes</p>
+								<p className="text-muted-foreground text-xs">
+									{t("absentLabel")}
+								</p>
 							</div>
 							<div
 								className={cn(
@@ -254,7 +269,9 @@ export function WeeklySummaryCard(): React.JSX.Element {
 								<p className="font-bold text-blue-600">
 									{data.attendance.excused}
 								</p>
-								<p className="text-muted-foreground text-xs">Justificados</p>
+								<p className="text-muted-foreground text-xs">
+									{t("excusedLabel")}
+								</p>
 							</div>
 						</div>
 					</div>

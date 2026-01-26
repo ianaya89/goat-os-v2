@@ -1,6 +1,7 @@
 import { z } from "zod/v4";
 import {
 	AthleteLevel,
+	AthleteSport,
 	AthleteStatus,
 	DominantSide,
 	FitnessTestType,
@@ -20,7 +21,7 @@ export type AthleteSortField = z.infer<typeof AthleteSortField>;
 
 // Get all athletes with filters
 export const listAthletesSchema = z.object({
-	limit: z.number().min(1).max(100).default(50),
+	limit: z.number().min(1).max(500).default(50),
 	offset: z.number().min(0).default(0),
 	query: z.string().optional(),
 	sortBy: AthleteSortField.default("createdAt"),
@@ -50,11 +51,7 @@ export const createAthleteSchema = z.object({
 		.email("Invalid email address")
 		.max(255, "Email is too long"),
 	// Athlete specific data
-	sport: z
-		.string()
-		.trim()
-		.min(1, "Sport is required")
-		.max(100, "Sport is too long"),
+	sport: z.nativeEnum(AthleteSport),
 	birthDate: z.coerce.date().optional(),
 	level: z.nativeEnum(AthleteLevel).default(AthleteLevel.beginner),
 	status: z.nativeEnum(AthleteStatus).default(AthleteStatus.active),
@@ -71,17 +68,32 @@ export const createAthleteSchema = z.object({
 	profilePhotoUrl: z.string().url().optional(),
 	bio: z.string().trim().max(2000).optional(),
 	yearsOfExperience: z.number().int().min(0).max(50).optional(),
+	// Contact information
+	phone: z.string().trim().max(30).optional(),
+	// Parent/Guardian contact (especially for minors)
+	parentName: z.string().trim().max(200).optional(),
+	parentPhone: z.string().trim().max(30).optional(),
+	parentEmail: z.string().trim().email().max(255).optional(),
+	parentRelationship: z.string().trim().max(100).optional(),
+	// YouTube videos for highlight plays
+	youtubeVideos: z.array(z.string().url()).max(10).optional(),
+	// Education information (for student athletes)
+	educationInstitution: z.string().trim().max(200).optional(),
+	educationYear: z.string().trim().max(50).optional(),
+	expectedGraduationDate: z.coerce.date().optional(),
+	gpa: z.string().trim().max(10).optional(), // Stored as numeric string
+	// Health & dietary information
+	dietaryRestrictions: z.string().trim().max(500).optional(),
+	allergies: z.string().trim().max(500).optional(),
+	// Residence information
+	residenceCity: z.string().trim().max(100).optional(),
+	residenceCountry: z.string().trim().max(100).optional(),
 });
 
 // Update athlete
 export const updateAthleteSchema = z.object({
 	id: z.string().uuid(),
-	sport: z
-		.string()
-		.trim()
-		.min(1, "Sport is required")
-		.max(100, "Sport is too long")
-		.optional(),
+	sport: z.nativeEnum(AthleteSport).optional(),
 	birthDate: z.coerce.date().optional().nullable(),
 	level: z.nativeEnum(AthleteLevel).optional(),
 	status: z.nativeEnum(AthleteStatus).optional(),
@@ -98,6 +110,26 @@ export const updateAthleteSchema = z.object({
 	profilePhotoUrl: z.string().url().optional().nullable(),
 	bio: z.string().trim().max(2000).optional().nullable(),
 	yearsOfExperience: z.number().int().min(0).max(50).optional().nullable(),
+	// Contact information
+	phone: z.string().trim().max(30).optional().nullable(),
+	// Parent/Guardian contact (especially for minors)
+	parentName: z.string().trim().max(200).optional().nullable(),
+	parentPhone: z.string().trim().max(30).optional().nullable(),
+	parentEmail: z.string().trim().email().max(255).optional().nullable(),
+	parentRelationship: z.string().trim().max(100).optional().nullable(),
+	// YouTube videos for highlight plays
+	youtubeVideos: z.array(z.string().url()).max(10).optional().nullable(),
+	// Education information (for student athletes)
+	educationInstitution: z.string().trim().max(200).optional().nullable(),
+	educationYear: z.string().trim().max(50).optional().nullable(),
+	expectedGraduationDate: z.coerce.date().optional().nullable(),
+	gpa: z.string().trim().max(10).optional().nullable(), // Stored as numeric string
+	// Health & dietary information
+	dietaryRestrictions: z.string().trim().max(500).optional().nullable(),
+	allergies: z.string().trim().max(500).optional().nullable(),
+	// Residence information
+	residenceCity: z.string().trim().max(100).optional().nullable(),
+	residenceCountry: z.string().trim().max(100).optional().nullable(),
 });
 
 // Delete athlete

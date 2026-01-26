@@ -1,0 +1,101 @@
+{
+	"title": "Administración",
+	"description": "Panel de administración de la plataforma.",
+	"nav": {
+		"users": "Usuarios",
+		"organizations": "Organizaciones",
+		"config": "Configuración"
+	},
+	"users": {
+		"title": "Usuarios",
+		"description": "Gestiona los usuarios de la plataforma.",
+		"search": "Buscar usuarios...",
+		"table": {
+			"name": "Nombre",
+			"email": "Email",
+			"role": "Rol",
+			"status": "Estado",
+			"createdAt": "Fecha de registro",
+			"actions": "Acciones"
+		},
+		"filters": {
+			"all": "Todos",
+			"active": "Activos",
+			"banned": "Baneados",
+			"byRole": "Por rol"
+		},
+		"actions": {
+			"edit": "Editar",
+			"ban": "Banear",
+			"unban": "Desbanear",
+			"delete": "Eliminar",
+			"impersonate": "Impersonar"
+		},
+		"roles": {
+			"user": "Usuario",
+			"admin": "Administrador"
+		},
+		"success": {
+			"updated": "Usuario actualizado correctamente.",
+			"banned": "Usuario baneado correctamente.",
+			"unbanned": "Usuario desbaneado correctamente.",
+			"deleted": "Usuario eliminado correctamente.",
+			"roleUpdated": "Rol de usuario actualizado correctamente."
+		},
+		"error": {
+			"notFound": "Usuario no encontrado.",
+			"updateFailed": "No se pudo actualizar el usuario.",
+			"banFailed": "No se pudo banear el usuario.",
+			"deleteFailed": "No se pudo eliminar el usuario."
+		}
+	},
+	"organizations": {
+		"title": "Organizaciones",
+		"description": "Gestiona las organizaciones de la plataforma.",
+		"search": "Buscar organizaciones...",
+		"table": {
+			"name": "Nombre",
+			"slug": "URL",
+			"owner": "Propietario",
+			"members": "Miembros",
+			"plan": "Plan",
+			"createdAt": "Fecha de creación",
+			"actions": "Acciones"
+		},
+		"filters": {
+			"all": "Todas",
+			"active": "Activas",
+			"suspended": "Suspendidas",
+			"byPlan": "Por plan"
+		},
+		"actions": {
+			"view": "Ver",
+			"edit": "Editar",
+			"suspend": "Suspender",
+			"reactivate": "Reactivar",
+			"delete": "Eliminar"
+		},
+		"success": {
+			"updated": "Organización actualizada correctamente.",
+			"suspended": "Organización suspendida correctamente.",
+			"reactivated": "Organización reactivada correctamente.",
+			"deleted": "Organización eliminada correctamente."
+		},
+		"error": {
+			"notFound": "Organización no encontrada.",
+			"updateFailed": "No se pudo actualizar la organización.",
+			"suspendFailed": "No se pudo suspender la organización.",
+			"deleteFailed": "No se pudo eliminar la organización."
+		}
+	},
+	"config": {
+		"title": "Configuración",
+		"description": "Configuración global de la plataforma.",
+		"sections": {
+			"general": "General",
+			"features": "Funcionalidades",
+			"billing": "Facturación",
+			"email": "Email"
+		}
+	}
+}

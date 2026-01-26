@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import type * as React from "react";
 import { ExpenseCategoriesTable } from "@/components/organization/expense-categories-table";
 import { OrganizationBreadcrumbSwitcher } from "@/components/organization/organization-breadcrumb-switcher";
@@ -7,14 +8,14 @@ import {
 	Page,
 	PageBody,
 	PageBreadcrumb,
+	PageContent,
 	PageHeader,
 	PagePrimaryBar,
-	PageTitle,
 } from "@/components/ui/custom/page";
 import { getSession } from "@/lib/auth/server";
 
 export const metadata: Metadata = {
-	title: "Categorias de Gastos",
+	title: "Expense Categories",
 };
 
 export default async function ExpenseCategoriesPage(): Promise<React.JSX.Element> {
@@ -23,32 +24,29 @@ export default async function ExpenseCategoriesPage(): Promise<React.JSX.Element
 		redirect("/dashboard");
 	}
 
+	const t = await getTranslations("organization.pages");
+
 	return (
 		<Page>
 			<PageHeader>
 				<PagePrimaryBar>
 					<PageBreadcrumb
 						segments={[
-							{ label: "Home", href: "/dashboard" },
+							{ label: t("home"), href: "/dashboard" },
 							{ label: <OrganizationBreadcrumbSwitcher />, isCustom: true },
-							{ label: "Gastos", href: "/dashboard/organization/expenses" },
-							{ label: "Categorias" },
+							{
+								label: t("expenses.title"),
+								href: "/dashboard/organization/expenses",
+							},
+							{ label: t("expenses.categories") },
 						]}
 					/>
 				</PagePrimaryBar>
 			</PageHeader>
 			<PageBody>
-				<div className="p-4 sm:px-6 sm:pt-6 sm:pb-24">
-					<div className="mx-auto w-full space-y-4">
-						<div>
-							<PageTitle>Categorias de Gastos</PageTitle>
-							<p className="text-muted-foreground text-sm">
-								Configura las categorias para clasificar tus gastos
-							</p>
-						</div>
-						<ExpenseCategoriesTable />
-					</div>
-				</div>
+				<PageContent title={t("expenses.categories")}>
+					<ExpenseCategoriesTable />
+				</PageContent>
 			</PageBody>
 		</Page>
 	);

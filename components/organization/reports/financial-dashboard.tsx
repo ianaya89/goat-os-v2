@@ -33,7 +33,10 @@ import { ExpensesByCategoryChart } from "./expenses-by-category-chart";
 import { FinancialSummaryCards } from "./financial-summary-cards";
 import { OutstandingPaymentsTable } from "./outstanding-payments-table";
 import { RevenueByAthleteChart } from "./revenue-by-athlete-chart";
+import { RevenueByEventChart } from "./revenue-by-event-chart";
+import { RevenueByLocationChart } from "./revenue-by-location-chart";
 import { RevenueByPaymentMethodChart } from "./revenue-by-payment-method-chart";
+import { RevenueCumulativeChart } from "./revenue-cumulative-chart";
 import { RevenueTrendChart } from "./revenue-trend-chart";
 
 type Period = "day" | "week" | "month" | "year";
@@ -186,6 +189,15 @@ export function FinancialDashboard(): React.JSX.Element {
 
 			{/* Cash Flow Chart */}
 			<CashFlowChart dateRange={dateRange} period={period} />
+
+			{/* Revenue Cumulative Chart */}
+			<RevenueCumulativeChart dateRange={dateRange} period={period} />
+
+			{/* Revenue by Event and Location */}
+			<div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+				<RevenueByEventChart dateRange={dateRange} />
+				<RevenueByLocationChart dateRange={dateRange} />
+			</div>
 
 			{/* Distribution Charts Row */}
 			<div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

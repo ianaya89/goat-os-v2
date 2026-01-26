@@ -1,7 +1,8 @@
 "use client";
 
-import { format, isAfter, isBefore, isToday, startOfDay } from "date-fns";
 import NiceModal from "@ebay/nice-modal-react";
+import { format, isAfter, isBefore, isToday, startOfDay } from "date-fns";
+import { es } from "date-fns/locale";
 import {
 	ActivityIcon,
 	CalendarIcon,
@@ -10,9 +11,9 @@ import {
 	MapPinIcon,
 	MessageSquarePlusIcon,
 	StarIcon,
-	UserIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { SessionFeedbackModal } from "@/components/organization/session-feedback-modal";
 import { WellnessSurveyCard } from "@/components/organization/wellness-survey-card";
@@ -29,7 +30,8 @@ import { trpc } from "@/trpc/client";
 const statusColors: Record<string, string> = {
 	pending: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100",
 	confirmed: "bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100",
-	completed: "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100",
+	completed:
+		"bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100",
 	cancelled: "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100",
 };
 
@@ -42,9 +44,10 @@ const attendanceColors: Record<string, string> = {
 };
 
 export function AthleteSessionsView() {
+	const t = useTranslations("training.athleteView");
 	const [tab, setTab] = React.useState<"upcoming" | "past" | "all">("upcoming");
 
-	const { data, isLoading, error } =
+	const { data, isLoading } =
 		trpc.organization.trainingSession.listMySessionsAsAthlete.useQuery({
 			limit: 100,
 			offset: 0,
@@ -60,7 +63,8 @@ export function AthleteSessionsView() {
 		if (tab === "upcoming") {
 			return data.sessions.filter(
 				(s) =>
-					(isAfter(new Date(s.startTime), now) || isToday(new Date(s.startTime))) &&
+					(isAfter(new Date(s.startTime), now) ||
+						isToday(new Date(s.startTime))) &&
 					s.status !== TrainingSessionStatus.cancelled &&
 					s.status !== TrainingSessionStatus.completed,
 			);
@@ -96,7 +100,8 @@ export function AthleteSessionsView() {
 
 		const upcomingCount = data.sessions.filter(
 			(s) =>
-				(isAfter(new Date(s.startTime), now) || isToday(new Date(s.startTime))) &&
+				(isAfter(new Date(s.startTime), now) ||
+					isToday(new Date(s.startTime))) &&
 				s.status !== TrainingSessionStatus.cancelled &&
 				s.status !== TrainingSessionStatus.completed,
 		).length;
@@ -139,11 +144,9 @@ export function AthleteSessionsView() {
 		return (
 			<Card>
 				<CardContent className="py-10 text-center">
-					<p className="text-muted-foreground">
-						No athlete profile found for your account in this organization.
-					</p>
+					<p className="text-muted-foreground">{t("noAthleteProfile")}</p>
 					<p className="mt-2 text-muted-foreground text-sm">
-						Contact your organization administrator to be added as an athlete.
+						{t("contactAdmin")}
 					</p>
 				</CardContent>
 			</Card>
@@ -157,45 +160,47 @@ export function AthleteSessionsView() {
 				<Card>
 					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 						<CardTitle className="font-medium text-sm">
-							Today's Sessions
+							{t("todaySessions")}
 						</CardTitle>
 						<CalendarIcon className="size-4 text-muted-foreground" />
 					</CardHeader>
 					<CardContent>
 						<div className="font-bold text-2xl">{stats.todayCount}</div>
 						<p className="text-muted-foreground text-xs">
-							{stats.todayCount === 1 ? "session" : "sessions"} scheduled
+							{t("sessionScheduled", { count: stats.todayCount })}
 						</p>
 					</CardContent>
 				</Card>
 				<Card>
 					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 						<CardTitle className="font-medium text-sm">
-							Upcoming Sessions
+							{t("upcomingSessions")}
 						</CardTitle>
 						<ClockIcon className="size-4 text-muted-foreground" />
 					</CardHeader>
 					<CardContent>
 						<div className="font-bold text-2xl">{stats.upcomingCount}</div>
-						<p className="text-muted-foreground text-xs">pending & confirmed</p>
+						<p className="text-muted-foreground text-xs">
+							{t("pendingConfirmed")}
+						</p>
 					</CardContent>
 				</Card>
 				<Card>
 					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 						<CardTitle className="font-medium text-sm">
-							Sessions Attended
+							{t("sessionsAttended")}
 						</CardTitle>
 						<CheckCircleIcon className="size-4 text-muted-foreground" />
 					</CardHeader>
 					<CardContent>
 						<div className="font-bold text-2xl">{stats.attendedCount}</div>
-						<p className="text-muted-foreground text-xs">all time</p>
+						<p className="text-muted-foreground text-xs">{t("allTime")}</p>
 					</CardContent>
 				</Card>
 				<Card>
 					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 						<CardTitle className="font-medium text-sm">
-							Average Rating
+							{t("averageRating")}
 						</CardTitle>
 						<StarIcon className="size-4 text-muted-foreground" />
 					</CardHeader>
@@ -204,7 +209,7 @@ export function AthleteSessionsView() {
 							{stats.averageRating > 0 ? stats.averageRating.toFixed(1) : "-"}
 						</div>
 						<p className="text-muted-foreground text-xs">
-							{stats.averageRating > 0 ? "out of 5" : "no evaluations yet"}
+							{stats.averageRating > 0 ? t("outOf5") : t("noEvaluationsYet")}
 						</p>
 					</CardContent>
 				</Card>
@@ -216,24 +221,28 @@ export function AthleteSessionsView() {
 			{/* Sessions List */}
 			<Card>
 				<CardHeader>
-					<CardTitle>My Training Sessions</CardTitle>
+					<CardTitle>{t("myTrainingSessions")}</CardTitle>
 				</CardHeader>
 				<CardContent>
 					<Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
 						<TabsList>
-							<TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-							<TabsTrigger value="past">Past</TabsTrigger>
-							<TabsTrigger value="all">All</TabsTrigger>
+							<TabsTrigger value="upcoming">{t("upcoming")}</TabsTrigger>
+							<TabsTrigger value="past">{t("past")}</TabsTrigger>
+							<TabsTrigger value="all">{t("all")}</TabsTrigger>
 						</TabsList>
 						<TabsContent value={tab} className="mt-4">
 							{sessions.length === 0 ? (
 								<div className="py-10 text-center text-muted-foreground">
-									No {tab === "all" ? "" : tab} sessions found.
+									{t("noSessionsFound", { filter: tab === "all" ? "" : tab })}
 								</div>
 							) : (
-								<div className="space-y-3">
+								<div className="divide-y">
 									{sessions.map((session) => (
-										<AthleteSessionCard key={session.id} session={session} />
+										<AthleteSessionCard
+											key={session.id}
+											session={session}
+											t={t}
+										/>
 									))}
 								</div>
 							)}
@@ -274,9 +283,10 @@ interface AthleteSessionCardProps {
 			satisfactionRating: number | null;
 		}>;
 	};
+	t: ReturnType<typeof useTranslations<"training.athleteView">>;
 }
 
-function AthleteSessionCard({ session }: AthleteSessionCardProps) {
+function AthleteSessionCard({ session, t }: AthleteSessionCardProps) {
 	const isTodaySession = isToday(new Date(session.startTime));
 	const isPast =
 		isBefore(new Date(session.startTime), new Date()) ||
@@ -302,8 +312,8 @@ function AthleteSessionCard({ session }: AthleteSessionCardProps) {
 		<Link href={`/dashboard/organization/training-sessions/${session.id}`}>
 			<div
 				className={cn(
-					"flex flex-col gap-4 rounded-lg border p-4 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between",
-					isTodaySession && "border-primary bg-primary/5",
+					"flex flex-col gap-4 py-4 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between",
+					isTodaySession && "bg-primary/5",
 				)}
 			>
 				<div className="flex-1 space-y-1">
@@ -314,12 +324,15 @@ function AthleteSessionCard({ session }: AthleteSessionCardProps) {
 						</Badge>
 						{isTodaySession && (
 							<Badge variant="outline" className="border-primary text-primary">
-								Today
+								{t("today")}
 							</Badge>
 						)}
 						{isPast && attendance && (
 							<Badge
-								className={cn("border-none", attendanceColors[attendance.status])}
+								className={cn(
+									"border-none",
+									attendanceColors[attendance.status],
+								)}
 							>
 								{capitalize(attendance.status)}
 							</Badge>
@@ -358,7 +371,7 @@ function AthleteSessionCard({ session }: AthleteSessionCardProps) {
 								src={primaryCoach.user?.image ?? undefined}
 							/>
 							<span className="text-muted-foreground text-sm">
-								{primaryCoach.user?.name ?? "Unknown Coach"}
+								{primaryCoach.user?.name ?? t("unknownCoach")}
 							</span>
 						</div>
 					)}
@@ -374,8 +387,8 @@ function AthleteSessionCard({ session }: AthleteSessionCardProps) {
 					)}
 
 					{/* Feedback indicator */}
-					{isPast && (
-						feedback?.rpeRating ? (
+					{isPast &&
+						(feedback?.rpeRating ? (
 							<Badge
 								variant="outline"
 								className="gap-1 border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300"
@@ -391,10 +404,9 @@ function AthleteSessionCard({ session }: AthleteSessionCardProps) {
 								onClick={handleFeedbackClick}
 							>
 								<MessageSquarePlusIcon className="size-3" />
-								Add Feedback
+								{t("addFeedback")}
 							</Button>
-						)
-					)}
+						))}
 
 					{session.athleteGroup && (
 						<Badge variant="outline">{session.athleteGroup.name}</Badge>

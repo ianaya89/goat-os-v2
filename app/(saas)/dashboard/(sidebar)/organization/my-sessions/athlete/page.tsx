@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import type * as React from "react";
 import { AthleteSessionsView } from "@/components/organization/athlete-sessions-view";
 import { OrganizationBreadcrumbSwitcher } from "@/components/organization/organization-breadcrumb-switcher";
@@ -23,21 +24,22 @@ export default async function AthleteSessionsPage(): Promise<React.JSX.Element> 
 		redirect("/dashboard");
 	}
 
+	const t = await getTranslations("organization.pages");
+
 	return (
 		<Page>
 			<PageHeader>
 				<PagePrimaryBar>
 					<PageBreadcrumb
 						segments={[
-							{ label: "Home", href: "/dashboard" },
 							{ label: <OrganizationBreadcrumbSwitcher />, isCustom: true },
-							{ label: "My Sessions (Athlete)" },
+							{ label: t("mySessions.athlete.title") },
 						]}
 					/>
 				</PagePrimaryBar>
 			</PageHeader>
 			<PageBody>
-				<PageContent title="My Training Sessions">
+				<PageContent title={t("mySessions.athlete.pageTitle")}>
 					<AthleteSessionsView />
 				</PageContent>
 			</PageBody>

@@ -18,14 +18,19 @@ import { createCashMovementIfCash } from "@/lib/cash-register-helpers";
 import { db } from "@/lib/db";
 import {
 	CashMovementReferenceType,
+	DiscountMode,
+	DiscountValueType,
 	EventPaymentStatus,
 	EventRegistrationStatus,
 	PricingTierType,
 } from "@/lib/db/schema/enums";
 import {
 	ageCategoryTable,
+	athleteTable,
 	eventAgeCategoryTable,
 	eventCoachTable,
+	eventDiscountTable,
+	eventDiscountUsageTable,
 	eventPaymentTable,
 	eventPricingTierTable,
 	eventRegistrationTable,
@@ -45,27 +50,33 @@ import {
 	cancelEventRegistrationSchema,
 	confirmFromWaitlistSchema,
 	createAgeCategorySchema,
+	createDiscountSchema,
 	createEventPaymentSchema,
 	createEventRegistrationSchema,
 	createPricingTierSchema,
 	createSportsEventSchema,
 	deleteAgeCategorySchema,
+	deleteDiscountSchema,
 	deletePaymentReceiptSchema,
 	deletePricingTierSchema,
 	deleteSportsEventSchema,
 	duplicateSportsEventSchema,
+	getApplicableDiscountsSchema,
 	getEventRegistrationSchema,
 	getReceiptDownloadUrlSchema,
 	getReceiptUploadUrlSchema,
 	listAgeCategoriesSchema,
+	listDiscountsSchema,
 	listEventCoachesSchema,
 	listEventPaymentsSchema,
 	listEventRegistrationsSchema,
 	listPricingTiersSchema,
 	listSportsEventsSchema,
 	processRefundSchema,
+	registerExistingAthletesSchema,
 	removeEventCoachSchema,
 	updateAgeCategorySchema,
+	updateDiscountSchema,
 	updateEventAgeCategoriesSchema,
 	updateEventPaymentSchema,
 	updateEventRegistrationSchema,
@@ -73,6 +84,7 @@ import {
 	updatePricingTierSchema,
 	updateSportsEventSchema,
 	updateSportsEventStatusSchema,
+	validateDiscountCodeSchema,
 } from "@/schemas/organization-sports-event-schemas";
 import { createTRPCRouter, protectedOrganizationProcedure } from "@/trpc/init";
 
@@ -382,7 +394,10 @@ export const organizationSportsEventRouter = createTRPCRouter({
 				});
 			}
 
-			return event;
+			return {
+				...event,
+				organizationSlug: ctx.organization.slug,
+			};
 		}),
 
 	create: protectedOrganizationProcedure
@@ -451,7 +466,7 @@ export const organizationSportsEventRouter = createTRPCRouter({
 	update: protectedOrganizationProcedure
 		.input(updateSportsEventSchema)
 		.mutation(async ({ ctx, input }) => {
-			const { id, acceptedPaymentMethods, ...data } = input;
+			const { id, acceptedPaymentMethods, ageCategoryIds, ...data } = input;
 
 			// Check slug uniqueness if changing
 			if (data.slug) {
@@ -493,6 +508,24 @@ export const organizationSportsEventRouter = createTRPCRouter({
 					code: "NOT_FOUND",
 					message: "Event not found",
 				});
+			}
+
+			// Update age categories if provided
+			if (ageCategoryIds !== undefined) {
+				// Delete existing associations
+				await db
+					.delete(eventAgeCategoryTable)
+					.where(eq(eventAgeCategoryTable.eventId, id));
+
+				// Create new associations
+				if (ageCategoryIds.length > 0) {
+					await db.insert(eventAgeCategoryTable).values(
+						ageCategoryIds.map((ageCategoryId) => ({
+							eventId: id,
+							ageCategoryId,
+						})),
+					);
+				}
 			}
 
 			return updated;
@@ -1246,6 +1279,176 @@ export const organizationSportsEventRouter = createTRPCRouter({
 			return { success: true, count: updated.length };
 		}),
 
+	// Register existing athletes from the organization to an event
+	registerExistingAthletes: protectedOrganizationProcedure
+		.input(registerExistingAthletesSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify event belongs to organization
+			const event = await db.query.sportsEventTable.findFirst({
+				where: and(
+					eq(sportsEventTable.id, input.eventId),
+					eq(sportsEventTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!event) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Event not found",
+				});
+			}
+
+			// Get athletes with their user data (for name/email)
+			const athletes = await db.query.athleteTable.findMany({
+				where: and(
+					inArray(athleteTable.id, input.athleteIds),
+					eq(athleteTable.organizationId, ctx.organization.id),
+				),
+				with: {
+					user: {
+						columns: {
+							name: true,
+							email: true,
+						},
+					},
+				},
+			});
+
+			if (athletes.length === 0) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "No valid athletes found",
+				});
+			}
+
+			// Check which athletes are already registered
+			const existingRegistrations =
+				await db.query.eventRegistrationTable.findMany({
+					where: and(
+						eq(eventRegistrationTable.eventId, input.eventId),
+						inArray(
+							eventRegistrationTable.athleteId,
+							athletes.map((a) => a.id),
+						),
+					),
+				});
+
+			const alreadyRegisteredIds = new Set(
+				existingRegistrations
+					.filter((r) => r.athleteId)
+					.map((r) => r.athleteId),
+			);
+
+			// Filter out already registered athletes
+			const athletesToRegister = athletes.filter(
+				(a) => !alreadyRegisteredIds.has(a.id),
+			);
+
+			if (athletesToRegister.length === 0) {
+				return {
+					success: true,
+					registered: 0,
+					skipped: athletes.length,
+					message: "Todos los atletas ya están registrados",
+				};
+			}
+
+			// Use transaction to prevent race conditions
+			const result = await db.transaction(async (tx) => {
+				// Get current registration count
+				const [countResult] = await tx
+					.select({ count: count() })
+					.from(eventRegistrationTable)
+					.where(eq(eventRegistrationTable.eventId, input.eventId));
+
+				let currentCount = countResult?.count ?? 0;
+				const registrations = [];
+
+				for (const athlete of athletesToRegister) {
+					currentCount++;
+					const registrationNumber = currentCount;
+
+					// Check capacity
+					let status = input.status;
+					let waitlistPosition: number | null = null;
+
+					if (
+						event.maxCapacity &&
+						currentCount > event.maxCapacity &&
+						status !== EventRegistrationStatus.waitlist
+					) {
+						if (event.enableWaitlist) {
+							status = EventRegistrationStatus.waitlist;
+							// Get next waitlist position
+							const [waitlistCount] = await tx
+								.select({ count: count() })
+								.from(eventRegistrationTable)
+								.where(
+									and(
+										eq(eventRegistrationTable.eventId, input.eventId),
+										eq(
+											eventRegistrationTable.status,
+											EventRegistrationStatus.waitlist,
+										),
+									),
+								);
+							waitlistPosition = (waitlistCount?.count ?? 0) + 1;
+						} else {
+							// Skip this athlete - event is full
+							continue;
+						}
+					}
+
+					// Calculate price for this registration
+					const priceResult = await calculateRegistrationPrice(
+						input.eventId,
+						registrationNumber,
+						null, // No age category specified for bulk registration
+					);
+
+					const [registration] = await tx
+						.insert(eventRegistrationTable)
+						.values({
+							eventId: input.eventId,
+							organizationId: ctx.organization.id,
+							registrationNumber,
+							athleteId: athlete.id,
+							userId: athlete.userId,
+							registrantName: athlete.user?.name || "Sin nombre",
+							registrantEmail:
+								athlete.user?.email || `athlete-${athlete.id}@noemail.com`,
+							registrantPhone: athlete.phone,
+							registrantBirthDate: athlete.birthDate,
+							// Use parent info as emergency contact
+							emergencyContactName: athlete.parentName,
+							emergencyContactPhone: athlete.parentPhone,
+							emergencyContactRelation: athlete.parentRelationship,
+							status,
+							waitlistPosition,
+							appliedPricingTierId: priceResult.tierId,
+							price: priceResult.price,
+							currency: event.currency,
+							notes: input.notes,
+							registrationSource: "admin",
+						})
+						.returning();
+
+					if (registration) {
+						registrations.push(registration);
+					}
+				}
+
+				return registrations;
+			});
+
+			return {
+				success: true,
+				registered: result.length,
+				skipped: athletes.length - athletesToRegister.length,
+				registrations: result,
+			};
+		}),
+
 	// ============================================================================
 	// PAYMENTS
 	// ============================================================================
@@ -1758,4 +1961,408 @@ export const organizationSportsEventRouter = createTRPCRouter({
 
 			return { success: true };
 		}),
+
+	// ============================================================================
+	// EVENT DISCOUNTS
+	// ============================================================================
+
+	listDiscounts: protectedOrganizationProcedure
+		.input(listDiscountsSchema)
+		.query(async ({ ctx, input }) => {
+			// Verify event belongs to organization
+			const event = await db.query.sportsEventTable.findFirst({
+				where: and(
+					eq(sportsEventTable.id, input.eventId),
+					eq(sportsEventTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!event) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Event not found",
+				});
+			}
+
+			const conditions = [eq(eventDiscountTable.eventId, input.eventId)];
+
+			if (!input.includeInactive) {
+				conditions.push(eq(eventDiscountTable.isActive, true));
+			}
+
+			const discounts = await db.query.eventDiscountTable.findMany({
+				where: and(...conditions),
+				orderBy: [
+					desc(eventDiscountTable.priority),
+					asc(eventDiscountTable.createdAt),
+				],
+			});
+
+			return discounts;
+		}),
+
+	createDiscount: protectedOrganizationProcedure
+		.input(createDiscountSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify event belongs to organization
+			const event = await db.query.sportsEventTable.findFirst({
+				where: and(
+					eq(sportsEventTable.id, input.eventId),
+					eq(sportsEventTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!event) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Event not found",
+				});
+			}
+
+			// If code mode, verify code doesn't already exist for this event
+			if (input.discountMode === DiscountMode.code && input.code) {
+				const existingCode = await db.query.eventDiscountTable.findFirst({
+					where: and(
+						eq(eventDiscountTable.eventId, input.eventId),
+						eq(eventDiscountTable.code, input.code),
+					),
+				});
+
+				if (existingCode) {
+					throw new TRPCError({
+						code: "CONFLICT",
+						message: "Ya existe un descuento con este código para este evento",
+					});
+				}
+			}
+
+			const [discount] = await db
+				.insert(eventDiscountTable)
+				.values({
+					eventId: input.eventId,
+					organizationId: ctx.organization.id,
+					name: input.name,
+					description: input.description,
+					discountMode: input.discountMode,
+					code: input.discountMode === DiscountMode.code ? input.code : null,
+					discountValueType: input.discountValueType,
+					discountValue: input.discountValue,
+					maxUses: input.maxUses,
+					maxUsesPerUser: input.maxUsesPerUser,
+					validFrom: input.validFrom,
+					validUntil: input.validUntil,
+					minPurchaseAmount: input.minPurchaseAmount,
+					priority: input.priority,
+					isActive: input.isActive,
+				})
+				.returning();
+
+			return discount;
+		}),
+
+	updateDiscount: protectedOrganizationProcedure
+		.input(updateDiscountSchema)
+		.mutation(async ({ ctx, input }) => {
+			const { id, ...data } = input;
+
+			// Verify discount belongs to organization
+			const existing = await db.query.eventDiscountTable.findFirst({
+				where: and(
+					eq(eventDiscountTable.id, id),
+					eq(eventDiscountTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!existing) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Discount not found",
+				});
+			}
+
+			// If changing to code mode and providing a code, verify it's unique
+			const newMode = data.discountMode ?? existing.discountMode;
+			const newCode = data.code ?? existing.code;
+
+			if (
+				newMode === DiscountMode.code &&
+				newCode &&
+				newCode !== existing.code
+			) {
+				const existingCode = await db.query.eventDiscountTable.findFirst({
+					where: and(
+						eq(eventDiscountTable.eventId, existing.eventId),
+						eq(eventDiscountTable.code, newCode),
+					),
+				});
+
+				if (existingCode && existingCode.id !== id) {
+					throw new TRPCError({
+						code: "CONFLICT",
+						message: "Ya existe un descuento con este código para este evento",
+					});
+				}
+			}
+
+			const [updated] = await db
+				.update(eventDiscountTable)
+				.set({
+					...data,
+					// Clear code if mode is automatic
+					code: newMode === DiscountMode.automatic ? null : newCode,
+				})
+				.where(eq(eventDiscountTable.id, id))
+				.returning();
+
+			return updated;
+		}),
+
+	deleteDiscount: protectedOrganizationProcedure
+		.input(deleteDiscountSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify discount belongs to organization
+			const existing = await db.query.eventDiscountTable.findFirst({
+				where: and(
+					eq(eventDiscountTable.id, input.id),
+					eq(eventDiscountTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!existing) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Discount not found",
+				});
+			}
+
+			await db
+				.delete(eventDiscountTable)
+				.where(eq(eventDiscountTable.id, input.id));
+
+			return { success: true };
+		}),
+
+	validateDiscountCode: protectedOrganizationProcedure
+		.input(validateDiscountCodeSchema)
+		.query(async ({ input }) => {
+			const now = new Date();
+
+			// Find the discount code
+			const discount = await db.query.eventDiscountTable.findFirst({
+				where: and(
+					eq(eventDiscountTable.eventId, input.eventId),
+					eq(eventDiscountTable.code, input.code),
+					eq(eventDiscountTable.discountMode, DiscountMode.code),
+					eq(eventDiscountTable.isActive, true),
+				),
+			});
+
+			if (!discount) {
+				return {
+					valid: false,
+					errorMessage: "Código de descuento no válido",
+				};
+			}
+
+			// Check date validity
+			if (discount.validFrom && now < discount.validFrom) {
+				return {
+					valid: false,
+					errorMessage: "Este código aún no está activo",
+				};
+			}
+
+			if (discount.validUntil && now > discount.validUntil) {
+				return {
+					valid: false,
+					errorMessage: "Este código ha expirado",
+				};
+			}
+
+			// Check total usage limit
+			if (discount.maxUses && discount.currentUses >= discount.maxUses) {
+				return {
+					valid: false,
+					errorMessage: "Este código ha alcanzado su límite de uso",
+				};
+			}
+
+			// Check per-user limit
+			if (discount.maxUsesPerUser) {
+				const userUsages = await db
+					.select({ count: count() })
+					.from(eventDiscountUsageTable)
+					.where(
+						and(
+							eq(eventDiscountUsageTable.discountId, discount.id),
+							eq(eventDiscountUsageTable.userEmail, input.userEmail),
+						),
+					);
+
+				if (userUsages[0] && userUsages[0].count >= discount.maxUsesPerUser) {
+					return {
+						valid: false,
+						errorMessage:
+							"Ya has usado este código el máximo de veces permitido",
+					};
+				}
+			}
+
+			// Check minimum purchase amount
+			if (
+				discount.minPurchaseAmount &&
+				input.originalPrice < discount.minPurchaseAmount
+			) {
+				return {
+					valid: false,
+					errorMessage: `El monto mínimo de compra es ${discount.minPurchaseAmount / 100}`,
+				};
+			}
+
+			// Calculate discount amount
+			let discountAmount: number;
+			if (discount.discountValueType === DiscountValueType.percentage) {
+				discountAmount = Math.round(
+					(input.originalPrice * discount.discountValue) / 100,
+				);
+			} else {
+				discountAmount = Math.min(discount.discountValue, input.originalPrice);
+			}
+
+			return {
+				valid: true,
+				discount,
+				discountAmount,
+				finalPrice: Math.max(0, input.originalPrice - discountAmount),
+			};
+		}),
+
+	getApplicableAutomaticDiscounts: protectedOrganizationProcedure
+		.input(getApplicableDiscountsSchema)
+		.query(async ({ input }) => {
+			const now = new Date();
+
+			// Find all active automatic discounts for this event
+			const discounts = await db.query.eventDiscountTable.findMany({
+				where: and(
+					eq(eventDiscountTable.eventId, input.eventId),
+					eq(eventDiscountTable.discountMode, DiscountMode.automatic),
+					eq(eventDiscountTable.isActive, true),
+				),
+				orderBy: [desc(eventDiscountTable.priority)],
+			});
+
+			// Filter applicable discounts
+			const applicableDiscounts = [];
+
+			for (const discount of discounts) {
+				// Check date validity
+				if (discount.validFrom && now < discount.validFrom) {
+					continue;
+				}
+
+				if (discount.validUntil && now > discount.validUntil) {
+					continue;
+				}
+
+				// Check total usage limit
+				if (discount.maxUses && discount.currentUses >= discount.maxUses) {
+					continue;
+				}
+
+				// Check per-user limit
+				if (discount.maxUsesPerUser) {
+					const userUsages = await db
+						.select({ count: count() })
+						.from(eventDiscountUsageTable)
+						.where(
+							and(
+								eq(eventDiscountUsageTable.discountId, discount.id),
+								eq(eventDiscountUsageTable.userEmail, input.userEmail),
+							),
+						);
+
+					if (userUsages[0] && userUsages[0].count >= discount.maxUsesPerUser) {
+						continue;
+					}
+				}
+
+				// Check minimum purchase amount
+				if (
+					discount.minPurchaseAmount &&
+					input.originalPrice < discount.minPurchaseAmount
+				) {
+					continue;
+				}
+
+				// Calculate discount amount
+				let discountAmount: number;
+				if (discount.discountValueType === DiscountValueType.percentage) {
+					discountAmount = Math.round(
+						(input.originalPrice * discount.discountValue) / 100,
+					);
+				} else {
+					discountAmount = Math.min(
+						discount.discountValue,
+						input.originalPrice,
+					);
+				}
+
+				applicableDiscounts.push({
+					discount,
+					discountAmount,
+					finalPrice: Math.max(0, input.originalPrice - discountAmount),
+				});
+			}
+
+			// Return the best discount (highest discount amount due to priority ordering)
+			if (applicableDiscounts.length > 0) {
+				// Already sorted by priority, but let's also sort by discountAmount
+				applicableDiscounts.sort((a, b) => b.discountAmount - a.discountAmount);
+				return applicableDiscounts[0];
+			}
+
+			return null;
+		}),
+
+	// List events the current user (as athlete) is registered for
+	listMyEvents: protectedOrganizationProcedure.query(async ({ ctx }) => {
+		// First, find the athlete record for the current user
+		const athlete = await db.query.athleteTable.findFirst({
+			where: and(
+				eq(athleteTable.userId, ctx.user.id),
+				eq(athleteTable.organizationId, ctx.organization.id),
+			),
+		});
+
+		if (!athlete) {
+			return { registrations: [], athlete: null };
+		}
+
+		// Get all event registrations for this athlete
+		const registrations = await db.query.eventRegistrationTable.findMany({
+			where: and(
+				eq(eventRegistrationTable.athleteId, athlete.id),
+				eq(eventRegistrationTable.organizationId, ctx.organization.id),
+			),
+			orderBy: desc(eventRegistrationTable.createdAt),
+			with: {
+				event: {
+					columns: {
+						id: true,
+						title: true,
+						description: true,
+						startDate: true,
+						endDate: true,
+						venueDetails: true,
+						status: true,
+						coverImageUrl: true,
+					},
+				},
+				ageCategory: true,
+			},
+		});
+
+		return { registrations, athlete };
+	}),
 });

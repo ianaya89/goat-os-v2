@@ -1,0 +1,90 @@
+{
+	"buttons": {
+		"save": "Save",
+		"cancel": "Cancel",
+		"delete": "Delete",
+		"edit": "Edit",
+		"create": "Create",
+		"submit": "Submit",
+		"loading": "Loading...",
+		"close": "Close",
+		"confirm": "Confirm",
+		"back": "Back",
+		"next": "Next",
+		"previous": "Previous",
+		"search": "Search",
+		"filter": "Filter",
+		"export": "Export",
+		"import": "Import",
+		"refresh": "Refresh",
+		"add": "Add",
+		"remove": "Remove",
+		"copy": "Copy",
+		"download": "Download",
+		"upload": "Upload",
+		"view": "View",
+		"viewAll": "View all",
+		"viewDetails": "View details",
+		"showMore": "Show more",
+		"showLess": "Show less"
+	},
+	"table": {
+		"noResults": "No results found",
+		"rowsPerPage": "Rows per page",
+		"showing": "Showing {from} to {to} of {total}",
+		"emptyState": "No data available",
+		"loading": "Loading data...",
+		"actions": "Actions"
+	},
+	"confirmation": {
+		"deleteTitle": "Confirm deletion",
+		"deleteMessage": "Are you sure? This action cannot be undone.",
+		"unsavedChanges": "You have unsaved changes. Do you want to continue?"
+	},
+	"status": {
+		"active": "Active",
+		"inactive": "Inactive",
+		"pending": "Pending",
+		"completed": "Completed",
+		"cancelled": "Cancelled",
+		"draft": "Draft",
+		"published": "Published",
+		"archived": "Archived"
+	},
+	"time": {
+		"today": "Today",
+		"yesterday": "Yesterday",
+		"tomorrow": "Tomorrow",
+		"thisWeek": "This week",
+		"thisMonth": "This month",
+		"thisYear": "This year"
+	},
+	"language": {
+		"switch": "Switch language",
+		"es": "Spanish",
+		"en": "English"
+	},
+	"errors": {
+		"generic": "Something went wrong. Please try again.",
+		"network": "Connection error. Check your internet connection.",
+		"notFound": "Not found",
+		"unauthorized": "Unauthorized",
+		"forbidden": "You don't have permission for this action"
+	},
+	"success": {
+		"saved": "Saved successfully",
+		"deleted": "Deleted successfully",
+		"updated": "Updated successfully",
+		"created": "Created successfully",
+		"copied": "Copied to clipboard"
+	},
+	"menu": {
+		"application": "Application",
+		"settings": "Settings",
+		"home": "Home",
+		"profile": "Profile",
+		"security": "Security",
+		"sessions": "Sessions",
+		"athleteProfile": "Athlete Profile"
+	}
+}

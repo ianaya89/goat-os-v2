@@ -2,6 +2,8 @@ import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { GeistSans } from "geist/font/sans";
 import type { Metadata } from "next";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 import type * as React from "react";
 
 import "./globals.css";
@@ -55,27 +57,36 @@ export const metadata: Metadata = {
  * - Vercel Analytics and Speed Insights
  * - Global tRPC and React Query provider
  * - Global Session context provider
+ * - Internationalization (i18n) provider
  */
 export default async function RootLayout({
 	children,
 }: React.PropsWithChildren): Promise<React.JSX.Element> {
 	const session = await getSession();
+	const locale = await getLocale();
+	const messages = await getMessages();
 
 	return (
 		<html
 			className={`${GeistSans.variable} size-full min-h-screen`}
-			lang="en"
+			lang={locale}
 			suppressHydrationWarning
 		>
 			<head />
 			<body className="size-full min-h-screen bg-background text-foreground antialiased">
-				<TRPCProvider
-					organizationId={
-						session ? (session.session.activeOrganizationId ?? null) : undefined
-					}
-				>
-					<SessionProvider initialSession={session}>{children}</SessionProvider>
-				</TRPCProvider>
+				<NextIntlClientProvider locale={locale} messages={messages}>
+					<TRPCProvider
+						organizationId={
+							session
+								? (session.session.activeOrganizationId ?? null)
+								: undefined
+						}
+					>
+						<SessionProvider initialSession={session}>
+							{children}
+						</SessionProvider>
+					</TRPCProvider>
+				</NextIntlClientProvider>
 				<Analytics />
 				<SpeedInsights />
 			</body>

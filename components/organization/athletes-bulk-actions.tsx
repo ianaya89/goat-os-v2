@@ -2,6 +2,7 @@
 
 import NiceModal from "@ebay/nice-modal-react";
 import type { Table } from "@tanstack/react-table";
+import { UsersIcon } from "lucide-react";
 import type * as React from "react";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/confirmation-modal";
@@ -32,13 +33,17 @@ export function AthletesBulkActions<T extends { id: string }>({
 }: AthletesBulkActionsProps<T>): React.JSX.Element {
 	const utils = trpc.useUtils();
 
-	const exportCsv =
-		trpc.organization.athlete.exportSelectedToCsv.useMutation();
+	const exportCsv = trpc.organization.athlete.exportSelectedToCsv.useMutation();
 	const exportExcel =
 		trpc.organization.athlete.exportSelectedToExcel.useMutation();
 	const bulkDelete = trpc.organization.athlete.bulkDelete.useMutation();
 	const bulkUpdateStatus =
 		trpc.organization.athlete.bulkUpdateStatus.useMutation();
+	const addToGroupMutation =
+		trpc.organization.athleteGroup.addMembers.useMutation();
+
+	const { data: availableGroups } =
+		trpc.organization.athleteGroup.listActive.useQuery();
 
 	const getDelimiterChar = (delimiterType: DelimiterType): string => {
 		switch (delimiterType) {
@@ -136,16 +141,51 @@ export function AthletesBulkActions<T extends { id: string }>({
 		}
 	};
 
+	const handleBulkAddToGroup = async (groupId: string, groupName: string) => {
+		const selectedRows = table.getSelectedRowModel().rows;
+		if (selectedRows.length === 0) {
+			toast.error("No athletes selected.");
+			return;
+		}
+
+		const athleteIds = selectedRows.map((row) => row.original.id);
+		try {
+			await addToGroupMutation.mutateAsync({ groupId, athleteIds });
+			toast.success(
+				`${selectedRows.length} athlete${selectedRows.length > 1 ? "s" : ""} added to "${groupName}".`,
+			);
+			table.resetRowSelection();
+			utils.organization.athlete.list.invalidate();
+		} catch (_err) {
+			toast.error("Failed to add athletes to group.");
+		}
+	};
+
 	const statusActions: BulkActionItem[] = AthleteStatuses.map((status) => ({
 		label: `Set to ${statusLabels[status] || capitalize(status)}`,
 		onClick: () => handleBulkUpdateStatus(status as AthleteStatus),
 	}));
+
+	const groupActions: BulkActionItem[] =
+		availableGroups?.map((group) => ({
+			label: group.name,
+			onClick: () => handleBulkAddToGroup(group.id, group.name),
+		})) ?? [];
 
 	const actions: BulkActionItem[] = [
 		{
 			label: "Change status",
 			actions: statusActions,
 		},
+		...(groupActions.length > 0
+			? [
+					{
+						label: "Add to group",
+						icon: UsersIcon,
+						actions: groupActions,
+					} as BulkActionItem,
+				]
+			: []),
 		{
 			label: "Export to CSV",
 			separator: true,

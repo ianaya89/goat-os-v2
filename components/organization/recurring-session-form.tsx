@@ -14,12 +14,12 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import {
+	getFrequencyLabel,
+	getShortDayLabel,
 	type RecurrenceConfig,
 	RecurrenceFrequency,
 	type WeekDay,
 	WeekDays,
-	getFrequencyLabel,
-	getShortDayLabel,
 } from "@/lib/training/rrule-utils";
 import { cn } from "@/lib/utils";
 

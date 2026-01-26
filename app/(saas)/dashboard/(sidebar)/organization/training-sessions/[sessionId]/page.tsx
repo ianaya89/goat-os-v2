@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import type * as React from "react";
 import { OrganizationBreadcrumbSwitcher } from "@/components/organization/organization-breadcrumb-switcher";
 import { TrainingSessionDetail } from "@/components/organization/training-session-detail";
@@ -32,25 +33,27 @@ export default async function TrainingSessionDetailPage({
 		redirect("/dashboard");
 	}
 
+	const t = await getTranslations("organization.pages");
+
 	return (
 		<Page>
 			<PageHeader>
 				<PagePrimaryBar>
 					<PageBreadcrumb
 						segments={[
-							{ label: "Home", href: "/dashboard" },
+							{ label: t("home"), href: "/dashboard" },
 							{ label: <OrganizationBreadcrumbSwitcher />, isCustom: true },
 							{
-								label: "Training Sessions",
+								label: t("trainingSessions.title"),
 								href: "/dashboard/organization/training-sessions",
 							},
-							{ label: "Session Details" },
+							{ label: t("trainingSessions.detail") },
 						]}
 					/>
 				</PagePrimaryBar>
 			</PageHeader>
 			<PageBody>
-				<PageContent title="Session Details">
+				<PageContent title={t("trainingSessions.detail")}>
 					<TrainingSessionDetail sessionId={resolvedParams.sessionId} />
 				</PageContent>
 			</PageBody>

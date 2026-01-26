@@ -40,10 +40,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 import { useZodForm } from "@/hooks/use-zod-form";
-import {
-	EventPaymentMethod,
-	EventPaymentMethods,
-} from "@/lib/db/schema/enums";
+import { EventPaymentMethod, EventPaymentMethods } from "@/lib/db/schema/enums";
 import { formatEventPrice } from "@/lib/format-event";
 import { cn } from "@/lib/utils";
 import { createEventPaymentSchema } from "@/schemas/organization-sports-event-schemas";
@@ -217,7 +214,10 @@ export const EventPaymentModal = NiceModal.create<EventPaymentModalProps>(
 									<div className="flex justify-between">
 										<span className="text-muted-foreground">Total:</span>
 										<span className="font-medium">
-											{formatEventPrice(selectedReg.price, selectedReg.currency)}
+											{formatEventPrice(
+												selectedReg.price,
+												selectedReg.currency,
+											)}
 										</span>
 									</div>
 									<div className="flex justify-between">
@@ -291,7 +291,8 @@ export const EventPaymentModal = NiceModal.create<EventPaymentModalProps>(
 								control={form.control}
 								name="paymentDate"
 								render={({ field }) => {
-									const dateValue = field.value instanceof Date ? field.value : undefined;
+									const dateValue =
+										field.value instanceof Date ? field.value : undefined;
 									return (
 										<FormItem className="flex flex-col">
 											<FormLabel>Fecha de Pago</FormLabel>

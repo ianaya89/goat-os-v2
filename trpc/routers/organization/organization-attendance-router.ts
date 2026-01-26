@@ -250,7 +250,10 @@ export const organizationAttendanceRouter = createTRPCRouter({
 				},
 			});
 
-			if (!attendance || attendance.session.organizationId !== ctx.organization.id) {
+			if (
+				!attendance ||
+				attendance.session.organizationId !== ctx.organization.id
+			) {
 				throw new TRPCError({
 					code: "NOT_FOUND",
 					message: "Attendance record not found",
@@ -283,7 +286,10 @@ export const organizationAttendanceRouter = createTRPCRouter({
 				},
 			});
 
-			if (!attendance || attendance.session.organizationId !== ctx.organization.id) {
+			if (
+				!attendance ||
+				attendance.session.organizationId !== ctx.organization.id
+			) {
 				throw new TRPCError({
 					code: "NOT_FOUND",
 					message: "Attendance record not found",

@@ -88,8 +88,8 @@ const roleColors: Record<string, string> = {
 // Roles that can be manually assigned (excludes coach and athlete)
 const assignableRoles = ["owner", "admin", "member"] as const;
 
-export const OrganizationUserModal = NiceModal.create<OrganizationUserModalProps>(
-	({ user }) => {
+export const OrganizationUserModal =
+	NiceModal.create<OrganizationUserModalProps>(({ user }) => {
 		const modal = useEnhancedModal();
 		const utils = trpc.useUtils();
 
@@ -343,8 +343,8 @@ export const OrganizationUserModal = NiceModal.create<OrganizationUserModalProps
 											</div>
 										</div>
 										<p className="mt-2 text-muted-foreground text-sm">
-											Sport: {user.athleteProfile.sport} |{" "}
-											Level: {capitalize(user.athleteProfile.level)}
+											Sport: {user.athleteProfile.sport} | Level:{" "}
+											{capitalize(user.athleteProfile.level)}
 										</p>
 									</div>
 								)}
@@ -389,8 +389,9 @@ export const OrganizationUserModal = NiceModal.create<OrganizationUserModalProps
 								<h4 className="font-medium text-sm">Change Role</h4>
 								{user.coachProfile || user.athleteProfile ? (
 									<p className="text-muted-foreground text-sm">
-										Users with coach or athlete profiles cannot have their role manually changed.
-										The role is automatically assigned based on their profile.
+										Users with coach or athlete profiles cannot have their role
+										manually changed. The role is automatically assigned based
+										on their profile.
 									</p>
 								) : (
 									<Form {...form}>
@@ -454,5 +455,4 @@ export const OrganizationUserModal = NiceModal.create<OrganizationUserModalProps
 				</SheetContent>
 			</Sheet>
 		);
-	},
-);
+	});

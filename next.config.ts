@@ -3,6 +3,9 @@ import withBundleAnalyzer from "@next/bundle-analyzer";
 import { withSentryConfig } from "@sentry/nextjs";
 import { createMDX } from "fumadocs-mdx/next";
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
+
+const withNextIntl = createNextIntlPlugin("./i18n.ts");
 
 // Validate environment variables at build time
 import "./lib/env";
@@ -37,6 +40,16 @@ const nextConfig: NextConfig = {
 				protocol: "https",
 				hostname: "randomuser.me",
 			},
+			{
+				// S3 bucket for uploads
+				protocol: "https",
+				hostname: "goat-os-dev.s3.us-east-1.amazonaws.com",
+			},
+			{
+				// S3 bucket for uploads (wildcard for any region/bucket)
+				protocol: "https",
+				hostname: "*.s3.*.amazonaws.com",
+			},
 		],
 	},
 	async redirects() {
@@ -59,10 +72,13 @@ const nextConfig: NextConfig = {
 	},
 };
 
+// Apply next-intl plugin first to the base config
+const intlConfig = withNextIntl(nextConfig);
+
 const bundleAnalyzerConfig =
 	process.env.ANALYZE === "true"
-		? withBundleAnalyzer({ enabled: true })(nextConfig)
-		: nextConfig;
+		? withBundleAnalyzer({ enabled: true })(intlConfig)
+		: intlConfig;
 
 const vercelOrCI = !!(process.env.VERCEL === "1" || process.env.CI);
 

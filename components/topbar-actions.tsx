@@ -23,10 +23,17 @@ export function TopbarActions({
 		NiceModal.show(CommandMenu);
 	}, []);
 
-	// Hide org switcher in organization area (it's shown in breadcrumb instead)
+	// Hide org switcher in dashboard areas where it's shown in breadcrumb instead
 	const isOrganizationArea = pathname?.startsWith("/dashboard/organization");
+	const isDashboardHome = pathname === "/dashboard";
+	const isSettingsPage = pathname === "/dashboard/settings";
+	const isMyProfilePage = pathname === "/dashboard/my-profile";
 	const shouldShowOrgSwitcher =
-		showOrgSwitcher ?? (!isOrganizationArea ? true : false);
+		showOrgSwitcher ??
+		(!isOrganizationArea &&
+			!isDashboardHome &&
+			!isSettingsPage &&
+			!isMyProfilePage);
 
 	return (
 		<div className={cn("flex items-center gap-3", className)}>

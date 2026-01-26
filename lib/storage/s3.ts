@@ -45,6 +45,23 @@ export type ImageContentType = (typeof ALLOWED_IMAGE_TYPES)[number];
 export type DocumentContentType = (typeof ALLOWED_DOCUMENT_TYPES)[number];
 
 // ============================================================================
+// BUCKET CONFIGURATION
+// ============================================================================
+
+/**
+ * Gets the S3 bucket name from environment variables.
+ * Uses a single bucket for all storage (images, documents, etc.)
+ * with prefixes to organize content.
+ */
+export function getBucketName(): string {
+	const bucket = env.S3_BUCKET || env.NEXT_PUBLIC_IMAGES_BUCKET_NAME;
+	if (!bucket) {
+		throw new Error("S3_BUCKET environment variable is not configured");
+	}
+	return bucket;
+}
+
+// ============================================================================
 // PATH VALIDATION
 // ============================================================================
 
@@ -94,26 +111,52 @@ function validatePath(path: string): string {
 
 let s3Client: S3Client | null = null;
 
+/**
+ * Resets the S3 client singleton. Call this if configuration changes.
+ */
+export function resetS3Client(): void {
+	s3Client = null;
+}
+
 function getS3Client(): S3Client {
 	if (!s3Client) {
 		const endpoint = env.S3_ENDPOINT;
-		const region = env.S3_REGION || "auto";
+		const region = env.S3_REGION || "us-east-1";
 		const accessKeyId = env.S3_ACCESS_KEY_ID;
 		const secretAccessKey = env.S3_SECRET_ACCESS_KEY;
 
-		if (!(endpoint && accessKeyId && secretAccessKey)) {
-			throw new Error("Missing one or more required S3 environment variables");
+		if (!(accessKeyId && secretAccessKey)) {
+			throw new Error(
+				"Missing S3_ACCESS_KEY_ID or S3_SECRET_ACCESS_KEY environment variables",
+			);
 		}
 
-		s3Client = new S3Client({
+		// Check if using S3-compatible service (MinIO, R2, etc.) or real AWS S3
+		const isS3Compatible = endpoint && !endpoint.includes("amazonaws.com");
+
+		const clientConfig: ConstructorParameters<typeof S3Client>[0] = {
 			region,
-			endpoint,
-			forcePathStyle: true,
 			credentials: {
 				accessKeyId,
 				secretAccessKey,
 			},
-		});
+			// Disable automatic checksum calculation for pre-signed URLs
+			// Without this, browser uploads fail because the fetch API doesn't send the checksum headers
+			requestChecksumCalculation: "WHEN_REQUIRED",
+			responseChecksumValidation: "WHEN_REQUIRED",
+		};
+
+		// Only set endpoint and forcePathStyle for S3-compatible services
+		if (endpoint) {
+			clientConfig.endpoint = endpoint;
+			// forcePathStyle is needed for MinIO, R2, and other S3-compatible services
+			// but should NOT be used for real AWS S3
+			if (isS3Compatible) {
+				clientConfig.forcePathStyle = true;
+			}
+		}
+
+		s3Client = new S3Client(clientConfig);
 	}
 
 	return s3Client;
@@ -146,7 +189,18 @@ export async function getSignedUploadUrl(
 				ContentType: contentType,
 				Metadata: options.metadata,
 			}),
-			{ expiresIn },
+			{
+				expiresIn,
+				// Prevent checksum headers from being hoisted to query parameters
+				// Without this, browser uploads fail because fetch doesn't send matching checksum headers
+				unhoistableHeaders: new Set([
+					"x-amz-checksum-crc32",
+					"x-amz-checksum-crc32c",
+					"x-amz-checksum-sha1",
+					"x-amz-checksum-sha256",
+					"x-amz-sdk-checksum-algorithm",
+				]),
+			},
 		);
 	} catch {
 		throw new Error("Could not generate signed upload URL");

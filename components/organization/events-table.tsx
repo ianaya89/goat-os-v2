@@ -6,7 +6,16 @@ import type {
 	ColumnFiltersState,
 	SortingState,
 } from "@tanstack/react-table";
-import { MoreHorizontalIcon, PlusIcon } from "lucide-react";
+import {
+	ClipboardListIcon,
+	CopyIcon,
+	EyeIcon,
+	FileTextIcon,
+	MoreHorizontalIcon,
+	PencilIcon,
+	PlusIcon,
+	Trash2Icon,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -19,6 +28,7 @@ import {
 import * as React from "react";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/confirmation-modal";
+import { SaveAsTemplateModal } from "@/components/organization/save-as-template-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,20 +47,20 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { appConfig } from "@/config/app.config";
 import {
-	EventStatus,
+	type EventStatus,
 	EventStatuses,
-	EventType,
+	type EventType,
 	EventTypes,
 } from "@/lib/db/schema/enums";
 import {
-	formatEventDateRange,
 	formatEventCapacity,
+	formatEventDateRange,
 	getCapacityPercentage,
 	getEventStatusColor,
 	getEventStatusLabel,
 	getEventTypeColor,
-	getEventTypeLabel,
 	getEventTypeIcon,
+	getEventTypeLabel,
 } from "@/lib/format-event";
 import { cn } from "@/lib/utils";
 import { EventSortField } from "@/schemas/organization-sports-event-schemas";
@@ -219,15 +229,16 @@ export function EventsTable(): React.JSX.Element {
 		},
 	});
 
-	const duplicateEventMutation = trpc.organization.sportsEvent.duplicate.useMutation({
-		onSuccess: () => {
-			toast.success("Evento duplicado");
-			utils.organization.sportsEvent.list.invalidate();
-		},
-		onError: (error: { message?: string }) => {
-			toast.error(error.message || "Error al duplicar el evento");
-		},
-	});
+	const duplicateEventMutation =
+		trpc.organization.sportsEvent.duplicate.useMutation({
+			onSuccess: () => {
+				toast.success("Evento duplicado");
+				utils.organization.sportsEvent.list.invalidate();
+			},
+			onError: (error: { message?: string }) => {
+				toast.error(error.message || "Error al duplicar el evento");
+			},
+		});
 
 	const handleSearchQueryChange = (value: string): void => {
 		if (value !== searchQuery) {
@@ -304,10 +315,7 @@ export function EventsTable(): React.JSX.Element {
 							)}
 						</span>
 						{row.original.maxCapacity && (
-							<Progress
-								value={percentage}
-								className="h-1.5"
-							/>
+							<Progress value={percentage} className="h-1.5" />
 						)}
 					</div>
 				);
@@ -348,13 +356,27 @@ export function EventsTable(): React.JSX.Element {
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
 							<DropdownMenuItem asChild>
-								<Link href={`/dashboard/organization/events/${row.original.id}`}>
+								<Link
+									href={`/dashboard/organization/events/${row.original.id}`}
+								>
+									<EyeIcon className="mr-2 size-4" />
 									Ver detalle
 								</Link>
 							</DropdownMenuItem>
 							<DropdownMenuItem asChild>
-								<Link href={`/dashboard/organization/events/${row.original.id}/edit`}>
+								<Link
+									href={`/dashboard/organization/events/${row.original.id}/edit`}
+								>
+									<PencilIcon className="mr-2 size-4" />
 									Editar
+								</Link>
+							</DropdownMenuItem>
+							<DropdownMenuItem asChild>
+								<Link
+									href={`/dashboard/organization/events/${row.original.id}/organization`}
+								>
+									<ClipboardListIcon className="mr-2 size-4" />
+									Organización
 								</Link>
 							</DropdownMenuItem>
 							<DropdownMenuItem
@@ -378,7 +400,19 @@ export function EventsTable(): React.JSX.Element {
 									});
 								}}
 							>
+								<CopyIcon className="mr-2 size-4" />
 								Duplicar
+							</DropdownMenuItem>
+							<DropdownMenuItem
+								onClick={() => {
+									NiceModal.show(SaveAsTemplateModal, {
+										eventId: row.original.id,
+										eventTitle: row.original.title,
+									});
+								}}
+							>
+								<FileTextIcon className="mr-2 size-4" />
+								Guardar como Template
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 							<DropdownMenuItem
@@ -395,6 +429,7 @@ export function EventsTable(): React.JSX.Element {
 								}}
 								variant="destructive"
 							>
+								<Trash2Icon className="mr-2 size-4" />
 								Eliminar
 							</DropdownMenuItem>
 						</DropdownMenuContent>

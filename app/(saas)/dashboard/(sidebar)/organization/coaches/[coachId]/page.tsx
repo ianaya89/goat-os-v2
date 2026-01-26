@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import type * as React from "react";
 import { CoachProfile } from "@/components/organization/coach-profile";
 import { OrganizationBreadcrumbSwitcher } from "@/components/organization/organization-breadcrumb-switcher";
@@ -31,22 +32,27 @@ export default async function CoachProfilePage({
 		redirect("/dashboard");
 	}
 
+	const t = await getTranslations("organization.pages");
+
 	return (
 		<Page>
 			<PageHeader>
 				<PagePrimaryBar>
 					<PageBreadcrumb
 						segments={[
-							{ label: "Home", href: "/dashboard" },
+							{ label: t("home"), href: "/dashboard" },
 							{ label: <OrganizationBreadcrumbSwitcher />, isCustom: true },
-							{ label: "Coaches", href: "/dashboard/organization/coaches" },
-							{ label: "Profile" },
+							{
+								label: t("coaches.title"),
+								href: "/dashboard/organization/coaches",
+							},
+							{ label: t("coaches.profile") },
 						]}
 					/>
 				</PagePrimaryBar>
 			</PageHeader>
 			<PageBody>
-				<PageContent title="Coach Profile">
+				<PageContent title={t("coaches.profileTitle")}>
 					<CoachProfile coachId={coachId} />
 				</PageContent>
 			</PageBody>

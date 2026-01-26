@@ -40,7 +40,22 @@
 			"Bash(pnpm run cli:seed:*)",
 			"Bash(pnpm run with-dev-env:*)",
 			"Bash(dotenv -e ./.env -- tsx:*)",
-			"Bash(npx dotenv:*)"
+			"Bash(npx dotenv:*)",
+			"Bash(source:*)",
+			"Bash(npm run cli:*)",
+			"Bash(dotenv -e ./.env -- npx tsx:*)",
+			"Bash(npx dotenv-cli:*)",
+			"Bash(npx biome check:*)",
+			"WebFetch(domain:docs.google.com)",
+			"WebFetch(domain:doc-0o-14-sheets.googleusercontent.com)",
+			"WebFetch(domain:doc-14-14-sheets.googleusercontent.com)",
+			"Bash(docker exec:*)",
+			"Bash(psql:*)",
+			"Bash(timeout 2 npm run:*)",
+			"Bash(PGPASSWORD=mypassword psql:*)",
+			"Bash(npm run db:cli:*)",
+			"Bash(tree -d -L 3:*)",
+			"Bash(xargs ls:*)"
 		]
 	}
 }

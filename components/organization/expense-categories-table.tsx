@@ -5,7 +5,9 @@ import type { ColumnDef } from "@tanstack/react-table";
 import {
 	CheckCircleIcon,
 	MoreHorizontalIcon,
+	PencilIcon,
 	PlusIcon,
+	PowerOffIcon,
 	XCircleIcon,
 } from "lucide-react";
 import type * as React from "react";
@@ -141,6 +143,7 @@ export function ExpenseCategoriesTable(): React.JSX.Element {
 									});
 								}}
 							>
+								<PencilIcon className="mr-2 size-4" />
 								Editar
 							</DropdownMenuItem>
 							{row.original.isActive && (
@@ -162,6 +165,7 @@ export function ExpenseCategoriesTable(): React.JSX.Element {
 										}}
 										variant="destructive"
 									>
+										<PowerOffIcon className="mr-2 size-4" />
 										Desactivar
 									</DropdownMenuItem>
 								</>

@@ -37,8 +37,8 @@ export type AgeCategoriesModalProps = NiceModalHocProps & {
 		id: string;
 		name: string;
 		displayName: string;
-		minAge: number | null;
-		maxAge: number | null;
+		minBirthYear: number | null;
+		maxBirthYear: number | null;
 		sortOrder: number;
 		isActive: boolean;
 	};
@@ -81,16 +81,16 @@ export const AgeCategoriesModal = NiceModal.create<AgeCategoriesModalProps>(
 						id: ageCategory.id,
 						name: ageCategory.name,
 						displayName: ageCategory.displayName,
-						minAge: ageCategory.minAge ?? undefined,
-						maxAge: ageCategory.maxAge ?? undefined,
+						minBirthYear: ageCategory.minBirthYear ?? undefined,
+						maxBirthYear: ageCategory.maxBirthYear ?? undefined,
 						sortOrder: ageCategory.sortOrder,
 						isActive: ageCategory.isActive,
 					}
 				: {
 						name: "",
 						displayName: "",
-						minAge: undefined,
-						maxAge: undefined,
+						minBirthYear: undefined,
+						maxBirthYear: undefined,
 						sortOrder: 0,
 						isActive: true,
 					},
@@ -182,17 +182,17 @@ export const AgeCategoriesModal = NiceModal.create<AgeCategoriesModalProps>(
 									<div className="grid grid-cols-2 gap-4">
 										<FormField
 											control={form.control}
-											name="minAge"
+											name="minBirthYear"
 											render={({ field }) => (
 												<FormItem asChild>
 													<Field>
-														<FormLabel>Edad mínima</FormLabel>
+														<FormLabel>Año desde</FormLabel>
 														<FormControl>
 															<Input
 																type="number"
-																placeholder="0"
-																min={0}
-																max={100}
+																placeholder="2012"
+																min={1950}
+																max={2050}
 																{...field}
 																value={field.value ?? ""}
 																onChange={(e) =>
@@ -212,17 +212,17 @@ export const AgeCategoriesModal = NiceModal.create<AgeCategoriesModalProps>(
 
 										<FormField
 											control={form.control}
-											name="maxAge"
+											name="maxBirthYear"
 											render={({ field }) => (
 												<FormItem asChild>
 													<Field>
-														<FormLabel>Edad máxima</FormLabel>
+														<FormLabel>Año hasta</FormLabel>
 														<FormControl>
 															<Input
 																type="number"
-																placeholder="99"
-																min={0}
-																max={100}
+																placeholder="2014"
+																min={1950}
+																max={2050}
 																{...field}
 																value={field.value ?? ""}
 																onChange={(e) =>

@@ -1,9 +1,10 @@
 "use client";
 
-import { BarChart3Icon, DumbbellIcon } from "lucide-react";
+import { BarChart3Icon, ClockIcon, DumbbellIcon } from "lucide-react";
 import type * as React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FinancialDashboard } from "./financial-dashboard";
+import { PendingPaymentsDashboard } from "./pending-payments-dashboard";
 import { TrainingDashboard } from "./training-dashboard";
 
 export function ReportsTabs(): React.JSX.Element {
@@ -18,12 +19,19 @@ export function ReportsTabs(): React.JSX.Element {
 					<DumbbellIcon className="h-4 w-4" />
 					Entrenamientos
 				</TabsTrigger>
+				<TabsTrigger value="pending" className="gap-2">
+					<ClockIcon className="h-4 w-4" />
+					Pendientes
+				</TabsTrigger>
 			</TabsList>
 			<TabsContent value="financial">
 				<FinancialDashboard />
 			</TabsContent>
 			<TabsContent value="training">
 				<TrainingDashboard />
+			</TabsContent>
+			<TabsContent value="pending">
+				<PendingPaymentsDashboard />
 			</TabsContent>
 		</Tabs>
 	);

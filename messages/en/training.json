@@ -1,0 +1,103 @@
+{
+	"sessions": {
+		"title": "Training Sessions"
+	},
+	"title": "Training Sessions",
+	"description": "Manage your organization's training sessions.",
+	"add": "Create session",
+	"edit": "Edit session",
+	"view": "View session",
+	"delete": "Delete session",
+	"cancel": "Cancel session",
+	"search": "Search sessions...",
+	"filters": {
+		"all": "All",
+		"upcoming": "Upcoming",
+		"past": "Past",
+		"cancelled": "Cancelled",
+		"byCoach": "By coach",
+		"byLocation": "By location"
+	},
+	"table": {
+		"title": "Title",
+		"date": "Date",
+		"time": "Time",
+		"duration": "Duration",
+		"coach": "Coach",
+		"location": "Location",
+		"attendees": "Attendees",
+		"status": "Status",
+		"actions": "Actions"
+	},
+	"form": {
+		"basicInfo": "Basic information",
+		"title": "Title",
+		"description": "Description",
+		"schedule": "Schedule",
+		"date": "Date",
+		"startTime": "Start time",
+		"endTime": "End time",
+		"duration": "Duration",
+		"location": "Location",
+		"coach": "Coach",
+		"maxAttendees": "Maximum attendees",
+		"recurring": "Recurring",
+		"recurringPattern": "Recurrence pattern",
+		"athletes": "Athletes",
+		"selectAthletes": "Select athletes"
+	},
+	"status": {
+		"scheduled": "Scheduled",
+		"inProgress": "In progress",
+		"completed": "Completed",
+		"cancelled": "Cancelled"
+	},
+	"attendance": {
+		"title": "Attendance",
+		"present": "Present",
+		"absent": "Absent",
+		"late": "Late",
+		"excused": "Excused",
+		"markAttendance": "Mark attendance"
+	},
+	"detail": {
+		"overview": "Overview",
+		"attendance": "Attendance",
+		"notes": "Notes",
+		"exercises": "Exercises"
+	},
+	"success": {
+		"created": "Session created successfully.",
+		"updated": "Session updated successfully.",
+		"deleted": "Session deleted successfully.",
+		"cancelled": "Session cancelled successfully."
+	},
+	"error": {
+		"notFound": "Session not found.",
+		"createFailed": "Failed to create session.",
+		"updateFailed": "Failed to update session.",
+		"deleteFailed": "Failed to delete session.",
+		"cancelFailed": "Failed to cancel session."
+	},
+	"athleteView": {
+		"todaySessions": "Today's Sessions",
+		"sessionScheduled": "{count, plural, one {session scheduled} other {sessions scheduled}}",
+		"upcomingSessions": "Upcoming Sessions",
+		"pendingConfirmed": "pending & confirmed",
+		"sessionsAttended": "Sessions Attended",
+		"allTime": "all time",
+		"averageRating": "Average Rating",
+		"outOf5": "out of 5",
+		"noEvaluationsYet": "no evaluations yet",
+		"myTrainingSessions": "My Training Sessions",
+		"upcoming": "Upcoming",
+		"past": "Past",
+		"all": "All",
+		"noSessionsFound": "No {filter} sessions found.",
+		"noAthleteProfile": "No athlete profile found for your account in this organization.",
+		"contactAdmin": "Contact your organization administrator to be added as an athlete.",
+		"today": "Today",
+		"addFeedback": "Add Feedback",
+		"unknownCoach": "Unknown Coach"
+	}
+}

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import type * as React from "react";
 import { OrganizationBreadcrumbSwitcher } from "@/components/organization/organization-breadcrumb-switcher";
 import { WaitlistTable } from "@/components/organization/waitlist-table";
@@ -14,7 +15,7 @@ import {
 import { getSession } from "@/lib/auth/server";
 
 export const metadata: Metadata = {
-	title: "Lista de Espera",
+	title: "Waitlist",
 };
 
 export default async function WaitlistPage(): Promise<React.JSX.Element> {
@@ -23,21 +24,23 @@ export default async function WaitlistPage(): Promise<React.JSX.Element> {
 		redirect("/dashboard");
 	}
 
+	const t = await getTranslations("organization.pages");
+
 	return (
 		<Page>
 			<PageHeader>
 				<PagePrimaryBar>
 					<PageBreadcrumb
 						segments={[
-							{ label: "Home", href: "/dashboard" },
+							{ label: t("home"), href: "/dashboard" },
 							{ label: <OrganizationBreadcrumbSwitcher />, isCustom: true },
-							{ label: "Lista de Espera" },
+							{ label: t("waitlist.title") },
 						]}
 					/>
 				</PagePrimaryBar>
 			</PageHeader>
 			<PageBody>
-				<PageContent title="Lista de Espera">
+				<PageContent title={t("waitlist.title")}>
 					<WaitlistTable />
 				</PageContent>
 			</PageBody>

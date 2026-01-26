@@ -1,9 +1,12 @@
 import "server-only";
 
 import { TRPCError } from "@trpc/server";
+import { and, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { cache } from "react";
 import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { memberTable } from "@/lib/db/schema/tables";
 import { logger } from "@/lib/logger";
 
 export const getSession = cache(async () => {
@@ -45,6 +48,7 @@ export async function assertUserIsOrgMember(
 	organizationId: string,
 	userId: string,
 ) {
+	// Get organization details
 	const organization = await getOrganizationById(organizationId);
 	if (!organization) {
 		throw new TRPCError({
@@ -53,8 +57,20 @@ export async function assertUserIsOrgMember(
 		});
 	}
 
-	const membership = organization.members.find((m) => m.userId === userId);
+	// Query membership directly from database instead of Better Auth API
+	// (Better Auth's getFullOrganization has a 100 member limit)
+	const membership = await db.query.memberTable.findFirst({
+		where: and(
+			eq(memberTable.organizationId, organizationId),
+			eq(memberTable.userId, userId),
+		),
+	});
+
 	if (!membership) {
+		logger.warn(
+			{ organizationId, userId },
+			"User membership not found in database",
+		);
 		throw new TRPCError({
 			code: "FORBIDDEN",
 			message: "Not a member of the organization",

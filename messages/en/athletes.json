@@ -1,0 +1,128 @@
+{
+	"title": "Athletes",
+	"description": "Manage your organization's athletes.",
+	"add": "Add athlete",
+	"edit": "Edit athlete",
+	"view": "View athlete",
+	"delete": "Delete athlete",
+	"search": "Search athletes...",
+	"filters": {
+		"all": "All",
+		"active": "Active",
+		"inactive": "Inactive",
+		"byGroup": "By group",
+		"byCategory": "By category"
+	},
+	"table": {
+		"name": "Name",
+		"email": "Email",
+		"phone": "Phone",
+		"sport": "Sport",
+		"level": "Level",
+		"category": "Category",
+		"group": "Group",
+		"status": "Status",
+		"actions": "Actions"
+	},
+	"form": {
+		"personalInfo": "Personal information",
+		"name": "Full name",
+		"email": "Email",
+		"phone": "Phone",
+		"birthDate": "Date of birth",
+		"sportInfo": "Sports information",
+		"sport": "Sport",
+		"level": "Level",
+		"position": "Position",
+		"secondaryPosition": "Secondary position",
+		"jerseyNumber": "Jersey number",
+		"yearsOfExperience": "Years of experience",
+		"currentClub": "Current club",
+		"category": "Category",
+		"group": "Group",
+		"parentInfo": "Parent/guardian information",
+		"parentName": "Parent/guardian name",
+		"parentPhone": "Parent/guardian phone",
+		"parentEmail": "Parent/guardian email",
+		"parentRelationship": "Relationship",
+		"consents": "Consents",
+		"acceptTerms": "I accept the terms and conditions",
+		"confirmMedicalFitness": "I confirm the athlete has medical fitness",
+		"parentalConsent": "Parental consent"
+	},
+	"levels": {
+		"beginner": "Beginner",
+		"intermediate": "Intermediate",
+		"advanced": "Advanced",
+		"professional": "Professional"
+	},
+	"detail": {
+		"overview": "Overview",
+		"sessions": "Sessions",
+		"payments": "Payments",
+		"documents": "Documents",
+		"notes": "Notes"
+	},
+	"success": {
+		"created": "Athlete created successfully.",
+		"updated": "Athlete updated successfully.",
+		"deleted": "Athlete deleted successfully."
+	},
+	"error": {
+		"notFound": "Athlete not found.",
+		"createFailed": "Failed to create athlete.",
+		"updateFailed": "Failed to update athlete.",
+		"deleteFailed": "Failed to delete athlete."
+	},
+	"achievements": {
+		"title": "Achievements & Awards",
+		"add": "Add Achievement",
+		"edit": "Edit Achievement",
+		"empty": "No achievements registered",
+		"emptyDescription": "Add your sports achievements, awards and recognitions to display them on your public profile.",
+		"form": {
+			"title": "Achievement Title",
+			"titlePlaceholder": "National League Champion, Tournament MVP...",
+			"type": "Achievement Type",
+			"scope": "Scope",
+			"scopeDescription": "Individual or team achievement",
+			"year": "Year",
+			"position": "Position / Place",
+			"positionPlaceholder": "1st place, Gold Medal...",
+			"competition": "Competition / Tournament",
+			"competitionPlaceholder": "Copa America U-20, National League...",
+			"organization": "Organization",
+			"organizationPlaceholder": "FIFA, CONMEBOL, National League...",
+			"organizationDescription": "Entity that awarded the recognition",
+			"team": "Team",
+			"teamPlaceholder": "National Team, Athletic Club...",
+			"teamDescription": "Team with which the achievement was obtained",
+			"description": "Description",
+			"descriptionPlaceholder": "Briefly describe this achievement...",
+			"isPublic": "Show on public profile",
+			"isPublicDescription": "This achievement will be visible on your public profile"
+		},
+		"types": {
+			"championship": "Championship / Title",
+			"award": "Individual Award",
+			"selection": "Selection",
+			"record": "Record",
+			"recognition": "Recognition",
+			"mvp": "MVP",
+			"top_scorer": "Top Scorer",
+			"best_player": "Best Player",
+			"all_star": "All-Star",
+			"scholarship": "Sports Scholarship",
+			"other": "Other"
+		},
+		"scopes": {
+			"individual": "Individual",
+			"collective": "Collective (Team)"
+		},
+		"success": {
+			"created": "Achievement added",
+			"updated": "Achievement updated",
+			"deleted": "Achievement deleted"
+		}
+	}
+}

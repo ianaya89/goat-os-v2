@@ -7,11 +7,7 @@ import type {
 	SortingState,
 } from "@tanstack/react-table";
 import { format } from "date-fns";
-import {
-	CheckCircleIcon,
-	MoreHorizontalIcon,
-	XCircleIcon,
-} from "lucide-react";
+import { CheckCircleIcon, MoreHorizontalIcon, XCircleIcon } from "lucide-react";
 import {
 	parseAsArrayOf,
 	parseAsInteger,

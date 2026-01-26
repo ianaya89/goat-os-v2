@@ -44,7 +44,7 @@ export const sendNotification = task({
 		factor: 2,
 	},
 	run: async (job: NotificationJobPayload): Promise<NotificationResult> => {
-		const { payload, organizationId, triggeredBy } = job;
+		const { payload } = job;
 
 		// Validate payload
 		const validation = validatePayload(payload);
@@ -147,7 +147,7 @@ export const scheduleNotification = task({
 	run: async (
 		job: NotificationJobPayload,
 	): Promise<{ scheduled: boolean; runAt: string }> => {
-		const { payload, scheduledFor } = job;
+		const { scheduledFor } = job;
 
 		if (!scheduledFor) {
 			// No schedule, send immediately
@@ -197,11 +197,14 @@ function getTomorrowBoundsInTimezone(timezone: string): {
 	const parts = formatter.formatToParts(now);
 	const year = Number.parseInt(
 		parts.find((p) => p.type === "year")?.value ?? "0",
+		10,
 	);
 	const month =
-		Number.parseInt(parts.find((p) => p.type === "month")?.value ?? "0") - 1;
+		Number.parseInt(parts.find((p) => p.type === "month")?.value ?? "0", 10) -
+		1;
 	const day = Number.parseInt(
 		parts.find((p) => p.type === "day")?.value ?? "0",
+		10,
 	);
 
 	// Tomorrow in local timezone
@@ -251,10 +254,9 @@ export const dailyTrainingSummary = schedules.task({
 	cron: "0 6 * * *", // 6am UTC daily
 	run: async () => {
 		const { db } = await import("@/lib/db");
-		const { organizationTable, trainingSessionTable, coachTable } =
-			await import("@/lib/db/schema/tables");
+		const { trainingSessionTable } = await import("@/lib/db/schema/tables");
 		const { TrainingSessionStatus } = await import("@/lib/db/schema/enums");
-		const { eq, and, gte, lte, or, inArray } = await import("drizzle-orm");
+		const { eq, and, gte, lte, or } = await import("drizzle-orm");
 		// date-fns not needed - using Intl.DateTimeFormat for timezone-aware formatting
 		const { appConfig } = await import("@/config/app.config");
 		const { logger } = await import("@/lib/logger");

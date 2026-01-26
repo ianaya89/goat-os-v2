@@ -15,7 +15,9 @@ export const GET = async (
 	}
 
 	if (bucket === storageConfig.bucketNames.images) {
-		const signedUrl = await getSignedUrl(filePath, bucket, { expiresIn: 60 * 60 });
+		const signedUrl = await getSignedUrl(filePath, bucket, {
+			expiresIn: 60 * 60,
+		});
 
 		return NextResponse.redirect(signedUrl, {
 			headers: { "Cache-Control": "max-age=3600" },

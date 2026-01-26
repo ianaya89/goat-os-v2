@@ -1,15 +1,12 @@
 import { TRPCError } from "@trpc/server";
-import {
-	and,
-	asc,
-	count,
-	desc,
-	eq,
-	gte,
-	inArray,
-	sql,
-} from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { nanoid } from "nanoid";
 import { db } from "@/lib/db";
+import {
+	EventRegistrationStatus,
+	EventStatus,
+	PricingTierType,
+} from "@/lib/db/schema/enums";
 import {
 	accountTable,
 	ageCategoryTable,
@@ -22,18 +19,13 @@ import {
 	userTable,
 } from "@/lib/db/schema/tables";
 import {
-	EventRegistrationStatus,
-	EventStatus,
-	PricingTierType,
-} from "@/lib/db/schema/enums";
-import {
 	checkRegistrationEmailSchema,
 	getPublicEventSchema,
 	listPublicEventsSchema,
 	publicEventRegistrationSchema,
 } from "@/schemas/organization-sports-event-schemas";
+import { lookupAthleteByEmailSchema } from "@/schemas/public-event-registration-wizard-schemas";
 import { createTRPCRouter, publicProcedure } from "@/trpc/init";
-import { nanoid } from "nanoid";
 
 /**
  * Calculate the applicable price for a registration
@@ -78,7 +70,11 @@ async function calculateRegistrationPrice(
 	if (applicableTiers.length === 0) {
 		const baseTier = tiers[0];
 		if (baseTier) {
-			return { price: baseTier.price, tierId: baseTier.id, tierName: baseTier.name };
+			return {
+				price: baseTier.price,
+				tierId: baseTier.id,
+				tierName: baseTier.name,
+			};
 		}
 		throw new TRPCError({
 			code: "BAD_REQUEST",
@@ -200,90 +196,92 @@ export const publicEventRouter = createTRPCRouter({
 	/**
 	 * List public events for an organization
 	 */
-	list: publicProcedure.input(listPublicEventsSchema).query(async ({ input }) => {
-		// Find organization by slug
-		const organization = await db.query.organizationTable.findFirst({
-			where: eq(organizationTable.slug, input.organizationSlug),
-		});
-
-		if (!organization) {
-			throw new TRPCError({
-				code: "NOT_FOUND",
-				message: "Organization not found",
+	list: publicProcedure
+		.input(listPublicEventsSchema)
+		.query(async ({ input }) => {
+			// Find organization by slug
+			const organization = await db.query.organizationTable.findFirst({
+				where: eq(organizationTable.slug, input.organizationSlug),
 			});
-		}
 
-		const conditions = [
-			eq(sportsEventTable.organizationId, organization.id),
-			inArray(sportsEventTable.status, [
-				EventStatus.published,
-				EventStatus.registrationOpen,
-				EventStatus.inProgress,
-			]),
-			// Only show future or ongoing events
-			gte(sportsEventTable.endDate, new Date()),
-		];
+			if (!organization) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Organization not found",
+				});
+			}
 
-		if (input.eventType) {
-			conditions.push(eq(sportsEventTable.eventType, input.eventType));
-		}
+			const conditions = [
+				eq(sportsEventTable.organizationId, organization.id),
+				inArray(sportsEventTable.status, [
+					EventStatus.published,
+					EventStatus.registrationOpen,
+					EventStatus.inProgress,
+				]),
+				// Only show future or ongoing events
+				gte(sportsEventTable.endDate, new Date()),
+			];
 
-		const whereCondition = and(...conditions);
+			if (input.eventType) {
+				conditions.push(eq(sportsEventTable.eventType, input.eventType));
+			}
 
-		const [events, countResult] = await Promise.all([
-			db.query.sportsEventTable.findMany({
-				where: whereCondition,
-				limit: input.limit,
-				offset: input.offset,
-				orderBy: asc(sportsEventTable.startDate),
-				columns: {
-					id: true,
-					title: true,
-					slug: true,
-					description: true,
-					eventType: true,
-					status: true,
-					startDate: true,
-					endDate: true,
-					maxCapacity: true,
-					currentRegistrations: true,
-					coverImageUrl: true,
-					currency: true,
-				},
-				with: {
-					location: {
-						columns: { id: true, name: true, city: true },
+			const whereCondition = and(...conditions);
+
+			const [events, countResult] = await Promise.all([
+				db.query.sportsEventTable.findMany({
+					where: whereCondition,
+					limit: input.limit,
+					offset: input.offset,
+					orderBy: asc(sportsEventTable.startDate),
+					columns: {
+						id: true,
+						title: true,
+						slug: true,
+						description: true,
+						eventType: true,
+						status: true,
+						startDate: true,
+						endDate: true,
+						maxCapacity: true,
+						currentRegistrations: true,
+						coverImageUrl: true,
+						currency: true,
 					},
-					pricingTiers: {
-						where: eq(eventPricingTierTable.isActive, true),
-						orderBy: asc(eventPricingTierTable.price),
-						limit: 1, // Just get the lowest price
+					with: {
+						location: {
+							columns: { id: true, name: true, city: true },
+						},
+						pricingTiers: {
+							where: eq(eventPricingTierTable.isActive, true),
+							orderBy: asc(eventPricingTierTable.price),
+							limit: 1, // Just get the lowest price
+						},
 					},
-				},
-			}),
-			db
-				.select({ count: count() })
-				.from(sportsEventTable)
-				.where(whereCondition),
-		]);
+				}),
+				db
+					.select({ count: count() })
+					.from(sportsEventTable)
+					.where(whereCondition),
+			]);
 
-		return {
-			events: events.map((event) => ({
-				...event,
-				lowestPrice: event.pricingTiers[0]?.price ?? null,
-				spotsAvailable: event.maxCapacity
-					? event.maxCapacity - event.currentRegistrations
-					: null,
-			})),
-			total: countResult[0]?.count ?? 0,
-			organization: {
-				id: organization.id,
-				name: organization.name,
-				slug: organization.slug,
-				logo: organization.logo,
-			},
-		};
-	}),
+			return {
+				events: events.map((event) => ({
+					...event,
+					lowestPrice: event.pricingTiers[0]?.price ?? null,
+					spotsAvailable: event.maxCapacity
+						? event.maxCapacity - event.currentRegistrations
+						: null,
+				})),
+				total: countResult[0]?.count ?? 0,
+				organization: {
+					id: organization.id,
+					name: organization.name,
+					slug: organization.slug,
+					logo: organization.logo,
+				},
+			};
+		}),
 
 	/**
 	 * Get available age categories for an event
@@ -337,9 +335,11 @@ export const publicEventRouter = createTRPCRouter({
 	 * Calculate price for a potential registration
 	 */
 	calculatePrice: publicProcedure
-		.input(getPublicEventSchema.extend({
-			ageCategoryId: publicEventRegistrationSchema.shape.ageCategoryId,
-		}))
+		.input(
+			getPublicEventSchema.extend({
+				ageCategoryId: publicEventRegistrationSchema.shape.ageCategoryId,
+			}),
+		)
 		.query(async ({ input }) => {
 			// Find organization
 			const organization = await db.query.organizationTable.findFirst({
@@ -403,6 +403,135 @@ export const publicEventRouter = createTRPCRouter({
 			return {
 				isRegistered: !!existing,
 				registration: existing,
+			};
+		}),
+
+	/**
+	 * Lookup athlete by email for the registration wizard
+	 * Returns existing user/athlete data if found, for pre-filling the form
+	 */
+	lookupAthleteByEmail: publicProcedure
+		.input(lookupAthleteByEmailSchema)
+		.query(async ({ input }) => {
+			// Find organization by slug
+			const organization = await db.query.organizationTable.findFirst({
+				where: eq(organizationTable.slug, input.organizationSlug),
+			});
+
+			if (!organization) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Organization not found",
+				});
+			}
+
+			// Find event by slug within organization
+			const event = await db.query.sportsEventTable.findFirst({
+				where: and(
+					eq(sportsEventTable.organizationId, organization.id),
+					eq(sportsEventTable.slug, input.eventSlug),
+				),
+			});
+
+			if (!event) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Event not found",
+				});
+			}
+
+			const email = input.email.toLowerCase();
+
+			// Check if already registered for THIS event
+			const existingRegistration =
+				await db.query.eventRegistrationTable.findFirst({
+					where: and(
+						eq(eventRegistrationTable.eventId, event.id),
+						eq(eventRegistrationTable.registrantEmail, email),
+					),
+					columns: {
+						id: true,
+						registrationNumber: true,
+						status: true,
+					},
+				});
+
+			if (existingRegistration) {
+				return {
+					isAlreadyRegistered: true,
+					existingRegistration: {
+						id: existingRegistration.id,
+						registrationNumber: existingRegistration.registrationNumber,
+						status: existingRegistration.status,
+					},
+					user: null,
+					athlete: null,
+				};
+			}
+
+			// Look up user by email
+			const existingUser = await db.query.userTable.findFirst({
+				where: eq(userTable.email, email),
+				columns: {
+					id: true,
+					name: true,
+					email: true,
+				},
+			});
+
+			if (!existingUser) {
+				return {
+					isAlreadyRegistered: false,
+					existingRegistration: null,
+					user: null,
+					athlete: null,
+				};
+			}
+
+			// Look up athlete profile for this organization
+			const existingAthlete = await db.query.athleteTable.findFirst({
+				where: and(
+					eq(athleteTable.organizationId, organization.id),
+					eq(athleteTable.userId, existingUser.id),
+				),
+				columns: {
+					id: true,
+					sport: true,
+					level: true,
+					position: true,
+					secondaryPosition: true,
+					birthDate: true,
+					phone: true,
+					nationality: true,
+					currentClub: true,
+					jerseyNumber: true,
+					yearsOfExperience: true,
+				},
+			});
+
+			return {
+				isAlreadyRegistered: false,
+				existingRegistration: null,
+				user: {
+					id: existingUser.id,
+					name: existingUser.name,
+					email: existingUser.email,
+				},
+				athlete: existingAthlete
+					? {
+							id: existingAthlete.id,
+							sport: existingAthlete.sport,
+							level: existingAthlete.level,
+							position: existingAthlete.position,
+							secondaryPosition: existingAthlete.secondaryPosition,
+							birthDate: existingAthlete.birthDate,
+							phone: existingAthlete.phone,
+							nationality: existingAthlete.nationality,
+							currentClub: existingAthlete.currentClub,
+							jerseyNumber: existingAthlete.jerseyNumber,
+							yearsOfExperience: existingAthlete.yearsOfExperience,
+						}
+					: null,
 			};
 		}),
 

@@ -2,7 +2,7 @@
 
 import NiceModal from "@ebay/nice-modal-react";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { enUS, es } from "date-fns/locale";
 import {
 	AlertTriangleIcon,
 	CheckCircleIcon,
@@ -12,6 +12,7 @@ import {
 	UnlockIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import type * as React from "react";
 import { CashMovementModal } from "@/components/organization/cash-movement-modal";
 import { CashRegisterCloseModal } from "@/components/organization/cash-register-close-modal";
@@ -31,6 +32,10 @@ import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
 export function CashRegisterStatusCard(): React.JSX.Element {
+	const t = useTranslations("dashboard.cashRegister");
+	const locale = useLocale();
+	const dateLocale = locale === "es" ? es : enUS;
+
 	const { data: currentRegister, isPending } =
 		trpc.organization.cashRegister.getCurrent.useQuery();
 
@@ -38,7 +43,7 @@ export function CashRegisterStatusCard(): React.JSX.Element {
 		trpc.organization.cashRegister.getDailySummary.useQuery({});
 
 	const formatAmount = (amount: number) => {
-		return new Intl.NumberFormat("es-AR", {
+		return new Intl.NumberFormat(locale === "es" ? "es-AR" : "en-US", {
 			style: "currency",
 			currency: "ARS",
 		}).format(amount / 100);
@@ -61,21 +66,23 @@ export function CashRegisterStatusCard(): React.JSX.Element {
 	const isOpen = currentRegister?.status === CashRegisterStatus.open;
 	const isClosed = currentRegister?.status === CashRegisterStatus.closed;
 
+	const dateFormat = locale === "es" ? "EEEE, d 'de' MMMM" : "EEEE, MMMM d";
+
 	return (
 		<Card className="h-full flex flex-col">
 			<CardHeader className="flex flex-row items-center justify-between pb-2">
 				<div className="space-y-1">
 					<div className="flex items-center gap-2">
-						<CardTitle className="text-lg">Caja del Dia</CardTitle>
+						<CardTitle className="text-lg">{t("title")}</CardTitle>
 						<Button variant="ghost" size="sm" asChild className="h-7 px-2">
 							<Link href="/dashboard/organization/cash-register/history">
 								<HistoryIcon className="mr-1 size-3.5" />
-								Historial
+								{t("history")}
 							</Link>
 						</Button>
 					</div>
 					<CardDescription>
-						{format(new Date(), "EEEE, d 'de' MMMM", { locale: es })}
+						{format(new Date(), dateFormat, { locale: dateLocale })}
 					</CardDescription>
 				</div>
 				<Badge
@@ -92,17 +99,17 @@ export function CashRegisterStatusCard(): React.JSX.Element {
 					{isOpen ? (
 						<>
 							<UnlockIcon className="size-3.5" />
-							Abierta
+							{t("statusOpen")}
 						</>
 					) : isClosed ? (
 						<>
 							<LockIcon className="size-3.5" />
-							Cerrada
+							{t("statusClosed")}
 						</>
 					) : (
 						<>
 							<AlertTriangleIcon className="size-3.5" />
-							Sin Abrir
+							{t("statusNotOpened")}
 						</>
 					)}
 				</Badge>
@@ -114,35 +121,41 @@ export function CashRegisterStatusCard(): React.JSX.Element {
 							<AlertTriangleIcon className="size-6 text-muted-foreground" />
 						</div>
 						<div className="text-center">
-							<p className="font-medium">La caja no esta abierta</p>
+							<p className="font-medium">{t("notOpenTitle")}</p>
 							<p className="text-muted-foreground text-sm">
-								Abre la caja para registrar movimientos de hoy
+								{t("notOpenDescription")}
 							</p>
 						</div>
 						<Button onClick={() => NiceModal.show(CashRegisterOpenModal)}>
 							<UnlockIcon className="mr-2 size-4" />
-							Abrir Caja
+							{t("openButton")}
 						</Button>
 					</div>
 				) : (
 					<div className="space-y-4">
 						<div className="grid grid-cols-2 gap-4">
 							<div className="space-y-1">
-								<p className="text-muted-foreground text-sm">Saldo Inicial</p>
+								<p className="text-muted-foreground text-sm">
+									{t("openingBalance")}
+								</p>
 								<p className="font-semibold text-lg">
 									{formatAmount(currentRegister.openingBalance)}
 								</p>
 							</div>
 							{isClosed ? (
 								<div className="space-y-1">
-									<p className="text-muted-foreground text-sm">Saldo Final</p>
+									<p className="text-muted-foreground text-sm">
+										{t("closingBalance")}
+									</p>
 									<p className="font-semibold text-lg">
 										{formatAmount(currentRegister.closingBalance ?? 0)}
 									</p>
 								</div>
 							) : (
 								<div className="space-y-1">
-									<p className="text-muted-foreground text-sm">Flujo Neto</p>
+									<p className="text-muted-foreground text-sm">
+										{t("netFlow")}
+									</p>
 									<p
 										className={cn(
 											"font-semibold text-lg",
@@ -160,7 +173,9 @@ export function CashRegisterStatusCard(): React.JSX.Element {
 						{dailySummary && isOpen && (
 							<div className="grid grid-cols-3 gap-4 rounded-lg bg-muted/50 p-4">
 								<div className="text-center">
-									<p className="text-muted-foreground text-xs">Ingresos</p>
+									<p className="text-muted-foreground text-xs">
+										{t("incomeLabel")}
+									</p>
 									<p className="font-medium text-green-600">
 										{formatAmount(dailySummary.movements.income.total)}
 									</p>
@@ -169,7 +184,9 @@ export function CashRegisterStatusCard(): React.JSX.Element {
 									</p>
 								</div>
 								<div className="text-center">
-									<p className="text-muted-foreground text-xs">Egresos</p>
+									<p className="text-muted-foreground text-xs">
+										{t("expenseLabel")}
+									</p>
 									<p className="font-medium text-red-600">
 										{formatAmount(dailySummary.movements.expense.total)}
 									</p>
@@ -178,7 +195,9 @@ export function CashRegisterStatusCard(): React.JSX.Element {
 									</p>
 								</div>
 								<div className="text-center">
-									<p className="text-muted-foreground text-xs">Pagos</p>
+									<p className="text-muted-foreground text-xs">
+										{t("paymentsLabel")}
+									</p>
 									<p className="font-medium text-blue-600">
 										{formatAmount(dailySummary.paymentsReceived.total)}
 									</p>
@@ -202,7 +221,7 @@ export function CashRegisterStatusCard(): React.JSX.Element {
 									}
 								>
 									<PlusIcon className="mr-1 size-4" />
-									Movimiento
+									{t("movementButton")}
 								</Button>
 								<Button
 									variant="outline"
@@ -215,16 +234,16 @@ export function CashRegisterStatusCard(): React.JSX.Element {
 									}
 								>
 									<LockIcon className="mr-1 size-4" />
-									Cerrar Caja
+									{t("closeButton")}
 								</Button>
 							</div>
 						)}
 
 						{currentRegister.openedByUser && (
 							<p className="text-muted-foreground text-xs">
-								Abierta por {currentRegister.openedByUser.name}
+								{t("openedBy", { name: currentRegister.openedByUser.name })}
 								{currentRegister.closedByUser &&
-									` - Cerrada por ${currentRegister.closedByUser.name}`}
+									` - ${t("closedBy", { name: currentRegister.closedByUser.name })}`}
 							</p>
 						)}
 					</div>
