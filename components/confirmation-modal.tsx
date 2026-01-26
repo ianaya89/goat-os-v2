@@ -24,10 +24,11 @@ export type ConfirmationModalProps = NiceModalHocProps & {
 	destructive?: boolean;
 	requiredText?: string;
 	onConfirm: () =>
-		| undefined
+		| void
 		| boolean
 		| undefined
-		| Promise<undefined | boolean | undefined>;
+		// biome-ignore lint/suspicious/noConfusingVoidType: void is correct for callbacks
+		| Promise<void | boolean | undefined>;
 	dismissible?: boolean;
 };
 
