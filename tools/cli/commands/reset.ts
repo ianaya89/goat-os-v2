@@ -56,18 +56,18 @@ export async function resetDatabase(): Promise<void> {
 
 		spinner.stop("All sequences dropped");
 
-		spinner.start("Re-running migrations...");
+		p.log.step("Re-running migrations...");
 
 		// Use drizzle-kit to run migrations
 		// Pass current process.env to inherit the DATABASE_URL set by env selection
 		const { execSync } = await import("node:child_process");
 		execSync("npx drizzle-kit migrate --config=drizzle.config.ts", {
-			stdio: "pipe",
+			stdio: "inherit",
 			cwd: process.cwd(),
 			env: process.env,
 		});
 
-		spinner.stop("Database reset completed");
+		p.log.success("Database reset completed");
 	} catch (error) {
 		spinner.stop("Reset failed");
 		throw error;

@@ -2,19 +2,18 @@ import { execSync } from "node:child_process";
 import * as p from "@clack/prompts";
 
 export async function runMigrations(): Promise<void> {
-	const spinner = p.spinner();
-	spinner.start("Running migrations...");
+	p.log.step("Running migrations...");
 
 	try {
-		// Pass current process.env to inherit the DATABASE_URL set by env selection
+		// Use stdio: "inherit" to show real-time output from drizzle-kit
 		execSync("npx drizzle-kit migrate --config=drizzle.config.ts", {
-			stdio: "pipe",
+			stdio: "inherit",
 			cwd: process.cwd(),
 			env: process.env,
 		});
-		spinner.stop("Migrations completed successfully");
+		p.log.success("Migrations completed successfully");
 	} catch (error) {
-		spinner.stop("Migration failed");
+		p.log.error("Migration failed");
 		throw error;
 	}
 }
