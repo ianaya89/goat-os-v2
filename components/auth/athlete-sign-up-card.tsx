@@ -2,7 +2,6 @@
 
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { AnimatePresence, motion } from "framer-motion";
 import {
 	ArrowLeftIcon,
 	ArrowRightIcon,
@@ -15,6 +14,7 @@ import {
 	UserIcon,
 	UsersIcon,
 } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { useState } from "react";
 import { PasswordFormMessage } from "@/components/auth/password-form-message";

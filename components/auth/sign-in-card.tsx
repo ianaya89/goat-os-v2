@@ -1,7 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { LockIcon, MailIcon } from "lucide-react";
+import { motion } from "motion/react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";

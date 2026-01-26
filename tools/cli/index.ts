@@ -1,32 +1,85 @@
 #!/usr/bin/env tsx
 import * as p from "@clack/prompts";
+import { generateMigrations } from "./commands/generate";
 import { runMigrations } from "./commands/migrate";
 import { pushSchema } from "./commands/push";
 import { resetDatabase } from "./commands/reset";
 import { runSeeds, seedOptions } from "./commands/seed";
-import { type Environment, getEnvConfig } from "./env";
+import {
+	type Environment,
+	type EnvironmentName,
+	formatDatabaseUrl,
+	getAvailableEnvironments,
+	getEnvConfig,
+	hasEnvDbFile,
+	setEnvironment,
+} from "./env";
 import { runRealLifeSeed } from "./seeds/real-life";
 
-async function main() {
-	p.intro("🐐 GOAT OS Database CLI");
+async function selectEnvironment(): Promise<Environment> {
+	const availableEnvs = getAvailableEnvironments();
 
-	const env = getEnvConfig();
+	// If no .env.db file or no environments configured, fall back to legacy behavior
+	if (!hasEnvDbFile() || availableEnvs.length === 0) {
+		p.log.warn("No .env.db file found, using DATABASE_URL from .env");
+		return getEnvConfig();
+	}
+
+	// If only one environment is available, use it directly
+	if (availableEnvs.length === 1) {
+		const singleEnv = availableEnvs[0];
+		if (singleEnv) {
+			return setEnvironment(singleEnv.name);
+		}
+	}
+
+	// Multiple environments available - let user choose
+	const envOptions = availableEnvs.map((env) => ({
+		value: env.name,
+		label: env.name.charAt(0).toUpperCase() + env.name.slice(1),
+		hint: formatDatabaseUrl(env.databaseUrl),
+	}));
+
+	const selectedEnv = await p.select({
+		message: "Select database environment:",
+		options: envOptions,
+	});
+
+	if (p.isCancel(selectedEnv)) {
+		p.cancel("Operation cancelled.");
+		process.exit(0);
+	}
+
+	const env = setEnvironment(selectedEnv as EnvironmentName);
+	p.log.info(`Using DATABASE_URL: ${formatDatabaseUrl(env.databaseUrl)}`);
+	return env;
+}
+
+async function main() {
+	p.intro("GOAT OS Database CLI");
+
+	const env = await selectEnvironment();
 	p.note(
-		`Environment: ${env.name}\nDatabase: ${env.databaseUrl.split("@")[1] ?? "****"}`,
+		`Environment: ${env.name}\nDatabase: ${formatDatabaseUrl(env.databaseUrl)}`,
 	);
 
 	const action = await p.select({
 		message: "What do you want to do?",
 		options: [
 			{
-				value: "seed",
-				label: "Run Seeds",
-				hint: "Populate database with sample data",
+				value: "generate",
+				label: "Generate Migrations",
+				hint: "Create migration files from schema changes",
 			},
 			{
 				value: "migrate",
 				label: "Run Migrations",
 				hint: "Apply pending migrations",
+			},
+			{
+				value: "seed",
+				label: "Run Seeds",
+				hint: "Populate database with sample data",
 			},
 			{
 				value: "push",
@@ -47,6 +100,9 @@ async function main() {
 	}
 
 	switch (action) {
+		case "generate":
+			await handleGenerate();
+			break;
 		case "seed":
 			await handleSeed(env);
 			break;
@@ -61,7 +117,11 @@ async function main() {
 			break;
 	}
 
-	p.outro("Done! 🎉");
+	p.outro("Done!");
+}
+
+async function handleGenerate(): Promise<void> {
+	await generateMigrations();
 }
 
 async function handleSeed(env: Environment) {
@@ -88,7 +148,7 @@ async function handleSeed(env: Environment) {
 
 	if (env.name === "production") {
 		const confirm = await p.confirm({
-			message: "⚠️ You are about to seed PRODUCTION database. Are you sure?",
+			message: "You are about to seed PRODUCTION database. Are you sure?",
 			initialValue: false,
 		});
 
@@ -140,7 +200,7 @@ async function handleMigrate(env: Environment) {
 	if (env.name === "production") {
 		const confirm = await p.confirm({
 			message:
-				"⚠️ You are about to run migrations on PRODUCTION database. Are you sure?",
+				"You are about to run migrations on PRODUCTION database. Are you sure?",
 			initialValue: false,
 		});
 
@@ -161,7 +221,7 @@ async function handlePush(env: Environment) {
 
 	const confirm = await p.confirm({
 		message:
-			"⚠️ This will push schema changes directly without migration files. Continue?",
+			"This will push schema changes directly without migration files. Continue?",
 		initialValue: true,
 	});
 
@@ -180,7 +240,7 @@ async function handleReset(env: Environment) {
 	}
 
 	const confirm = await p.confirm({
-		message: "⚠️ This will DROP ALL TABLES and re-run migrations. Are you sure?",
+		message: "This will DROP ALL TABLES and re-run migrations. Are you sure?",
 		initialValue: false,
 	});
 

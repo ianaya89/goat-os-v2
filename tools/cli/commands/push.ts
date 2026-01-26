@@ -10,9 +10,11 @@ export async function pushSchema(): Promise<void> {
 	spinner.start("Pushing schema to database...");
 
 	try {
+		// Pass current process.env to inherit the DATABASE_URL set by env selection
 		execSync("npx drizzle-kit push --config=drizzle.config.ts", {
 			stdio: "inherit",
 			encoding: "utf-8",
+			env: process.env,
 		});
 		spinner.stop("Schema pushed successfully!");
 	} catch (error) {

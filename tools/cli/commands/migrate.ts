@@ -6,9 +6,11 @@ export async function runMigrations(): Promise<void> {
 	spinner.start("Running migrations...");
 
 	try {
-		execSync("npm run db:migrate", {
+		// Pass current process.env to inherit the DATABASE_URL set by env selection
+		execSync("npx drizzle-kit migrate --config=drizzle.config.ts", {
 			stdio: "pipe",
 			cwd: process.cwd(),
+			env: process.env,
 		});
 		spinner.stop("Migrations completed successfully");
 	} catch (error) {
