@@ -186,6 +186,24 @@
 		"settings": {
 			"title": "Settings",
 			"pageTitle": "Organization Settings"
+		},
+		"teams": {
+			"title": "Teams",
+			"description": "Manage competitive teams",
+			"profile": "Profile",
+			"profileTitle": "Team Details"
+		},
+		"seasons": {
+			"title": "Seasons",
+			"description": "Manage seasons"
+		},
+		"competitions": {
+			"title": "Competitions",
+			"description": "Manage competitions"
+		},
+		"matches": {
+			"title": "Matches",
+			"description": "Manage matches"
 		}
 	},
 	"switcher": {

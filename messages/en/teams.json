@@ -1,0 +1,147 @@
+{
+	"title": "Teams",
+	"description": "Manage your organization's competitive teams.",
+	"add": "Add team",
+	"edit": "Edit team",
+	"view": "View team",
+	"delete": "Delete team",
+	"search": "Search teams...",
+	"filters": {
+		"all": "All",
+		"active": "Active",
+		"inactive": "Inactive",
+		"archived": "Archived"
+	},
+	"table": {
+		"name": "Name",
+		"sport": "Sport",
+		"season": "Season",
+		"category": "Category",
+		"members": "Players",
+		"status": "Status",
+		"actions": "Actions"
+	},
+	"form": {
+		"name": "Team name",
+		"description": "Description",
+		"sport": "Sport",
+		"season": "Season",
+		"ageCategory": "Age category",
+		"primaryColor": "Primary color",
+		"secondaryColor": "Secondary color",
+		"homeVenue": "Home venue"
+	},
+	"tabs": {
+		"members": "Players",
+		"staff": "Staff",
+		"competitions": "Competitions",
+		"matches": "Matches",
+		"schedule": "Schedule",
+		"info": "Info"
+	},
+	"stats": {
+		"totalMembers": "Total Players",
+		"staff": "Technical Staff",
+		"matches": "Matches",
+		"matchesPlayed": "played",
+		"matchesScheduled": "scheduled",
+		"competitions": "Competitions",
+		"competitionsActive": "active"
+	},
+	"members": {
+		"title": "Team Players",
+		"description": "Athletes who are part of the team",
+		"add": "Add player",
+		"edit": "Edit",
+		"remove": "Remove from team",
+		"empty": "No players assigned to the team",
+		"roles": {
+			"captain": "Captain",
+			"vice_captain": "Vice-captain",
+			"player": "Player"
+		}
+	},
+	"staff": {
+		"title": "Technical Staff",
+		"description": "Team's technical personnel",
+		"add": "Add staff",
+		"edit": "Edit",
+		"remove": "Remove from staff",
+		"empty": "No staff assigned to the team",
+		"roles": {
+			"head_coach": "Head coach",
+			"assistant_coach": "Assistant coach",
+			"fitness_coach": "Fitness coach",
+			"goalkeeper_coach": "Goalkeeper coach",
+			"analyst": "Analyst",
+			"medic": "Medic",
+			"physiotherapist": "Physiotherapist",
+			"manager": "Manager",
+			"kit_manager": "Kit manager",
+			"other": "Other"
+		}
+	},
+	"competitions": {
+		"title": "Competitions",
+		"description": "Tournaments and leagues the team participates in",
+		"empty": "The team is not registered in any competition",
+		"division": "Division",
+		"position": "Position"
+	},
+	"matches": {
+		"title": "Matches",
+		"description": "Team's match history",
+		"empty": "No matches recorded",
+		"scheduled": "Scheduled",
+		"completed": "Played",
+		"vs": "vs",
+		"home": "Home",
+		"away": "Away"
+	},
+	"schedule": {
+		"title": "Training Schedule",
+		"description": "Training sessions scheduled for the team",
+		"empty": "No training sessions scheduled",
+		"upcoming": "Upcoming sessions",
+		"past": "Past sessions"
+	},
+	"info": {
+		"title": "Team Information",
+		"description": "General team data",
+		"season": "Season",
+		"ageCategory": "Age Category",
+		"homeVenue": "Home Venue",
+		"colors": "Team Colors",
+		"primaryColor": "Primary Color",
+		"secondaryColor": "Secondary Color",
+		"noDescription": "No description",
+		"noSeason": "No season assigned",
+		"noCategory": "No category assigned",
+		"noVenue": "No venue assigned"
+	},
+	"status": {
+		"active": "Active",
+		"inactive": "Inactive",
+		"archived": "Archived"
+	},
+	"actions": {
+		"edit": "Edit team",
+		"delete": "Delete team",
+		"confirmDelete": "Are you sure you want to delete \"{name}\"? This action cannot be undone."
+	},
+	"success": {
+		"created": "Team created successfully.",
+		"updated": "Team updated successfully.",
+		"deleted": "Team deleted successfully.",
+		"memberAdded": "Player added to the team.",
+		"memberRemoved": "Player removed from the team.",
+		"staffAdded": "Staff added to the team.",
+		"staffRemoved": "Staff removed from the team."
+	},
+	"error": {
+		"notFound": "Team not found.",
+		"createFailed": "Could not create the team.",
+		"updateFailed": "Could not update the team.",
+		"deleteFailed": "Could not delete the team."
+	}
+}

@@ -186,6 +186,24 @@
 		"settings": {
 			"title": "Configuración",
 			"pageTitle": "Configuración de la Organización"
+		},
+		"teams": {
+			"title": "Equipos",
+			"description": "Gestiona los equipos competitivos",
+			"profile": "Perfil",
+			"profileTitle": "Detalle del Equipo"
+		},
+		"seasons": {
+			"title": "Temporadas",
+			"description": "Gestiona las temporadas"
+		},
+		"competitions": {
+			"title": "Competencias",
+			"description": "Gestiona las competencias"
+		},
+		"matches": {
+			"title": "Partidos",
+			"description": "Gestiona los partidos"
 		}
 	},
 	"switcher": {

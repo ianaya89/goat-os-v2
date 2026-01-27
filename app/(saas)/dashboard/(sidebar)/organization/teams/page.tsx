@@ -1,20 +1,50 @@
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
+import type * as React from "react";
+import { OrganizationBreadcrumbSwitcher } from "@/components/organization/organization-breadcrumb-switcher";
 import { TeamsTable } from "@/components/organization/teams-table";
+import {
+	Page,
+	PageBody,
+	PageBreadcrumb,
+	PageContent,
+	PageHeader,
+	PagePrimaryBar,
+} from "@/components/ui/custom/page";
+import { getSession } from "@/lib/auth/server";
 
-export const metadata = {
-	title: "Equipos",
-	description: "Gestión de equipos competitivos de la organización",
+export const metadata: Metadata = {
+	title: "Teams",
 };
 
-export default function TeamsPage(): React.JSX.Element {
+export default async function TeamsPage(): Promise<React.JSX.Element> {
+	const session = await getSession();
+	if (!session?.session.activeOrganizationId) {
+		redirect("/dashboard");
+	}
+
+	const t = await getTranslations("organization.pages");
+	const tDashboard = await getTranslations("dashboard");
+
 	return (
-		<div className="space-y-6">
-			<div>
-				<h1 className="text-3xl font-bold tracking-tight">Equipos</h1>
-				<p className="text-muted-foreground">
-					Gestiona los equipos competitivos para torneos y ligas
-				</p>
-			</div>
-			<TeamsTable />
-		</div>
+		<Page>
+			<PageHeader>
+				<PagePrimaryBar>
+					<PageBreadcrumb
+						segments={[
+							{ label: tDashboard("breadcrumb.home"), href: "/dashboard" },
+							{ label: <OrganizationBreadcrumbSwitcher />, isCustom: true },
+							{ label: t("teams.title") },
+						]}
+					/>
+				</PagePrimaryBar>
+			</PageHeader>
+			<PageBody>
+				<PageContent title={t("teams.title")}>
+					<TeamsTable />
+				</PageContent>
+			</PageBody>
+		</Page>
 	);
 }

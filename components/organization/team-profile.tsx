@@ -5,10 +5,14 @@ import { format } from "date-fns";
 import {
 	ArrowLeftIcon,
 	CalendarIcon,
+	InfoIcon,
+	MapPinIcon,
 	MoreHorizontalIcon,
+	PaletteIcon,
 	PencilIcon,
 	PlusIcon,
 	ShieldIcon,
+	SwordsIcon,
 	Trash2Icon,
 	TrophyIcon,
 	UserIcon,
@@ -16,6 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import type * as React from "react";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/confirmation-modal";
@@ -45,34 +50,20 @@ import { cn, getInitials } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
 const statusColors: Record<string, string> = {
-	active: "bg-green-100 dark:bg-green-900",
-	inactive: "bg-gray-100 dark:bg-gray-800",
-	archived: "bg-amber-100 dark:bg-amber-900",
+	active: "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100",
+	inactive: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100",
+	archived: "bg-amber-100 text-amber-800 dark:bg-amber-800 dark:text-amber-100",
 };
 
-const statusLabels: Record<string, string> = {
-	active: "Activo",
-	inactive: "Inactivo",
-	archived: "Archivado",
-};
-
-const memberRoleLabels: Record<string, string> = {
-	captain: "Capitán",
-	vice_captain: "Vice-capitán",
-	player: "Jugador",
-};
-
-const staffRoleLabels: Record<string, string> = {
-	head_coach: "Director técnico",
-	assistant_coach: "Asistente técnico",
-	fitness_coach: "Preparador físico",
-	goalkeeper_coach: "Entrenador de arqueros",
-	analyst: "Analista",
-	medic: "Médico",
-	physiotherapist: "Fisioterapeuta",
-	manager: "Manager",
-	kit_manager: "Utilero",
-	other: "Otro",
+const matchStatusColors: Record<string, string> = {
+	scheduled: "bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100",
+	in_progress:
+		"bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100",
+	completed:
+		"bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100",
+	postponed:
+		"bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100",
+	cancelled: "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100",
 };
 
 interface TeamProfileProps {
@@ -82,49 +73,55 @@ interface TeamProfileProps {
 export function TeamProfile({ teamId }: TeamProfileProps): React.JSX.Element {
 	const router = useRouter();
 	const utils = trpc.useUtils();
+	const t = useTranslations("teams");
 
 	const { data: team, isPending } = trpc.organization.team.get.useQuery({
 		id: teamId,
 	});
 
+	const { data: matches } = trpc.organization.match.listByTeam.useQuery(
+		{ teamId, limit: 10 },
+		{ enabled: !!teamId },
+	);
+
 	const deleteMutation = trpc.organization.team.delete.useMutation({
 		onSuccess: () => {
-			toast.success("Equipo eliminado");
+			toast.success(t("success.deleted"));
 			router.push("/dashboard/organization/teams");
 		},
 		onError: (error) => {
-			toast.error(error.message || "Error al eliminar equipo");
+			toast.error(error.message || t("error.deleteFailed"));
 		},
 	});
 
 	const removeMemberMutation = trpc.organization.team.removeMembers.useMutation(
 		{
 			onSuccess: () => {
-				toast.success("Miembro eliminado del equipo");
+				toast.success(t("success.memberRemoved"));
 				utils.organization.team.get.invalidate({ id: teamId });
 			},
 			onError: (error: { message?: string }) => {
-				toast.error(error.message || "Error al eliminar miembro");
+				toast.error(error.message || t("error.deleteFailed"));
 			},
 		},
 	);
 
 	const removeStaffMutation = trpc.organization.team.removeStaff.useMutation({
 		onSuccess: () => {
-			toast.success("Staff eliminado del equipo");
+			toast.success(t("success.staffRemoved"));
 			utils.organization.team.get.invalidate({ id: teamId });
 		},
 		onError: (error: { message?: string }) => {
-			toast.error(error.message || "Error al eliminar staff");
+			toast.error(error.message || t("error.deleteFailed"));
 		},
 	});
 
 	const handleDelete = (): void => {
 		if (!team) return;
 		NiceModal.show(ConfirmationModal, {
-			title: "Eliminar equipo",
-			description: `¿Estás seguro de eliminar "${team.name}"? Esta acción no se puede deshacer.`,
-			confirmText: "Eliminar",
+			title: t("actions.delete"),
+			description: t("actions.confirmDelete", { name: team.name }),
+			confirmText: t("delete"),
 			variant: "destructive",
 			onConfirm: () => deleteMutation.mutate({ id: teamId }),
 		});
@@ -132,9 +129,9 @@ export function TeamProfile({ teamId }: TeamProfileProps): React.JSX.Element {
 
 	const handleRemoveMember = (athleteId: string, name: string): void => {
 		NiceModal.show(ConfirmationModal, {
-			title: "Eliminar miembro",
-			description: `¿Estás seguro de eliminar a "${name}" del equipo?`,
-			confirmText: "Eliminar",
+			title: t("members.remove"),
+			description: t("actions.confirmDelete", { name }),
+			confirmText: t("delete"),
 			variant: "destructive",
 			onConfirm: () =>
 				removeMemberMutation.mutate({ teamId, athleteIds: [athleteId] }),
@@ -143,48 +140,46 @@ export function TeamProfile({ teamId }: TeamProfileProps): React.JSX.Element {
 
 	const handleRemoveStaff = (staffId: string, name: string): void => {
 		NiceModal.show(ConfirmationModal, {
-			title: "Eliminar staff",
-			description: `¿Estás seguro de eliminar a "${name}" del staff?`,
-			confirmText: "Eliminar",
+			title: t("staff.remove"),
+			description: t("actions.confirmDelete", { name }),
+			confirmText: t("delete"),
 			variant: "destructive",
 			onConfirm: () => removeStaffMutation.mutate({ id: staffId }),
 		});
 	};
 
 	if (isPending) {
-		return (
-			<div className="space-y-6">
-				<div className="flex items-center gap-4">
-					<Skeleton className="h-20 w-20 rounded-full" />
-					<div className="space-y-2">
-						<Skeleton className="h-8 w-48" />
-						<Skeleton className="h-4 w-32" />
-					</div>
-				</div>
-				<Skeleton className="h-64 w-full" />
-			</div>
-		);
+		return <TeamProfileSkeleton />;
 	}
 
 	if (!team) {
 		return (
 			<div className="text-center py-12">
-				<p className="text-muted-foreground">Equipo no encontrado</p>
+				<p className="text-muted-foreground">{t("error.notFound")}</p>
 				<Button asChild className="mt-4">
-					<Link href="/dashboard/organization/teams">Volver a equipos</Link>
+					<Link href="/dashboard/organization/teams">{t("title")}</Link>
 				</Button>
 			</div>
 		);
 	}
 
+	// Calculate stats
+	const membersCount = team.members?.length ?? 0;
+	const staffCount = team.staff?.length ?? 0;
+	const competitionsCount = team.competitions?.length ?? 0;
+	const matchesPlayed =
+		matches?.filter((m) => m.status === "completed").length ?? 0;
+	const matchesScheduled =
+		matches?.filter((m) => m.status === "scheduled").length ?? 0;
+
 	return (
 		<div className="space-y-6">
 			{/* Header */}
-			<div className="flex items-start justify-between">
-				<div className="flex items-center gap-4">
-					<Button variant="ghost" size="icon" asChild>
+			<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+				<div className="flex items-start gap-4">
+					<Button asChild size="icon" variant="ghost">
 						<Link href="/dashboard/organization/teams">
-							<ArrowLeftIcon className="h-4 w-4" />
+							<ArrowLeftIcon className="size-5" />
 						</Link>
 					</Button>
 					<div
@@ -196,24 +191,24 @@ export function TeamProfile({ teamId }: TeamProfileProps): React.JSX.Element {
 						<ShieldIcon className="h-8 w-8 text-white" />
 					</div>
 					<div>
-						<div className="flex items-center gap-2">
-							<h1 className="text-2xl font-bold">{team.name}</h1>
-							<Badge
-								variant="outline"
-								className={cn(statusColors[team.status])}
-							>
-								{statusLabels[team.status]}
+						<div className="flex items-center gap-3">
+							<h1 className="font-bold text-2xl">{team.name}</h1>
+							<Badge className={cn("border-none", statusColors[team.status])}>
+								{t(`status.${team.status}`)}
 							</Badge>
 						</div>
-						<div className="flex items-center gap-4 text-sm text-muted-foreground">
+						<div className="mt-1 flex flex-wrap items-center gap-4 text-muted-foreground text-sm">
 							{team.season && (
-								<span className="flex items-center gap-1">
-									<CalendarIcon className="h-4 w-4" />
-									{team.season.name}
-								</span>
+								<div className="flex items-center gap-1">
+									<CalendarIcon className="size-4" />
+									<span>{team.season.name}</span>
+								</div>
 							)}
 							{team.ageCategory && (
-								<span>Categoría: {team.ageCategory.name}</span>
+								<div className="flex items-center gap-1">
+									<UsersIcon className="size-4" />
+									<span>{team.ageCategory.name}</span>
+								</div>
 							)}
 						</div>
 					</div>
@@ -222,7 +217,7 @@ export function TeamProfile({ teamId }: TeamProfileProps): React.JSX.Element {
 					<DropdownMenuTrigger asChild>
 						<Button variant="outline">
 							<MoreHorizontalIcon className="mr-2 h-4 w-4" />
-							Acciones
+							{t("actions.edit")}
 						</Button>
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="end">
@@ -230,7 +225,7 @@ export function TeamProfile({ teamId }: TeamProfileProps): React.JSX.Element {
 							onClick={() => NiceModal.show(TeamsModal, { team })}
 						>
 							<PencilIcon className="mr-2 h-4 w-4" />
-							Editar equipo
+							{t("actions.edit")}
 						</DropdownMenuItem>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem
@@ -238,47 +233,109 @@ export function TeamProfile({ teamId }: TeamProfileProps): React.JSX.Element {
 							className="text-destructive"
 						>
 							<Trash2Icon className="mr-2 h-4 w-4" />
-							Eliminar equipo
+							{t("actions.delete")}
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
 			</div>
 
-			{/* Description */}
-			{team.description && (
+			{/* Stats Overview */}
+			<div className="grid gap-4 md:grid-cols-4">
 				<Card>
-					<CardContent className="pt-6">
-						<p className="text-muted-foreground">{team.description}</p>
+					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+						<CardTitle className="font-medium text-sm">
+							{t("stats.totalMembers")}
+						</CardTitle>
+						<UsersIcon className="size-4 text-muted-foreground" />
+					</CardHeader>
+					<CardContent>
+						<div className="font-bold text-2xl">{membersCount}</div>
+						<p className="text-muted-foreground text-xs">
+							{t("tabs.members").toLowerCase()}
+						</p>
 					</CardContent>
 				</Card>
-			)}
+				<Card>
+					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+						<CardTitle className="font-medium text-sm">
+							{t("stats.staff")}
+						</CardTitle>
+						<UserIcon className="size-4 text-muted-foreground" />
+					</CardHeader>
+					<CardContent>
+						<div className="font-bold text-2xl">{staffCount}</div>
+						<p className="text-muted-foreground text-xs">
+							{t("tabs.staff").toLowerCase()}
+						</p>
+					</CardContent>
+				</Card>
+				<Card>
+					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+						<CardTitle className="font-medium text-sm">
+							{t("stats.matches")}
+						</CardTitle>
+						<SwordsIcon className="size-4 text-muted-foreground" />
+					</CardHeader>
+					<CardContent>
+						<div className="font-bold text-2xl">{matchesPlayed}</div>
+						<p className="text-muted-foreground text-xs">
+							{matchesPlayed} {t("stats.matchesPlayed")}, {matchesScheduled}{" "}
+							{t("stats.matchesScheduled")}
+						</p>
+					</CardContent>
+				</Card>
+				<Card>
+					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+						<CardTitle className="font-medium text-sm">
+							{t("stats.competitions")}
+						</CardTitle>
+						<TrophyIcon className="size-4 text-muted-foreground" />
+					</CardHeader>
+					<CardContent>
+						<div className="font-bold text-2xl">{competitionsCount}</div>
+						<p className="text-muted-foreground text-xs">
+							{t("stats.competitionsActive")}
+						</p>
+					</CardContent>
+				</Card>
+			</div>
 
-			{/* Tabs */}
-			<Tabs defaultValue="members">
-				<TabsList>
-					<TabsTrigger value="members" className="gap-2">
-						<UsersIcon className="h-4 w-4" />
-						Jugadores ({team.members?.length ?? 0})
+			{/* Detailed Tabs */}
+			<Tabs defaultValue="members" className="space-y-4">
+				<TabsList className="flex-wrap">
+					<TabsTrigger value="members">
+						<UsersIcon className="mr-1 size-3.5" />
+						{t("tabs.members")} ({membersCount})
 					</TabsTrigger>
-					<TabsTrigger value="staff" className="gap-2">
-						<UserIcon className="h-4 w-4" />
-						Staff ({team.staff?.length ?? 0})
+					<TabsTrigger value="staff">
+						<UserIcon className="mr-1 size-3.5" />
+						{t("tabs.staff")} ({staffCount})
 					</TabsTrigger>
-					<TabsTrigger value="competitions" className="gap-2">
-						<TrophyIcon className="h-4 w-4" />
-						Competencias
+					<TabsTrigger value="competitions">
+						<TrophyIcon className="mr-1 size-3.5" />
+						{t("tabs.competitions")}
+					</TabsTrigger>
+					<TabsTrigger value="matches">
+						<SwordsIcon className="mr-1 size-3.5" />
+						{t("tabs.matches")}
+					</TabsTrigger>
+					<TabsTrigger value="schedule">
+						<CalendarIcon className="mr-1 size-3.5" />
+						{t("tabs.schedule")}
+					</TabsTrigger>
+					<TabsTrigger value="info">
+						<InfoIcon className="mr-1 size-3.5" />
+						{t("tabs.info")}
 					</TabsTrigger>
 				</TabsList>
 
 				{/* Members Tab */}
-				<TabsContent value="members" className="mt-6">
+				<TabsContent value="members">
 					<Card>
 						<CardHeader className="flex flex-row items-center justify-between">
 							<div>
-								<CardTitle>Jugadores del equipo</CardTitle>
-								<CardDescription>
-									Atletas que forman parte del equipo
-								</CardDescription>
+								<CardTitle>{t("members.title")}</CardTitle>
+								<CardDescription>{t("members.description")}</CardDescription>
 							</div>
 							<Button
 								onClick={() =>
@@ -286,7 +343,7 @@ export function TeamProfile({ teamId }: TeamProfileProps): React.JSX.Element {
 								}
 							>
 								<PlusIcon className="mr-2 h-4 w-4" />
-								Agregar jugador
+								{t("members.add")}
 							</Button>
 						</CardHeader>
 						<CardContent>
@@ -319,7 +376,7 @@ export function TeamProfile({ teamId }: TeamProfileProps): React.JSX.Element {
 													</div>
 													<div className="flex items-center gap-2 text-sm text-muted-foreground">
 														<Badge variant="outline" className="text-xs">
-															{memberRoleLabels[member.role] ?? member.role}
+															{t(`members.roles.${member.role}`)}
 														</Badge>
 														{member.position && <span>{member.position}</span>}
 													</div>
@@ -341,7 +398,7 @@ export function TeamProfile({ teamId }: TeamProfileProps): React.JSX.Element {
 														}
 													>
 														<PencilIcon className="mr-2 h-4 w-4" />
-														Editar
+														{t("members.edit")}
 													</DropdownMenuItem>
 													<DropdownMenuSeparator />
 													<DropdownMenuItem
@@ -354,7 +411,7 @@ export function TeamProfile({ teamId }: TeamProfileProps): React.JSX.Element {
 														className="text-destructive"
 													>
 														<Trash2Icon className="mr-2 h-4 w-4" />
-														Eliminar del equipo
+														{t("members.remove")}
 													</DropdownMenuItem>
 												</DropdownMenuContent>
 											</DropdownMenu>
@@ -363,7 +420,7 @@ export function TeamProfile({ teamId }: TeamProfileProps): React.JSX.Element {
 								</div>
 							) : (
 								<p className="text-center py-8 text-muted-foreground">
-									No hay jugadores asignados al equipo
+									{t("members.empty")}
 								</p>
 							)}
 						</CardContent>
@@ -371,12 +428,12 @@ export function TeamProfile({ teamId }: TeamProfileProps): React.JSX.Element {
 				</TabsContent>
 
 				{/* Staff Tab */}
-				<TabsContent value="staff" className="mt-6">
+				<TabsContent value="staff">
 					<Card>
 						<CardHeader className="flex flex-row items-center justify-between">
 							<div>
-								<CardTitle>Staff técnico</CardTitle>
-								<CardDescription>Personal técnico del equipo</CardDescription>
+								<CardTitle>{t("staff.title")}</CardTitle>
+								<CardDescription>{t("staff.description")}</CardDescription>
 							</div>
 							<Button
 								onClick={() =>
@@ -384,7 +441,7 @@ export function TeamProfile({ teamId }: TeamProfileProps): React.JSX.Element {
 								}
 							>
 								<PlusIcon className="mr-2 h-4 w-4" />
-								Agregar staff
+								{t("staff.add")}
 							</Button>
 						</CardHeader>
 						<CardContent>
@@ -420,8 +477,7 @@ export function TeamProfile({ teamId }: TeamProfileProps): React.JSX.Element {
 													</span>
 													<div className="text-sm text-muted-foreground">
 														<Badge variant="outline" className="text-xs">
-															{staffRoleLabels[staffMember.role] ??
-																staffMember.role}
+															{t(`staff.roles.${staffMember.role}`)}
 														</Badge>
 													</div>
 												</div>
@@ -442,7 +498,7 @@ export function TeamProfile({ teamId }: TeamProfileProps): React.JSX.Element {
 														}
 													>
 														<PencilIcon className="mr-2 h-4 w-4" />
-														Editar
+														{t("staff.edit")}
 													</DropdownMenuItem>
 													<DropdownMenuSeparator />
 													<DropdownMenuItem
@@ -457,7 +513,7 @@ export function TeamProfile({ teamId }: TeamProfileProps): React.JSX.Element {
 														className="text-destructive"
 													>
 														<Trash2Icon className="mr-2 h-4 w-4" />
-														Eliminar del staff
+														{t("staff.remove")}
 													</DropdownMenuItem>
 												</DropdownMenuContent>
 											</DropdownMenu>
@@ -466,7 +522,7 @@ export function TeamProfile({ teamId }: TeamProfileProps): React.JSX.Element {
 								</div>
 							) : (
 								<p className="text-center py-8 text-muted-foreground">
-									No hay staff asignado al equipo
+									{t("staff.empty")}
 								</p>
 							)}
 						</CardContent>
@@ -474,13 +530,11 @@ export function TeamProfile({ teamId }: TeamProfileProps): React.JSX.Element {
 				</TabsContent>
 
 				{/* Competitions Tab */}
-				<TabsContent value="competitions" className="mt-6">
+				<TabsContent value="competitions">
 					<Card>
 						<CardHeader>
-							<CardTitle>Competencias</CardTitle>
-							<CardDescription>
-								Torneos y ligas en los que participa el equipo
-							</CardDescription>
+							<CardTitle>{t("competitions.title")}</CardTitle>
+							<CardDescription>{t("competitions.description")}</CardDescription>
 						</CardHeader>
 						<CardContent>
 							{team.competitions && team.competitions.length > 0 ? (
@@ -501,14 +555,14 @@ export function TeamProfile({ teamId }: TeamProfileProps): React.JSX.Element {
 													</span>
 													{tc.division && (
 														<div className="text-sm text-muted-foreground">
-															División: {tc.division}
+															{t("competitions.division")}: {tc.division}
 														</div>
 													)}
 												</div>
 											</div>
 											{tc.finalPosition && (
 												<Badge variant="outline">
-													Posición: {tc.finalPosition}
+													{t("competitions.position")}: {tc.finalPosition}
 												</Badge>
 											)}
 										</Link>
@@ -516,13 +570,233 @@ export function TeamProfile({ teamId }: TeamProfileProps): React.JSX.Element {
 								</div>
 							) : (
 								<p className="text-center py-8 text-muted-foreground">
-									El equipo no está inscrito en ninguna competencia
+									{t("competitions.empty")}
 								</p>
 							)}
 						</CardContent>
 					</Card>
 				</TabsContent>
+
+				{/* Matches Tab */}
+				<TabsContent value="matches">
+					<Card>
+						<CardHeader>
+							<CardTitle>{t("matches.title")}</CardTitle>
+							<CardDescription>{t("matches.description")}</CardDescription>
+						</CardHeader>
+						<CardContent>
+							{matches && matches.length > 0 ? (
+								<div className="space-y-4">
+									{matches.map((match) => {
+										const isHome = match.homeTeamId === teamId;
+										const opponent = isHome
+											? (match.awayTeam?.name ?? match.opponentName)
+											: match.homeTeam?.name;
+										const teamScore = isHome
+											? match.homeScore
+											: match.awayScore;
+										const opponentScore = isHome
+											? match.awayScore
+											: match.homeScore;
+
+										return (
+											<div
+												key={match.id}
+												className="flex items-center justify-between rounded-lg border p-4"
+											>
+												<div className="flex items-center gap-3">
+													<div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+														<SwordsIcon className="h-5 w-5 text-muted-foreground" />
+													</div>
+													<div>
+														<div className="flex items-center gap-2">
+															<span className="font-medium">
+																{t("matches.vs")} {opponent ?? "TBD"}
+															</span>
+															<Badge
+																variant="outline"
+																className={cn(
+																	"text-xs",
+																	matchStatusColors[match.status],
+																)}
+															>
+																{match.status}
+															</Badge>
+														</div>
+														<div className="flex items-center gap-4 text-sm text-muted-foreground">
+															<span className="flex items-center gap-1">
+																<CalendarIcon className="size-3.5" />
+																{format(
+																	new Date(match.scheduledAt),
+																	"MMM d, yyyy HH:mm",
+																)}
+															</span>
+															<Badge variant="secondary" className="text-xs">
+																{isHome ? t("matches.home") : t("matches.away")}
+															</Badge>
+														</div>
+													</div>
+												</div>
+												{match.status === "completed" &&
+													teamScore !== null &&
+													opponentScore !== null && (
+														<div className="text-right">
+															<div className="font-bold text-lg">
+																{teamScore} - {opponentScore}
+															</div>
+														</div>
+													)}
+											</div>
+										);
+									})}
+								</div>
+							) : (
+								<p className="text-center py-8 text-muted-foreground">
+									{t("matches.empty")}
+								</p>
+							)}
+						</CardContent>
+					</Card>
+				</TabsContent>
+
+				{/* Schedule Tab */}
+				<TabsContent value="schedule">
+					<Card>
+						<CardHeader>
+							<CardTitle>{t("schedule.title")}</CardTitle>
+							<CardDescription>{t("schedule.description")}</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<div className="text-center py-10">
+								<CalendarIcon className="mx-auto size-12 text-muted-foreground/50" />
+								<p className="mt-3 text-muted-foreground">
+									{t("schedule.empty")}
+								</p>
+							</div>
+						</CardContent>
+					</Card>
+				</TabsContent>
+
+				{/* Info Tab */}
+				<TabsContent value="info">
+					<div className="grid gap-4 md:grid-cols-2">
+						{/* General Information */}
+						<Card>
+							<CardHeader>
+								<CardTitle className="flex items-center gap-2">
+									<InfoIcon className="size-4" />
+									{t("info.title")}
+								</CardTitle>
+							</CardHeader>
+							<CardContent className="space-y-4">
+								<div>
+									<p className="text-muted-foreground text-xs">
+										{t("info.season")}
+									</p>
+									<p className="font-medium">
+										{team.season?.name ?? t("info.noSeason")}
+									</p>
+								</div>
+								<div>
+									<p className="text-muted-foreground text-xs">
+										{t("info.ageCategory")}
+									</p>
+									<p className="font-medium">
+										{team.ageCategory?.name ?? t("info.noCategory")}
+									</p>
+								</div>
+								{team.description && (
+									<div>
+										<p className="text-muted-foreground text-xs">
+											{t("form.description")}
+										</p>
+										<p className="font-medium">{team.description}</p>
+									</div>
+								)}
+							</CardContent>
+						</Card>
+
+						{/* Venue & Colors */}
+						<Card>
+							<CardHeader>
+								<CardTitle className="flex items-center gap-2">
+									<MapPinIcon className="size-4" />
+									{t("info.homeVenue")}
+								</CardTitle>
+							</CardHeader>
+							<CardContent className="space-y-4">
+								<div>
+									<p className="text-muted-foreground text-xs">
+										{t("info.homeVenue")}
+									</p>
+									<p className="font-medium">
+										{team.homeVenue ?? t("info.noVenue")}
+									</p>
+								</div>
+								<div>
+									<p className="text-muted-foreground text-xs mb-2">
+										{t("info.colors")}
+									</p>
+									<div className="flex items-center gap-4">
+										{team.primaryColor && (
+											<div className="flex items-center gap-2">
+												<div
+													className="h-6 w-6 rounded-full border"
+													style={{ backgroundColor: team.primaryColor }}
+												/>
+												<span className="text-sm">
+													{t("info.primaryColor")}
+												</span>
+											</div>
+										)}
+										{team.secondaryColor && (
+											<div className="flex items-center gap-2">
+												<div
+													className="h-6 w-6 rounded-full border"
+													style={{ backgroundColor: team.secondaryColor }}
+												/>
+												<span className="text-sm">
+													{t("info.secondaryColor")}
+												</span>
+											</div>
+										)}
+										{!team.primaryColor && !team.secondaryColor && (
+											<div className="flex items-center gap-2 text-muted-foreground">
+												<PaletteIcon className="size-4" />
+												<span className="text-sm">
+													{t("info.noDescription")}
+												</span>
+											</div>
+										)}
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+					</div>
+				</TabsContent>
 			</Tabs>
+		</div>
+	);
+}
+
+function TeamProfileSkeleton() {
+	return (
+		<div className="space-y-6">
+			<div className="flex items-start gap-4">
+				<Skeleton className="size-10" />
+				<Skeleton className="size-16 rounded-full" />
+				<div className="space-y-2">
+					<Skeleton className="h-8 w-48" />
+					<Skeleton className="h-4 w-64" />
+				</div>
+			</div>
+			<div className="grid gap-4 md:grid-cols-4">
+				<Skeleton className="h-28" />
+				<Skeleton className="h-28" />
+				<Skeleton className="h-28" />
+				<Skeleton className="h-28" />
+			</div>
+			<Skeleton className="h-96" />
 		</div>
 	);
 }

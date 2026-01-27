@@ -2,13 +2,9 @@ import { CtaSection } from "@/components/marketing/sections/cta-section";
 import { FaqSection } from "@/components/marketing/sections/faq-section";
 import { FeaturesSection } from "@/components/marketing/sections/features-section";
 import { HeroSection } from "@/components/marketing/sections/hero-section";
-import { LatestArticlesSection } from "@/components/marketing/sections/latest-articles-section";
-import { LogoCloudSection } from "@/components/marketing/sections/logo-cloud-section";
-import { PricingSection } from "@/components/marketing/sections/pricing-section";
+import { HowItWorksSection } from "@/components/marketing/sections/how-it-works-section";
 import { StatsSection } from "@/components/marketing/sections/stats-section";
-import { TestimonialsSection } from "@/components/marketing/sections/testimonials-section";
 import { appConfig } from "@/config/app.config";
-import { getAllPosts } from "@/lib/marketing/blog/posts";
 
 function OrganizationJsonLd() {
 	const jsonLd = {
@@ -63,9 +59,7 @@ function WebSiteJsonLd() {
 	);
 }
 
-export default async function HomePage() {
-	const posts = await getAllPosts();
-
+export default function HomePage() {
 	const faqContent = {
 		headline: "Preguntas Frecuentes",
 		items: [
@@ -115,13 +109,10 @@ export default async function HomePage() {
 			<OrganizationJsonLd />
 			<WebSiteJsonLd />
 			<HeroSection />
-			<LogoCloudSection />
 			<FeaturesSection />
+			<HowItWorksSection />
 			<StatsSection />
-			<TestimonialsSection />
 			<FaqSection content={faqContent} />
-			<PricingSection />
-			<LatestArticlesSection posts={posts} />
 			<CtaSection content={ctaContent} />
 		</>
 	);

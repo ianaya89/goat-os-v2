@@ -31,24 +31,6 @@ const PRODUCT_LINKS = [
 	},
 ];
 
-const RESOURCE_LINKS = [
-	{
-		title: "Blog",
-		href: "/blog",
-		description: "Mantente al dia con las ultimas noticias y articulos.",
-	},
-	{
-		title: "Documentacion",
-		href: "/docs",
-		description: "Aprende a usar la plataforma con guias detalladas.",
-	},
-	{
-		title: "Novedades",
-		href: "/changelog",
-		description: "Descubre las ultimas funcionalidades y mejoras.",
-	},
-];
-
 const COMPANY_LINKS = [
 	{
 		title: "Nosotros",
@@ -56,9 +38,9 @@ const COMPANY_LINKS = [
 		description: "Conoce mas sobre nuestra mision y equipo.",
 	},
 	{
-		title: "Carreras",
-		href: "/careers",
-		description: "Unite a construir el futuro del deporte.",
+		title: "Contacto",
+		href: "/contact",
+		description: "Ponte en contacto con nuestro equipo.",
 	},
 ];
 
@@ -135,25 +117,6 @@ export function Header() {
 											Precios
 										</Link>
 									</NavigationMenuLink>
-								</NavigationMenuItem>
-
-								<NavigationMenuItem>
-									<NavigationMenuTrigger className="rounded-full bg-transparent text-marketing-fg hover:bg-marketing-card-hover hover:text-marketing-fg data-[state=open]:bg-marketing-card-hover">
-										Recursos
-									</NavigationMenuTrigger>
-									<NavigationMenuContent>
-										<ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
-											{RESOURCE_LINKS.map((link) => (
-												<ListItem
-													key={link.title}
-													title={link.title}
-													href={link.href}
-												>
-													{link.description}
-												</ListItem>
-											))}
-										</ul>
-									</NavigationMenuContent>
 								</NavigationMenuItem>
 
 								<NavigationMenuItem>
@@ -296,22 +259,6 @@ export function Header() {
 								>
 									Precios
 								</Link>
-							</div>
-
-							<div className="flex flex-col gap-4">
-								<p className="text-xs font-semibold tracking-wider text-marketing-fg-subtle uppercase">
-									Recursos
-								</p>
-								{RESOURCE_LINKS.map((link) => (
-									<Link
-										key={link.title}
-										href={link.href}
-										onClick={() => setMenuOpen(false)}
-										className="inline-flex rounded-full px-4 -mx-4 py-2 text-3xl font-medium text-marketing-fg hover:bg-marketing-card-hover transition-colors"
-									>
-										{link.title}
-									</Link>
-								))}
 							</div>
 
 							<div className="flex flex-col gap-4">

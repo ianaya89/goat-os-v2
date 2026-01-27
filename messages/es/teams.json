@@ -1,0 +1,147 @@
+{
+	"title": "Equipos",
+	"description": "Gestiona los equipos competitivos de tu organización.",
+	"add": "Agregar equipo",
+	"edit": "Editar equipo",
+	"view": "Ver equipo",
+	"delete": "Eliminar equipo",
+	"search": "Buscar equipos...",
+	"filters": {
+		"all": "Todos",
+		"active": "Activos",
+		"inactive": "Inactivos",
+		"archived": "Archivados"
+	},
+	"table": {
+		"name": "Nombre",
+		"sport": "Deporte",
+		"season": "Temporada",
+		"category": "Categoría",
+		"members": "Jugadores",
+		"status": "Estado",
+		"actions": "Acciones"
+	},
+	"form": {
+		"name": "Nombre del equipo",
+		"description": "Descripción",
+		"sport": "Deporte",
+		"season": "Temporada",
+		"ageCategory": "Categoría de edad",
+		"primaryColor": "Color primario",
+		"secondaryColor": "Color secundario",
+		"homeVenue": "Sede local"
+	},
+	"tabs": {
+		"members": "Jugadores",
+		"staff": "Staff",
+		"competitions": "Competencias",
+		"matches": "Partidos",
+		"schedule": "Calendario",
+		"info": "Info"
+	},
+	"stats": {
+		"totalMembers": "Total Jugadores",
+		"staff": "Staff Técnico",
+		"matches": "Partidos",
+		"matchesPlayed": "jugados",
+		"matchesScheduled": "programados",
+		"competitions": "Competencias",
+		"competitionsActive": "activas"
+	},
+	"members": {
+		"title": "Jugadores del equipo",
+		"description": "Atletas que forman parte del equipo",
+		"add": "Agregar jugador",
+		"edit": "Editar",
+		"remove": "Eliminar del equipo",
+		"empty": "No hay jugadores asignados al equipo",
+		"roles": {
+			"captain": "Capitán",
+			"vice_captain": "Vice-capitán",
+			"player": "Jugador"
+		}
+	},
+	"staff": {
+		"title": "Staff técnico",
+		"description": "Personal técnico del equipo",
+		"add": "Agregar staff",
+		"edit": "Editar",
+		"remove": "Eliminar del staff",
+		"empty": "No hay staff asignado al equipo",
+		"roles": {
+			"head_coach": "Director técnico",
+			"assistant_coach": "Asistente técnico",
+			"fitness_coach": "Preparador físico",
+			"goalkeeper_coach": "Entrenador de arqueros",
+			"analyst": "Analista",
+			"medic": "Médico",
+			"physiotherapist": "Fisioterapeuta",
+			"manager": "Manager",
+			"kit_manager": "Utilero",
+			"other": "Otro"
+		}
+	},
+	"competitions": {
+		"title": "Competencias",
+		"description": "Torneos y ligas en los que participa el equipo",
+		"empty": "El equipo no está inscrito en ninguna competencia",
+		"division": "División",
+		"position": "Posición"
+	},
+	"matches": {
+		"title": "Partidos",
+		"description": "Historial de partidos del equipo",
+		"empty": "No hay partidos registrados",
+		"scheduled": "Programados",
+		"completed": "Jugados",
+		"vs": "vs",
+		"home": "Local",
+		"away": "Visitante"
+	},
+	"schedule": {
+		"title": "Calendario de Entrenamientos",
+		"description": "Sesiones de entrenamiento programadas para el equipo",
+		"empty": "No hay sesiones de entrenamiento programadas",
+		"upcoming": "Próximas sesiones",
+		"past": "Sesiones pasadas"
+	},
+	"info": {
+		"title": "Información del Equipo",
+		"description": "Datos generales del equipo",
+		"season": "Temporada",
+		"ageCategory": "Categoría de Edad",
+		"homeVenue": "Sede Local",
+		"colors": "Colores del Equipo",
+		"primaryColor": "Color Primario",
+		"secondaryColor": "Color Secundario",
+		"noDescription": "Sin descripción",
+		"noSeason": "Sin temporada asignada",
+		"noCategory": "Sin categoría asignada",
+		"noVenue": "Sin sede asignada"
+	},
+	"status": {
+		"active": "Activo",
+		"inactive": "Inactivo",
+		"archived": "Archivado"
+	},
+	"actions": {
+		"edit": "Editar equipo",
+		"delete": "Eliminar equipo",
+		"confirmDelete": "¿Estás seguro de eliminar \"{name}\"? Esta acción no se puede deshacer."
+	},
+	"success": {
+		"created": "Equipo creado correctamente.",
+		"updated": "Equipo actualizado correctamente.",
+		"deleted": "Equipo eliminado correctamente.",
+		"memberAdded": "Jugador agregado al equipo.",
+		"memberRemoved": "Jugador eliminado del equipo.",
+		"staffAdded": "Staff agregado al equipo.",
+		"staffRemoved": "Staff eliminado del equipo."
+	},
+	"error": {
+		"notFound": "Equipo no encontrado.",
+		"createFailed": "No se pudo crear el equipo.",
+		"updateFailed": "No se pudo actualizar el equipo.",
+		"deleteFailed": "No se pudo eliminar el equipo."
+	}
+}

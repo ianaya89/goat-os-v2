@@ -49,6 +49,12 @@ const ROUTE_FEATURE_MAP: Record<string, OrganizationFeature> = {
 	"/dashboard/organization/my-payments": OrganizationFeature.payments,
 	"/dashboard/organization/my-events": OrganizationFeature.events,
 	"/dashboard/organization/my-calendar": OrganizationFeature.trainingSessions,
+
+	// Competitions
+	"/dashboard/organization/teams": OrganizationFeature.teams,
+	"/dashboard/organization/seasons": OrganizationFeature.teams,
+	"/dashboard/organization/competitions": OrganizationFeature.competitions,
+	"/dashboard/organization/matches": OrganizationFeature.matches,
 };
 
 /**
