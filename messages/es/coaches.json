@@ -1,41 +1,105 @@
 {
 	"title": "Entrenadores",
-	"description": "Gestiona los entrenadores de tu organización.",
+	"description": "Gestiona los entrenadores de tu organizaci\u00f3n.",
+	"yearsOld": "a\u00f1os",
 	"add": "Agregar entrenador",
 	"edit": "Editar entrenador",
 	"view": "Ver entrenador",
-	"delete": "Eliminar entrenador",
+	"deleteAction": "Eliminar entrenador",
 	"search": "Buscar entrenadores...",
 	"filters": {
 		"all": "Todos",
 		"active": "Activos",
-		"inactive": "Inactivos"
+		"inactive": "Inactivos",
+		"today": "Hoy",
+		"thisWeek": "Esta semana",
+		"thisMonth": "Este mes",
+		"older": "Anterior"
 	},
 	"table": {
 		"name": "Nombre",
 		"email": "Email",
-		"phone": "Teléfono",
-		"specialization": "Especialización",
-		"certifications": "Certificaciones",
+		"phone": "Tel\u00e9fono",
+		"specialty": "Especialidad",
+		"sport": "Deporte",
 		"status": "Estado",
-		"actions": "Acciones"
+		"actions": "Acciones",
+		"created": "Creado",
+		"noCoaches": "No se encontraron entrenadores.",
+		"viewProfile": "Ver Perfil",
+		"yearsOld": "a\u00f1os"
+	},
+	"modal": {
+		"createTitle": "Crear Entrenador",
+		"editTitle": "Editar Entrenador",
+		"createDescription": "Completa los datos para crear un nuevo entrenador.",
+		"editDescription": "Actualiza la informaci\u00f3n del entrenador.",
+		"createdSuccess": "Entrenador creado correctamente",
+		"createdWithPassword": "Entrenador creado correctamente. Guarda la contrase\u00f1a temporal.",
+		"updatedSuccess": "Entrenador actualizado correctamente",
+		"temporaryPassword": "Contrase\u00f1a Temporal",
+		"temporaryPasswordTitle": "Entrenador Creado Correctamente",
+		"temporaryPasswordDescription": "Guarda la contrase\u00f1a temporal que se muestra abajo. Solo se mostrar\u00e1 una vez.",
+		"temporaryPasswordNote": "Comparte esta contrase\u00f1a con el entrenador. Deber\u00e1 cambiarla despu\u00e9s del primer inicio de sesi\u00f3n.",
+		"copyPassword": "Copiar Contrase\u00f1a",
+		"passwordCopied": "Contrase\u00f1a copiada al portapapeles",
+		"done": "Listo",
+		"cancel": "Cancelar",
+		"create": "Crear Entrenador",
+		"update": "Guardar",
+		"selectStatus": "Seleccionar estado",
+		"specialtyPlaceholder": "Escribe una especialidad y presiona Enter o coma...",
+		"addSpecialty": "Agregar especialidad"
 	},
 	"form": {
-		"personalInfo": "Información personal",
+		"personalInfo": "Informaci\u00f3n personal",
 		"name": "Nombre completo",
 		"email": "Email",
-		"phone": "Teléfono",
-		"professionalInfo": "Información profesional",
-		"specialization": "Especialización",
-		"certifications": "Certificaciones",
-		"yearsOfExperience": "Años de experiencia",
-		"bio": "Biografía"
+		"phone": "Tel\u00e9fono",
+		"birthDate": "Fecha de nacimiento",
+		"sport": "Deporte",
+		"professionalInfo": "Informaci\u00f3n profesional",
+		"specialty": "Especialidades",
+		"bio": "Biograf\u00eda",
+		"status": "Estado"
+	},
+	"statuses": {
+		"active": "Activo",
+		"inactive": "Inactivo"
 	},
 	"detail": {
 		"overview": "Resumen",
 		"sessions": "Sesiones",
 		"athletes": "Atletas",
 		"schedule": "Horario"
+	},
+	"delete": {
+		"title": "\u00bfEliminar entrenador?",
+		"message": "\u00bfEst\u00e1s seguro de que quieres eliminar este entrenador? Esta acci\u00f3n no se puede deshacer. La cuenta de usuario permanecer\u00e1 en la organizaci\u00f3n.",
+		"confirm": "Eliminar"
+	},
+	"bulkDelete": {
+		"title": "\u00bfEliminar entrenadores?",
+		"message": "\u00bfEst\u00e1s seguro de que quieres eliminar {count} entrenador(es)? Esta acci\u00f3n no se puede deshacer. Las cuentas de usuario permanecer\u00e1n en la organizaci\u00f3n.",
+		"confirm": "Eliminar"
+	},
+	"bulkActions": {
+		"noSelected": "No hay entrenadores seleccionados.",
+		"changeStatus": "Cambiar estado",
+		"setActive": "Establecer como Activo",
+		"setInactive": "Establecer como Inactivo",
+		"delete": "Eliminar",
+		"deleted": "{count} entrenador(es) eliminado(s).",
+		"activated": "{count} entrenador(es) activado(s).",
+		"deactivated": "{count} entrenador(es) desactivado(s).",
+		"deleteFailed": "No se pudieron eliminar los entrenadores.",
+		"updateFailed": "No se pudieron actualizar los entrenadores.",
+		"exportCsv": "Exportar a CSV",
+		"exportExcel": "Exportar a Excel",
+		"csvExported": "CSV exportado.",
+		"excelExported": "Excel exportado.",
+		"csvFailed": "No se pudo exportar el CSV.",
+		"excelFailed": "No se pudo exportar el Excel."
 	},
 	"success": {
 		"created": "Entrenador creado correctamente.",

@@ -34,7 +34,16 @@
 		"showing": "Mostrando {from} a {to} de {total}",
 		"emptyState": "No hay datos disponibles",
 		"loading": "Cargando datos...",
-		"actions": "Acciones"
+		"actions": "Acciones",
+		"rowsSelected": "{count} de {total} fila(s) seleccionada(s)",
+		"pageOf": "Página {current} de {total}",
+		"goToFirstPage": "Ir a la primera página",
+		"goToPreviousPage": "Ir a la página anterior",
+		"goToNextPage": "Ir a la página siguiente",
+		"goToLastPage": "Ir a la última página",
+		"selected": "{count} seleccionado(s)",
+		"bulkActions": "Acciones masivas",
+		"clearFilters": "Limpiar filtros"
 	},
 	"confirmation": {
 		"deleteTitle": "Confirmar eliminación",
@@ -86,5 +95,47 @@
 		"security": "Seguridad",
 		"sessions": "Sesiones",
 		"athleteProfile": "Perfil Deportivo"
+	},
+	"search": {
+		"placeholder": "Buscar...",
+		"commandPlaceholder": "Escribe un comando o busca...",
+		"noResults": "No se encontraron resultados."
+	},
+	"commandMenu": {
+		"account": "Cuenta",
+		"organization": "Organización",
+		"home": "Inicio",
+		"profile": "Perfil",
+		"security": "Seguridad",
+		"sessions": "Sesiones",
+		"dashboard": "Panel",
+		"aiChatbot": "Chatbot IA",
+		"generalSettings": "Configuración General",
+		"members": "Miembros",
+		"subscription": "Suscripción"
+	},
+	"sports": {
+		"selectSport": "Seleccionar deporte",
+		"allSports": "Todos los deportes",
+		"soccer": "Fútbol",
+		"basketball": "Básquetbol",
+		"volleyball": "Vóleibol",
+		"tennis": "Tenis",
+		"swimming": "Natación",
+		"athletics": "Atletismo",
+		"rugby": "Rugby",
+		"hockey": "Hockey",
+		"baseball": "Béisbol",
+		"handball": "Handball",
+		"padel": "Pádel",
+		"golf": "Golf",
+		"boxing": "Boxeo",
+		"martial_arts": "Artes Marciales",
+		"gymnastics": "Gimnasia",
+		"cycling": "Ciclismo",
+		"running": "Running",
+		"fitness": "Fitness",
+		"crossfit": "CrossFit",
+		"other": "Otro"
 	}
 }

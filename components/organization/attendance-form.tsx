@@ -1,94 +1,106 @@
 "use client";
 
 import { format } from "date-fns";
-import { CheckIcon, ClockIcon, UserIcon, XIcon } from "lucide-react";
+import {
+	CheckIcon,
+	ChevronDownIcon,
+	ClockIcon,
+	MessageSquareIcon,
+	ShieldCheckIcon,
+	XIcon,
+} from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { AttendanceStatus, AttendanceStatuses } from "@/lib/db/schema/enums";
-import { capitalize, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
 interface AttendanceFormProps {
 	sessionId: string;
 }
 
-const statusColors: Record<string, string> = {
-	pending: "bg-gray-100 dark:bg-gray-800",
-	present: "bg-green-100 dark:bg-green-900",
-	absent: "bg-red-100 dark:bg-red-900",
-	late: "bg-yellow-100 dark:bg-yellow-900",
-	excused: "bg-blue-100 dark:bg-blue-900",
-};
-
-const statusIcons: Record<string, React.ReactNode> = {
-	present: <CheckIcon className="size-4 text-green-600" />,
-	absent: <XIcon className="size-4 text-red-600" />,
-	late: <ClockIcon className="size-4 text-yellow-600" />,
+const statusConfig: Record<
+	string,
+	{
+		icon: React.ReactNode;
+		activeClass: string;
+		hoverClass: string;
+	}
+> = {
+	present: {
+		icon: <CheckIcon className="size-3.5" />,
+		activeClass:
+			"bg-green-100 text-green-700 border-green-200 dark:bg-green-900/50 dark:text-green-300 dark:border-green-800",
+		hoverClass:
+			"hover:bg-green-50 hover:text-green-700 dark:hover:bg-green-900/30",
+	},
+	absent: {
+		icon: <XIcon className="size-3.5" />,
+		activeClass:
+			"bg-red-100 text-red-700 border-red-200 dark:bg-red-900/50 dark:text-red-300 dark:border-red-800",
+		hoverClass: "hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/30",
+	},
+	late: {
+		icon: <ClockIcon className="size-3.5" />,
+		activeClass:
+			"bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/50 dark:text-yellow-300 dark:border-yellow-800",
+		hoverClass:
+			"hover:bg-yellow-50 hover:text-yellow-700 dark:hover:bg-yellow-900/30",
+	},
+	excused: {
+		icon: <ShieldCheckIcon className="size-3.5" />,
+		activeClass:
+			"bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800",
+		hoverClass:
+			"hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-900/30",
+	},
 };
 
 export function AttendanceForm({ sessionId }: AttendanceFormProps) {
+	const t = useTranslations("training.attendance");
 	const utils = trpc.useUtils();
-	const [editingNotes, setEditingNotes] = React.useState<string | null>(null);
-	const [notesValue, setNotesValue] = React.useState("");
+	const [expandedNotes, setExpandedNotes] = React.useState<string | null>(null);
+	const [notesValues, setNotesValues] = React.useState<Record<string, string>>(
+		{},
+	);
 
-	// Get session with athletes
 	const { data: session, isLoading: sessionLoading } =
 		trpc.organization.trainingSession.get.useQuery({ id: sessionId });
 
-	// Get existing attendance records
 	const { data: attendanceRecords, isLoading: attendanceLoading } =
 		trpc.organization.attendance.getSessionAttendance.useQuery({ sessionId });
 
 	const recordAttendanceMutation =
 		trpc.organization.attendance.record.useMutation({
 			onSuccess: () => {
-				toast.success("Attendance recorded");
+				toast.success(t("recorded"));
 				utils.organization.attendance.getSessionAttendance.invalidate({
 					sessionId,
 				});
 			},
 			onError: (error) => {
-				toast.error(error.message || "Failed to record attendance");
+				toast.error(error.message || t("recordFailed"));
 			},
 		});
 
 	const bulkRecordMutation =
 		trpc.organization.attendance.bulkRecord.useMutation({
 			onSuccess: (result) => {
-				toast.success(`Attendance recorded for ${result.count} athletes`);
+				toast.success(t("recordedBulk", { count: result.count }));
 				utils.organization.attendance.getSessionAttendance.invalidate({
 					sessionId,
 				});
 			},
 			onError: (error) => {
-				toast.error(error.message || "Failed to record attendance");
+				toast.error(error.message || t("recordFailed"));
 			},
 		});
 
-	// Build list of athletes from session (either from group or individual assignments)
-	// IMPORTANT: useMemo must be called before any early returns to follow React hooks rules
 	const athletes = React.useMemo(() => {
 		if (!session) return [];
 
@@ -107,7 +119,6 @@ export function AttendanceForm({ sessionId }: AttendanceFormProps) {
 		}));
 	}, [session]);
 
-	// Build a map of existing attendance by athlete ID
 	const attendanceMap = React.useMemo(() => {
 		const map = new Map<
 			string,
@@ -133,40 +144,30 @@ export function AttendanceForm({ sessionId }: AttendanceFormProps) {
 
 	if (sessionLoading || attendanceLoading) {
 		return (
-			<Card>
-				<CardHeader>
-					<CardTitle>Attendance</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<div className="space-y-2">
-						{[1, 2, 3].map((i) => (
-							<Skeleton key={i} className="h-12 w-full" />
-						))}
-					</div>
-				</CardContent>
-			</Card>
+			<div className="space-y-4">
+				<Skeleton className="h-10 w-full" />
+				{[1, 2, 3].map((i) => (
+					<Skeleton key={i} className="h-20 w-full" />
+				))}
+			</div>
 		);
 	}
 
 	const handleStatusChange = (athleteId: string, status: AttendanceStatus) => {
-		recordAttendanceMutation.mutate({
-			sessionId,
-			athleteId,
-			status,
-		});
+		recordAttendanceMutation.mutate({ sessionId, athleteId, status });
 	};
 
 	const handleNotesSubmit = (athleteId: string) => {
+		const notes = notesValues[athleteId] ?? "";
 		recordAttendanceMutation.mutate({
 			sessionId,
 			athleteId,
 			status:
 				(attendanceMap.get(athleteId)?.status as AttendanceStatus) ??
 				AttendanceStatus.pending,
-			notes: notesValue,
+			notes,
 		});
-		setEditingNotes(null);
-		setNotesValue("");
+		setExpandedNotes(null);
 	};
 
 	const handleMarkAllPresent = () => {
@@ -187,16 +188,9 @@ export function AttendanceForm({ sessionId }: AttendanceFormProps) {
 
 	if (athletes.length === 0) {
 		return (
-			<Card>
-				<CardHeader>
-					<CardTitle>Attendance</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<p className="text-center text-muted-foreground">
-						No athletes assigned to this session.
-					</p>
-				</CardContent>
-			</Card>
+			<div className="py-8 text-center text-muted-foreground text-sm">
+				{t("noAthletes")}
+			</div>
 		);
 	}
 
@@ -207,156 +201,185 @@ export function AttendanceForm({ sessionId }: AttendanceFormProps) {
 		(a) => a.status === "absent",
 	).length;
 
+	const toggleNotes = (athleteId: string) => {
+		if (expandedNotes === athleteId) {
+			setExpandedNotes(null);
+		} else {
+			setExpandedNotes(athleteId);
+			const existing = attendanceMap.get(athleteId)?.notes ?? "";
+			setNotesValues((prev) => ({ ...prev, [athleteId]: existing }));
+		}
+	};
+
 	return (
-		<Card>
-			<CardHeader className="flex-row items-center justify-between space-y-0">
-				<div>
-					<CardTitle>Attendance</CardTitle>
-					<p className="mt-1 text-muted-foreground text-sm">
-						{presentCount} present, {absentCount} absent of {athletes.length}{" "}
-						athletes
-					</p>
-				</div>
-				<div className="flex gap-2">
+		<div className="space-y-4">
+			{/* Summary + bulk actions */}
+			<div className="flex items-center justify-between">
+				<p className="text-muted-foreground text-sm">
+					{t("summary", {
+						present: presentCount,
+						absent: absentCount,
+						total: athletes.length,
+					})}
+				</p>
+				<div className="flex gap-1.5">
 					<Button
 						variant="outline"
 						size="sm"
 						onClick={handleMarkAllPresent}
 						disabled={bulkRecordMutation.isPending}
+						className="h-7 gap-1.5 rounded-full px-3 text-xs"
 					>
-						<CheckIcon className="mr-1 size-4" />
-						All Present
+						<CheckIcon className="size-3" />
+						{t("allPresent")}
 					</Button>
 					<Button
 						variant="outline"
 						size="sm"
 						onClick={handleMarkAllAbsent}
 						disabled={bulkRecordMutation.isPending}
+						className="h-7 gap-1.5 rounded-full px-3 text-xs"
 					>
-						<XIcon className="mr-1 size-4" />
-						All Absent
+						<XIcon className="size-3" />
+						{t("allAbsent")}
 					</Button>
 				</div>
-			</CardHeader>
-			<CardContent>
-				<Table>
-					<TableHeader>
-						<TableRow>
-							<TableHead>Athlete</TableHead>
-							<TableHead>Status</TableHead>
-							<TableHead>Time</TableHead>
-							<TableHead>Notes</TableHead>
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{athletes.map((athlete) => {
-							const attendance = attendanceMap.get(athlete.id);
-							const status = attendance?.status ?? "pending";
-							const isEditing = editingNotes === athlete.id;
+			</div>
 
-							return (
-								<TableRow key={athlete.id}>
-									<TableCell>
-										<div className="flex items-center gap-2">
-											<UserAvatar
-												className="size-8"
-												name={athlete.name}
-												src={athlete.image ?? undefined}
-											/>
-											<span className="font-medium">{athlete.name}</span>
-										</div>
-									</TableCell>
-									<TableCell>
-										<Select
-											value={status}
-											onValueChange={(value) =>
-												handleStatusChange(
-													athlete.id,
-													value as AttendanceStatus,
-												)
-											}
-											disabled={recordAttendanceMutation.isPending}
-										>
-											<SelectTrigger className="w-[130px]">
-												<SelectValue>
-													<div className="flex items-center gap-2">
-														{statusIcons[status]}
-														<Badge
-															className={cn(
-																"border-none text-xs shadow-none",
-																statusColors[status],
-															)}
-															variant="outline"
-														>
-															{capitalize(status)}
-														</Badge>
-													</div>
-												</SelectValue>
-											</SelectTrigger>
-											<SelectContent>
-												{AttendanceStatuses.map((s) => (
-													<SelectItem key={s} value={s}>
-														{capitalize(s)}
-													</SelectItem>
-												))}
-											</SelectContent>
-										</Select>
-									</TableCell>
-									<TableCell>
-										{attendance?.checkedInAt ? (
-											<span className="text-muted-foreground text-sm">
+			{/* Athlete list */}
+			<div className="divide-y rounded-lg border">
+				{athletes.map((athlete) => {
+					const attendance = attendanceMap.get(athlete.id);
+					const currentStatus = attendance?.status ?? "pending";
+					const isNotesExpanded = expandedNotes === athlete.id;
+					const hasNotes = !!attendance?.notes;
+
+					return (
+						<div key={athlete.id} className="group">
+							{/* Main row */}
+							<div className="flex items-center gap-3 px-4 py-3">
+								{/* Avatar + Name */}
+								<div className="flex min-w-0 flex-1 items-center gap-3">
+									<UserAvatar
+										className="size-8 shrink-0"
+										name={athlete.name}
+										src={athlete.image ?? undefined}
+									/>
+									<div className="min-w-0">
+										<p className="truncate font-medium text-sm">
+											{athlete.name}
+										</p>
+										{attendance?.checkedInAt && (
+											<p className="text-muted-foreground text-xs">
 												{format(attendance.checkedInAt, "HH:mm")}
-											</span>
-										) : (
-											"-"
+											</p>
 										)}
-									</TableCell>
-									<TableCell>
-										{isEditing ? (
-											<div className="flex gap-2">
-												<Input
-													value={notesValue}
-													onChange={(e) => setNotesValue(e.target.value)}
-													placeholder="Notes..."
-													className="h-8"
-												/>
-												<Button
-													size="sm"
-													onClick={() => handleNotesSubmit(athlete.id)}
-													disabled={recordAttendanceMutation.isPending}
-												>
-													Save
-												</Button>
-												<Button
-													size="sm"
-													variant="ghost"
-													onClick={() => {
-														setEditingNotes(null);
-														setNotesValue("");
-													}}
-												>
-													Cancel
-												</Button>
-											</div>
-										) : (
+									</div>
+								</div>
+
+								{/* Status toggle buttons */}
+								<div className="flex items-center gap-1">
+									{AttendanceStatuses.map((status) => {
+										const config = statusConfig[status];
+										const isActive = currentStatus === status;
+										if (!config) return null;
+
+										return (
 											<button
+												key={status}
 												type="button"
-												className="text-left text-muted-foreground text-sm hover:text-foreground"
-												onClick={() => {
-													setEditingNotes(athlete.id);
-													setNotesValue(attendance?.notes ?? "");
-												}}
+												onClick={() =>
+													handleStatusChange(
+														athlete.id,
+														status as AttendanceStatus,
+													)
+												}
+												disabled={recordAttendanceMutation.isPending}
+												className={cn(
+													"inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-all disabled:opacity-50",
+													isActive
+														? config.activeClass
+														: `border-transparent text-muted-foreground ${config.hoverClass}`,
+												)}
 											>
-												{attendance?.notes || "Add notes..."}
+												{config.icon}
+												<span className="hidden sm:inline">{t(status)}</span>
 											</button>
-										)}
-									</TableCell>
-								</TableRow>
-							);
-						})}
-					</TableBody>
-				</Table>
-			</CardContent>
-		</Card>
+										);
+									})}
+								</div>
+
+								{/* Notes toggle */}
+								<button
+									type="button"
+									onClick={() => toggleNotes(athlete.id)}
+									className={cn(
+										"flex size-7 shrink-0 items-center justify-center rounded-md transition-colors",
+										hasNotes || isNotesExpanded
+											? "text-foreground bg-muted"
+											: "text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted/50",
+									)}
+								>
+									{isNotesExpanded ? (
+										<ChevronDownIcon className="size-3.5" />
+									) : (
+										<MessageSquareIcon className="size-3.5" />
+									)}
+								</button>
+							</div>
+
+							{/* Expanded notes */}
+							{isNotesExpanded && (
+								<div className="border-t bg-muted/30 px-4 py-3">
+									<Textarea
+										value={notesValues[athlete.id] ?? ""}
+										onChange={(e) =>
+											setNotesValues((prev) => ({
+												...prev,
+												[athlete.id]: e.target.value,
+											}))
+										}
+										placeholder={t("notesPlaceholder")}
+										className="min-h-[60px] resize-none bg-background text-sm"
+										rows={2}
+									/>
+									<div className="mt-2 flex justify-end gap-2">
+										<Button
+											size="sm"
+											variant="ghost"
+											onClick={() => setExpandedNotes(null)}
+											className="h-7 px-3 text-xs"
+										>
+											{t("cancel")}
+										</Button>
+										<Button
+											size="sm"
+											onClick={() => handleNotesSubmit(athlete.id)}
+											disabled={recordAttendanceMutation.isPending}
+											className="h-7 px-3 text-xs"
+										>
+											{t("save")}
+										</Button>
+									</div>
+								</div>
+							)}
+
+							{/* Existing notes preview (when collapsed) */}
+							{!isNotesExpanded && hasNotes && (
+								<button
+									type="button"
+									onClick={() => toggleNotes(athlete.id)}
+									className="w-full border-t bg-muted/20 px-4 py-2 text-left"
+								>
+									<p className="truncate text-muted-foreground text-xs">
+										{attendance?.notes}
+									</p>
+								</button>
+							)}
+						</div>
+					);
+				})}
+			</div>
+		</div>
 	);
 }

@@ -10,9 +10,9 @@ const fadeInUp =
 	"animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both";
 const fadeInScale =
 	"animate-in fade-in zoom-in-95 duration-1000 fill-mode-both";
-const fadeInLeft =
+const _fadeInLeft =
 	"animate-in fade-in slide-in-from-left-8 duration-700 fill-mode-both";
-const fadeInRight =
+const _fadeInRight =
 	"animate-in fade-in slide-in-from-right-8 duration-700 fill-mode-both";
 
 // Dynamic geometric background with sports-inspired shapes

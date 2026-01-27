@@ -13,6 +13,7 @@ import {
 	UsersIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import type * as React from "react";
 import {
 	CommandDialog,
@@ -25,29 +26,29 @@ import {
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 
 type NavItem = {
-	title: string;
+	titleKey: string;
 	href: string;
 	icon: React.ComponentType<{ className?: string }>;
 };
 
 const userNavItems: NavItem[] = [
 	{
-		title: "Home",
+		titleKey: "home",
 		href: "/dashboard",
 		icon: HomeIcon,
 	},
 	{
-		title: "Profile",
+		titleKey: "profile",
 		href: "/dashboard/settings?tab=profile",
 		icon: UserIcon,
 	},
 	{
-		title: "Security",
+		titleKey: "security",
 		href: "/dashboard/settings?tab=security",
 		icon: ShieldIcon,
 	},
 	{
-		title: "Sessions",
+		titleKey: "sessions",
 		href: "/dashboard/settings?tab=sessions",
 		icon: MonitorSmartphoneIcon,
 	},
@@ -55,27 +56,27 @@ const userNavItems: NavItem[] = [
 
 const organizationNavItems: NavItem[] = [
 	{
-		title: "Dashboard",
+		titleKey: "dashboard",
 		href: "/dashboard/organization",
 		icon: LayoutDashboardIcon,
 	},
 	{
-		title: "AI Chatbot",
+		titleKey: "aiChatbot",
 		href: "/dashboard/organization/chatbot",
 		icon: BotIcon,
 	},
 	{
-		title: "General Settings",
+		titleKey: "generalSettings",
 		href: "/dashboard/organization/settings?tab=general",
 		icon: SettingsIcon,
 	},
 	{
-		title: "Members",
+		titleKey: "members",
 		href: "/dashboard/organization/settings?tab=members",
 		icon: UsersIcon,
 	},
 	{
-		title: "Subscription",
+		titleKey: "subscription",
 		href: "/dashboard/organization/settings?tab=subscription",
 		icon: CreditCardIcon,
 	},
@@ -86,14 +87,16 @@ export type CommandMenuProps = NiceModalHocProps;
 export const CommandMenu = NiceModal.create<CommandMenuProps>(() => {
 	const modal = useEnhancedModal();
 	const router = useRouter();
+	const t = useTranslations("common.commandMenu");
+	const tSearch = useTranslations("common.search");
 
 	const navigationGroups = [
 		{
-			heading: "Account",
+			heading: t("account"),
 			items: userNavItems,
 		},
 		{
-			heading: "Organization",
+			heading: t("organization"),
 			items: organizationNavItems,
 		},
 	];
@@ -104,9 +107,9 @@ export const CommandMenu = NiceModal.create<CommandMenuProps>(() => {
 			onOpenChange={modal.handleOpenChange}
 			className="max-w-lg"
 		>
-			<CommandInput placeholder="Type a command or search..." />
+			<CommandInput placeholder={tSearch("commandPlaceholder")} />
 			<CommandList>
-				<CommandEmpty>No results found.</CommandEmpty>
+				<CommandEmpty>{tSearch("noResults")}</CommandEmpty>
 				{navigationGroups.map((group) => (
 					<CommandGroup key={group.heading} heading={group.heading}>
 						{group.items.map((item) => (
@@ -118,7 +121,7 @@ export const CommandMenu = NiceModal.create<CommandMenuProps>(() => {
 								}}
 							>
 								<item.icon className="mr-2 size-4 shrink-0 text-muted-foreground" />
-								<span>{item.title}</span>
+								<span>{t(item.titleKey as Parameters<typeof t>[0])}</span>
 							</CommandItem>
 						))}
 					</CommandGroup>

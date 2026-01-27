@@ -1,7 +1,8 @@
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
+	athleteGroupTable,
 	athleteTable,
 	attendanceTable,
 	trainingSessionTable,
@@ -10,6 +11,7 @@ import {
 	bulkRecordAttendanceSchema,
 	deleteAttendanceSchema,
 	getAthleteAttendanceSchema,
+	getGroupAttendanceSchema,
 	getSessionAttendanceSchema,
 	recordAttendanceSchema,
 	updateAttendanceSchema,
@@ -299,5 +301,55 @@ export const organizationAttendanceRouter = createTRPCRouter({
 			await db.delete(attendanceTable).where(eq(attendanceTable.id, input.id));
 
 			return { success: true };
+		}),
+
+	// Get all attendance records for a group's sessions (for attendance matrix)
+	getGroupAttendance: protectedOrganizationProcedure
+		.input(getGroupAttendanceSchema)
+		.query(async ({ ctx, input }) => {
+			const group = await db.query.athleteGroupTable.findFirst({
+				where: and(
+					eq(athleteGroupTable.id, input.groupId),
+					eq(athleteGroupTable.organizationId, ctx.organization.id),
+				),
+				columns: { id: true },
+			});
+
+			if (!group) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Athlete group not found",
+				});
+			}
+
+			const sessions = await db.query.trainingSessionTable.findMany({
+				where: and(
+					eq(trainingSessionTable.athleteGroupId, input.groupId),
+					eq(trainingSessionTable.organizationId, ctx.organization.id),
+				),
+				columns: {
+					id: true,
+					title: true,
+					startTime: true,
+					status: true,
+				},
+				orderBy: asc(trainingSessionTable.startTime),
+			});
+
+			if (sessions.length === 0) {
+				return { sessions: [], records: [] };
+			}
+
+			const sessionIds = sessions.map((s) => s.id);
+			const records = await db.query.attendanceTable.findMany({
+				where: inArray(attendanceTable.sessionId, sessionIds),
+				columns: {
+					sessionId: true,
+					athleteId: true,
+					status: true,
+				},
+			});
+
+			return { sessions, records };
 		}),
 });

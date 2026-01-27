@@ -1,11 +1,25 @@
 "use client";
 
 import NiceModal, { type NiceModalHocProps } from "@ebay/nice-modal-react";
-import { CheckIcon, Loader2Icon, SearchIcon, XIcon } from "lucide-react";
+import {
+	CheckIcon,
+	Loader2Icon,
+	PlusIcon,
+	SearchIcon,
+	Users2Icon,
+	UsersIcon,
+	XIcon,
+} from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
 	Command,
 	CommandEmpty,
@@ -45,12 +59,12 @@ import {
 	SheetHeader,
 	SheetTitle,
 } from "@/components/ui/sheet";
-import { Switch } from "@/components/ui/switch";
+import { SportSelect } from "@/components/ui/sport-select";
 import { Textarea } from "@/components/ui/textarea";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 import { useZodForm } from "@/hooks/use-zod-form";
-import { type AthleteSport, AthleteSports } from "@/lib/db/schema/enums";
+import type { AthleteSport } from "@/lib/db/schema/enums";
 import { cn } from "@/lib/utils";
 import {
 	createAthleteGroupSchema,
@@ -92,6 +106,7 @@ export type AthleteGroupsModalProps = NiceModalHocProps & {
 
 export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 	({ group }) => {
+		const t = useTranslations("athletes.groups");
 		const modal = useEnhancedModal();
 		const utils = trpc.useUtils();
 		const isEditing = !!group;
@@ -109,6 +124,7 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 		);
 
 		const [popoverOpen, setPopoverOpen] = React.useState(false);
+		const [isMembersOpen, setIsMembersOpen] = React.useState(false);
 		const [searchQuery, setSearchQuery] = React.useState("");
 		const [debouncedQuery, setDebouncedQuery] = React.useState("");
 		const debounceTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -158,25 +174,25 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 		const createGroupMutation =
 			trpc.organization.athleteGroup.create.useMutation({
 				onSuccess: () => {
-					toast.success("Group created successfully");
+					toast.success(t("success.created"));
 					utils.organization.athleteGroup.list.invalidate();
 					utils.organization.athleteGroup.listActive.invalidate();
 					modal.handleClose();
 				},
 				onError: (error) => {
-					toast.error(error.message || "Failed to create group");
+					toast.error(error.message || t("error.createFailed"));
 				},
 			});
 
 		const updateGroupMutation =
 			trpc.organization.athleteGroup.update.useMutation({
 				onSuccess: () => {
-					toast.success("Group updated successfully");
+					toast.success(t("success.updated"));
 					utils.organization.athleteGroup.list.invalidate();
 					utils.organization.athleteGroup.listActive.invalidate();
 				},
 				onError: (error) => {
-					toast.error(error.message || "Failed to update group");
+					toast.error(error.message || t("error.updateFailed"));
 				},
 			});
 
@@ -187,7 +203,7 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 					modal.handleClose();
 				},
 				onError: (error) => {
-					toast.error(error.message || "Failed to update members");
+					toast.error(error.message || t("error.memberUpdateFailed"));
 				},
 			});
 
@@ -273,15 +289,44 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 				<SheetContent
 					className="sm:max-w-lg"
 					onAnimationEndCapture={modal.handleAnimationEndCapture}
+					hideDefaultHeader
 				>
-					<SheetHeader>
-						<SheetTitle>{isEditing ? "Edit Group" : "Create Group"}</SheetTitle>
-						<SheetDescription className="sr-only">
-							{isEditing
-								? "Update the group information below."
-								: "Fill in the details to create a new group."}
-						</SheetDescription>
-					</SheetHeader>
+					{/* Custom Header with accent stripe */}
+					<div className="relative shrink-0">
+						{/* Accent stripe */}
+						<div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-slate-400 to-slate-500" />
+
+						{/* Header content */}
+						<div className="flex items-start justify-between gap-4 px-6 pt-6 pb-4">
+							<div className="flex items-start gap-3">
+								<div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-slate-400 to-slate-500 text-white shadow-sm">
+									<Users2Icon className="size-5" />
+								</div>
+								<div>
+									<h2 className="font-semibold text-lg tracking-tight">
+										{isEditing ? t("modal.editTitle") : t("modal.createTitle")}
+									</h2>
+									<p className="mt-0.5 text-muted-foreground text-sm">
+										{isEditing
+											? t("modal.editDescription")
+											: t("modal.createDescription")}
+									</p>
+								</div>
+							</div>
+							<button
+								type="button"
+								onClick={modal.handleClose}
+								disabled={isPending}
+								className="flex size-8 items-center justify-center rounded-lg transition-all duration-150 text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+							>
+								<XIcon className="size-4" />
+								<span className="sr-only">Cerrar</span>
+							</button>
+						</div>
+
+						{/* Separator */}
+						<div className="h-px bg-border" />
+					</div>
 
 					<Form {...form}>
 						<form
@@ -296,10 +341,10 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 										render={({ field }) => (
 											<FormItem asChild>
 												<Field>
-													<FormLabel>Name</FormLabel>
+													<FormLabel>{t("modal.name")}</FormLabel>
 													<FormControl>
 														<Input
-															placeholder="e.g., Junior Team"
+															placeholder={t("modal.namePlaceholder")}
 															autoComplete="off"
 															{...field}
 														/>
@@ -316,10 +361,10 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 										render={({ field }) => (
 											<FormItem asChild>
 												<Field>
-													<FormLabel>Description</FormLabel>
+													<FormLabel>{t("modal.description")}</FormLabel>
 													<FormControl>
 														<Textarea
-															placeholder="Description of the group..."
+															placeholder={t("modal.descriptionPlaceholder")}
 															className="resize-none"
 															rows={3}
 															{...field}
@@ -332,47 +377,33 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 										)}
 									/>
 
-									<FormField
-										control={form.control}
-										name="sport"
-										render={({ field }) => (
-											<FormItem asChild>
-												<Field>
-													<FormLabel>Sport</FormLabel>
-													<Select
-														value={field.value ?? ""}
-														onValueChange={(value) =>
-															field.onChange(value || null)
-														}
-													>
-														<FormControl>
-															<SelectTrigger>
-																<SelectValue placeholder="Select sport" />
-															</SelectTrigger>
-														</FormControl>
-														<SelectContent>
-															{AthleteSports.map((sport) => (
-																<SelectItem key={sport} value={sport}>
-																	{sport.charAt(0).toUpperCase() +
-																		sport.slice(1).replace(/_/g, " ")}
-																</SelectItem>
-															))}
-														</SelectContent>
-													</Select>
-													<FormMessage />
-												</Field>
-											</FormItem>
-										)}
-									/>
-
 									<div className="grid grid-cols-2 gap-4">
+										<FormField
+											control={form.control}
+											name="sport"
+											render={({ field }) => (
+												<FormItem asChild>
+													<Field>
+														<FormLabel>{t("modal.sport")}</FormLabel>
+														<FormControl>
+															<SportSelect
+																value={field.value}
+																onValueChange={field.onChange}
+															/>
+														</FormControl>
+														<FormMessage />
+													</Field>
+												</FormItem>
+											)}
+										/>
+
 										<FormField
 											control={form.control}
 											name="ageCategoryId"
 											render={({ field }) => (
 												<FormItem asChild>
 													<Field>
-														<FormLabel>Age Category</FormLabel>
+														<FormLabel>{t("modal.ageCategory")}</FormLabel>
 														<Select
 															value={field.value ?? ""}
 															onValueChange={(value) =>
@@ -381,7 +412,9 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 														>
 															<FormControl>
 																<SelectTrigger>
-																	<SelectValue placeholder="Select category" />
+																	<SelectValue
+																		placeholder={t("modal.selectCategory")}
+																	/>
 																</SelectTrigger>
 															</FormControl>
 															<SelectContent>
@@ -400,154 +433,29 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 												</FormItem>
 											)}
 										/>
-
-										<FormField
-											control={form.control}
-											name="maxCapacity"
-											render={({ field }) => (
-												<FormItem asChild>
-													<Field>
-														<FormLabel>Max Capacity</FormLabel>
-														<FormControl>
-															<Input
-																type="number"
-																min={1}
-																placeholder="Unlimited"
-																{...field}
-																value={field.value ?? ""}
-																onChange={(e) =>
-																	field.onChange(
-																		e.target.value
-																			? Number.parseInt(e.target.value, 10)
-																			: null,
-																	)
-																}
-															/>
-														</FormControl>
-														<FormMessage />
-													</Field>
-												</FormItem>
-											)}
-										/>
 									</div>
-
-									<Field>
-										<FormLabel>Members</FormLabel>
-										<Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-											<PopoverTrigger asChild>
-												<Button
-													variant="outline"
-													className="w-full justify-start font-normal"
-												>
-													<SearchIcon className="mr-2 size-4 text-muted-foreground" />
-													{selectedAthletes.length > 0
-														? `${selectedAthletes.length} athlete${selectedAthletes.length > 1 ? "s" : ""} selected`
-														: "Search and select athletes..."}
-												</Button>
-											</PopoverTrigger>
-											<PopoverContent className="w-[300px] p-0" align="start">
-												<Command shouldFilter={false}>
-													<CommandInput
-														placeholder="Search athletes..."
-														value={searchQuery}
-														onValueChange={setSearchQuery}
-													/>
-													<CommandList>
-														{!shouldSearch && (
-															<div className="py-6 text-center text-sm text-muted-foreground">
-																Type at least 2 characters to search
-															</div>
-														)}
-														{shouldSearch && isSearching && (
-															<div className="flex items-center justify-center py-6">
-																<Loader2Icon className="size-5 animate-spin text-muted-foreground" />
-															</div>
-														)}
-														{shouldSearch &&
-															!isSearching &&
-															athletes.length === 0 && (
-																<CommandEmpty>No athletes found.</CommandEmpty>
-															)}
-														{shouldSearch &&
-															!isSearching &&
-															athletes.length > 0 && (
-																<CommandGroup>
-																	{athletes.map((athlete) => {
-																		const isSelected =
-																			selectedAthleteIds.includes(athlete.id);
-																		return (
-																			<CommandItem
-																				key={athlete.id}
-																				value={athlete.id}
-																				onSelect={() => toggleAthlete(athlete)}
-																			>
-																				<div className="flex items-center gap-2">
-																					<div
-																						className={cn(
-																							"flex size-4 items-center justify-center rounded-sm border",
-																							isSelected
-																								? "border-primary bg-primary text-primary-foreground"
-																								: "border-muted-foreground",
-																						)}
-																					>
-																						{isSelected && (
-																							<CheckIcon className="size-3" />
-																						)}
-																					</div>
-																					<UserAvatar
-																						className="size-6"
-																						name={athlete.user?.name ?? ""}
-																						src={
-																							athlete.user?.image ?? undefined
-																						}
-																					/>
-																					<span className="truncate">
-																						{athlete.user?.name ?? "Unknown"}
-																					</span>
-																				</div>
-																			</CommandItem>
-																		);
-																	})}
-																</CommandGroup>
-															)}
-													</CommandList>
-												</Command>
-											</PopoverContent>
-										</Popover>
-
-										{selectedAthletes.length > 0 && (
-											<div className="mt-2 flex flex-wrap gap-1">
-												{selectedAthletes.map((athlete) => (
-													<Badge
-														key={athlete.id}
-														variant="secondary"
-														className="gap-1"
-													>
-														{athlete.name}
-														<button
-															type="button"
-															onClick={() => removeAthlete(athlete.id)}
-															className="ml-1 rounded-full hover:bg-muted-foreground/20"
-														>
-															<XIcon className="size-3" />
-														</button>
-													</Badge>
-												))}
-											</div>
-										)}
-									</Field>
 
 									<FormField
 										control={form.control}
-										name="isActive"
+										name="maxCapacity"
 										render={({ field }) => (
 											<FormItem asChild>
-												<Field className="flex-row items-center justify-between">
-													<FormLabel>Active</FormLabel>
+												<Field>
+													<FormLabel>{t("modal.maxCapacity")}</FormLabel>
 													<FormControl>
-														<Switch
-															checked={field.value}
-															onCheckedChange={field.onChange}
+														<Input
+															type="number"
+															min={1}
+															placeholder={t("modal.unlimited")}
+															{...field}
+															value={field.value ?? ""}
+															onChange={(e) =>
+																field.onChange(
+																	e.target.value
+																		? Number.parseInt(e.target.value, 10)
+																		: null,
+																)
+															}
 														/>
 													</FormControl>
 													<FormMessage />
@@ -555,20 +463,223 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 											</FormItem>
 										)}
 									/>
+
+									<FormField
+										control={form.control}
+										name="isActive"
+										render={({ field }) => (
+											<FormItem asChild>
+												<Field>
+													<FormLabel>{t("modal.status")}</FormLabel>
+													<Select
+														value={field.value ? "active" : "inactive"}
+														onValueChange={(value) =>
+															field.onChange(value === "active")
+														}
+													>
+														<FormControl>
+															<SelectTrigger className="w-full">
+																<SelectValue
+																	placeholder={t("modal.selectStatus")}
+																/>
+															</SelectTrigger>
+														</FormControl>
+														<SelectContent>
+															<SelectItem value="active">
+																{t("status.active")}
+															</SelectItem>
+															<SelectItem value="inactive">
+																{t("status.inactive")}
+															</SelectItem>
+														</SelectContent>
+													</Select>
+													<FormMessage />
+												</Field>
+											</FormItem>
+										)}
+									/>
+
+									{/* Members Section */}
+									<Collapsible
+										open={isMembersOpen}
+										onOpenChange={setIsMembersOpen}
+										className="rounded-lg border"
+									>
+										<CollapsibleTrigger className="flex w-full items-center justify-between p-3 hover:bg-muted/50">
+											<div className="flex items-center gap-2">
+												<UsersIcon className="size-4" />
+												<span className="font-medium text-sm">
+													{t("modal.members")}
+												</span>
+												{selectedAthletes.length > 0 && (
+													<Badge variant="secondary" className="ml-1">
+														{selectedAthletes.length}
+													</Badge>
+												)}
+											</div>
+											<span className="text-muted-foreground text-xs">
+												{isMembersOpen
+													? t("modal.hideMembers")
+													: t("modal.showMembers")}
+											</span>
+										</CollapsibleTrigger>
+										<CollapsibleContent>
+											<div className="space-y-3 border-t p-3">
+												{/* Search Athletes */}
+												<Popover
+													open={popoverOpen}
+													onOpenChange={setPopoverOpen}
+												>
+													<PopoverTrigger asChild>
+														<Button
+															variant="outline"
+															className="w-full justify-start font-normal"
+														>
+															<SearchIcon className="mr-2 size-4 text-muted-foreground" />
+															{t("modal.searchAthletes")}
+														</Button>
+													</PopoverTrigger>
+													<PopoverContent
+														className="w-[300px] p-0"
+														align="start"
+													>
+														<Command shouldFilter={false}>
+															<CommandInput
+																placeholder={t("modal.searchAthletes")}
+																value={searchQuery}
+																onValueChange={setSearchQuery}
+															/>
+															<CommandList>
+																{!shouldSearch && (
+																	<div className="py-6 text-center text-sm text-muted-foreground">
+																		{t("modal.typeToSearch")}
+																	</div>
+																)}
+																{shouldSearch && isSearching && (
+																	<div className="flex items-center justify-center py-6">
+																		<Loader2Icon className="size-5 animate-spin text-muted-foreground" />
+																	</div>
+																)}
+																{shouldSearch &&
+																	!isSearching &&
+																	athletes.length === 0 && (
+																		<CommandEmpty>
+																			{t("modal.noAthletesFound")}
+																		</CommandEmpty>
+																	)}
+																{shouldSearch &&
+																	!isSearching &&
+																	athletes.length > 0 && (
+																		<CommandGroup>
+																			{athletes.map((athlete) => {
+																				const isSelected =
+																					selectedAthleteIds.includes(
+																						athlete.id,
+																					);
+																				return (
+																					<CommandItem
+																						key={athlete.id}
+																						value={athlete.id}
+																						onSelect={() =>
+																							toggleAthlete(athlete)
+																						}
+																					>
+																						<div className="flex items-center gap-2">
+																							<div
+																								className={cn(
+																									"flex size-4 items-center justify-center rounded-sm border",
+																									isSelected
+																										? "border-primary bg-primary text-primary-foreground"
+																										: "border-muted-foreground",
+																								)}
+																							>
+																								{isSelected && (
+																									<CheckIcon className="size-3" />
+																								)}
+																							</div>
+																							<UserAvatar
+																								className="size-6"
+																								name={athlete.user?.name ?? ""}
+																								src={
+																									athlete.user?.image ??
+																									undefined
+																								}
+																							/>
+																							<span className="truncate">
+																								{athlete.user?.name ??
+																									"Unknown"}
+																							</span>
+																						</div>
+																					</CommandItem>
+																				);
+																			})}
+																		</CommandGroup>
+																	)}
+															</CommandList>
+														</Command>
+													</PopoverContent>
+												</Popover>
+
+												{/* Selected Athletes List */}
+												{selectedAthletes.length > 0 ? (
+													<div className="space-y-2">
+														{selectedAthletes.map((athlete) => (
+															<div
+																key={athlete.id}
+																className="flex items-center gap-3 rounded-md bg-primary/10 p-2 transition-colors"
+															>
+																<UserAvatar
+																	className="size-6"
+																	name={athlete.name}
+																	src={athlete.image ?? undefined}
+																/>
+																<span className="flex-1 text-sm">
+																	{athlete.name}
+																</span>
+																<button
+																	type="button"
+																	onClick={() => removeAthlete(athlete.id)}
+																	className="rounded-full p-1 hover:bg-muted-foreground/20"
+																>
+																	<XIcon className="size-3" />
+																</button>
+															</div>
+														))}
+													</div>
+												) : (
+													<p className="py-4 text-center text-muted-foreground text-sm">
+														{t("modal.noMembersSelected")}
+													</p>
+												)}
+											</div>
+										</CollapsibleContent>
+									</Collapsible>
 								</div>
 							</ScrollArea>
 
-							<SheetFooter className="flex-row justify-end gap-2 border-t">
+							<SheetFooter className="flex-row justify-end gap-3 border-t bg-muted/30 px-6 py-4">
 								<Button
 									type="button"
-									variant="outline"
+									variant="ghost"
 									onClick={modal.handleClose}
 									disabled={isPending}
+									className="min-w-[100px]"
 								>
-									Cancel
+									<XIcon className="size-4" />
+									{t("modal.cancel")}
 								</Button>
-								<Button type="submit" disabled={isPending} loading={isPending}>
-									{isEditing ? "Update Group" : "Create Group"}
+								<Button
+									type="submit"
+									disabled={isPending}
+									loading={isPending}
+									className="min-w-[100px]"
+								>
+									{isEditing ? (
+										<CheckIcon className="size-4" />
+									) : (
+										<PlusIcon className="size-4" />
+									)}
+									{isEditing ? t("modal.update") : t("modal.create")}
 								</Button>
 							</SheetFooter>
 						</form>

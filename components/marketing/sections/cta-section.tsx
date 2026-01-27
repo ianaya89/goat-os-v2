@@ -93,7 +93,10 @@ function CtaFeatures() {
 	);
 }
 
-export function CtaSection({ centered = false, content }: CtaSectionProps) {
+export function CtaSection({
+	centered: _centered = false,
+	content,
+}: CtaSectionProps) {
 	const { headline, description, primaryCta, secondaryCta } = content;
 
 	return (

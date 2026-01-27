@@ -1,5 +1,5 @@
 import { z } from "zod/v4";
-import { CoachStatus } from "@/lib/db/schema/enums";
+import { AthleteSport, CoachStatus } from "@/lib/db/schema/enums";
 
 // Sortable fields for coaches
 export const CoachSortField = z.enum([
@@ -41,12 +41,19 @@ export const createCoachSchema = z.object({
 		.trim()
 		.email("Invalid email address")
 		.max(255, "Email is too long"),
+	phone: z
+		.string()
+		.trim()
+		.min(1, "Phone is required")
+		.max(50, "Phone is too long"),
 	// Coach specific data
+	birthDate: z.coerce.date().optional(),
+	sport: z.nativeEnum(AthleteSport),
 	specialty: z
 		.string()
 		.trim()
 		.min(1, "Specialty is required")
-		.max(200, "Specialty is too long"),
+		.max(500, "Specialty is too long"),
 	bio: z.string().trim().max(2000, "Bio is too long").optional(),
 	status: z.nativeEnum(CoachStatus).default(CoachStatus.active),
 });
@@ -54,11 +61,14 @@ export const createCoachSchema = z.object({
 // Update coach
 export const updateCoachSchema = z.object({
 	id: z.string().uuid(),
+	phone: z.string().trim().max(50, "Phone is too long").optional().nullable(),
+	birthDate: z.coerce.date().optional().nullable(),
+	sport: z.nativeEnum(AthleteSport).optional(),
 	specialty: z
 		.string()
 		.trim()
 		.min(1, "Specialty is required")
-		.max(200, "Specialty is too long")
+		.max(500, "Specialty is too long")
 		.optional(),
 	bio: z.string().trim().max(2000, "Bio is too long").optional().nullable(),
 	status: z.nativeEnum(CoachStatus).optional(),

@@ -797,6 +797,11 @@ export const coachTable = pgTable(
 			onDelete: "set null",
 		}),
 		// Coach details
+		phone: text("phone"),
+		birthDate: timestamp("birth_date", { withTimezone: true }),
+		sport: text("sport", {
+			enum: enumToPgEnum(AthleteSport),
+		}).$type<AthleteSport>(),
 		specialty: text("specialty").notNull(),
 		bio: text("bio"),
 		status: text("status", { enum: enumToPgEnum(CoachStatus) })
@@ -867,6 +872,8 @@ export const athleteTable = pgTable(
 		dominantHand: text("dominant_hand", {
 			enum: enumToPgEnum(DominantSide),
 		}).$type<DominantSide>(),
+		wingspan: integer("wingspan"), // Wingspan in centimeters
+		standingReach: integer("standing_reach"), // Standing reach in centimeters
 
 		// Contact information
 		phone: text("phone"), // Phone number in E.164 format for SMS/WhatsApp notifications

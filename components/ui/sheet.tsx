@@ -75,12 +75,15 @@ export type SheetContentProps = React.ComponentPropsWithoutRef<
 	typeof SheetPrimitive.Content
 > & {
 	side?: "top" | "right" | "bottom" | "left";
+	/** Hide the default close button (useful when providing custom header) */
+	hideDefaultHeader?: boolean;
 };
 
 function SheetContent({
 	className,
 	children,
 	side = "right",
+	hideDefaultHeader = false,
 	...props
 }: SheetContentProps): React.JSX.Element {
 	return (
@@ -104,10 +107,12 @@ function SheetContent({
 				{...props}
 			>
 				{children}
-				<SheetPrimitive.Close className="absolute top-5 right-5 cursor-pointer rounded-md p-1.5 opacity-70 transition-all duration-150 hover:opacity-100 hover:bg-muted focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
-					<XIcon className="size-4" />
-					<span className="sr-only">Close</span>
-				</SheetPrimitive.Close>
+				{!hideDefaultHeader && (
+					<SheetPrimitive.Close className="absolute top-5 right-5 cursor-pointer rounded-md p-1.5 opacity-70 transition-all duration-150 hover:opacity-100 hover:bg-muted focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
+						<XIcon className="size-4" />
+						<span className="sr-only">Close</span>
+					</SheetPrimitive.Close>
+				)}
 			</SheetPrimitive.Content>
 		</SheetPortal>
 	);

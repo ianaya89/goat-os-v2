@@ -48,18 +48,17 @@ import {
 	SheetHeader,
 	SheetTitle,
 } from "@/components/ui/sheet";
+import { SportSelect } from "@/components/ui/sport-select";
 import { Textarea } from "@/components/ui/textarea";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 import { useZodForm } from "@/hooks/use-zod-form";
 import {
 	type AthleteLevel,
-	AthleteLevel as AthleteLevelEnum,
 	AthleteLevels,
 	type AthleteSport,
 	AthleteSport as AthleteSportEnum,
 	AthleteSports,
 	type DominantSide,
-	DominantSide as DominantSideEnum,
 	DominantSides,
 } from "@/lib/db/schema/enums";
 import { capitalize, cn } from "@/lib/utils";
@@ -342,23 +341,15 @@ export const AthleteMyProfileEditModal =
 													<FormItem asChild>
 														<Field>
 															<FormLabel>Deporte</FormLabel>
-															<Select
-																onValueChange={field.onChange}
-																defaultValue={field.value}
-															>
-																<FormControl>
-																	<SelectTrigger className="w-full">
-																		<SelectValue placeholder="Seleccionar deporte" />
-																	</SelectTrigger>
-																</FormControl>
-																<SelectContent>
-																	{AthleteSports.map((sport) => (
-																		<SelectItem key={sport} value={sport}>
-																			{capitalize(sport.replace("_", " "))}
-																		</SelectItem>
-																	))}
-																</SelectContent>
-															</Select>
+															<FormControl>
+																<SportSelect
+																	value={field.value}
+																	onValueChange={(value) =>
+																		field.onChange(value ?? field.value)
+																	}
+																	className="w-full"
+																/>
+															</FormControl>
 															<FormMessage />
 														</Field>
 													</FormItem>

@@ -40,6 +40,7 @@
 		"settingsMembers": "Members",
 		"settingsSubscription": "Subscription",
 		"settingsCredits": "Credits",
+		"settingsFeatures": "Features",
 		"seasons": "Seasons",
 		"teams": "Teams",
 		"competitions": "Competitions",
@@ -223,6 +224,7 @@
 		"tabs": {
 			"general": "General",
 			"members": "Members",
+			"features": "Features",
 			"subscription": "Subscription",
 			"credits": "Credits"
 		},
@@ -260,6 +262,7 @@
 			"updateSuccess": "Feature updated successfully",
 			"categories": {
 				"sports": "Sports",
+				"competitions": "Competitions",
 				"finance": "Finance",
 				"reports": "Reports",
 				"general": "General"
@@ -286,7 +289,10 @@
 				"locations": "Locations",
 				"vendors": "Vendors",
 				"sponsors": "Sponsors",
-				"chatbot": "AI Chatbot"
+				"chatbot": "AI Chatbot",
+				"teams": "Teams",
+				"competitions": "Competitions",
+				"matches": "Matches"
 			}
 		}
 	},

@@ -1,10 +1,19 @@
 "use client";
 
 import NiceModal, { type NiceModalHocProps } from "@ebay/nice-modal-react";
+import {
+	CheckIcon,
+	ClipboardCopyIcon,
+	PlusIcon,
+	UserPlusIcon,
+	XIcon,
+} from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { toast } from "sonner";
 import { ProfileImageUpload } from "@/components/organization/profile-image-upload";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import {
@@ -32,11 +41,15 @@ import {
 	SheetHeader,
 	SheetTitle,
 } from "@/components/ui/sheet";
+import { SportSelect } from "@/components/ui/sport-select";
 import { Textarea } from "@/components/ui/textarea";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 import { useZodForm } from "@/hooks/use-zod-form";
-import { CoachStatus, CoachStatuses } from "@/lib/db/schema/enums";
-import { capitalize } from "@/lib/utils";
+import {
+	AthleteSport,
+	CoachStatus,
+	CoachStatuses,
+} from "@/lib/db/schema/enums";
 import {
 	createCoachSchema,
 	updateCoachSchema,
@@ -46,6 +59,9 @@ import { trpc } from "@/trpc/client";
 export type CoachesModalProps = NiceModalHocProps & {
 	coach?: {
 		id: string;
+		phone?: string | null;
+		birthDate?: Date | null;
+		sport?: string | null;
 		specialty: string;
 		bio?: string | null;
 		status: string;
@@ -68,37 +84,43 @@ export const CoachesModal = NiceModal.create<CoachesModalProps>(
 	({ coach, prefillUser }) => {
 		const modal = useEnhancedModal();
 		const utils = trpc.useUtils();
+		const t = useTranslations("coaches");
 		const isEditing = !!coach;
 		const [temporaryPassword, setTemporaryPassword] = React.useState<
 			string | null
 		>(null);
 
+		// Tag input state for specialties
+		const [specialtyInput, setSpecialtyInput] = React.useState("");
+
+		const translateStatus = (status: string) => {
+			return t(`statuses.${status}` as Parameters<typeof t>[0]);
+		};
+
 		const createCoachMutation = trpc.organization.coach.create.useMutation({
 			onSuccess: (data) => {
 				if (data.temporaryPassword) {
 					setTemporaryPassword(data.temporaryPassword);
-					toast.success(
-						"Coach created successfully. Please save the temporary password.",
-					);
+					toast.success(t("modal.createdWithPassword"));
 				} else {
-					toast.success("Coach created successfully");
+					toast.success(t("modal.createdSuccess"));
 					utils.organization.coach.list.invalidate();
 					modal.handleClose();
 				}
 			},
 			onError: (error) => {
-				toast.error(error.message || "Failed to create coach");
+				toast.error(error.message || t("error.createFailed"));
 			},
 		});
 
 		const updateCoachMutation = trpc.organization.coach.update.useMutation({
 			onSuccess: () => {
-				toast.success("Coach updated successfully");
+				toast.success(t("modal.updatedSuccess"));
 				utils.organization.coach.list.invalidate();
 				modal.handleClose();
 			},
 			onError: (error) => {
-				toast.error(error.message || "Failed to update coach");
+				toast.error(error.message || t("error.updateFailed"));
 			},
 		});
 
@@ -107,6 +129,9 @@ export const CoachesModal = NiceModal.create<CoachesModalProps>(
 			defaultValues: isEditing
 				? {
 						id: coach.id,
+						phone: coach.phone ?? "",
+						birthDate: coach.birthDate ?? undefined,
+						sport: (coach.sport as AthleteSport) ?? undefined,
 						specialty: coach.specialty,
 						bio: coach.bio ?? "",
 						status: coach.status as CoachStatus,
@@ -114,6 +139,9 @@ export const CoachesModal = NiceModal.create<CoachesModalProps>(
 				: {
 						name: prefillUser?.name ?? "",
 						email: prefillUser?.email ?? "",
+						phone: "",
+						birthDate: undefined,
+						sport: AthleteSport.soccer,
 						specialty: "",
 						bio: "",
 						status: CoachStatus.active,
@@ -121,6 +149,48 @@ export const CoachesModal = NiceModal.create<CoachesModalProps>(
 		});
 
 		const hasPrefillUser = !!prefillUser;
+
+		// Parse specialty tags from the form value
+		const specialtyValue = form.watch("specialty") ?? "";
+		const specialtyTags = React.useMemo(() => {
+			if (!specialtyValue) return [];
+			return specialtyValue
+				.split(",")
+				.map((s) => s.trim())
+				.filter(Boolean);
+		}, [specialtyValue]);
+
+		const addTag = (tag: string) => {
+			const trimmed = tag.trim();
+			if (!trimmed) return;
+			const current = specialtyTags;
+			if (current.some((t) => t.toLowerCase() === trimmed.toLowerCase()))
+				return;
+			const newValue = [...current, trimmed].join(", ");
+			form.setValue("specialty", newValue, { shouldValidate: true });
+			setSpecialtyInput("");
+		};
+
+		const removeTag = (index: number) => {
+			const newTags = specialtyTags.filter((_, i) => i !== index);
+			form.setValue("specialty", newTags.join(", "), { shouldValidate: true });
+		};
+
+		const handleSpecialtyKeyDown = (
+			e: React.KeyboardEvent<HTMLInputElement>,
+		) => {
+			if (e.key === "Enter" || e.key === ",") {
+				e.preventDefault();
+				addTag(specialtyInput);
+			}
+			if (
+				e.key === "Backspace" &&
+				!specialtyInput &&
+				specialtyTags.length > 0
+			) {
+				removeTag(specialtyTags.length - 1);
+			}
+		};
 
 		const onSubmit = form.handleSubmit((data) => {
 			if (isEditing) {
@@ -146,7 +216,7 @@ export const CoachesModal = NiceModal.create<CoachesModalProps>(
 		const handleCopyPassword = async () => {
 			if (temporaryPassword) {
 				await navigator.clipboard.writeText(temporaryPassword);
-				toast.success("Password copied to clipboard");
+				toast.success(t("modal.passwordCopied"));
 			}
 		};
 
@@ -162,16 +232,15 @@ export const CoachesModal = NiceModal.create<CoachesModalProps>(
 						onAnimationEndCapture={modal.handleAnimationEndCapture}
 					>
 						<SheetHeader>
-							<SheetTitle>Coach Created Successfully</SheetTitle>
+							<SheetTitle>{t("modal.temporaryPasswordTitle")}</SheetTitle>
 							<SheetDescription>
-								Please save the temporary password below. It will only be shown
-								once.
+								{t("modal.temporaryPasswordDescription")}
 							</SheetDescription>
 						</SheetHeader>
 
 						<div className="flex flex-1 flex-col gap-4 px-6 py-4">
 							<Alert>
-								<AlertTitle>Temporary Password</AlertTitle>
+								<AlertTitle>{t("modal.temporaryPassword")}</AlertTitle>
 								<AlertDescription className="mt-2">
 									<code className="rounded bg-muted px-2 py-1 font-mono text-sm">
 										{temporaryPassword}
@@ -180,21 +249,22 @@ export const CoachesModal = NiceModal.create<CoachesModalProps>(
 							</Alert>
 
 							<p className="text-muted-foreground text-sm">
-								Share this password with the coach. They will need to change it
-								after their first login.
+								{t("modal.temporaryPasswordNote")}
 							</p>
 						</div>
 
 						<SheetFooter className="flex-row justify-end gap-2 border-t">
 							<Button
 								type="button"
-								variant="outline"
+								variant="ghost"
 								onClick={handleCopyPassword}
 							>
-								Copy Password
+								<ClipboardCopyIcon className="size-4" />
+								{t("modal.copyPassword")}
 							</Button>
 							<Button type="button" onClick={handleCloseAfterPassword}>
-								Done
+								<CheckIcon className="size-4" />
+								{t("modal.done")}
 							</Button>
 						</SheetFooter>
 					</SheetContent>
@@ -210,15 +280,44 @@ export const CoachesModal = NiceModal.create<CoachesModalProps>(
 				<SheetContent
 					className="sm:max-w-lg"
 					onAnimationEndCapture={modal.handleAnimationEndCapture}
+					hideDefaultHeader
 				>
-					<SheetHeader>
-						<SheetTitle>{isEditing ? "Edit Coach" : "Create Coach"}</SheetTitle>
-						<SheetDescription className="sr-only">
-							{isEditing
-								? "Update the coach information below."
-								: "Fill in the details to create a new coach."}
-						</SheetDescription>
-					</SheetHeader>
+					{/* Custom Header with accent stripe */}
+					<div className="relative shrink-0">
+						{/* Accent stripe */}
+						<div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-slate-400 to-slate-500" />
+
+						{/* Header content */}
+						<div className="flex items-start justify-between gap-4 px-6 pt-6 pb-4">
+							<div className="flex items-start gap-3">
+								<div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-slate-400 to-slate-500 text-white shadow-sm">
+									<UserPlusIcon className="size-5" />
+								</div>
+								<div>
+									<h2 className="font-semibold text-lg tracking-tight">
+										{isEditing ? t("modal.editTitle") : t("modal.createTitle")}
+									</h2>
+									<p className="mt-0.5 text-muted-foreground text-sm">
+										{isEditing
+											? t("modal.editDescription")
+											: t("modal.createDescription")}
+									</p>
+								</div>
+							</div>
+							<button
+								type="button"
+								onClick={modal.handleClose}
+								disabled={isPending}
+								className="flex size-8 items-center justify-center rounded-lg transition-all duration-150 text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+							>
+								<XIcon className="size-4" />
+								<span className="sr-only">Close</span>
+							</button>
+						</div>
+
+						{/* Separator */}
+						<div className="h-px bg-border" />
+					</div>
 
 					<Form {...form}>
 						<form
@@ -247,10 +346,10 @@ export const CoachesModal = NiceModal.create<CoachesModalProps>(
 														render={({ field }) => (
 															<FormItem asChild>
 																<Field>
-																	<FormLabel>Name</FormLabel>
+																	<FormLabel>{t("form.name")}</FormLabel>
 																	<FormControl>
 																		<Input
-																			placeholder="John Doe"
+																			placeholder="Juan P\u00e9rez"
 																			autoComplete="off"
 																			{...field}
 																		/>
@@ -267,11 +366,11 @@ export const CoachesModal = NiceModal.create<CoachesModalProps>(
 														render={({ field }) => (
 															<FormItem asChild>
 																<Field>
-																	<FormLabel>Email</FormLabel>
+																	<FormLabel>{t("form.email")}</FormLabel>
 																	<FormControl>
 																		<Input
 																			type="email"
-																			placeholder="john.doe@example.com"
+																			placeholder="juan@ejemplo.com"
 																			autoComplete="off"
 																			{...field}
 																		/>
@@ -283,11 +382,33 @@ export const CoachesModal = NiceModal.create<CoachesModalProps>(
 													/>
 												</>
 											)}
+
+											<FormField
+												control={form.control}
+												name="phone"
+												render={({ field }) => (
+													<FormItem asChild>
+														<Field>
+															<FormLabel>{t("form.phone")}</FormLabel>
+															<FormControl>
+																<Input
+																	type="tel"
+																	placeholder="+54 9 11 1234-5678"
+																	autoComplete="off"
+																	{...field}
+																	value={field.value ?? ""}
+																/>
+															</FormControl>
+															<FormMessage />
+														</Field>
+													</FormItem>
+												)}
+											/>
 										</>
 									)}
 
 									{isEditing && coach?.user && (
-										<div className="flex flex-col items-center gap-4 rounded-lg border bg-muted/50 p-4">
+										<div className="flex items-center gap-3 rounded-lg border bg-muted/50 p-3">
 											<ProfileImageUpload
 												userId={coach.user.id}
 												userName={coach.user.name}
@@ -295,9 +416,9 @@ export const CoachesModal = NiceModal.create<CoachesModalProps>(
 													coach.user.imageKey ? undefined : coach.user.image
 												}
 												hasS3Image={!!coach.user.imageKey}
-												size="lg"
+												size="sm"
 											/>
-											<div className="text-center">
+											<div>
 												<p className="font-medium text-sm">{coach.user.name}</p>
 												<p className="text-muted-foreground text-sm">
 													{coach.user.email}
@@ -306,20 +427,129 @@ export const CoachesModal = NiceModal.create<CoachesModalProps>(
 										</div>
 									)}
 
+									{isEditing && (
+										<FormField
+											control={form.control}
+											name="phone"
+											render={({ field }) => (
+												<FormItem asChild>
+													<Field>
+														<FormLabel>{t("form.phone")}</FormLabel>
+														<FormControl>
+															<Input
+																type="tel"
+																placeholder="+54 9 11 1234-5678"
+																autoComplete="off"
+																{...field}
+																value={field.value ?? ""}
+															/>
+														</FormControl>
+														<FormMessage />
+													</Field>
+												</FormItem>
+											)}
+										/>
+									)}
+
 									<FormField
 										control={form.control}
-										name="specialty"
+										name="sport"
 										render={({ field }) => (
 											<FormItem asChild>
 												<Field>
-													<FormLabel>Specialty</FormLabel>
+													<FormLabel>{t("form.sport")}</FormLabel>
 													<FormControl>
-														<Input
-															placeholder="e.g., Leadership Coaching"
-															autoComplete="off"
-															{...field}
+														<SportSelect
+															value={field.value}
+															onValueChange={(value) =>
+																field.onChange(value ?? AthleteSport.soccer)
+															}
+															className="w-full"
 														/>
 													</FormControl>
+													<FormMessage />
+												</Field>
+											</FormItem>
+										)}
+									/>
+
+									<FormField
+										control={form.control}
+										name="birthDate"
+										render={({ field }) => {
+											const dateValue =
+												field.value instanceof Date
+													? field.value.toISOString().split("T")[0]
+													: "";
+											return (
+												<FormItem asChild>
+													<Field>
+														<FormLabel>{t("form.birthDate")}</FormLabel>
+														<FormControl>
+															<Input
+																type="date"
+																{...field}
+																value={dateValue}
+																onChange={(e) => {
+																	const value = e.target.value;
+																	field.onChange(
+																		value ? new Date(value) : undefined,
+																	);
+																}}
+															/>
+														</FormControl>
+														<FormMessage />
+													</Field>
+												</FormItem>
+											);
+										}}
+									/>
+
+									{/* Specialty Tags Input */}
+									<FormField
+										control={form.control}
+										name="specialty"
+										render={() => (
+											<FormItem asChild>
+												<Field>
+													<FormLabel>{t("form.specialty")}</FormLabel>
+													<div className="flex min-h-10 flex-wrap items-center gap-1.5 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+														{specialtyTags.map((tag, index) => (
+															<Badge
+																key={`${tag}-${index}`}
+																variant="secondary"
+																className="gap-1 pr-1"
+															>
+																{tag}
+																<button
+																	type="button"
+																	onClick={() => removeTag(index)}
+																	className="ml-0.5 rounded-full p-0.5 hover:bg-muted-foreground/20"
+																>
+																	<XIcon className="size-3" />
+																</button>
+															</Badge>
+														))}
+														<input
+															type="text"
+															value={specialtyInput}
+															onChange={(e) =>
+																setSpecialtyInput(e.target.value)
+															}
+															onKeyDown={handleSpecialtyKeyDown}
+															onBlur={() => {
+																if (specialtyInput.trim()) {
+																	addTag(specialtyInput);
+																}
+															}}
+															placeholder={
+																specialtyTags.length === 0
+																	? t("modal.specialtyPlaceholder")
+																	: ""
+															}
+															className="min-w-[120px] flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
+														/>
+													</div>
 													<FormMessage />
 												</Field>
 											</FormItem>
@@ -332,10 +562,10 @@ export const CoachesModal = NiceModal.create<CoachesModalProps>(
 										render={({ field }) => (
 											<FormItem asChild>
 												<Field>
-													<FormLabel>Bio</FormLabel>
+													<FormLabel>{t("form.bio")}</FormLabel>
 													<FormControl>
 														<Textarea
-															placeholder="Brief description about the coach..."
+															placeholder="..."
 															className="resize-none"
 															rows={3}
 															{...field}
@@ -354,20 +584,22 @@ export const CoachesModal = NiceModal.create<CoachesModalProps>(
 										render={({ field }) => (
 											<FormItem asChild>
 												<Field>
-													<FormLabel>Status</FormLabel>
+													<FormLabel>{t("form.status")}</FormLabel>
 													<Select
 														onValueChange={field.onChange}
 														defaultValue={field.value}
 													>
 														<FormControl>
 															<SelectTrigger className="w-full">
-																<SelectValue placeholder="Select status" />
+																<SelectValue
+																	placeholder={t("modal.selectStatus")}
+																/>
 															</SelectTrigger>
 														</FormControl>
 														<SelectContent>
 															{CoachStatuses.map((status) => (
 																<SelectItem key={status} value={status}>
-																	{capitalize(status)}
+																	{translateStatus(status)}
 																</SelectItem>
 															))}
 														</SelectContent>
@@ -380,17 +612,29 @@ export const CoachesModal = NiceModal.create<CoachesModalProps>(
 								</div>
 							</ScrollArea>
 
-							<SheetFooter className="flex-row justify-end gap-2 border-t">
+							<SheetFooter className="flex-row justify-end gap-3 border-t bg-muted/30 px-6 py-4">
 								<Button
 									type="button"
-									variant="outline"
+									variant="ghost"
 									onClick={modal.handleClose}
 									disabled={isPending}
+									className="min-w-[100px]"
 								>
-									Cancel
+									<XIcon className="size-4" />
+									{t("modal.cancel")}
 								</Button>
-								<Button type="submit" disabled={isPending} loading={isPending}>
-									{isEditing ? "Update Coach" : "Create Coach"}
+								<Button
+									type="submit"
+									disabled={isPending}
+									loading={isPending}
+									className="min-w-[100px]"
+								>
+									{isEditing ? (
+										<CheckIcon className="size-4" />
+									) : (
+										<PlusIcon className="size-4" />
+									)}
+									{isEditing ? t("modal.update") : t("modal.create")}
 								</Button>
 							</SheetFooter>
 						</form>

@@ -1,3 +1,4 @@
+import { MedalIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -41,7 +42,10 @@ export default async function AthletesPage(): Promise<React.JSX.Element> {
 				</PagePrimaryBar>
 			</PageHeader>
 			<PageBody>
-				<PageContent title={t("title")}>
+				<PageContent
+					title={t("title")}
+					leftAction={<MedalIcon className="size-5 text-muted-foreground" />}
+				>
 					<AthletesTable />
 				</PageContent>
 			</PageBody>

@@ -542,6 +542,9 @@ export const organizationCoachRouter = createTRPCRouter({
 				.values({
 					organizationId: ctx.organization.id,
 					userId,
+					phone: input.phone,
+					birthDate: input.birthDate,
+					sport: input.sport,
 					specialty: input.specialty,
 					bio: input.bio,
 					status: input.status,

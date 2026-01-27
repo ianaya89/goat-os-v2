@@ -34,7 +34,16 @@
 		"showing": "Showing {from} to {to} of {total}",
 		"emptyState": "No data available",
 		"loading": "Loading data...",
-		"actions": "Actions"
+		"actions": "Actions",
+		"rowsSelected": "{count} of {total} row(s) selected",
+		"pageOf": "Page {current} of {total}",
+		"goToFirstPage": "Go to first page",
+		"goToPreviousPage": "Go to previous page",
+		"goToNextPage": "Go to next page",
+		"goToLastPage": "Go to last page",
+		"selected": "{count} selected",
+		"bulkActions": "Bulk actions",
+		"clearFilters": "Clear filters"
 	},
 	"confirmation": {
 		"deleteTitle": "Confirm deletion",
@@ -86,5 +95,47 @@
 		"security": "Security",
 		"sessions": "Sessions",
 		"athleteProfile": "Athlete Profile"
+	},
+	"search": {
+		"placeholder": "Search...",
+		"commandPlaceholder": "Type a command or search...",
+		"noResults": "No results found."
+	},
+	"commandMenu": {
+		"account": "Account",
+		"organization": "Organization",
+		"home": "Home",
+		"profile": "Profile",
+		"security": "Security",
+		"sessions": "Sessions",
+		"dashboard": "Dashboard",
+		"aiChatbot": "AI Chatbot",
+		"generalSettings": "General Settings",
+		"members": "Members",
+		"subscription": "Subscription"
+	},
+	"sports": {
+		"selectSport": "Select sport",
+		"allSports": "All sports",
+		"soccer": "Soccer",
+		"basketball": "Basketball",
+		"volleyball": "Volleyball",
+		"tennis": "Tennis",
+		"swimming": "Swimming",
+		"athletics": "Athletics",
+		"rugby": "Rugby",
+		"hockey": "Hockey",
+		"baseball": "Baseball",
+		"handball": "Handball",
+		"padel": "Padel",
+		"golf": "Golf",
+		"boxing": "Boxing",
+		"martial_arts": "Martial Arts",
+		"gymnastics": "Gymnastics",
+		"cycling": "Cycling",
+		"running": "Running",
+		"fitness": "Fitness",
+		"crossfit": "CrossFit",
+		"other": "Other"
 	}
 }

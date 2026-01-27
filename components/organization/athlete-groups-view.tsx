@@ -1,6 +1,7 @@
 "use client";
 
 import { CalendarIcon, MedalIcon, UsersIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +17,7 @@ import { capitalize } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
 export function AthleteGroupsView() {
+	const t = useTranslations("athletes.groups");
 	const { data, isLoading } =
 		trpc.organization.athleteGroup.listMyGroups.useQuery();
 
@@ -37,10 +39,10 @@ export function AthleteGroupsView() {
 				<CardContent className="flex flex-col items-center justify-center py-12">
 					<UsersIcon className="size-12 text-muted-foreground/50" />
 					<h3 className="mt-4 font-semibold text-lg">
-						No perteneces a ningun grupo
+						{t("myGroups.noGroups")}
 					</h3>
 					<p className="mt-2 text-center text-muted-foreground">
-						Aun no has sido asignado a ningun grupo de entrenamiento.
+						{t("myGroups.noGroupsDescription")}
 					</p>
 				</CardContent>
 			</Card>
@@ -83,9 +85,12 @@ export function AthleteGroupsView() {
 							<div className="flex items-center gap-2 text-sm text-muted-foreground">
 								<UsersIcon className="size-4" />
 								<span>
-									{group.memberCount} miembro
-									{group.memberCount !== 1 ? "s" : ""}
-									{group.maxCapacity && ` / ${group.maxCapacity} max`}
+									{group.memberCount}{" "}
+									{group.memberCount !== 1
+										? t("myGroups.members")
+										: t("myGroups.member")}
+									{group.maxCapacity &&
+										` / ${group.maxCapacity} ${t("myGroups.max")}`}
 								</span>
 							</div>
 
@@ -93,7 +98,7 @@ export function AthleteGroupsView() {
 							{group.members && group.members.length > 0 && (
 								<div className="pt-2">
 									<p className="mb-2 text-muted-foreground text-xs">
-										Companeros de grupo
+										{t("myGroups.groupmates")}
 									</p>
 									<div className="flex -space-x-2">
 										{group.members.slice(0, 8).map((member) => (

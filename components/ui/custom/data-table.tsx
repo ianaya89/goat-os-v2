@@ -26,6 +26,7 @@ import {
 	ChevronsUpDownIcon,
 	PlusCircleIcon,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -166,6 +167,7 @@ export function DataTable<TData>({
 	onRowClick,
 	getExpandedContent,
 }: DataTableProps<TData>) {
+	const t = useTranslations("common.table");
 	const [mounted, setMounted] = React.useState(false);
 	const [internalRowSelection, setInternalRowSelection] = React.useState({});
 	const [columnVisibility, setColumnVisibility] =
@@ -407,13 +409,15 @@ export function DataTable<TData>({
 			{enablePagination && (
 				<div className="flex items-center justify-between px-4">
 					<div className="hidden flex-1 text-muted-foreground text-sm lg:flex">
-						{table.getFilteredSelectedRowModel().rows.length} of {totalCount}{" "}
-						row(s) selected.
+						{t("rowsSelected", {
+							count: table.getFilteredSelectedRowModel().rows.length,
+							total: totalCount,
+						})}
 					</div>
 					<div className="flex w-full items-center gap-8 lg:w-fit">
 						{mounted && (
 							<div className="hidden items-center gap-2 lg:flex">
-								<p className="font-medium text-sm">Rows per page</p>
+								<p className="font-medium text-sm">{t("rowsPerPage")}</p>
 								<Select
 									value={`${table.getState().pagination.pageSize}`}
 									onValueChange={(value) => {
@@ -436,8 +440,10 @@ export function DataTable<TData>({
 							</div>
 						)}
 						<div className="flex w-fit items-center justify-center font-medium text-sm">
-							Page {table.getState().pagination.pageIndex + 1} of{" "}
-							{table.getPageCount() || 1}
+							{t("pageOf", {
+								current: table.getState().pagination.pageIndex + 1,
+								total: table.getPageCount() || 1,
+							})}
 						</div>
 						<div className="ml-auto flex items-center gap-2 lg:ml-0">
 							<Button
@@ -446,7 +452,7 @@ export function DataTable<TData>({
 								onClick={() => table.setPageIndex(0)}
 								disabled={!table.getCanPreviousPage()}
 							>
-								<span className="sr-only">Go to first page</span>
+								<span className="sr-only">{t("goToFirstPage")}</span>
 								<ChevronsLeftIcon />
 							</Button>
 							<Button
@@ -456,7 +462,7 @@ export function DataTable<TData>({
 								onClick={() => table.previousPage()}
 								disabled={!table.getCanPreviousPage()}
 							>
-								<span className="sr-only">Go to previous page</span>
+								<span className="sr-only">{t("goToPreviousPage")}</span>
 								<ChevronLeftIcon />
 							</Button>
 							<Button
@@ -466,7 +472,7 @@ export function DataTable<TData>({
 								onClick={() => table.nextPage()}
 								disabled={!table.getCanNextPage()}
 							>
-								<span className="sr-only">Go to next page</span>
+								<span className="sr-only">{t("goToNextPage")}</span>
 								<ChevronRightIcon />
 							</Button>
 							<Button
@@ -475,7 +481,7 @@ export function DataTable<TData>({
 								onClick={() => table.setPageIndex(table.getPageCount() - 1)}
 								disabled={!table.getCanNextPage()}
 							>
-								<span className="sr-only">Go to last page</span>
+								<span className="sr-only">{t("goToLastPage")}</span>
 								<ChevronsRightIcon />
 							</Button>
 						</div>
@@ -539,6 +545,7 @@ export function DataTableBulkActions<TData>({
 	actions,
 	className,
 }: DataTableBulkActionsProps<TData>) {
+	const t = useTranslations("common.table");
 	const selectedCount = table.getSelectedRowModel().rows.length;
 
 	if (selectedCount === 0) {
@@ -589,7 +596,9 @@ export function DataTableBulkActions<TData>({
 			)}
 		>
 			<div className="flex w-full max-w-sm items-center justify-between gap-4 rounded-md border bg-background px-4 py-2.5 shadow-md">
-				<span className="font-semibold text-sm">{selectedCount} selected</span>
+				<span className="font-semibold text-sm">
+					{t("selected", { count: selectedCount })}
+				</span>
 				<DropdownMenu modal={false}>
 					<DropdownMenuTrigger asChild>
 						<Button
@@ -598,7 +607,7 @@ export function DataTableBulkActions<TData>({
 							type="button"
 							variant="outline"
 						>
-							Bulk actions
+							{t("bulkActions")}
 							<ChevronsUpDownIcon className="ml-1 size-4 opacity-50" />
 						</Button>
 					</DropdownMenuTrigger>
@@ -618,6 +627,7 @@ function DataTableFacetedFilter({
 	onChange,
 	className,
 }: DataTableFacetedFilterProps) {
+	const t = useTranslations("common.table");
 	const [mounted, setMounted] = React.useState(false);
 	const selectedValues = new Set(selected);
 
@@ -664,7 +674,7 @@ function DataTableFacetedFilter({
 										variant="secondary"
 										className="rounded-sm px-1 font-normal"
 									>
-										{selectedValues.size} selected
+										{t("selected", { count: selectedValues.size })}
 									</Badge>
 								) : (
 									options
@@ -691,7 +701,7 @@ function DataTableFacetedFilter({
 				<Command>
 					<CommandInput placeholder={title} />
 					<CommandList>
-						<CommandEmpty>No results found.</CommandEmpty>
+						<CommandEmpty>{t("noResults")}</CommandEmpty>
 						<CommandGroup>
 							{options.map((option) => {
 								const isSelected = selectedValues.has(option.value);
@@ -734,7 +744,7 @@ function DataTableFacetedFilter({
 										onSelect={() => onChange([])}
 										className="justify-center text-center"
 									>
-										Clear filters
+										{t("clearFilters")}
 									</CommandItem>
 								</CommandGroup>
 							</>
@@ -763,7 +773,12 @@ export function SortableColumnHeader<TData, TValue>({
 }: SortableColumnHeaderProps<TData, TValue>): React.JSX.Element {
 	if (!column.getCanSort()) {
 		return (
-			<div className={cn("font-medium text-foreground text-xs", className)}>
+			<div
+				className={cn(
+					"font-semibold text-foreground text-xs uppercase tracking-wider",
+					className,
+				)}
+			>
 				{title}
 			</div>
 		);
@@ -787,7 +802,7 @@ export function SortableColumnHeader<TData, TValue>({
 		<button
 			type="button"
 			className={cn(
-				"flex cursor-pointer items-center gap-1 font-medium text-foreground text-xs transition-colors hover:text-foreground/80",
+				"flex cursor-pointer items-center gap-1 font-semibold text-foreground text-xs uppercase tracking-wider transition-colors hover:text-foreground/80",
 				className,
 			)}
 			onClick={handleClick}

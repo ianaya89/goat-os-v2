@@ -2,6 +2,7 @@
 
 import NiceModal from "@ebay/nice-modal-react";
 import type { Table } from "@tanstack/react-table";
+import { useTranslations } from "next-intl";
 import type * as React from "react";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/confirmation-modal";
@@ -18,6 +19,7 @@ export type AthleteGroupsBulkActionsProps<T> = {
 export function AthleteGroupsBulkActions<T extends { id: string }>({
 	table,
 }: AthleteGroupsBulkActionsProps<T>): React.JSX.Element {
+	const t = useTranslations("athletes.groups");
 	const utils = trpc.useUtils();
 
 	const bulkDelete = trpc.organization.athleteGroup.bulkDelete.useMutation();
@@ -27,27 +29,27 @@ export function AthleteGroupsBulkActions<T extends { id: string }>({
 	const handleBulkDelete = () => {
 		const selectedRows = table.getSelectedRowModel().rows;
 		if (selectedRows.length === 0) {
-			toast.error("No groups selected.");
+			toast.error(t("bulkActions.noSelected"));
 			return;
 		}
 
 		NiceModal.show(ConfirmationModal, {
-			title: "Delete groups?",
-			message: `Are you sure you want to delete ${selectedRows.length} group${selectedRows.length > 1 ? "s" : ""}? Athletes in these groups will not be deleted.`,
-			confirmLabel: "Delete",
+			title: t("bulkDelete.title"),
+			message: t("bulkDelete.message", { count: selectedRows.length }),
+			confirmLabel: t("bulkDelete.confirm"),
 			destructive: true,
 			onConfirm: async () => {
 				const ids = selectedRows.map((row) => row.original.id);
 				try {
 					await bulkDelete.mutateAsync({ ids });
 					toast.success(
-						`${selectedRows.length} group${selectedRows.length > 1 ? "s" : ""} deleted.`,
+						t("bulkActions.deleted", { count: selectedRows.length }),
 					);
 					table.resetRowSelection();
 					utils.organization.athleteGroup.list.invalidate();
 					utils.organization.athleteGroup.listActive.invalidate();
 				} catch (_err) {
-					toast.error("Failed to delete groups.");
+					toast.error(t("bulkActions.deleteFailed"));
 				}
 			},
 		});
@@ -56,7 +58,7 @@ export function AthleteGroupsBulkActions<T extends { id: string }>({
 	const handleBulkUpdateActive = async (isActive: boolean) => {
 		const selectedRows = table.getSelectedRowModel().rows;
 		if (selectedRows.length === 0) {
-			toast.error("No groups selected.");
+			toast.error(t("bulkActions.noSelected"));
 			return;
 		}
 
@@ -64,34 +66,36 @@ export function AthleteGroupsBulkActions<T extends { id: string }>({
 		try {
 			await bulkUpdateActive.mutateAsync({ ids, isActive });
 			toast.success(
-				`${selectedRows.length} group${selectedRows.length > 1 ? "s" : ""} ${isActive ? "activated" : "deactivated"}.`,
+				isActive
+					? t("bulkActions.activated", { count: selectedRows.length })
+					: t("bulkActions.deactivated", { count: selectedRows.length }),
 			);
 			table.resetRowSelection();
 			utils.organization.athleteGroup.list.invalidate();
 			utils.organization.athleteGroup.listActive.invalidate();
 		} catch (_err) {
-			toast.error("Failed to update groups.");
+			toast.error(t("bulkActions.updateFailed"));
 		}
 	};
 
 	const statusActions: BulkActionItem[] = [
 		{
-			label: "Set to Active",
+			label: t("bulkActions.setActive"),
 			onClick: () => handleBulkUpdateActive(true),
 		},
 		{
-			label: "Set to Inactive",
+			label: t("bulkActions.setInactive"),
 			onClick: () => handleBulkUpdateActive(false),
 		},
 	];
 
 	const actions: BulkActionItem[] = [
 		{
-			label: "Change status",
+			label: t("bulkActions.changeStatus"),
 			actions: statusActions,
 		},
 		{
-			label: "Delete",
+			label: t("bulkActions.delete"),
 			onClick: handleBulkDelete,
 			variant: "destructive",
 			separator: true,

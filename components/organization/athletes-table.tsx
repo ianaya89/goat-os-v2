@@ -15,6 +15,7 @@ import {
 	Trash2Icon,
 } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
 	parseAsArrayOf,
 	parseAsInteger,
@@ -27,8 +28,8 @@ import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/confirmation-modal";
 import { AthletesBulkActions } from "@/components/organization/athletes-bulk-actions";
 import { AthletesModal } from "@/components/organization/athletes-modal";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { MailtoLink, WhatsAppLink } from "@/components/ui/contact-links";
 import {
 	createSelectionColumn,
 	DataTable,
@@ -42,10 +43,20 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { LevelBadge } from "@/components/ui/level-badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { appConfig } from "@/config/app.config";
-import { AthleteLevels, AthleteStatuses } from "@/lib/db/schema/enums";
-import { capitalize, cn } from "@/lib/utils";
+import type {
+	AthleteLevel,
+	AthleteSport,
+	AthleteStatus,
+} from "@/lib/db/schema/enums";
+import {
+	AthleteLevels,
+	AthleteSports,
+	AthleteStatuses,
+} from "@/lib/db/schema/enums";
 import { AthleteSortField } from "@/schemas/organization-athlete-schemas";
 import { trpc } from "@/trpc/client";
 
@@ -64,6 +75,7 @@ interface Athlete {
 	birthDate: Date | null;
 	level: string;
 	status: string;
+	phone: string | null;
 	createdAt: Date;
 	updatedAt: Date;
 	user: {
@@ -75,18 +87,26 @@ interface Athlete {
 	groups?: AthleteGroup[];
 }
 
-const statusColors: Record<string, string> = {
-	active: "bg-green-100 dark:bg-green-900",
-	inactive: "bg-gray-100 dark:bg-gray-800",
-};
-
-const levelColors: Record<string, string> = {
-	beginner: "bg-blue-100 dark:bg-blue-900",
-	intermediate: "bg-yellow-100 dark:bg-yellow-900",
-	advanced: "bg-purple-100 dark:bg-purple-900",
-};
-
 export function AthletesTable(): React.JSX.Element {
+	const t = useTranslations("athletes");
+	const tCommon = useTranslations("common.sports");
+
+	// Translation helpers
+	const translateSport = (sport: AthleteSport) => {
+		// Normalize to lowercase for translation key lookup
+		const normalizedSport = sport.toLowerCase() as Parameters<
+			typeof tCommon
+		>[0];
+		return tCommon(normalizedSport);
+	};
+
+	const translateLevel = (level: AthleteLevel) => {
+		return t(`levels.${level}` as Parameters<typeof t>[0]);
+	};
+
+	const translateStatus = (status: AthleteStatus) => {
+		return t(`statuses.${status}` as Parameters<typeof t>[0]);
+	};
 	const [rowSelection, setRowSelection] = React.useState({});
 
 	const [searchQuery, setSearchQuery] = useQueryState(
@@ -124,8 +144,8 @@ export function AthletesTable(): React.JSX.Element {
 		}),
 	);
 
-	const [createdAtFilter, setCreatedAtFilter] = useQueryState(
-		"createdAt",
+	const [sportFilter, setSportFilter] = useQueryState(
+		"sport",
 		parseAsArrayOf(parseAsString).withDefault([]).withOptions({
 			shallow: true,
 		}),
@@ -158,11 +178,11 @@ export function AthletesTable(): React.JSX.Element {
 		if (levelFilter && levelFilter.length > 0) {
 			filters.push({ id: "level", value: levelFilter });
 		}
-		if (createdAtFilter && createdAtFilter.length > 0) {
-			filters.push({ id: "createdAt", value: createdAtFilter });
+		if (sportFilter && sportFilter.length > 0) {
+			filters.push({ id: "sport", value: sportFilter });
 		}
 		return filters;
-	}, [statusFilter, levelFilter, createdAtFilter]);
+	}, [statusFilter, levelFilter, sportFilter]);
 
 	const handleFiltersChange = (filters: ColumnFiltersState): void => {
 		const getFilterValue = (id: string): string[] => {
@@ -172,7 +192,7 @@ export function AthletesTable(): React.JSX.Element {
 
 		setStatusFilter(getFilterValue("status"));
 		setLevelFilter(getFilterValue("level"));
-		setCreatedAtFilter(getFilterValue("createdAt"));
+		setSportFilter(getFilterValue("sport"));
 
 		if (pageIndex !== 0) {
 			setPageIndex(0);
@@ -214,11 +234,20 @@ export function AthletesTable(): React.JSX.Element {
 					| "intermediate"
 					| "advanced"
 				)[],
-				createdAt: (createdAtFilter || []) as (
-					| "today"
-					| "this-week"
-					| "this-month"
-					| "older"
+				sport: (sportFilter || []) as (
+					| "soccer"
+					| "basketball"
+					| "tennis"
+					| "swimming"
+					| "athletics"
+					| "volleyball"
+					| "rugby"
+					| "hockey"
+					| "golf"
+					| "boxing"
+					| "martial_arts"
+					| "cycling"
+					| "other"
 				)[],
 			},
 		},
@@ -229,11 +258,11 @@ export function AthletesTable(): React.JSX.Element {
 
 	const deleteAthleteMutation = trpc.organization.athlete.delete.useMutation({
 		onSuccess: () => {
-			toast.success("Athlete deleted successfully");
+			toast.success(t("success.deleted"));
 			utils.organization.athlete.list.invalidate();
 		},
 		onError: (error) => {
-			toast.error(error.message || "Failed to delete athlete");
+			toast.error(error.message || t("error.deleteFailed"));
 		},
 	});
 
@@ -246,148 +275,111 @@ export function AthletesTable(): React.JSX.Element {
 		}
 	};
 
+	// Calculate age from birth date
+	const calculateAge = (birthDate: Date | null): number | null => {
+		if (!birthDate) return null;
+		const today = new Date();
+		const birth = new Date(birthDate);
+		let age = today.getFullYear() - birth.getFullYear();
+		const monthDiff = today.getMonth() - birth.getMonth();
+		if (
+			monthDiff < 0 ||
+			(monthDiff === 0 && today.getDate() < birth.getDate())
+		) {
+			age--;
+		}
+		return age;
+	};
+
 	const columns: ColumnDef<Athlete>[] = [
 		createSelectionColumn<Athlete>(),
 		{
 			accessorKey: "name",
 			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Name" />
+				<SortableColumnHeader column={column} title={t("table.name")} />
 			),
 			cell: ({ row }) => {
 				const name = row.original.user?.name ?? "Unknown";
+				const age = calculateAge(row.original.birthDate);
 				return (
 					<Link
-						className="flex max-w-[200px] items-center gap-2 hover:underline"
+						className="flex items-center gap-3 hover:opacity-80"
 						href={`/dashboard/organization/athletes/${row.original.id}`}
 					>
 						<UserAvatar
-							className="size-6 shrink-0"
+							className="size-9 shrink-0"
 							name={name}
 							src={row.original.user?.image ?? undefined}
 						/>
-						<span className="truncate font-medium text-foreground" title={name}>
-							{name}
-						</span>
+						<div className="min-w-0">
+							<p className="truncate font-medium text-foreground" title={name}>
+								{name}
+							</p>
+							{age !== null && (
+								<p className="text-muted-foreground text-xs">
+									<span className="font-semibold">{age}</span> {t("yearsOld")}
+								</p>
+							)}
+						</div>
 					</Link>
 				);
 			},
 		},
 		{
 			accessorKey: "email",
-			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Email" />
-			),
-			cell: ({ row }) => (
-				<span
-					className="block max-w-[250px] truncate text-foreground/80"
-					title={row.original.user?.email ?? ""}
-				>
-					{row.original.user?.email ?? "-"}
-				</span>
-			),
-		},
-		{
-			accessorKey: "sport",
-			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Sport" />
-			),
-			cell: ({ row }) => (
-				<span
-					className="block max-w-[150px] truncate text-foreground/80"
-					title={row.original.sport}
-				>
-					{row.original.sport}
-				</span>
-			),
-		},
-		{
-			accessorKey: "level",
-			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Level" />
-			),
-			cell: ({ row }) => (
-				<Badge
-					className={cn(
-						"border-none px-2 py-0.5 font-medium text-foreground text-xs shadow-none",
-						levelColors[row.original.level] || "bg-gray-100 dark:bg-gray-800",
-					)}
-					variant="outline"
-				>
-					{capitalize(row.original.level)}
-				</Badge>
-			),
-		},
-		{
-			accessorKey: "status",
-			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Status" />
-			),
-			cell: ({ row }) => (
-				<Badge
-					className={cn(
-						"border-none px-2 py-0.5 font-medium text-foreground text-xs shadow-none",
-						statusColors[row.original.status] || "bg-gray-100 dark:bg-gray-800",
-					)}
-					variant="outline"
-				>
-					{capitalize(row.original.status)}
-				</Badge>
-			),
-		},
-		{
-			accessorKey: "groups",
-			header: "Groups",
-			enableSorting: false,
+			header: t("table.email"),
 			cell: ({ row }) => {
-				const groups = row.original.groups ?? [];
-				if (groups.length === 0) {
-					return <span className="text-muted-foreground">-</span>;
-				}
-				return (
-					<div className="flex flex-wrap gap-1">
-						{groups.slice(0, 2).map((group) => (
-							<Badge
-								key={group.id}
-								className="border-none bg-indigo-100 px-2 py-0.5 font-medium text-foreground text-xs shadow-none dark:bg-indigo-900"
-								variant="outline"
-							>
-								{group.name}
-							</Badge>
-						))}
-						{groups.length > 2 && (
-							<Badge
-								className="border-none bg-gray-100 px-2 py-0.5 font-medium text-foreground text-xs shadow-none dark:bg-gray-800"
-								variant="outline"
-							>
-								+{groups.length - 2}
-							</Badge>
-						)}
-					</div>
+				const email = row.original.user?.email;
+				return email ? (
+					<MailtoLink
+						email={email}
+						className="text-sm"
+						iconSize="size-3.5"
+						truncate
+						onClick={(e) => e.stopPropagation()}
+					/>
+				) : (
+					<span className="text-muted-foreground">-</span>
 				);
 			},
 		},
 		{
-			accessorKey: "birthDate",
+			accessorKey: "phone",
+			header: t("table.phone"),
+			cell: ({ row }) => {
+				const phone = row.original.phone;
+				return phone ? (
+					<WhatsAppLink
+						phone={phone}
+						variant="whatsapp"
+						className="text-sm"
+						iconSize="size-3.5"
+						onClick={(e) => e.stopPropagation()}
+					/>
+				) : (
+					<span className="text-muted-foreground">-</span>
+				);
+			},
+		},
+		{
+			accessorKey: "sport",
 			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Birth Date" />
+				<SortableColumnHeader column={column} title={t("table.sport")} />
 			),
 			cell: ({ row }) => (
-				<span className="text-foreground/80">
-					{row.original.birthDate
-						? format(row.original.birthDate, "dd MMM, yyyy")
-						: "-"}
-				</span>
+				<div className="flex flex-col gap-1">
+					<span className="text-sm text-foreground">
+						{translateSport(row.original.sport as AthleteSport)}
+					</span>
+					<LevelBadge level={row.original.level} />
+				</div>
 			),
 		},
 		{
-			accessorKey: "createdAt",
-			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Created" />
-			),
+			accessorKey: "status",
+			header: t("table.status"),
 			cell: ({ row }) => (
-				<span className="text-foreground/80">
-					{format(row.original.createdAt, "dd MMM, yyyy")}
-				</span>
+				<StatusBadge status={row.original.status as AthleteStatus} />
 			),
 		},
 		{
@@ -412,7 +404,7 @@ export function AthletesTable(): React.JSX.Element {
 									href={`/dashboard/organization/athletes/${row.original.id}`}
 								>
 									<EyeIcon className="mr-2 size-4" />
-									View Profile
+									{t("table.viewProfile")}
 								</Link>
 							</DropdownMenuItem>
 							<DropdownMenuItem
@@ -421,16 +413,15 @@ export function AthletesTable(): React.JSX.Element {
 								}}
 							>
 								<PencilIcon className="mr-2 size-4" />
-								Edit
+								{t("edit")}
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 							<DropdownMenuItem
 								onClick={() => {
 									NiceModal.show(ConfirmationModal, {
-										title: "Delete athlete?",
-										message:
-											"Are you sure you want to delete this athlete? This action cannot be undone. The user account will remain in the organization.",
-										confirmLabel: "Delete",
+										title: t("delete.title"),
+										message: t("delete.message"),
+										confirmLabel: t("delete.confirm"),
 										destructive: true,
 										onConfirm: () =>
 											deleteAthleteMutation.mutate({ id: row.original.id }),
@@ -439,7 +430,7 @@ export function AthletesTable(): React.JSX.Element {
 								variant="destructive"
 							>
 								<Trash2Icon className="mr-2 size-4" />
-								Delete
+								{t("deleteAction")}
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
@@ -451,29 +442,27 @@ export function AthletesTable(): React.JSX.Element {
 	const athleteFilters: FilterConfig[] = [
 		{
 			key: "status",
-			title: "Status",
+			title: t("table.status"),
 			options: AthleteStatuses.map((status) => ({
 				value: status,
-				label: capitalize(status),
+				label: translateStatus(status),
 			})),
 		},
 		{
 			key: "level",
-			title: "Level",
+			title: t("table.level"),
 			options: AthleteLevels.map((level) => ({
 				value: level,
-				label: capitalize(level),
+				label: translateLevel(level),
 			})),
 		},
 		{
-			key: "createdAt",
-			title: "Created",
-			options: [
-				{ value: "today", label: "Today" },
-				{ value: "this-week", label: "This week" },
-				{ value: "this-month", label: "This month" },
-				{ value: "older", label: "Older" },
-			],
+			key: "sport",
+			title: t("table.sport"),
+			options: AthleteSports.map((sport) => ({
+				value: sport,
+				label: translateSport(sport),
+			})),
 		},
 	];
 
@@ -482,7 +471,7 @@ export function AthletesTable(): React.JSX.Element {
 			columnFilters={columnFilters}
 			columns={columns}
 			data={(data?.athletes as Athlete[]) || []}
-			emptyMessage="No athletes found."
+			emptyMessage={t("table.noAthletes")}
 			enableFilters
 			enablePagination
 			enableRowSelection
@@ -499,14 +488,14 @@ export function AthletesTable(): React.JSX.Element {
 			pageSize={pageSize || appConfig.pagination.defaultLimit}
 			renderBulkActions={(table) => <AthletesBulkActions table={table} />}
 			rowSelection={rowSelection}
-			searchPlaceholder="Search athletes..."
+			searchPlaceholder={t("search")}
 			searchQuery={searchQuery || ""}
 			defaultSorting={DEFAULT_SORTING}
 			sorting={sorting}
 			toolbarActions={
 				<Button onClick={() => NiceModal.show(AthletesModal)} size="sm">
 					<PlusIcon className="size-4 shrink-0" />
-					Add Athlete
+					{t("add")}
 				</Button>
 			}
 			totalCount={data?.total ?? 0}

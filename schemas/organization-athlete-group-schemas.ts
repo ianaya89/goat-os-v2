@@ -23,6 +23,7 @@ export const listAthleteGroupsSchema = z.object({
 			isActive: z.boolean().optional(),
 			sport: z.array(z.nativeEnum(AthleteSport)).optional(),
 			ageCategoryId: z.string().uuid().optional(),
+			ageCategoryIds: z.array(z.string().uuid()).optional(),
 		})
 		.optional(),
 });

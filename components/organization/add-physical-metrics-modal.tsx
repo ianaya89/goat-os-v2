@@ -1,276 +1,283 @@
 "use client";
 
-import NiceModal, { useModal } from "@ebay/nice-modal-react";
-import { Loader2Icon, RulerIcon } from "lucide-react";
-import { useForm } from "react-hook-form";
+import NiceModal from "@ebay/nice-modal-react";
+import { CalendarIcon, WeightIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { z } from "zod/v4";
 import {
-	Form,
+	ProfileEditGrid,
+	ProfileEditSection,
+	ProfileEditSheet,
+} from "@/components/athlete/profile-edit-sheet";
+import { Field } from "@/components/ui/field";
+import {
 	FormControl,
-	FormDescription,
 	FormField,
 	FormItem,
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-	Sheet,
-	SheetContent,
-	SheetDescription,
-	SheetFooter,
-	SheetHeader,
-	SheetTitle,
-} from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
+import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
+import { useZodForm } from "@/hooks/use-zod-form";
 import { trpc } from "@/trpc/client";
 
-interface FormValues {
-	height: string;
-	weight: string;
-	bodyFatPercentage: string;
-	muscleMass: string;
-	wingspan: string;
-	standingReach: string;
-	notes: string;
-}
+const bodyCompositionSchema = z.object({
+	measuredAt: z.string().optional(),
+	weight: z.string().optional(),
+	bodyFatPercentage: z.string().optional(),
+	muscleMass: z.string().optional(),
+	notes: z.string().max(1000).optional(),
+});
+
+type BodyCompositionFormData = z.infer<typeof bodyCompositionSchema>;
 
 interface AddPhysicalMetricsModalProps {
 	athleteId: string;
+	initialValues?: {
+		id: string;
+		measuredAt: Date | string | null;
+		weight: number | null;
+		bodyFatPercentage: number | null;
+		muscleMass: number | null;
+		notes: string | null;
+	};
 }
 
 export const AddPhysicalMetricsModal =
-	NiceModal.create<AddPhysicalMetricsModalProps>(({ athleteId }) => {
-		const modal = useModal();
-		const utils = trpc.useUtils();
+	NiceModal.create<AddPhysicalMetricsModalProps>(
+		({ athleteId, initialValues }) => {
+			const t = useTranslations("athletes");
+			const modal = useEnhancedModal();
+			const utils = trpc.useUtils();
+			const isEditing = !!initialValues;
 
-		const form = useForm<FormValues>({
-			defaultValues: {
-				height: "",
-				weight: "",
-				bodyFatPercentage: "",
-				muscleMass: "",
-				wingspan: "",
-				standingReach: "",
-				notes: "",
-			},
-		});
-
-		const createMutation =
-			trpc.organization.athlete.createPhysicalMetrics.useMutation({
-				onSuccess: () => {
-					toast.success("Physical metrics have been recorded successfully.");
-					utils.organization.athlete.getProfile.invalidate({ id: athleteId });
-					modal.hide();
-				},
-				onError: (error) => {
-					toast.error(error.message);
+			const form = useZodForm({
+				schema: bodyCompositionSchema,
+				defaultValues: {
+					measuredAt: initialValues?.measuredAt
+						? new Date(initialValues.measuredAt).toISOString().split("T")[0]
+						: "",
+					weight: initialValues?.weight
+						? (initialValues.weight / 1000).toString()
+						: "",
+					bodyFatPercentage: initialValues?.bodyFatPercentage
+						? (initialValues.bodyFatPercentage / 10).toString()
+						: "",
+					muscleMass: initialValues?.muscleMass
+						? (initialValues.muscleMass / 1000).toString()
+						: "",
+					notes: initialValues?.notes ?? "",
 				},
 			});
 
-		const onSubmit = (values: FormValues) => {
-			const height = values.height ? parseInt(values.height, 10) : undefined;
-			const weight = values.weight
-				? Math.round(parseFloat(values.weight) * 1000)
-				: undefined;
-			const bodyFatPercentage = values.bodyFatPercentage
-				? Math.round(parseFloat(values.bodyFatPercentage) * 10)
-				: undefined;
-			const muscleMass = values.muscleMass
-				? Math.round(parseFloat(values.muscleMass) * 1000)
-				: undefined;
-			const wingspan = values.wingspan
-				? parseInt(values.wingspan, 10)
-				: undefined;
-			const standingReach = values.standingReach
-				? parseInt(values.standingReach, 10)
-				: undefined;
+			const createMutation =
+				trpc.organization.athlete.createPhysicalMetrics.useMutation({
+					onSuccess: () => {
+						toast.success(t("physical.recordSuccess"));
+						utils.organization.athlete.getProfile.invalidate({
+							id: athleteId,
+						});
+						modal.handleClose();
+					},
+					onError: (error) => {
+						toast.error(error.message);
+					},
+				});
 
-			createMutation.mutate({
-				athleteId,
-				height,
-				weight,
-				bodyFatPercentage,
-				muscleMass,
-				wingspan,
-				standingReach,
-				notes: values.notes || undefined,
+			const updateMutation =
+				trpc.organization.athlete.updatePhysicalMetrics.useMutation({
+					onSuccess: () => {
+						toast.success(t("physical.updateSuccess"));
+						utils.organization.athlete.getProfile.invalidate({
+							id: athleteId,
+						});
+						modal.handleClose();
+					},
+					onError: (error) => {
+						toast.error(error.message);
+					},
+				});
+
+			const onSubmit = form.handleSubmit((data: BodyCompositionFormData) => {
+				const weight = data.weight
+					? Math.round(Number.parseFloat(data.weight) * 1000)
+					: undefined;
+				const bodyFatPercentage = data.bodyFatPercentage
+					? Math.round(Number.parseFloat(data.bodyFatPercentage) * 10)
+					: undefined;
+				const muscleMass = data.muscleMass
+					? Math.round(Number.parseFloat(data.muscleMass) * 1000)
+					: undefined;
+				const measuredAt = data.measuredAt
+					? new Date(data.measuredAt)
+					: undefined;
+
+				if (isEditing && initialValues) {
+					updateMutation.mutate({
+						id: initialValues.id,
+						athleteId,
+						measuredAt,
+						weight,
+						bodyFatPercentage,
+						muscleMass,
+						notes: data.notes || undefined,
+					});
+				} else {
+					createMutation.mutate({
+						athleteId,
+						measuredAt,
+						weight,
+						bodyFatPercentage,
+						muscleMass,
+						notes: data.notes || undefined,
+					});
+				}
 			});
-		};
 
-		return (
-			<Sheet
-				open={modal.visible}
-				onOpenChange={(open) => {
-					if (!open) modal.hide();
-				}}
-			>
-				<SheetContent className="overflow-y-auto sm:max-w-lg">
-					<SheetHeader>
-						<SheetTitle className="flex items-center gap-2">
-							<RulerIcon className="size-5" />
-							Add Physical Measurement
-						</SheetTitle>
-						<SheetDescription>
-							Record physical metrics for this athlete. All fields are optional.
-						</SheetDescription>
-					</SheetHeader>
+			const isPending = createMutation.isPending || updateMutation.isPending;
 
-					<Form {...form}>
-						<form
-							onSubmit={form.handleSubmit(onSubmit)}
-							className="mt-6 space-y-4"
-						>
-							<div className="grid grid-cols-2 gap-4">
-								<FormField
-									control={form.control}
-									name="height"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>Height (cm)</FormLabel>
+			return (
+				<ProfileEditSheet
+					open={modal.visible}
+					onClose={modal.handleClose}
+					title={
+						isEditing
+							? t("physical.editMeasurement")
+							: t("physical.addMeasurement")
+					}
+					subtitle={t("physical.bodyCompositionDesc")}
+					icon={<WeightIcon className="size-5" />}
+					accentColor="slate"
+					form={form}
+					onSubmit={onSubmit}
+					isPending={isPending}
+					maxWidth="md"
+					onAnimationEndCapture={modal.handleAnimationEndCapture}
+				>
+					<div className="space-y-6">
+						<ProfileEditSection title={t("physical.measurementDate")}>
+							<FormField
+								control={form.control}
+								name="measuredAt"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel className="flex items-center gap-1.5">
+												<CalendarIcon className="size-3.5" />
+												{t("physical.measurementDate")}
+											</FormLabel>
 											<FormControl>
-												<Input type="number" placeholder="175" {...field} />
+												<Input
+													type="date"
+													{...field}
+													value={field.value ?? ""}
+												/>
 											</FormControl>
 											<FormMessage />
-										</FormItem>
-									)}
-								/>
+										</Field>
+									</FormItem>
+								)}
+							/>
+						</ProfileEditSection>
 
+						<ProfileEditSection title={t("physical.bodyCompositionHistory")}>
+							<ProfileEditGrid cols={2}>
 								<FormField
 									control={form.control}
 									name="weight"
 									render={({ field }) => (
-										<FormItem>
-											<FormLabel>Weight (kg)</FormLabel>
-											<FormControl>
-												<Input
-													type="number"
-													step="0.1"
-													placeholder="72.5"
-													{...field}
-												/>
-											</FormControl>
-											<FormMessage />
+										<FormItem asChild>
+											<Field>
+												<FormLabel>{t("physical.weight")} (kg)</FormLabel>
+												<FormControl>
+													<Input
+														type="number"
+														step="0.1"
+														placeholder="72.5"
+														{...field}
+														value={field.value ?? ""}
+													/>
+												</FormControl>
+												<FormMessage />
+											</Field>
 										</FormItem>
 									)}
 								/>
-							</div>
 
-							<div className="grid grid-cols-2 gap-4">
 								<FormField
 									control={form.control}
 									name="bodyFatPercentage"
 									render={({ field }) => (
-										<FormItem>
-											<FormLabel>Body Fat %</FormLabel>
-											<FormControl>
-												<Input
-													type="number"
-													step="0.1"
-													placeholder="12.5"
-													{...field}
-												/>
-											</FormControl>
-											<FormMessage />
+										<FormItem asChild>
+											<Field>
+												<FormLabel>{t("physical.bodyFat")}</FormLabel>
+												<FormControl>
+													<Input
+														type="number"
+														step="0.1"
+														placeholder="12.5"
+														{...field}
+														value={field.value ?? ""}
+													/>
+												</FormControl>
+												<FormMessage />
+											</Field>
 										</FormItem>
 									)}
 								/>
+							</ProfileEditGrid>
 
-								<FormField
-									control={form.control}
-									name="muscleMass"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>Muscle Mass (kg)</FormLabel>
+							<FormField
+								control={form.control}
+								name="muscleMass"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("physical.muscleMass")} (kg)</FormLabel>
 											<FormControl>
 												<Input
 													type="number"
 													step="0.1"
 													placeholder="35.2"
 													{...field}
+													value={field.value ?? ""}
 												/>
 											</FormControl>
 											<FormMessage />
-										</FormItem>
-									)}
-								/>
-							</div>
+										</Field>
+									</FormItem>
+								)}
+							/>
+						</ProfileEditSection>
 
-							<div className="grid grid-cols-2 gap-4">
-								<FormField
-									control={form.control}
-									name="wingspan"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>Wingspan (cm)</FormLabel>
-											<FormControl>
-												<Input type="number" placeholder="180" {...field} />
-											</FormControl>
-											<FormDescription className="text-xs">
-												Arm span measurement
-											</FormDescription>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-
-								<FormField
-									control={form.control}
-									name="standingReach"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>Standing Reach (cm)</FormLabel>
-											<FormControl>
-												<Input type="number" placeholder="230" {...field} />
-											</FormControl>
-											<FormDescription className="text-xs">
-												Max reach while standing
-											</FormDescription>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-							</div>
-
+						<ProfileEditSection>
 							<FormField
 								control={form.control}
 								name="notes"
 								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Notes</FormLabel>
-										<FormControl>
-											<Textarea
-												placeholder="Additional notes about this measurement..."
-												className="resize-none"
-												rows={3}
-												{...field}
-											/>
-										</FormControl>
-										<FormMessage />
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("physical.notes")}</FormLabel>
+											<FormControl>
+												<Textarea
+													placeholder={t("physical.notesPlaceholder")}
+													className="resize-none"
+													rows={3}
+													{...field}
+													value={field.value ?? ""}
+												/>
+											</FormControl>
+											<FormMessage />
+										</Field>
 									</FormItem>
 								)}
 							/>
-
-							<SheetFooter className="mt-6">
-								<Button
-									type="button"
-									variant="outline"
-									onClick={() => modal.hide()}
-									disabled={createMutation.isPending}
-								>
-									Cancel
-								</Button>
-								<Button type="submit" disabled={createMutation.isPending}>
-									{createMutation.isPending && (
-										<Loader2Icon className="mr-2 size-4 animate-spin" />
-									)}
-									Save Measurement
-								</Button>
-							</SheetFooter>
-						</form>
-					</Form>
-				</SheetContent>
-			</Sheet>
-		);
-	});
+						</ProfileEditSection>
+					</div>
+				</ProfileEditSheet>
+			);
+		},
+	);

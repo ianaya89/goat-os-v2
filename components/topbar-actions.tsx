@@ -3,6 +3,7 @@
 import NiceModal from "@ebay/nice-modal-react";
 import { CommandIcon, SearchIcon } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { OrganizationSwitcher } from "@/components/organization/organization-switcher";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ export function TopbarActions({
 	className,
 	showOrgSwitcher,
 }: TopbarActionsProps): React.JSX.Element {
+	const t = useTranslations("common.search");
 	const pathname = usePathname();
 	const handleShowCommandMenu = React.useCallback((): void => {
 		NiceModal.show(CommandMenu);
@@ -49,7 +51,7 @@ export function TopbarActions({
 				className="h-9 gap-2 rounded-lg border-border/50 bg-background/50 px-3 text-muted-foreground hover:bg-background/80 hover:text-foreground"
 			>
 				<SearchIcon className="size-4" />
-				<span className="hidden sm:inline-flex">Search...</span>
+				<span className="hidden sm:inline-flex">{t("placeholder")}</span>
 				<kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border border-border/50 bg-muted px-1.5 font-mono font-medium text-[10px] text-muted-foreground sm:inline-flex">
 					<CommandIcon className="size-3" />K
 				</kbd>

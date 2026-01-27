@@ -56,7 +56,11 @@
 			"Bash(npm run db:cli:*)",
 			"Bash(tree -d -L 3:*)",
 			"Bash(xargs ls:*)",
-			"WebFetch(domain:goat-os-v2-gold.vercel.app)"
+			"WebFetch(domain:goat-os-v2-gold.vercel.app)",
+			"Bash(xxd:*)",
+			"Bash(perl:*)",
+			"Bash(python3:*)",
+			"Bash(echo:*)"
 		]
 	}
 }

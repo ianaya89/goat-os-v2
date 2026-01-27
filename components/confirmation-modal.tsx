@@ -1,6 +1,7 @@
 "use client";
 
 import NiceModal, { type NiceModalHocProps } from "@ebay/nice-modal-react";
+import { AlertTriangleIcon, CheckIcon, Trash2Icon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -103,8 +104,9 @@ export const ConfirmationModal = NiceModal.create<ConfirmationModalProps>(
 						</div>
 					)}
 					<AlertDialogFooter>
-						<Button onClick={modal.handleClose} type="button" variant="outline">
-							{cancelLabel ?? "Cancel"}
+						<Button onClick={modal.handleClose} type="button" variant="ghost">
+							<XIcon className="size-4" />
+							{cancelLabel ?? "Cancelar"}
 						</Button>
 						<Button
 							disabled={!isTextValid}
@@ -112,7 +114,12 @@ export const ConfirmationModal = NiceModal.create<ConfirmationModalProps>(
 							type="button"
 							variant={destructive ? "destructive" : "default"}
 						>
-							{confirmLabel ?? "Confirm"}
+							{destructive ? (
+								<Trash2Icon className="size-4" />
+							) : (
+								<CheckIcon className="size-4" />
+							)}
+							{confirmLabel ?? "Confirmar"}
 						</Button>
 					</AlertDialogFooter>
 				</AlertDialogContent>

@@ -1,7 +1,7 @@
 "use client";
 
 import NiceModal from "@ebay/nice-modal-react";
-import { format } from "date-fns";
+import { differenceInYears, format } from "date-fns";
 import {
 	ArrowLeftIcon,
 	CalendarIcon,
@@ -9,21 +9,25 @@ import {
 	ClipboardCheckIcon,
 	ClipboardListIcon,
 	ClockIcon,
-	EditIcon,
 	MapPinIcon,
+	MedalIcon,
 	PlusIcon,
 	StarIcon,
 	TrendingUpIcon,
+	UserIcon,
 	UsersIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { CoachSessionModal } from "@/components/organization/coach-session-modal";
 import { CoachesModal } from "@/components/organization/coaches-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MailtoLink, WhatsAppLink } from "@/components/ui/contact-links";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { capitalize, cn } from "@/lib/utils";
@@ -32,13 +36,6 @@ import { trpc } from "@/trpc/client";
 interface CoachProfileProps {
 	coachId: string;
 }
-
-const statusColors: Record<string, string> = {
-	active: "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100",
-	inactive: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100",
-	on_leave:
-		"bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100",
-};
 
 const sessionStatusColors: Record<string, string> = {
 	pending: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100",
@@ -49,6 +46,7 @@ const sessionStatusColors: Record<string, string> = {
 };
 
 export function CoachProfile({ coachId }: CoachProfileProps) {
+	const t = useTranslations("coaches");
 	const { data, isLoading, error } =
 		trpc.organization.coach.getProfile.useQuery({ id: coachId });
 
@@ -74,6 +72,10 @@ export function CoachProfile({ coachId }: CoachProfileProps) {
 
 	const { coach, sessions, athletes, evaluations, stats } = data;
 
+	const age = coach.birthDate
+		? differenceInYears(new Date(), new Date(coach.birthDate))
+		: null;
+
 	// Separate upcoming and past sessions
 	const now = new Date();
 	const upcomingSessions = sessions.filter(
@@ -88,11 +90,6 @@ export function CoachProfile({ coachId }: CoachProfileProps) {
 			{/* Header */}
 			<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 				<div className="flex items-start gap-4">
-					<Button asChild size="icon" variant="ghost">
-						<Link href="/dashboard/organization/coaches">
-							<ArrowLeftIcon className="size-5" />
-						</Link>
-					</Button>
 					<UserAvatar
 						className="size-16"
 						name={coach.user?.name ?? ""}
@@ -103,35 +100,45 @@ export function CoachProfile({ coachId }: CoachProfileProps) {
 							<h1 className="font-bold text-2xl">
 								{coach.user?.name ?? "Unknown"}
 							</h1>
-							<Badge className={cn("border-none", statusColors[coach.status])}>
-								{capitalize(coach.status.replace("_", " "))}
-							</Badge>
+							<StatusBadge status={coach.status} />
 						</div>
 						<div className="mt-1 flex flex-wrap items-center gap-4 text-muted-foreground text-sm">
+							{coach.sport && (
+								<div className="flex items-center gap-1">
+									<MedalIcon className="size-4" />
+									<span>{coach.sport}</span>
+								</div>
+							)}
 							<div className="flex items-center gap-1">
 								<ClipboardListIcon className="size-4" />
 								<span>{coach.specialty}</span>
 							</div>
+							{age && (
+								<div className="flex items-center gap-1">
+									<UserIcon className="size-4" />
+									<span>
+										{age} {t("yearsOld")}
+									</span>
+								</div>
+							)}
+							{coach.phone && (
+								<WhatsAppLink
+									phone={coach.phone}
+									variant="whatsapp"
+									className="text-sm"
+									iconSize="size-3.5"
+								/>
+							)}
 							{coach.user?.email && (
-								<span className="text-muted-foreground">
-									{coach.user.email}
-								</span>
+								<MailtoLink
+									email={coach.user.email}
+									className="text-sm"
+									iconSize="size-3.5"
+								/>
 							)}
 						</div>
-						{coach.bio && (
-							<p className="mt-2 max-w-xl text-muted-foreground text-sm">
-								{coach.bio}
-							</p>
-						)}
 					</div>
 				</div>
-				<Button
-					variant="outline"
-					onClick={() => NiceModal.show(CoachesModal, { coach })}
-				>
-					<EditIcon className="mr-2 size-4" />
-					Edit Profile
-				</Button>
 			</div>
 
 			{/* Stats Overview */}

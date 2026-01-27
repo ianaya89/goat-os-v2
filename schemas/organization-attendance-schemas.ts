@@ -53,6 +53,11 @@ export const deleteAttendanceSchema = z.object({
 	id: z.string().uuid(),
 });
 
+// Get all attendance records for a group's sessions
+export const getGroupAttendanceSchema = z.object({
+	groupId: z.string().uuid(),
+});
+
 // Type exports
 export type GetSessionAttendanceInput = z.infer<
 	typeof getSessionAttendanceSchema

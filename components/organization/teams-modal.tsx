@@ -1,6 +1,7 @@
 "use client";
 
 import NiceModal from "@ebay/nice-modal-react";
+import { CheckIcon, PlusIcon, XIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -413,18 +414,20 @@ export const TeamsModal = NiceModal.create<TeamsModalProps>(({ team }) => {
 						<SheetFooter>
 							<Button
 								type="button"
-								variant="outline"
+								variant="ghost"
 								onClick={() => modal.hide()}
 								disabled={isPending}
 							>
+								<XIcon className="size-4" />
 								Cancelar
 							</Button>
-							<Button type="submit" disabled={isPending}>
-								{isPending
-									? "Guardando..."
-									: isEditing
-										? "Guardar cambios"
-										: "Crear equipo"}
+							<Button type="submit" disabled={isPending} loading={isPending}>
+								{isEditing ? (
+									<CheckIcon className="size-4" />
+								) : (
+									<PlusIcon className="size-4" />
+								)}
+								{isEditing ? "Guardar cambios" : "Crear equipo"}
 							</Button>
 						</SheetFooter>
 					</form>

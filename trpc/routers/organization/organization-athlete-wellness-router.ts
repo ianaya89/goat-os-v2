@@ -9,9 +9,11 @@ import { logger } from "@/lib/logger";
 import {
 	createWellnessSurveyForAthleteSchema,
 	createWellnessSurveySchema,
+	deleteWellnessSurveySchema,
 	getTodayWellnessSchema,
 	getWellnessStatsSchema,
 	listWellnessSurveysSchema,
+	updateWellnessSurveySchema,
 } from "@/schemas/organization-athlete-wellness-schemas";
 import { createTRPCRouter, protectedOrganizationProcedure } from "@/trpc/init";
 
@@ -332,5 +334,115 @@ export const organizationAthleteWellnessRouter = createTRPCRouter({
 			);
 
 			return survey;
+		}),
+
+	// Update wellness survey (admin/coach)
+	updateForAthlete: protectedOrganizationProcedure
+		.input(updateWellnessSurveySchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify athlete belongs to organization
+			const athlete = await db.query.athleteTable.findFirst({
+				where: and(
+					eq(athleteTable.id, input.athleteId),
+					eq(athleteTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!athlete) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Athlete not found",
+				});
+			}
+
+			// Verify survey exists and belongs to athlete
+			const existing = await db.query.athleteWellnessSurveyTable.findFirst({
+				where: and(
+					eq(athleteWellnessSurveyTable.id, input.id),
+					eq(athleteWellnessSurveyTable.athleteId, input.athleteId),
+				),
+			});
+
+			if (!existing) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Wellness survey not found",
+				});
+			}
+
+			const [updated] = await db
+				.update(athleteWellnessSurveyTable)
+				.set({
+					surveyDate: input.surveyDate ?? existing.surveyDate,
+					sleepHours: input.sleepHours,
+					sleepQuality: input.sleepQuality,
+					fatigue: input.fatigue,
+					muscleSoreness: input.muscleSoreness,
+					mood: input.mood,
+					stressLevel: input.stressLevel,
+					energy: input.energy,
+					notes: input.notes,
+				})
+				.where(eq(athleteWellnessSurveyTable.id, input.id))
+				.returning();
+
+			logger.info(
+				{
+					surveyId: input.id,
+					athleteId: input.athleteId,
+					updatedBy: ctx.user.id,
+				},
+				"Wellness survey updated",
+			);
+
+			return updated;
+		}),
+
+	// Delete wellness survey (admin/coach)
+	deleteForAthlete: protectedOrganizationProcedure
+		.input(deleteWellnessSurveySchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify athlete belongs to organization
+			const athlete = await db.query.athleteTable.findFirst({
+				where: and(
+					eq(athleteTable.id, input.athleteId),
+					eq(athleteTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!athlete) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Athlete not found",
+				});
+			}
+
+			// Verify survey exists and belongs to athlete
+			const existing = await db.query.athleteWellnessSurveyTable.findFirst({
+				where: and(
+					eq(athleteWellnessSurveyTable.id, input.id),
+					eq(athleteWellnessSurveyTable.athleteId, input.athleteId),
+				),
+			});
+
+			if (!existing) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Wellness survey not found",
+				});
+			}
+
+			await db
+				.delete(athleteWellnessSurveyTable)
+				.where(eq(athleteWellnessSurveyTable.id, input.id));
+
+			logger.info(
+				{
+					surveyId: input.id,
+					athleteId: input.athleteId,
+					deletedBy: ctx.user.id,
+				},
+				"Wellness survey deleted",
+			);
 		}),
 });

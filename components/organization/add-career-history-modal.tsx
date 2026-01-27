@@ -1,22 +1,20 @@
 "use client";
 
-import NiceModal, { useModal } from "@ebay/nice-modal-react";
+import NiceModal from "@ebay/nice-modal-react";
 import { format } from "date-fns";
-import {
-	BriefcaseIcon,
-	CalendarIcon,
-	FlagIcon,
-	Loader2Icon,
-	MapPinIcon,
-	TrophyIcon,
-	UserIcon,
-} from "lucide-react";
-import { useForm } from "react-hook-form";
+import { BriefcaseIcon, CalendarIcon, FlagIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { z } from "zod/v4";
+import {
+	ProfileEditGrid,
+	ProfileEditSection,
+	ProfileEditSheet,
+} from "@/components/athlete/profile-edit-sheet";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { Field } from "@/components/ui/field";
 import {
-	Form,
 	FormControl,
 	FormDescription,
 	FormField,
@@ -30,415 +28,390 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { Separator } from "@/components/ui/separator";
-import {
-	Sheet,
-	SheetContent,
-	SheetFooter,
-	SheetHeader,
-	SheetTitle,
-} from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
+import { useZodForm } from "@/hooks/use-zod-form";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
-interface FormValues {
-	clubName: string;
-	startDate: Date | undefined;
-	endDate: Date | undefined;
-	position: string;
-	achievements: string;
-	wasNationalTeam: boolean;
-	nationalTeamLevel: string;
-	notes: string;
-}
+const careerHistorySchema = z.object({
+	clubName: z.string().trim().min(1, "Required").max(200),
+	startDate: z.date().optional().nullable(),
+	endDate: z.date().optional().nullable(),
+	position: z.string().trim().max(100).optional(),
+	achievements: z.string().trim().max(2000).optional(),
+	wasNationalTeam: z.boolean(),
+	nationalTeamLevel: z.string().trim().max(50).optional(),
+	notes: z.string().trim().max(1000).optional(),
+});
+
+type CareerHistoryFormData = z.infer<typeof careerHistorySchema>;
 
 interface AddCareerHistoryModalProps {
 	athleteId: string;
+	initialValues?: {
+		id: string;
+		clubName: string;
+		startDate: Date | string | null;
+		endDate: Date | string | null;
+		position: string | null;
+		achievements: string | null;
+		wasNationalTeam: boolean;
+		nationalTeamLevel: string | null;
+		notes: string | null;
+	};
 }
 
 export const AddCareerHistoryModal =
-	NiceModal.create<AddCareerHistoryModalProps>(({ athleteId }) => {
-		const modal = useModal();
-		const utils = trpc.useUtils();
+	NiceModal.create<AddCareerHistoryModalProps>(
+		({ athleteId, initialValues }) => {
+			const t = useTranslations("athletes");
+			const modal = useEnhancedModal();
+			const utils = trpc.useUtils();
+			const isEditing = !!initialValues;
 
-		const form = useForm<FormValues>({
-			defaultValues: {
-				clubName: "",
-				startDate: undefined,
-				endDate: undefined,
-				position: "",
-				achievements: "",
-				wasNationalTeam: false,
-				nationalTeamLevel: "",
-				notes: "",
-			},
-		});
-
-		const wasNationalTeam = form.watch("wasNationalTeam");
-
-		const createMutation =
-			trpc.organization.athlete.createCareerHistory.useMutation({
-				onSuccess: () => {
-					toast.success("Career history added successfully");
-					utils.organization.athlete.getProfile.invalidate({ id: athleteId });
-					modal.hide();
-				},
-				onError: (error) => {
-					toast.error(error.message);
+			const form = useZodForm({
+				schema: careerHistorySchema,
+				defaultValues: {
+					clubName: initialValues?.clubName ?? "",
+					startDate: initialValues?.startDate
+						? new Date(initialValues.startDate)
+						: null,
+					endDate: initialValues?.endDate
+						? new Date(initialValues.endDate)
+						: null,
+					position: initialValues?.position ?? "",
+					achievements: initialValues?.achievements ?? "",
+					wasNationalTeam: initialValues?.wasNationalTeam ?? false,
+					nationalTeamLevel: initialValues?.nationalTeamLevel ?? "",
+					notes: initialValues?.notes ?? "",
 				},
 			});
 
-		const onSubmit = (values: FormValues) => {
-			if (!values.clubName.trim()) {
-				toast.error("Please enter a team name");
-				return;
-			}
+			const wasNationalTeam = form.watch("wasNationalTeam");
 
-			createMutation.mutate({
-				athleteId,
-				clubName: values.clubName,
-				startDate: values.startDate,
-				endDate: values.endDate,
-				position: values.position || undefined,
-				achievements: values.achievements || undefined,
-				wasNationalTeam: values.wasNationalTeam,
-				nationalTeamLevel: values.wasNationalTeam
-					? values.nationalTeamLevel || undefined
-					: undefined,
-				notes: values.notes || undefined,
+			const handleTabChange = (value: string) => {
+				form.setValue("wasNationalTeam", value === "national");
+				if (!isEditing) {
+					form.setValue("clubName", "");
+					form.setValue("nationalTeamLevel", "");
+				}
+			};
+
+			const createMutation =
+				trpc.organization.athlete.createCareerHistory.useMutation({
+					onSuccess: () => {
+						toast.success(t("career.recordSuccess"));
+						utils.organization.athlete.getProfile.invalidate({
+							id: athleteId,
+						});
+						modal.handleClose();
+					},
+					onError: (error) => {
+						toast.error(error.message);
+					},
+				});
+
+			const updateMutation =
+				trpc.organization.athlete.updateCareerHistory.useMutation({
+					onSuccess: () => {
+						toast.success(t("career.updateSuccess"));
+						utils.organization.athlete.getProfile.invalidate({
+							id: athleteId,
+						});
+						modal.handleClose();
+					},
+					onError: (error) => {
+						toast.error(error.message);
+					},
+				});
+
+			const onSubmit = form.handleSubmit((data: CareerHistoryFormData) => {
+				const payload = {
+					clubName: data.clubName,
+					startDate: data.startDate ?? undefined,
+					endDate: data.endDate ?? undefined,
+					position: data.position || undefined,
+					achievements: data.achievements || undefined,
+					wasNationalTeam: data.wasNationalTeam,
+					nationalTeamLevel: data.wasNationalTeam
+						? data.nationalTeamLevel || undefined
+						: undefined,
+					notes: data.notes || undefined,
+				};
+
+				if (isEditing && initialValues) {
+					updateMutation.mutate({
+						id: initialValues.id,
+						...payload,
+					});
+				} else {
+					createMutation.mutate({
+						athleteId,
+						...payload,
+					});
+				}
 			});
-		};
 
-		const handleTabChange = (value: string) => {
-			form.setValue("wasNationalTeam", value === "national");
-			form.setValue("clubName", "");
-			form.setValue("nationalTeamLevel", "");
-		};
+			const isPending = createMutation.isPending || updateMutation.isPending;
 
-		return (
-			<Sheet
-				open={modal.visible}
-				onOpenChange={(open) => {
-					if (!open) modal.hide();
-				}}
-			>
-				<SheetContent className="sm:max-w-lg p-0 flex flex-col">
-					{/* Header */}
-					<div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-6 pt-6 pb-4">
-						<SheetHeader>
-							<SheetTitle className="flex items-center gap-2 text-xl">
-								<div className="flex items-center justify-center size-10 rounded-full bg-primary/10">
-									<BriefcaseIcon className="size-5 text-primary" />
-								</div>
-								Add Career History
-							</SheetTitle>
-						</SheetHeader>
-					</div>
-
-					<Form {...form}>
-						<form
-							onSubmit={form.handleSubmit(onSubmit)}
-							className="flex-1 flex flex-col overflow-hidden"
+			return (
+				<ProfileEditSheet
+					open={modal.visible}
+					onClose={modal.handleClose}
+					title={isEditing ? t("career.editEntry") : t("career.addEntry")}
+					subtitle={t("career.subtitle")}
+					icon={<BriefcaseIcon className="size-5" />}
+					accentColor="slate"
+					form={form}
+					onSubmit={onSubmit}
+					isPending={isPending}
+					maxWidth="md"
+					onAnimationEndCapture={modal.handleAnimationEndCapture}
+				>
+					<div className="space-y-6">
+						{/* Type Selector */}
+						<Tabs
+							defaultValue={wasNationalTeam ? "national" : "club"}
+							onValueChange={handleTabChange}
 						>
-							<div className="flex-1 overflow-y-auto px-6 py-4">
-								{/* Type Selector */}
-								<Tabs
-									defaultValue={wasNationalTeam ? "national" : "club"}
-									onValueChange={handleTabChange}
-									className="mb-6"
-								>
-									<TabsList className="grid w-full grid-cols-2">
-										<TabsTrigger value="club" className="gap-2">
-											<BriefcaseIcon className="size-4" />
-											Club / Team
-										</TabsTrigger>
-										<TabsTrigger value="national" className="gap-2">
-											<FlagIcon className="size-4" />
-											National Team
-										</TabsTrigger>
-									</TabsList>
+							<TabsList className="grid w-full grid-cols-2">
+								<TabsTrigger value="club" className="gap-2">
+									<BriefcaseIcon className="size-4" />
+									{t("career.clubsTeams")}
+								</TabsTrigger>
+								<TabsTrigger value="national" className="gap-2">
+									<FlagIcon className="size-4" />
+									{t("career.nationalTeamSelections")}
+								</TabsTrigger>
+							</TabsList>
 
-									<TabsContent value="club" className="mt-4 space-y-4">
-										<FormField
-											control={form.control}
-											name="clubName"
-											render={({ field }) => (
-												<FormItem>
-													<FormLabel className="flex items-center gap-2">
-														<BriefcaseIcon className="size-4 text-muted-foreground" />
-														Club / Team Name
-													</FormLabel>
-													<FormControl>
-														<Input
-															placeholder="River Plate, Barcelona FC, LA Lakers..."
-															className="h-11"
-															{...field}
-														/>
-													</FormControl>
-													<FormMessage />
-												</FormItem>
-											)}
-										/>
-									</TabsContent>
-
-									<TabsContent value="national" className="mt-4 space-y-4">
-										<FormField
-											control={form.control}
-											name="clubName"
-											render={({ field }) => (
-												<FormItem>
-													<FormLabel className="flex items-center gap-2">
-														<FlagIcon className="size-4 text-muted-foreground" />
-														National Team
-													</FormLabel>
-													<FormControl>
-														<Input
-															placeholder="Argentina, Brazil, USA..."
-															className="h-11"
-															{...field}
-														/>
-													</FormControl>
-													<FormMessage />
-												</FormItem>
-											)}
-										/>
-										<FormField
-											control={form.control}
-											name="nationalTeamLevel"
-											render={({ field }) => (
-												<FormItem>
-													<FormLabel className="flex items-center gap-2">
-														<UserIcon className="size-4 text-muted-foreground" />
-														Category / Level
-													</FormLabel>
-													<FormControl>
-														<Input
-															placeholder="U17, U20, Senior, Olympic..."
-															className="h-11"
-															{...field}
-														/>
-													</FormControl>
-													<FormDescription>
-														Age category or team level
-													</FormDescription>
-													<FormMessage />
-												</FormItem>
-											)}
-										/>
-									</TabsContent>
-								</Tabs>
-
-								<Separator className="my-4" />
-
-								{/* Period */}
-								<div className="space-y-4">
-									<h3 className="text-sm font-medium flex items-center gap-2">
-										<CalendarIcon className="size-4 text-muted-foreground" />
-										Period
-									</h3>
-									<div className="grid grid-cols-2 gap-4">
-										<FormField
-											control={form.control}
-											name="startDate"
-											render={({ field }) => (
-												<FormItem className="flex flex-col">
-													<FormLabel className="text-muted-foreground text-xs">
-														Start Date
-													</FormLabel>
-													<Popover>
-														<PopoverTrigger asChild>
-															<FormControl>
-																<Button
-																	variant="outline"
-																	className={cn(
-																		"h-11 w-full pl-3 text-left font-normal",
-																		!field.value && "text-muted-foreground",
-																	)}
-																>
-																	{field.value ? (
-																		format(field.value, "MMM yyyy")
-																	) : (
-																		<span>Select...</span>
-																	)}
-																	<CalendarIcon className="ml-auto size-4 opacity-50" />
-																</Button>
-															</FormControl>
-														</PopoverTrigger>
-														<PopoverContent
-															className="w-auto p-0"
-															align="start"
-														>
-															<Calendar
-																mode="single"
-																selected={field.value}
-																onSelect={field.onChange}
-																disabled={(date) =>
-																	date > new Date() ||
-																	date < new Date("1950-01-01")
-																}
-																initialFocus
-															/>
-														</PopoverContent>
-													</Popover>
-													<FormMessage />
-												</FormItem>
-											)}
-										/>
-
-										<FormField
-											control={form.control}
-											name="endDate"
-											render={({ field }) => (
-												<FormItem className="flex flex-col">
-													<FormLabel className="text-muted-foreground text-xs">
-														End Date
-													</FormLabel>
-													<Popover>
-														<PopoverTrigger asChild>
-															<FormControl>
-																<Button
-																	variant="outline"
-																	className={cn(
-																		"h-11 w-full pl-3 text-left font-normal",
-																		!field.value && "text-muted-foreground",
-																	)}
-																>
-																	{field.value ? (
-																		format(field.value, "MMM yyyy")
-																	) : (
-																		<span>Present</span>
-																	)}
-																	<CalendarIcon className="ml-auto size-4 opacity-50" />
-																</Button>
-															</FormControl>
-														</PopoverTrigger>
-														<PopoverContent
-															className="w-auto p-0"
-															align="start"
-														>
-															<Calendar
-																mode="single"
-																selected={field.value}
-																onSelect={field.onChange}
-																disabled={(date) =>
-																	date > new Date() ||
-																	date < new Date("1950-01-01")
-																}
-																initialFocus
-															/>
-														</PopoverContent>
-													</Popover>
-													<FormDescription className="text-xs">
-														Leave empty if current
-													</FormDescription>
-													<FormMessage />
-												</FormItem>
-											)}
-										/>
-									</div>
-								</div>
-
-								<Separator className="my-4" />
-
-								{/* Details */}
-								<div className="space-y-4">
-									<h3 className="text-sm font-medium flex items-center gap-2">
-										<MapPinIcon className="size-4 text-muted-foreground" />
-										Details
-									</h3>
-
-									<FormField
-										control={form.control}
-										name="position"
-										render={({ field }) => (
-											<FormItem>
-												<FormLabel className="text-muted-foreground text-xs">
-													Position / Role
-												</FormLabel>
+							<TabsContent value="club" className="mt-4">
+								<FormField
+									control={form.control}
+									name="clubName"
+									render={({ field }) => (
+										<FormItem asChild>
+											<Field>
+												<FormLabel>{t("career.clubName")}</FormLabel>
 												<FormControl>
 													<Input
-														placeholder="Midfielder, Forward, Point Guard..."
-														className="h-11"
+														placeholder={t("career.clubNamePlaceholder")}
 														{...field}
 													/>
 												</FormControl>
 												<FormMessage />
-											</FormItem>
-										)}
-									/>
+											</Field>
+										</FormItem>
+									)}
+								/>
+							</TabsContent>
 
-									<FormField
-										control={form.control}
-										name="achievements"
-										render={({ field }) => (
-											<FormItem>
-												<FormLabel className="flex items-center gap-2 text-muted-foreground text-xs">
-													<TrophyIcon className="size-3.5" />
-													Achievements
-												</FormLabel>
+							<TabsContent value="national" className="mt-4 space-y-4">
+								<FormField
+									control={form.control}
+									name="clubName"
+									render={({ field }) => (
+										<FormItem asChild>
+											<Field>
+												<FormLabel>{t("career.nationalTeam")}</FormLabel>
 												<FormControl>
-													<Textarea
-														placeholder="League champion 2024, Top scorer, MVP, Best defender..."
-														className="resize-none min-h-[80px]"
+													<Input
+														placeholder={t("career.nationalTeamPlaceholder")}
 														{...field}
 													/>
 												</FormControl>
 												<FormMessage />
-											</FormItem>
-										)}
-									/>
-
-									<FormField
-										control={form.control}
-										name="notes"
-										render={({ field }) => (
-											<FormItem>
-												<FormLabel className="text-muted-foreground text-xs">
-													Additional Notes
-												</FormLabel>
+											</Field>
+										</FormItem>
+									)}
+								/>
+								<FormField
+									control={form.control}
+									name="nationalTeamLevel"
+									render={({ field }) => (
+										<FormItem asChild>
+											<Field>
+												<FormLabel>{t("career.categoryLevel")}</FormLabel>
 												<FormControl>
-													<Textarea
-														placeholder="Any additional information..."
-														className="resize-none min-h-[60px]"
+													<Input
+														placeholder={t("career.categoryLevelPlaceholder")}
 														{...field}
+														value={field.value ?? ""}
 													/>
 												</FormControl>
+												<FormDescription>
+													{t("career.categoryLevelDesc")}
+												</FormDescription>
 												<FormMessage />
-											</FormItem>
-										)}
-									/>
-								</div>
-							</div>
+											</Field>
+										</FormItem>
+									)}
+								/>
+							</TabsContent>
+						</Tabs>
 
-							{/* Footer */}
-							<SheetFooter className="px-6 py-4 border-t bg-muted/30">
-								<div className="flex gap-3 w-full">
-									<Button
-										type="button"
-										variant="outline"
-										className="flex-1"
-										onClick={() => modal.hide()}
-										disabled={createMutation.isPending}
-									>
-										Cancel
-									</Button>
-									<Button
-										type="submit"
-										className="flex-1"
-										disabled={createMutation.isPending}
-									>
-										{createMutation.isPending && (
-											<Loader2Icon className="mr-2 size-4 animate-spin" />
-										)}
-										{wasNationalTeam ? "Add Selection" : "Add Club"}
-									</Button>
-								</div>
-							</SheetFooter>
-						</form>
-					</Form>
-				</SheetContent>
-			</Sheet>
-		);
-	});
+						{/* Period */}
+						<ProfileEditSection
+							title={t("career.period")}
+							description={t("career.endDateHint")}
+						>
+							<ProfileEditGrid cols={2}>
+								<FormField
+									control={form.control}
+									name="startDate"
+									render={({ field }) => (
+										<FormItem className="flex flex-col">
+											<FormLabel>{t("career.startDate")}</FormLabel>
+											<Popover>
+												<PopoverTrigger asChild>
+													<FormControl>
+														<Button
+															variant="outline"
+															className={cn(
+																"w-full pl-3 text-left font-normal",
+																!field.value && "text-muted-foreground",
+															)}
+														>
+															{field.value ? (
+																format(field.value, "MMM yyyy")
+															) : (
+																<span>{t("career.selectDate")}</span>
+															)}
+															<CalendarIcon className="ml-auto size-4 opacity-50" />
+														</Button>
+													</FormControl>
+												</PopoverTrigger>
+												<PopoverContent className="w-auto p-0" align="start">
+													<Calendar
+														mode="single"
+														selected={field.value ?? undefined}
+														onSelect={field.onChange}
+														disabled={(date) =>
+															date > new Date() || date < new Date("1950-01-01")
+														}
+														initialFocus
+													/>
+												</PopoverContent>
+											</Popover>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+
+								<FormField
+									control={form.control}
+									name="endDate"
+									render={({ field }) => (
+										<FormItem className="flex flex-col">
+											<FormLabel>{t("career.endDate")}</FormLabel>
+											<Popover>
+												<PopoverTrigger asChild>
+													<FormControl>
+														<Button
+															variant="outline"
+															className={cn(
+																"w-full pl-3 text-left font-normal",
+																!field.value && "text-muted-foreground",
+															)}
+														>
+															{field.value ? (
+																format(field.value, "MMM yyyy")
+															) : (
+																<span>{t("career.present")}</span>
+															)}
+															<CalendarIcon className="ml-auto size-4 opacity-50" />
+														</Button>
+													</FormControl>
+												</PopoverTrigger>
+												<PopoverContent className="w-auto p-0" align="start">
+													<Calendar
+														mode="single"
+														selected={field.value ?? undefined}
+														onSelect={field.onChange}
+														disabled={(date) =>
+															date > new Date() || date < new Date("1950-01-01")
+														}
+														initialFocus
+													/>
+												</PopoverContent>
+											</Popover>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+							</ProfileEditGrid>
+						</ProfileEditSection>
+
+						{/* Details */}
+						<ProfileEditSection title={t("career.details")}>
+							<FormField
+								control={form.control}
+								name="position"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("career.position")}</FormLabel>
+											<FormControl>
+												<Input
+													placeholder={t("career.positionPlaceholder")}
+													{...field}
+													value={field.value ?? ""}
+												/>
+											</FormControl>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
+
+							<FormField
+								control={form.control}
+								name="achievements"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("career.achievements")}</FormLabel>
+											<FormControl>
+												<Textarea
+													placeholder={t("career.achievementsPlaceholder")}
+													className="resize-none"
+													rows={3}
+													{...field}
+													value={field.value ?? ""}
+												/>
+											</FormControl>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
+
+							<FormField
+								control={form.control}
+								name="notes"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("career.notes")}</FormLabel>
+											<FormControl>
+												<Textarea
+													placeholder={t("career.notesPlaceholder")}
+													className="resize-none"
+													rows={2}
+													{...field}
+													value={field.value ?? ""}
+												/>
+											</FormControl>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
+						</ProfileEditSection>
+					</div>
+				</ProfileEditSheet>
+			);
+		},
+	);

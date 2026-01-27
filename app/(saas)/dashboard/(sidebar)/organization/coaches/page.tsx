@@ -1,3 +1,4 @@
+import { ClipboardListIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -41,7 +42,12 @@ export default async function CoachesPage(): Promise<React.JSX.Element> {
 				</PagePrimaryBar>
 			</PageHeader>
 			<PageBody>
-				<PageContent title={t("title")}>
+				<PageContent
+					title={t("title")}
+					leftAction={
+						<ClipboardListIcon className="size-5 text-muted-foreground" />
+					}
+				>
 					<CoachesTable />
 				</PageContent>
 			</PageBody>

@@ -1,16 +1,18 @@
 "use client";
 
-import NiceModal, { useModal } from "@ebay/nice-modal-react";
-import { format } from "date-fns";
-import { ActivityIcon, CalendarIcon, Loader2Icon } from "lucide-react";
-import { useForm } from "react-hook-form";
+import NiceModal from "@ebay/nice-modal-react";
+import { ActivityIcon, CalendarIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
+import { z } from "zod/v4";
 import {
-	Form,
+	ProfileEditGrid,
+	ProfileEditSection,
+	ProfileEditSheet,
+} from "@/components/athlete/profile-edit-sheet";
+import { Field } from "@/components/ui/field";
+import {
 	FormControl,
-	FormDescription,
 	FormField,
 	FormItem,
 	FormLabel,
@@ -18,315 +20,291 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover";
-import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import {
-	Sheet,
-	SheetContent,
-	SheetDescription,
-	SheetFooter,
-	SheetHeader,
-	SheetTitle,
-} from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
+import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
+import { useZodForm } from "@/hooks/use-zod-form";
 import { FitnessTestType } from "@/lib/db/schema/enums";
-import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
-const fitnessTestOptions = [
-	{ value: FitnessTestType.sprint40m, label: "40m Sprint", unit: "seconds" },
-	{ value: FitnessTestType.sprint60m, label: "60m Sprint", unit: "seconds" },
-	{ value: FitnessTestType.sprint100m, label: "100m Sprint", unit: "seconds" },
-	{ value: FitnessTestType.verticalJump, label: "Vertical Jump", unit: "cm" },
-	{
-		value: FitnessTestType.standingLongJump,
-		label: "Standing Long Jump",
-		unit: "cm",
-	},
-	{ value: FitnessTestType.yoYoTest, label: "Yo-Yo Test", unit: "level" },
-	{ value: FitnessTestType.beepTest, label: "Beep Test", unit: "level" },
-	{
-		value: FitnessTestType.cooperTest,
-		label: "Cooper Test (12min)",
-		unit: "meters",
-	},
-	{
-		value: FitnessTestType.agilityTTest,
-		label: "Agility T-Test",
-		unit: "seconds",
-	},
-	{
-		value: FitnessTestType.illinoisAgility,
-		label: "Illinois Agility",
-		unit: "seconds",
-	},
-	{ value: FitnessTestType.maxSpeed, label: "Max Speed", unit: "km/h" },
-	{ value: FitnessTestType.reactionTime, label: "Reaction Time", unit: "ms" },
-	{
-		value: FitnessTestType.flexibility,
-		label: "Flexibility (Sit & Reach)",
-		unit: "cm",
-	},
-	{ value: FitnessTestType.plankHold, label: "Plank Hold", unit: "seconds" },
-	{ value: FitnessTestType.pushUps, label: "Push Ups (1 min)", unit: "reps" },
-	{ value: FitnessTestType.sitUps, label: "Sit Ups (1 min)", unit: "reps" },
-	{ value: FitnessTestType.other, label: "Other", unit: "custom" },
-];
+const fitnessTestUnits: Record<string, string> = {
+	[FitnessTestType.sprint40m]: "seconds",
+	[FitnessTestType.sprint60m]: "seconds",
+	[FitnessTestType.sprint100m]: "seconds",
+	[FitnessTestType.verticalJump]: "cm",
+	[FitnessTestType.standingLongJump]: "cm",
+	[FitnessTestType.yoYoTest]: "level",
+	[FitnessTestType.beepTest]: "level",
+	[FitnessTestType.cooperTest]: "meters",
+	[FitnessTestType.agilityTTest]: "seconds",
+	[FitnessTestType.illinoisAgility]: "seconds",
+	[FitnessTestType.maxSpeed]: "km/h",
+	[FitnessTestType.reactionTime]: "ms",
+	[FitnessTestType.flexibility]: "cm",
+	[FitnessTestType.plankHold]: "seconds",
+	[FitnessTestType.pushUps]: "reps",
+	[FitnessTestType.sitUps]: "reps",
+	[FitnessTestType.other]: "custom",
+};
 
-interface FormValues {
-	testType: FitnessTestType;
-	testDate: Date;
-	result: string;
-	unit: string;
-	notes: string;
-}
+const fitnessTestSchema = z.object({
+	testType: z.string().min(1),
+	testDate: z.string().optional(),
+	result: z.string().min(1),
+	unit: z.string().min(1),
+	notes: z.string().max(1000).optional(),
+});
+
+type FitnessTestFormData = z.infer<typeof fitnessTestSchema>;
 
 interface AddFitnessTestModalProps {
 	athleteId: string;
+	initialValues?: {
+		id: string;
+		testType: string;
+		testDate: Date | string | null;
+		result: number;
+		unit: string;
+		notes: string | null;
+	};
 }
 
 export const AddFitnessTestModal = NiceModal.create<AddFitnessTestModalProps>(
-	({ athleteId }) => {
-		const modal = useModal();
+	({ athleteId, initialValues }) => {
+		const t = useTranslations("athletes.fitness");
+		const modal = useEnhancedModal();
 		const utils = trpc.useUtils();
+		const isEditing = !!initialValues;
 
-		const form = useForm<FormValues>({
+		const form = useZodForm({
+			schema: fitnessTestSchema,
 			defaultValues: {
-				testType: FitnessTestType.sprint40m,
-				testDate: new Date(),
-				result: "",
-				unit: "seconds",
-				notes: "",
+				testType: initialValues?.testType ?? FitnessTestType.sprint40m,
+				testDate: initialValues?.testDate
+					? new Date(initialValues.testDate).toISOString().split("T")[0]
+					: "",
+				result: initialValues?.result?.toString() ?? "",
+				unit:
+					initialValues?.unit ??
+					fitnessTestUnits[FitnessTestType.sprint40m] ??
+					"seconds",
+				notes: initialValues?.notes ?? "",
 			},
 		});
 
 		const selectedTestType = form.watch("testType");
 
-		// Update unit when test type changes
-		const handleTestTypeChange = (value: FitnessTestType) => {
+		const handleTestTypeChange = (value: string) => {
 			form.setValue("testType", value);
-			const option = fitnessTestOptions.find((o) => o.value === value);
-			if (option && option.unit !== "custom") {
-				form.setValue("unit", option.unit);
+			const unit = fitnessTestUnits[value];
+			if (unit && unit !== "custom") {
+				form.setValue("unit", unit);
 			}
 		};
 
 		const createMutation =
 			trpc.organization.athlete.createFitnessTest.useMutation({
 				onSuccess: () => {
-					toast.success("Fitness test result has been saved successfully.");
-					utils.organization.athlete.getProfile.invalidate({ id: athleteId });
-					modal.hide();
+					toast.success(t("recordSuccess"));
+					utils.organization.athlete.getProfile.invalidate({
+						id: athleteId,
+					});
+					modal.handleClose();
 				},
 				onError: (error) => {
 					toast.error(error.message);
 				},
 			});
 
-		const onSubmit = (values: FormValues) => {
-			const result = parseInt(values.result, 10);
+		const updateMutation =
+			trpc.organization.athlete.updateFitnessTest.useMutation({
+				onSuccess: () => {
+					toast.success(t("updateSuccess"));
+					utils.organization.athlete.getProfile.invalidate({
+						id: athleteId,
+					});
+					modal.handleClose();
+				},
+				onError: (error) => {
+					toast.error(error.message);
+				},
+			});
+
+		const onSubmit = form.handleSubmit((data: FitnessTestFormData) => {
+			const result = Number.parseInt(data.result, 10);
 			if (Number.isNaN(result)) {
-				toast.error("Please enter a valid result number");
+				toast.error(t("invalidResult"));
 				return;
 			}
 
-			createMutation.mutate({
-				athleteId,
-				testType: values.testType,
-				testDate: values.testDate,
-				result,
-				unit: values.unit,
-				notes: values.notes || undefined,
-			});
-		};
+			const testDate = data.testDate ? new Date(data.testDate) : undefined;
+
+			if (isEditing && initialValues) {
+				updateMutation.mutate({
+					id: initialValues.id,
+					athleteId,
+					testType: data.testType as FitnessTestType,
+					testDate,
+					result,
+					unit: data.unit,
+					notes: data.notes || undefined,
+				});
+			} else {
+				createMutation.mutate({
+					athleteId,
+					testType: data.testType as FitnessTestType,
+					testDate,
+					result,
+					unit: data.unit,
+					notes: data.notes || undefined,
+				});
+			}
+		});
+
+		const isPending = createMutation.isPending || updateMutation.isPending;
 
 		return (
-			<Sheet
+			<ProfileEditSheet
 				open={modal.visible}
-				onOpenChange={(open) => {
-					if (!open) modal.hide();
-				}}
+				onClose={modal.handleClose}
+				title={isEditing ? t("editTest") : t("addTest")}
+				subtitle={t("subtitle")}
+				icon={<ActivityIcon className="size-5" />}
+				accentColor="slate"
+				form={form}
+				onSubmit={onSubmit}
+				isPending={isPending}
+				maxWidth="md"
+				onAnimationEndCapture={modal.handleAnimationEndCapture}
 			>
-				<SheetContent className="overflow-y-auto sm:max-w-lg">
-					<SheetHeader>
-						<SheetTitle className="flex items-center gap-2">
-							<ActivityIcon className="size-5" />
-							Add Fitness Test
-						</SheetTitle>
-						<SheetDescription>
-							Record a fitness test result for this athlete.
-						</SheetDescription>
-					</SheetHeader>
-
-					<Form {...form}>
-						<form
-							onSubmit={form.handleSubmit(onSubmit)}
-							className="mt-6 space-y-4"
-						>
-							<FormField
-								control={form.control}
-								name="testType"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Test Type</FormLabel>
+				<div className="space-y-6">
+					<ProfileEditSection title={t("testInfo")}>
+						<FormField
+							control={form.control}
+							name="testType"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel>{t("testType")}</FormLabel>
 										<Select
 											value={field.value}
 											onValueChange={handleTestTypeChange}
 										>
 											<FormControl>
-												<SelectTrigger>
-													<SelectValue placeholder="Select a test type" />
+												<SelectTrigger className="w-full">
+													<SelectValue placeholder={t("selectTestType")} />
 												</SelectTrigger>
 											</FormControl>
 											<SelectContent>
-												{fitnessTestOptions.map((option) => (
-													<SelectItem key={option.value} value={option.value}>
-														{option.label}
+												{Object.values(FitnessTestType).map((type) => (
+													<SelectItem key={type} value={type}>
+														{t(`testTypes.${type}`)}
 													</SelectItem>
 												))}
 											</SelectContent>
 										</Select>
 										<FormMessage />
-									</FormItem>
-								)}
-							/>
+									</Field>
+								</FormItem>
+							)}
+						/>
 
+						<FormField
+							control={form.control}
+							name="testDate"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel className="flex items-center gap-1.5">
+											<CalendarIcon className="size-3.5" />
+											{t("testDate")}
+										</FormLabel>
+										<FormControl>
+											<Input type="date" {...field} value={field.value ?? ""} />
+										</FormControl>
+										<FormMessage />
+									</Field>
+								</FormItem>
+							)}
+						/>
+					</ProfileEditSection>
+
+					<ProfileEditSection title={t("results")}>
+						<ProfileEditGrid cols={2}>
 							<FormField
 								control={form.control}
-								name="testDate"
+								name="result"
 								render={({ field }) => (
-									<FormItem className="flex flex-col">
-										<FormLabel>Test Date</FormLabel>
-										<Popover>
-											<PopoverTrigger asChild>
-												<FormControl>
-													<Button
-														variant="outline"
-														className={cn(
-															"w-full pl-3 text-left font-normal",
-															!field.value && "text-muted-foreground",
-														)}
-													>
-														{field.value ? (
-															format(field.value, "PPP")
-														) : (
-															<span>Pick a date</span>
-														)}
-														<CalendarIcon className="ml-auto size-4 opacity-50" />
-													</Button>
-												</FormControl>
-											</PopoverTrigger>
-											<PopoverContent className="w-auto p-0" align="start">
-												<Calendar
-													mode="single"
-													selected={field.value}
-													onSelect={field.onChange}
-													disabled={(date) =>
-														date > new Date() || date < new Date("1900-01-01")
-													}
-													initialFocus
-												/>
-											</PopoverContent>
-										</Popover>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-
-							<div className="grid grid-cols-2 gap-4">
-								<FormField
-									control={form.control}
-									name="result"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>Result</FormLabel>
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("result")}</FormLabel>
 											<FormControl>
 												<Input
 													type="number"
-													placeholder="Enter value"
+													placeholder={t("resultPlaceholder")}
 													{...field}
+													value={field.value ?? ""}
 												/>
 											</FormControl>
-											<FormDescription className="text-xs">
-												Numeric result value
-											</FormDescription>
 											<FormMessage />
-										</FormItem>
-									)}
-								/>
-
-								<FormField
-									control={form.control}
-									name="unit"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>Unit</FormLabel>
-											<FormControl>
-												<Input
-													placeholder="seconds, cm, reps..."
-													{...field}
-													disabled={selectedTestType !== FitnessTestType.other}
-												/>
-											</FormControl>
-											<FormDescription className="text-xs">
-												{selectedTestType === FitnessTestType.other
-													? "Enter custom unit"
-													: "Auto-filled"}
-											</FormDescription>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-							</div>
-
-							<FormField
-								control={form.control}
-								name="notes"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Notes</FormLabel>
-										<FormControl>
-											<Textarea
-												placeholder="Additional notes about this test..."
-												className="resize-none"
-												rows={3}
-												{...field}
-											/>
-										</FormControl>
-										<FormMessage />
+										</Field>
 									</FormItem>
 								)}
 							/>
 
-							<SheetFooter className="mt-6">
-								<Button
-									type="button"
-									variant="outline"
-									onClick={() => modal.hide()}
-									disabled={createMutation.isPending}
-								>
-									Cancel
-								</Button>
-								<Button type="submit" disabled={createMutation.isPending}>
-									{createMutation.isPending && (
-										<Loader2Icon className="mr-2 size-4 animate-spin" />
-									)}
-									Save Test Result
-								</Button>
-							</SheetFooter>
-						</form>
-					</Form>
-				</SheetContent>
-			</Sheet>
+							<FormField
+								control={form.control}
+								name="unit"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("unit")}</FormLabel>
+											<FormControl>
+												<Input
+													placeholder={t("unitPlaceholder")}
+													{...field}
+													value={field.value ?? ""}
+													disabled={selectedTestType !== FitnessTestType.other}
+												/>
+											</FormControl>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
+						</ProfileEditGrid>
+					</ProfileEditSection>
+
+					<ProfileEditSection>
+						<FormField
+							control={form.control}
+							name="notes"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel>{t("notes")}</FormLabel>
+										<FormControl>
+											<Textarea
+												placeholder={t("notesPlaceholder")}
+												className="resize-none"
+												rows={3}
+												{...field}
+												value={field.value ?? ""}
+											/>
+										</FormControl>
+										<FormMessage />
+									</Field>
+								</FormItem>
+							)}
+						/>
+					</ProfileEditSection>
+				</div>
+			</ProfileEditSheet>
 		);
 	},
 );

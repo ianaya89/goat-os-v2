@@ -1,6 +1,6 @@
 "use client";
 
-import NiceModal, { useModal } from "@ebay/nice-modal-react";
+import NiceModal from "@ebay/nice-modal-react";
 import { format } from "date-fns";
 import {
 	BatteryIcon,
@@ -8,17 +8,22 @@ import {
 	BrainIcon,
 	CalendarIcon,
 	HeartPulseIcon,
-	Loader2Icon,
 	MoonIcon,
 	SmileIcon,
 	ZapIcon,
 } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { z } from "zod/v4";
+import {
+	ProfileEditGrid,
+	ProfileEditSection,
+	ProfileEditSheet,
+} from "@/components/athlete/profile-edit-sheet";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { Field } from "@/components/ui/field";
 import {
-	Form,
 	FormControl,
 	FormField,
 	FormItem,
@@ -32,34 +37,42 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { Separator } from "@/components/ui/separator";
-import {
-	Sheet,
-	SheetContent,
-	SheetFooter,
-	SheetHeader,
-	SheetTitle,
-} from "@/components/ui/sheet";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
+import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
+import { useZodForm } from "@/hooks/use-zod-form";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
-interface FormValues {
-	surveyDate: Date;
-	sleepHours: string;
-	sleepQuality: number;
-	fatigue: number;
-	muscleSoreness: number;
-	mood: number;
-	stressLevel: number;
-	energy: number;
-	notes: string;
-}
+const wellnessFormSchema = z.object({
+	surveyDate: z.date(),
+	sleepHours: z.string(),
+	sleepQuality: z.number().int().min(1).max(10),
+	fatigue: z.number().int().min(1).max(10),
+	muscleSoreness: z.number().int().min(1).max(10),
+	mood: z.number().int().min(1).max(10),
+	stressLevel: z.number().int().min(1).max(10),
+	energy: z.number().int().min(1).max(10),
+	notes: z.string().optional(),
+});
+
+type WellnessFormData = z.infer<typeof wellnessFormSchema>;
 
 interface AddWellnessModalProps {
 	athleteId: string;
 	athleteName?: string;
+	initialValues?: {
+		id: string;
+		surveyDate: Date | string;
+		sleepHours: number;
+		sleepQuality: number;
+		fatigue: number;
+		muscleSoreness: number;
+		mood: number;
+		stressLevel: number;
+		energy: number;
+		notes: string | null;
+	};
 }
 
 function getScoreColor(value: number, inverse = false): string {
@@ -120,38 +133,61 @@ function MetricSlider({
 }
 
 export const AddWellnessModal = NiceModal.create<AddWellnessModalProps>(
-	({ athleteId, athleteName }) => {
-		const modal = useModal();
+	({ athleteId, initialValues }) => {
+		const t = useTranslations("athletes.wellness");
+		const modal = useEnhancedModal();
 		const utils = trpc.useUtils();
+		const isEditing = !!initialValues;
 
-		const form = useForm<FormValues>({
+		const form = useZodForm({
+			schema: wellnessFormSchema,
 			defaultValues: {
-				surveyDate: new Date(),
-				sleepHours: "8",
-				sleepQuality: 7,
-				fatigue: 3,
-				muscleSoreness: 3,
-				mood: 7,
-				stressLevel: 3,
-				energy: 7,
-				notes: "",
+				surveyDate: initialValues?.surveyDate
+					? new Date(initialValues.surveyDate)
+					: new Date(),
+				sleepHours: initialValues
+					? (initialValues.sleepHours / 60).toFixed(1)
+					: "8",
+				sleepQuality: initialValues?.sleepQuality ?? 7,
+				fatigue: initialValues?.fatigue ?? 3,
+				muscleSoreness: initialValues?.muscleSoreness ?? 3,
+				mood: initialValues?.mood ?? 7,
+				stressLevel: initialValues?.stressLevel ?? 3,
+				energy: initialValues?.energy ?? 7,
+				notes: initialValues?.notes ?? "",
 			},
 		});
 
 		const createMutation =
 			trpc.organization.athleteWellness.createForAthlete.useMutation({
 				onSuccess: () => {
-					toast.success("Wellness survey added successfully");
-					utils.organization.athlete.getProfile.invalidate({ id: athleteId });
-					modal.hide();
+					toast.success(t("recordSuccess"));
+					utils.organization.athlete.getProfile.invalidate({
+						id: athleteId,
+					});
+					modal.handleClose();
 				},
 				onError: (error) => {
 					toast.error(error.message);
 				},
 			});
 
-		const onSubmit = (values: FormValues) => {
-			const sleepHoursNum = parseFloat(values.sleepHours);
+		const updateMutation =
+			trpc.organization.athleteWellness.updateForAthlete.useMutation({
+				onSuccess: () => {
+					toast.success(t("updateSuccess"));
+					utils.organization.athlete.getProfile.invalidate({
+						id: athleteId,
+					});
+					modal.handleClose();
+				},
+				onError: (error) => {
+					toast.error(error.message);
+				},
+			});
+
+		const onSubmit = form.handleSubmit((data: WellnessFormData) => {
+			const sleepHoursNum = Number.parseFloat(data.sleepHours);
 			if (
 				Number.isNaN(sleepHoursNum) ||
 				sleepHoursNum < 0 ||
@@ -161,297 +197,243 @@ export const AddWellnessModal = NiceModal.create<AddWellnessModalProps>(
 				return;
 			}
 
-			createMutation.mutate({
+			const payload = {
 				athleteId,
-				surveyDate: values.surveyDate,
+				surveyDate: data.surveyDate,
 				sleepHours: Math.round(sleepHoursNum * 60),
-				sleepQuality: values.sleepQuality,
-				fatigue: values.fatigue,
-				muscleSoreness: values.muscleSoreness,
-				mood: values.mood,
-				stressLevel: values.stressLevel,
-				energy: values.energy,
-				notes: values.notes || undefined,
-			});
-		};
+				sleepQuality: data.sleepQuality,
+				fatigue: data.fatigue,
+				muscleSoreness: data.muscleSoreness,
+				mood: data.mood,
+				stressLevel: data.stressLevel,
+				energy: data.energy,
+				notes: data.notes || undefined,
+			};
+
+			if (isEditing && initialValues) {
+				updateMutation.mutate({
+					id: initialValues.id,
+					...payload,
+				});
+			} else {
+				createMutation.mutate(payload);
+			}
+		});
+
+		const isPending = createMutation.isPending || updateMutation.isPending;
 
 		return (
-			<Sheet
+			<ProfileEditSheet
 				open={modal.visible}
-				onOpenChange={(open) => {
-					if (!open) modal.hide();
-				}}
+				onClose={modal.handleClose}
+				title={isEditing ? t("editSurvey") : t("addSurvey")}
+				subtitle={t("subtitle")}
+				icon={<HeartPulseIcon className="size-5" />}
+				accentColor="slate"
+				form={form}
+				onSubmit={onSubmit}
+				isPending={isPending}
+				maxWidth="md"
+				onAnimationEndCapture={modal.handleAnimationEndCapture}
 			>
-				<SheetContent className="sm:max-w-lg p-0 flex flex-col">
-					{/* Header */}
-					<div className="bg-gradient-to-br from-red-500/10 via-red-500/5 to-transparent px-6 pt-6 pb-4">
-						<SheetHeader>
-							<SheetTitle className="flex items-center gap-3 text-xl">
-								<div className="flex items-center justify-center size-10 rounded-full bg-red-500/10">
-									<HeartPulseIcon className="size-5 text-red-500" />
-								</div>
-								<div>
-									<span>Add Wellness Survey</span>
-									{athleteName && (
-										<p className="text-sm font-normal text-muted-foreground mt-0.5">
-											for {athleteName}
-										</p>
-									)}
-								</div>
-							</SheetTitle>
-						</SheetHeader>
-					</div>
-
-					<Form {...form}>
-						<form
-							onSubmit={form.handleSubmit(onSubmit)}
-							className="flex-1 flex flex-col overflow-hidden"
-						>
-							<div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
-								{/* Date */}
-								<FormField
-									control={form.control}
-									name="surveyDate"
-									render={({ field }) => (
-										<FormItem className="flex flex-col">
-											<FormLabel className="flex items-center gap-2">
-												<CalendarIcon className="size-4 text-muted-foreground" />
-												Survey Date
-											</FormLabel>
-											<Popover>
-												<PopoverTrigger asChild>
-													<FormControl>
-														<Button
-															variant="outline"
-															className={cn(
-																"h-11 w-full pl-3 text-left font-normal",
-																!field.value && "text-muted-foreground",
-															)}
-														>
-															{field.value ? (
-																format(field.value, "EEEE, MMMM d, yyyy")
-															) : (
-																<span>Select date...</span>
-															)}
-															<CalendarIcon className="ml-auto size-4 opacity-50" />
-														</Button>
-													</FormControl>
-												</PopoverTrigger>
-												<PopoverContent className="w-auto p-0" align="start">
-													<Calendar
-														mode="single"
-														selected={field.value}
-														onSelect={(date) => date && field.onChange(date)}
-														disabled={(date) => date > new Date()}
-														initialFocus
-													/>
-												</PopoverContent>
-											</Popover>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-
-								<Separator />
-
-								{/* Sleep Section */}
-								<div className="space-y-4">
-									<h3 className="text-sm font-medium flex items-center gap-2">
-										<MoonIcon className="size-4 text-muted-foreground" />
-										Sleep
-									</h3>
-
-									<FormField
-										control={form.control}
-										name="sleepHours"
-										render={({ field }) => (
-											<FormItem>
-												<FormLabel className="flex items-center gap-2 text-muted-foreground text-xs">
-													<BedIcon className="size-3.5" />
-													Hours of Sleep
-												</FormLabel>
-												<FormControl>
-													<Input
-														type="number"
-														step="0.5"
-														min="0"
-														max="24"
-														placeholder="8"
-														className="h-11"
-														{...field}
-													/>
-												</FormControl>
-												<FormMessage />
-											</FormItem>
-										)}
-									/>
-
-									<FormField
-										control={form.control}
-										name="sleepQuality"
-										render={({ field }) => (
-											<MetricSlider
-												label="Sleep Quality"
-												icon={MoonIcon}
-												value={field.value}
-												onChange={field.onChange}
-												lowLabel="Poor"
-												highLabel="Excellent"
-											/>
-										)}
-									/>
-								</div>
-
-								<Separator />
-
-								{/* Physical State */}
-								<div className="space-y-4">
-									<h3 className="text-sm font-medium flex items-center gap-2">
-										<ZapIcon className="size-4 text-muted-foreground" />
-										Physical State
-									</h3>
-
-									<FormField
-										control={form.control}
-										name="energy"
-										render={({ field }) => (
-											<MetricSlider
-												label="Energy Level"
-												icon={BatteryIcon}
-												value={field.value}
-												onChange={field.onChange}
-												lowLabel="Exhausted"
-												highLabel="Full of energy"
-											/>
-										)}
-									/>
-
-									<FormField
-										control={form.control}
-										name="fatigue"
-										render={({ field }) => (
-											<MetricSlider
-												label="Fatigue"
-												icon={BatteryIcon}
-												value={field.value}
-												onChange={field.onChange}
-												lowLabel="Fresh"
-												highLabel="Very tired"
-												inverse
-											/>
-										)}
-									/>
-
-									<FormField
-										control={form.control}
-										name="muscleSoreness"
-										render={({ field }) => (
-											<MetricSlider
-												label="Muscle Soreness"
-												icon={HeartPulseIcon}
-												value={field.value}
-												onChange={field.onChange}
-												lowLabel="No soreness"
-												highLabel="Very sore"
-												inverse
-											/>
-										)}
-									/>
-								</div>
-
-								<Separator />
-
-								{/* Mental State */}
-								<div className="space-y-4">
-									<h3 className="text-sm font-medium flex items-center gap-2">
-										<BrainIcon className="size-4 text-muted-foreground" />
-										Mental State
-									</h3>
-
-									<FormField
-										control={form.control}
-										name="mood"
-										render={({ field }) => (
-											<MetricSlider
-												label="Mood"
-												icon={SmileIcon}
-												value={field.value}
-												onChange={field.onChange}
-												lowLabel="Very bad"
-												highLabel="Excellent"
-											/>
-										)}
-									/>
-
-									<FormField
-										control={form.control}
-										name="stressLevel"
-										render={({ field }) => (
-											<MetricSlider
-												label="Stress Level"
-												icon={BrainIcon}
-												value={field.value}
-												onChange={field.onChange}
-												lowLabel="Relaxed"
-												highLabel="Very stressed"
-												inverse
-											/>
-										)}
-									/>
-								</div>
-
-								<Separator />
-
-								{/* Notes */}
-								<FormField
-									control={form.control}
-									name="notes"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel className="text-muted-foreground text-xs">
-												Additional Notes
-											</FormLabel>
+				<div className="space-y-6">
+					{/* Survey Date */}
+					<ProfileEditSection>
+						<FormField
+							control={form.control}
+							name="surveyDate"
+							render={({ field }) => (
+								<FormItem className="flex flex-col">
+									<FormLabel>{t("surveyDate")}</FormLabel>
+									<Popover>
+										<PopoverTrigger asChild>
 											<FormControl>
-												<Textarea
-													placeholder="Any additional observations..."
-													className="resize-none min-h-[80px]"
-													{...field}
-												/>
+												<Button
+													variant="outline"
+													className={cn(
+														"w-full pl-3 text-left font-normal",
+														!field.value && "text-muted-foreground",
+													)}
+												>
+													{field.value ? (
+														format(field.value, "PPP")
+													) : (
+														<span>{t("selectDate")}</span>
+													)}
+													<CalendarIcon className="ml-auto size-4 opacity-50" />
+												</Button>
 											</FormControl>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-							</div>
+										</PopoverTrigger>
+										<PopoverContent className="w-auto p-0" align="start">
+											<Calendar
+												mode="single"
+												selected={field.value}
+												onSelect={(date) => date && field.onChange(date)}
+												disabled={(date) => date > new Date()}
+												initialFocus
+											/>
+										</PopoverContent>
+									</Popover>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+					</ProfileEditSection>
 
-							{/* Footer */}
-							<SheetFooter className="px-6 py-4 border-t bg-muted/30">
-								<div className="flex gap-3 w-full">
-									<Button
-										type="button"
-										variant="outline"
-										className="flex-1"
-										onClick={() => modal.hide()}
-										disabled={createMutation.isPending}
-									>
-										Cancel
-									</Button>
-									<Button
-										type="submit"
-										className="flex-1"
-										disabled={createMutation.isPending}
-									>
-										{createMutation.isPending && (
-											<Loader2Icon className="mr-2 size-4 animate-spin" />
-										)}
-										Add Survey
-									</Button>
-								</div>
-							</SheetFooter>
-						</form>
-					</Form>
-				</SheetContent>
-			</Sheet>
+					{/* Sleep Section */}
+					<ProfileEditSection title={t("sleepSection")}>
+						<FormField
+							control={form.control}
+							name="sleepHours"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel className="flex items-center gap-2">
+											<BedIcon className="size-4 text-muted-foreground" />
+											{t("sleepHours")}
+										</FormLabel>
+										<FormControl>
+											<Input
+												type="number"
+												step="0.5"
+												min="0"
+												max="24"
+												placeholder="8"
+												{...field}
+											/>
+										</FormControl>
+										<FormMessage />
+									</Field>
+								</FormItem>
+							)}
+						/>
+
+						<FormField
+							control={form.control}
+							name="sleepQuality"
+							render={({ field }) => (
+								<MetricSlider
+									label={t("sleepQuality")}
+									icon={MoonIcon}
+									value={field.value}
+									onChange={field.onChange}
+									lowLabel={t("sleepQualityLow")}
+									highLabel={t("sleepQualityHigh")}
+								/>
+							)}
+						/>
+					</ProfileEditSection>
+
+					{/* Physical State */}
+					<ProfileEditSection title={t("physicalSection")}>
+						<FormField
+							control={form.control}
+							name="energy"
+							render={({ field }) => (
+								<MetricSlider
+									label={t("energy")}
+									icon={BatteryIcon}
+									value={field.value}
+									onChange={field.onChange}
+									lowLabel={t("energyLow")}
+									highLabel={t("energyHigh")}
+								/>
+							)}
+						/>
+
+						<FormField
+							control={form.control}
+							name="fatigue"
+							render={({ field }) => (
+								<MetricSlider
+									label={t("fatigue")}
+									icon={BatteryIcon}
+									value={field.value}
+									onChange={field.onChange}
+									lowLabel={t("fatigueLow")}
+									highLabel={t("fatigueHigh")}
+									inverse
+								/>
+							)}
+						/>
+
+						<FormField
+							control={form.control}
+							name="muscleSoreness"
+							render={({ field }) => (
+								<MetricSlider
+									label={t("soreness")}
+									icon={HeartPulseIcon}
+									value={field.value}
+									onChange={field.onChange}
+									lowLabel={t("sorenessLow")}
+									highLabel={t("sorenessHigh")}
+									inverse
+								/>
+							)}
+						/>
+					</ProfileEditSection>
+
+					{/* Mental State */}
+					<ProfileEditSection title={t("mentalSection")}>
+						<FormField
+							control={form.control}
+							name="mood"
+							render={({ field }) => (
+								<MetricSlider
+									label={t("mood")}
+									icon={SmileIcon}
+									value={field.value}
+									onChange={field.onChange}
+									lowLabel={t("moodLow")}
+									highLabel={t("moodHigh")}
+								/>
+							)}
+						/>
+
+						<FormField
+							control={form.control}
+							name="stressLevel"
+							render={({ field }) => (
+								<MetricSlider
+									label={t("stress")}
+									icon={BrainIcon}
+									value={field.value}
+									onChange={field.onChange}
+									lowLabel={t("stressLow")}
+									highLabel={t("stressHigh")}
+									inverse
+								/>
+							)}
+						/>
+					</ProfileEditSection>
+
+					{/* Notes */}
+					<ProfileEditSection>
+						<FormField
+							control={form.control}
+							name="notes"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel>{t("notes")}</FormLabel>
+										<FormControl>
+											<Textarea
+												placeholder={t("notesPlaceholder")}
+												className="resize-none"
+												rows={3}
+												{...field}
+												value={field.value ?? ""}
+											/>
+										</FormControl>
+										<FormMessage />
+									</Field>
+								</FormItem>
+							)}
+						/>
+					</ProfileEditSection>
+				</div>
+			</ProfileEditSheet>
 		);
 	},
 );

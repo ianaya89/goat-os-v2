@@ -40,6 +40,7 @@
 		"settingsMembers": "Miembros",
 		"settingsSubscription": "Suscripción",
 		"settingsCredits": "Créditos",
+		"settingsFeatures": "Funcionalidades",
 		"seasons": "Temporadas",
 		"teams": "Equipos",
 		"competitions": "Competencias",
@@ -223,6 +224,7 @@
 		"tabs": {
 			"general": "General",
 			"members": "Miembros",
+			"features": "Funcionalidades",
 			"subscription": "Suscripción",
 			"credits": "Créditos"
 		},
@@ -260,6 +262,7 @@
 			"updateSuccess": "Funcionalidad actualizada correctamente",
 			"categories": {
 				"sports": "Deporte",
+				"competitions": "Competencias",
 				"finance": "Finanzas",
 				"reports": "Reportes",
 				"general": "General"
@@ -286,7 +289,10 @@
 				"locations": "Ubicaciones",
 				"vendors": "Proveedores",
 				"sponsors": "Patrocinadores",
-				"chatbot": "Chatbot IA"
+				"chatbot": "Chatbot IA",
+				"teams": "Equipos",
+				"competitions": "Competencias",
+				"matches": "Partidos"
 			}
 		}
 	},

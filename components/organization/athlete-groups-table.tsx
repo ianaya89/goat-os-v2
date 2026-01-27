@@ -6,7 +6,6 @@ import type {
 	ColumnFiltersState,
 	SortingState,
 } from "@tanstack/react-table";
-import { format } from "date-fns";
 import {
 	EyeIcon,
 	MoreHorizontalIcon,
@@ -16,6 +15,7 @@ import {
 	UsersIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
 	parseAsArrayOf,
 	parseAsInteger,
@@ -30,6 +30,7 @@ import { AthleteGroupsBulkActions } from "@/components/organization/athlete-grou
 import { AthleteGroupsModal } from "@/components/organization/athlete-groups-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CategoryBadge } from "@/components/ui/category-badge";
 import {
 	createSelectionColumn,
 	DataTable,
@@ -44,6 +45,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { appConfig } from "@/config/app.config";
+import { type AthleteSport, AthleteSports } from "@/lib/db/schema/enums";
 import { cn } from "@/lib/utils";
 import { AthleteGroupSortField } from "@/schemas/organization-athlete-group-schemas";
 import { trpc } from "@/trpc/client";
@@ -63,11 +65,19 @@ interface AthleteGroupMember {
 	};
 }
 
+interface AgeCategory {
+	id: string;
+	name: string;
+}
+
 interface AthleteGroup {
 	id: string;
 	organizationId: string;
 	name: string;
 	description: string | null;
+	sport: AthleteSport | null;
+	ageCategory: AgeCategory | null;
+	maxCapacity: number | null;
 	isActive: boolean;
 	createdAt: Date;
 	updatedAt: Date;
@@ -81,7 +91,17 @@ const statusColors: Record<string, string> = {
 };
 
 export function AthleteGroupsTable(): React.JSX.Element {
+	const t = useTranslations("athletes.groups");
+	const tCommon = useTranslations("common.sports");
 	const [rowSelection, setRowSelection] = React.useState({});
+
+	// Translation helper for sports
+	const translateSport = (sport: AthleteSport) => {
+		const normalizedSport = sport.toLowerCase() as Parameters<
+			typeof tCommon
+		>[0];
+		return tCommon(normalizedSport);
+	};
 
 	const [searchQuery, setSearchQuery] = useQueryState(
 		"query",
@@ -111,6 +131,20 @@ export function AthleteGroupsTable(): React.JSX.Element {
 		}),
 	);
 
+	const [sportFilter, setSportFilter] = useQueryState(
+		"sport",
+		parseAsArrayOf(parseAsString).withDefault([]).withOptions({
+			shallow: true,
+		}),
+	);
+
+	const [categoryFilter, setCategoryFilter] = useQueryState(
+		"category",
+		parseAsArrayOf(parseAsString).withDefault([]).withOptions({
+			shallow: true,
+		}),
+	);
+
 	const [sorting, setSorting] = useQueryState<SortingState>(
 		"sort",
 		parseAsJson<SortingState>((value) => {
@@ -129,14 +163,25 @@ export function AthleteGroupsTable(): React.JSX.Element {
 
 	const utils = trpc.useUtils();
 
+	const { data: ageCategories } =
+		trpc.organization.sportsEvent.listAgeCategories.useQuery({
+			includeInactive: false,
+		});
+
 	// Build columnFilters from URL state
 	const columnFilters: ColumnFiltersState = React.useMemo(() => {
 		const filters: ColumnFiltersState = [];
 		if (statusFilter && statusFilter.length > 0) {
 			filters.push({ id: "isActive", value: statusFilter });
 		}
+		if (sportFilter && sportFilter.length > 0) {
+			filters.push({ id: "sport", value: sportFilter });
+		}
+		if (categoryFilter && categoryFilter.length > 0) {
+			filters.push({ id: "ageCategory", value: categoryFilter });
+		}
 		return filters;
-	}, [statusFilter]);
+	}, [statusFilter, sportFilter, categoryFilter]);
 
 	const handleFiltersChange = (filters: ColumnFiltersState): void => {
 		const getFilterValue = (id: string): string[] => {
@@ -145,6 +190,8 @@ export function AthleteGroupsTable(): React.JSX.Element {
 		};
 
 		setStatusFilter(getFilterValue("isActive"));
+		setSportFilter(getFilterValue("sport"));
+		setCategoryFilter(getFilterValue("ageCategory"));
 
 		if (pageIndex !== 0) {
 			setPageIndex(0);
@@ -183,6 +230,18 @@ export function AthleteGroupsTable(): React.JSX.Element {
 		return undefined;
 	}, [statusFilter]);
 
+	// Convert sport filter to AthleteSport array
+	const sportFilterValues = React.useMemo(() => {
+		if (!sportFilter || sportFilter.length === 0) return undefined;
+		return sportFilter as AthleteSport[];
+	}, [sportFilter]);
+
+	// Category filter values
+	const ageCategoryIdsFilter = React.useMemo(() => {
+		if (!categoryFilter || categoryFilter.length === 0) return undefined;
+		return categoryFilter;
+	}, [categoryFilter]);
+
 	const { data, isPending } = trpc.organization.athleteGroup.list.useQuery(
 		{
 			limit: pageSize || appConfig.pagination.defaultLimit,
@@ -193,6 +252,8 @@ export function AthleteGroupsTable(): React.JSX.Element {
 			sortOrder: sortParams.sortOrder,
 			filters: {
 				isActive: isActiveFilter,
+				sport: sportFilterValues,
+				ageCategoryIds: ageCategoryIdsFilter,
 			},
 		},
 		{
@@ -203,12 +264,12 @@ export function AthleteGroupsTable(): React.JSX.Element {
 	const deleteGroupMutation = trpc.organization.athleteGroup.delete.useMutation(
 		{
 			onSuccess: () => {
-				toast.success("Group deleted successfully");
+				toast.success(t("success.deleted"));
 				utils.organization.athleteGroup.list.invalidate();
 				utils.organization.athleteGroup.listActive.invalidate();
 			},
 			onError: (error) => {
-				toast.error(error.message || "Failed to delete group");
+				toast.error(error.message || t("error.deleteFailed"));
 			},
 		},
 	);
@@ -227,7 +288,7 @@ export function AthleteGroupsTable(): React.JSX.Element {
 		{
 			accessorKey: "name",
 			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Name" />
+				<SortableColumnHeader column={column} title={t("table.name")} />
 			),
 			cell: ({ row }) => (
 				<Link
@@ -241,10 +302,10 @@ export function AthleteGroupsTable(): React.JSX.Element {
 		},
 		{
 			accessorKey: "description",
-			header: "Description",
+			header: t("table.description"),
 			cell: ({ row }) => (
 				<span
-					className="block max-w-[250px] truncate text-foreground/80"
+					className="block max-w-[200px] truncate text-foreground/80"
 					title={row.original.description ?? ""}
 				>
 					{row.original.description || "-"}
@@ -252,21 +313,54 @@ export function AthleteGroupsTable(): React.JSX.Element {
 			),
 		},
 		{
+			accessorKey: "sport",
+			header: ({ column }) => (
+				<SortableColumnHeader
+					column={column}
+					title={t("table.sportCategory")}
+				/>
+			),
+			cell: ({ row }) => {
+				const { sport, ageCategory } = row.original;
+				if (!sport && !ageCategory) {
+					return <span className="text-muted-foreground">-</span>;
+				}
+				return (
+					<div className="flex flex-col gap-1">
+						{sport && (
+							<span className="text-foreground/80 text-sm">
+								{translateSport(sport)}
+							</span>
+						)}
+						{ageCategory && <CategoryBadge name={ageCategory.name} />}
+					</div>
+				);
+			},
+		},
+		{
 			accessorKey: "memberCount",
 			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Members" />
+				<SortableColumnHeader column={column} title={t("table.members")} />
 			),
-			cell: ({ row }) => (
-				<div className="flex items-center gap-1.5 text-foreground/80">
-					<UsersIcon className="size-4" />
-					<span>{row.original.memberCount}</span>
-				</div>
-			),
+			cell: ({ row }) => {
+				const { memberCount, maxCapacity } = row.original;
+				return (
+					<div className="flex items-center gap-1.5 text-foreground/80">
+						<UsersIcon className="size-4" />
+						<span>
+							<span className="font-semibold">{memberCount}</span>
+							<span className="text-muted-foreground">
+								/{maxCapacity ?? "∞"}
+							</span>
+						</span>
+					</div>
+				);
+			},
 		},
 		{
 			accessorKey: "isActive",
 			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Status" />
+				<SortableColumnHeader column={column} title={t("table.status")} />
 			),
 			cell: ({ row }) => (
 				<Badge
@@ -276,19 +370,8 @@ export function AthleteGroupsTable(): React.JSX.Element {
 					)}
 					variant="outline"
 				>
-					{row.original.isActive ? "Active" : "Inactive"}
+					{row.original.isActive ? t("status.active") : t("status.inactive")}
 				</Badge>
-			),
-		},
-		{
-			accessorKey: "createdAt",
-			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Created" />
-			),
-			cell: ({ row }) => (
-				<span className="text-foreground/80">
-					{format(row.original.createdAt, "dd MMM, yyyy")}
-				</span>
 			),
 		},
 		{
@@ -313,7 +396,7 @@ export function AthleteGroupsTable(): React.JSX.Element {
 									href={`/dashboard/organization/athlete-groups/${row.original.id}`}
 								>
 									<EyeIcon className="mr-2 size-4" />
-									View
+									{t("actions.view")}
 								</Link>
 							</DropdownMenuItem>
 							<DropdownMenuItem
@@ -322,16 +405,15 @@ export function AthleteGroupsTable(): React.JSX.Element {
 								}}
 							>
 								<PencilIcon className="mr-2 size-4" />
-								Edit
+								{t("actions.edit")}
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 							<DropdownMenuItem
 								onClick={() => {
 									NiceModal.show(ConfirmationModal, {
-										title: "Delete group?",
-										message:
-											"Are you sure you want to delete this group? Athletes in this group will not be deleted.",
-										confirmLabel: "Delete",
+										title: t("deleteConfirm.title"),
+										message: t("deleteConfirm.message"),
+										confirmLabel: t("deleteConfirm.confirm"),
 										destructive: true,
 										onConfirm: () =>
 											deleteGroupMutation.mutate({ id: row.original.id }),
@@ -340,7 +422,7 @@ export function AthleteGroupsTable(): React.JSX.Element {
 								variant="destructive"
 							>
 								<Trash2Icon className="mr-2 size-4" />
-								Delete
+								{t("actions.delete")}
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
@@ -349,13 +431,46 @@ export function AthleteGroupsTable(): React.JSX.Element {
 		},
 	];
 
+	const sportFilterOptions = React.useMemo(
+		() =>
+			AthleteSports.map((sport) => ({
+				value: sport,
+				label: translateSport(sport),
+			})),
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+		[],
+	);
+
+	const categoryFilterOptions = React.useMemo(
+		() =>
+			(ageCategories ?? []).map((cat) => ({
+				value: cat.id,
+				label: cat.name,
+			})),
+		[ageCategories],
+	);
+
 	const groupFilters: FilterConfig[] = [
 		{
+			key: "sport",
+			title: tCommon("selectSport"),
+			options: sportFilterOptions,
+		},
+		...(categoryFilterOptions.length > 0
+			? [
+					{
+						key: "ageCategory",
+						title: t("modal.ageCategory"),
+						options: categoryFilterOptions,
+					},
+				]
+			: []),
+		{
 			key: "isActive",
-			title: "Status",
+			title: t("table.status"),
 			options: [
-				{ value: "active", label: "Active" },
-				{ value: "inactive", label: "Inactive" },
+				{ value: "active", label: t("status.active") },
+				{ value: "inactive", label: t("status.inactive") },
 			],
 		},
 	];
@@ -365,7 +480,7 @@ export function AthleteGroupsTable(): React.JSX.Element {
 			columnFilters={columnFilters}
 			columns={columns}
 			data={(data?.groups as AthleteGroup[]) || []}
-			emptyMessage="No groups found."
+			emptyMessage={t("table.noGroups")}
 			enableFilters
 			enablePagination
 			enableRowSelection
@@ -382,14 +497,14 @@ export function AthleteGroupsTable(): React.JSX.Element {
 			pageSize={pageSize || appConfig.pagination.defaultLimit}
 			renderBulkActions={(table) => <AthleteGroupsBulkActions table={table} />}
 			rowSelection={rowSelection}
-			searchPlaceholder="Search groups..."
+			searchPlaceholder={t("search")}
 			searchQuery={searchQuery || ""}
 			defaultSorting={DEFAULT_SORTING}
 			sorting={sorting}
 			toolbarActions={
 				<Button onClick={() => NiceModal.show(AthleteGroupsModal)} size="sm">
 					<PlusIcon className="size-4 shrink-0" />
-					Add Group
+					{t("add")}
 				</Button>
 			}
 			totalCount={data?.total ?? 0}

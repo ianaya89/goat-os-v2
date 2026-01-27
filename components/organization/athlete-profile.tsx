@@ -4,44 +4,71 @@ import NiceModal from "@ebay/nice-modal-react";
 import { differenceInYears, format } from "date-fns";
 import {
 	ActivityIcon,
-	ArrowLeftIcon,
 	BedIcon,
 	BriefcaseIcon,
 	CalendarIcon,
 	CheckCircleIcon,
 	ClockIcon,
-	EditIcon,
 	FileHeartIcon,
 	FlagIcon,
+	GraduationCapIcon,
 	HeartPulseIcon,
 	MapPinIcon,
 	MedalIcon,
+	MoreHorizontalIcon,
+	PencilIcon,
 	PercentIcon,
+	PhoneIcon,
 	PlusIcon,
 	RulerIcon,
 	ShieldIcon,
 	StarIcon,
+	Trash2Icon,
 	TrendingUpIcon,
 	TrophyIcon,
 	UserIcon,
 	UsersIcon,
+	VideoIcon,
 	WeightIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import * as React from "react";
+import { toast } from "sonner";
+import { ConfirmationModal } from "@/components/confirmation-modal";
 import { AddAttendanceModal } from "@/components/organization/add-attendance-modal";
 import { AddCareerHistoryModal } from "@/components/organization/add-career-history-modal";
 import { AddEvaluationModal } from "@/components/organization/add-evaluation-modal";
 import { AddFitnessTestModal } from "@/components/organization/add-fitness-test-modal";
 import { AddPhysicalMetricsModal } from "@/components/organization/add-physical-metrics-modal";
 import { AddWellnessModal } from "@/components/organization/add-wellness-modal";
+import { AssignTeamModal } from "@/components/organization/assign-team-modal";
+import { OrgAthleteBioEditModal } from "@/components/organization/athlete-info/org-athlete-bio-edit-modal";
+import { OrgAthleteContactEditModal } from "@/components/organization/athlete-info/org-athlete-contact-edit-modal";
+import { OrgAthleteEducationEditModal } from "@/components/organization/athlete-info/org-athlete-education-edit-modal";
+import { OrgAthleteHealthEditModal } from "@/components/organization/athlete-info/org-athlete-health-edit-modal";
+import { OrgAthletePhysicalProfileEditModal } from "@/components/organization/athlete-info/org-athlete-physical-profile-edit-modal";
+import { OrgAthleteResidenceEditModal } from "@/components/organization/athlete-info/org-athlete-residence-edit-modal";
+import { OrgAthleteVideosEditModal } from "@/components/organization/athlete-info/org-athlete-videos-edit-modal";
 import { AthleteMedicalTab } from "@/components/organization/athlete-medical-tab";
-import { AthleteProfileEditModal } from "@/components/organization/athlete-profile-edit-modal";
+import { SessionsListTable } from "@/components/organization/sessions-list-table";
+import { TrainingSessionsModal } from "@/components/organization/training-sessions-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MailtoLink, WhatsAppLink } from "@/components/ui/contact-links";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { EmptyState } from "@/components/ui/empty-state";
+import { LevelBadge } from "@/components/ui/level-badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { capitalize, cn } from "@/lib/utils";
@@ -50,32 +77,6 @@ import { trpc } from "@/trpc/client";
 interface AthleteProfileProps {
 	athleteId: string;
 }
-
-const statusColors: Record<string, string> = {
-	active: "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100",
-	inactive: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100",
-	injured: "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100",
-	suspended:
-		"bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100",
-};
-
-const levelColors: Record<string, string> = {
-	beginner: "bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100",
-	intermediate:
-		"bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100",
-	advanced:
-		"bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100",
-	elite:
-		"bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100",
-};
-
-const sessionStatusColors: Record<string, string> = {
-	pending: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100",
-	confirmed: "bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100",
-	completed:
-		"bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100",
-	cancelled: "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100",
-};
 
 const attendanceStatusColors: Record<string, string> = {
 	present: "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100",
@@ -86,6 +87,8 @@ const attendanceStatusColors: Record<string, string> = {
 };
 
 export function AthleteProfile({ athleteId }: AthleteProfileProps) {
+	const t = useTranslations("athletes");
+	const utils = trpc.useUtils();
 	const { data, isLoading, error } =
 		trpc.organization.athlete.getProfile.useQuery({ id: athleteId });
 
@@ -93,6 +96,106 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 		{ athleteId },
 		{ enabled: !!athleteId },
 	);
+
+	const updateSessionStatusMutation =
+		trpc.organization.trainingSession.bulkUpdateStatus.useMutation({
+			onSuccess: () => {
+				toast.success(t("groups.profile.actions.statusChanged"));
+				utils.organization.athlete.getProfile.invalidate({ id: athleteId });
+			},
+			onError: (error) => {
+				toast.error(error.message);
+			},
+		});
+
+	const deleteSessionMutation =
+		trpc.organization.trainingSession.delete.useMutation({
+			onSuccess: () => {
+				toast.success(t("groups.success.sessionDeleted"));
+				utils.organization.athlete.getProfile.invalidate({ id: athleteId });
+			},
+			onError: (error) => {
+				toast.error(error.message);
+			},
+		});
+
+	const deleteEvaluationMutation =
+		trpc.organization.athleteEvaluation.delete.useMutation({
+			onSuccess: () => {
+				toast.success(t("evaluations.deleted"));
+				utils.organization.athlete.getProfile.invalidate({ id: athleteId });
+			},
+			onError: (error) => {
+				toast.error(error.message);
+			},
+		});
+
+	const deleteAttendanceMutation =
+		trpc.organization.attendance.delete.useMutation({
+			onSuccess: () => {
+				toast.success(t("attendance.deleted"));
+				utils.organization.athlete.getProfile.invalidate({ id: athleteId });
+			},
+			onError: (error) => {
+				toast.error(error.message);
+			},
+		});
+
+	const deletePhysicalMetricsMutation =
+		trpc.organization.athlete.deletePhysicalMetrics.useMutation({
+			onSuccess: () => {
+				toast.success(t("physical.deleted"));
+				utils.organization.athlete.getProfile.invalidate({ id: athleteId });
+			},
+			onError: (error) => {
+				toast.error(error.message);
+			},
+		});
+
+	const deleteFitnessTestMutation =
+		trpc.organization.athlete.deleteFitnessTest.useMutation({
+			onSuccess: () => {
+				toast.success(t("fitness.deleted"));
+				utils.organization.athlete.getProfile.invalidate({ id: athleteId });
+			},
+			onError: (error) => {
+				toast.error(error.message);
+			},
+		});
+
+	const removeTeamMemberMutation =
+		trpc.organization.team.removeMembers.useMutation({
+			onSuccess: () => {
+				toast.success(t("teams.removed"));
+				utils.organization.team.listByAthlete.invalidate({ athleteId });
+				utils.organization.athlete.getProfile.invalidate({ id: athleteId });
+			},
+			onError: (error) => {
+				toast.error(error.message);
+			},
+		});
+
+	const deleteCareerHistoryMutation =
+		trpc.organization.athlete.deleteCareerHistory.useMutation({
+			onSuccess: () => {
+				toast.success(t("career.deleted"));
+				utils.organization.athlete.getProfile.invalidate({ id: athleteId });
+			},
+			onError: (error) => {
+				toast.error(error.message);
+			},
+		});
+
+	const deleteWellnessSurveyMutation =
+		trpc.organization.athleteWellness.deleteForAthlete.useMutation({
+			onSuccess: () => {
+				toast.success(t("wellness.deleted"));
+				utils.organization.athlete.getProfile.invalidate({ id: athleteId });
+			},
+			onError: (error) => {
+				toast.error(error.message);
+			},
+		});
 
 	if (isLoading) {
 		return <AthleteProfileSkeleton />;
@@ -102,13 +205,7 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 		return (
 			<Card>
 				<CardContent className="py-10 text-center">
-					<p className="text-muted-foreground">Athlete not found</p>
-					<Button asChild className="mt-4" variant="outline">
-						<Link href="/dashboard/organization/athletes">
-							<ArrowLeftIcon className="mr-2 size-4" />
-							Back to Athletes
-						</Link>
-					</Button>
+					<p className="text-muted-foreground">{t("notFound")}</p>
 				</CardContent>
 			</Card>
 		);
@@ -125,6 +222,7 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 		fitnessTests,
 		careerHistory,
 		wellnessSurveys,
+		education,
 	} = data;
 
 	const age = athlete.birthDate
@@ -136,11 +234,6 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 			{/* Header */}
 			<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 				<div className="flex items-start gap-4">
-					<Button asChild size="icon" variant="ghost">
-						<Link href="/dashboard/organization/athletes">
-							<ArrowLeftIcon className="size-5" />
-						</Link>
-					</Button>
 					<UserAvatar
 						className="size-16"
 						name={athlete.user?.name ?? ""}
@@ -151,14 +244,8 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 							<h1 className="font-bold text-2xl">
 								{athlete.user?.name ?? "Unknown"}
 							</h1>
-							<Badge
-								className={cn("border-none", statusColors[athlete.status])}
-							>
-								{capitalize(athlete.status)}
-							</Badge>
-							<Badge className={cn("border-none", levelColors[athlete.level])}>
-								{capitalize(athlete.level)}
-							</Badge>
+							<StatusBadge status={athlete.status} />
+							<LevelBadge level={athlete.level} />
 						</div>
 						<div className="mt-1 flex flex-wrap items-center gap-4 text-muted-foreground text-sm">
 							<div className="flex items-center gap-1">
@@ -168,13 +255,25 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 							{age && (
 								<div className="flex items-center gap-1">
 									<UserIcon className="size-4" />
-									<span>{age} years old</span>
+									<span>
+										{age} {t("yearsOld")}
+									</span>
 								</div>
 							)}
+							{athlete.phone && (
+								<WhatsAppLink
+									phone={athlete.phone}
+									variant="whatsapp"
+									className="text-sm"
+									iconSize="size-3.5"
+								/>
+							)}
 							{athlete.user?.email && (
-								<span className="text-muted-foreground">
-									{athlete.user.email}
-								</span>
+								<MailtoLink
+									email={athlete.user.email}
+									className="text-sm"
+									iconSize="size-3.5"
+								/>
 							)}
 						</div>
 						{groups.length > 0 && (
@@ -189,13 +288,6 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 						)}
 					</div>
 				</div>
-				<Button
-					variant="outline"
-					onClick={() => NiceModal.show(AthleteProfileEditModal, { athlete })}
-				>
-					<EditIcon className="mr-2 size-4" />
-					Edit Profile
-				</Button>
 			</div>
 
 			{/* Stats Overview */}
@@ -203,22 +295,24 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 				<Card>
 					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 						<CardTitle className="font-medium text-sm">
-							Total Sessions
+							{t("stats.totalSessions")}
 						</CardTitle>
 						<CalendarIcon className="size-4 text-muted-foreground" />
 					</CardHeader>
 					<CardContent>
 						<div className="font-bold text-2xl">{stats.totalSessions}</div>
 						<p className="text-muted-foreground text-xs">
-							{stats.completedSessions} completed, {stats.upcomingSessions}{" "}
-							upcoming
+							{t("stats.completedUpcoming", {
+								completed: stats.completedSessions,
+								upcoming: stats.upcomingSessions,
+							})}
 						</p>
 					</CardContent>
 				</Card>
 				<Card>
 					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 						<CardTitle className="font-medium text-sm">
-							Attendance Rate
+							{t("stats.attendanceRate")}
 						</CardTitle>
 						<PercentIcon className="size-4 text-muted-foreground" />
 					</CardHeader>
@@ -230,7 +324,7 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 				<Card>
 					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 						<CardTitle className="font-medium text-sm">
-							Avg Performance
+							{t("stats.avgPerformance")}
 						</CardTitle>
 						<TrendingUpIcon className="size-4 text-muted-foreground" />
 					</CardHeader>
@@ -245,30 +339,30 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 							<span className="text-muted-foreground text-sm">/5</span>
 						</div>
 						<p className="text-muted-foreground text-xs">
-							{stats.ratings.count} evaluations
+							{stats.ratings.count} {t("stats.evaluations")}
 						</p>
 					</CardContent>
 				</Card>
 				<Card>
 					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 						<CardTitle className="font-medium text-sm">
-							Attendance Summary
+							{t("stats.attendanceSummary")}
 						</CardTitle>
 						<CheckCircleIcon className="size-4 text-muted-foreground" />
 					</CardHeader>
 					<CardContent>
 						<div className="flex flex-wrap gap-2 text-xs">
 							<Badge variant="outline" className="bg-green-50">
-								Present: {stats.attendance.present}
+								{t("stats.present")}: {stats.attendance.present}
 							</Badge>
 							<Badge variant="outline" className="bg-yellow-50">
-								Late: {stats.attendance.late}
+								{t("stats.late")}: {stats.attendance.late}
 							</Badge>
 							<Badge variant="outline" className="bg-red-50">
-								Absent: {stats.attendance.absent}
+								{t("stats.absent")}: {stats.attendance.absent}
 							</Badge>
 							<Badge variant="outline" className="bg-blue-50">
-								Excused: {stats.attendance.excused}
+								{t("stats.excused")}: {stats.attendance.excused}
 							</Badge>
 						</div>
 					</CardContent>
@@ -276,184 +370,233 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 			</div>
 
 			{/* Detailed Tabs */}
-			<Tabs defaultValue="sessions" className="space-y-4">
+			<Tabs defaultValue="info" className="space-y-4">
 				<TabsList className="flex-wrap">
+					<TabsTrigger value="info">
+						<UserIcon className="mr-1 size-3.5" />
+						{t("tabs.info")}
+					</TabsTrigger>
 					<TabsTrigger value="sessions">
-						Sessions ({sessions.length})
+						{t("tabs.sessions")} ({sessions.length})
 					</TabsTrigger>
 					<TabsTrigger value="evaluations">
-						Evaluations ({evaluations.length})
+						{t("tabs.evaluations")} ({evaluations.length})
 					</TabsTrigger>
 					<TabsTrigger value="attendance">
-						Attendance ({attendanceRecords.length})
+						{t("tabs.attendance")} ({attendanceRecords.length})
 					</TabsTrigger>
 					<TabsTrigger value="physical">
 						<RulerIcon className="mr-1 size-3.5" />
-						Physical ({physicalMetrics?.length ?? 0})
+						{t("tabs.physical")} ({physicalMetrics?.length ?? 0})
 					</TabsTrigger>
 					<TabsTrigger value="fitness">
 						<ActivityIcon className="mr-1 size-3.5" />
-						Fitness Tests ({fitnessTests?.length ?? 0})
+						{t("tabs.fitness")} ({fitnessTests?.length ?? 0})
 					</TabsTrigger>
 					<TabsTrigger value="career">
 						<BriefcaseIcon className="mr-1 size-3.5" />
-						Career ({careerHistory?.length ?? 0})
+						{t("tabs.career")} ({careerHistory?.length ?? 0})
 					</TabsTrigger>
 					<TabsTrigger value="teams">
 						<ShieldIcon className="mr-1 size-3.5" />
-						Teams ({teams?.length ?? 0})
+						{t("tabs.teams")} ({teams?.length ?? 0})
 					</TabsTrigger>
 					<TabsTrigger value="wellness">
 						<HeartPulseIcon className="mr-1 size-3.5" />
-						Wellness ({wellnessSurveys?.length ?? 0})
+						{t("tabs.wellness")} ({wellnessSurveys?.length ?? 0})
 					</TabsTrigger>
 					<TabsTrigger value="medical">
 						<FileHeartIcon className="mr-1 size-3.5" />
-						Medical
-					</TabsTrigger>
-					<TabsTrigger value="info">
-						<UserIcon className="mr-1 size-3.5" />
-						Info
+						{t("tabs.medical")}
 					</TabsTrigger>
 				</TabsList>
 
-				<TabsContent value="sessions">
-					<Card>
-						<CardHeader>
-							<CardTitle>Training Sessions</CardTitle>
-						</CardHeader>
-						<CardContent>
-							{sessions.length === 0 ? (
-								<p className="py-6 text-center text-muted-foreground">
-									No sessions found
-								</p>
-							) : (
-								<div className="space-y-3">
-									{sessions.slice(0, 20).map((session) => (
-										<Link
-											key={session.id}
-											href={`/dashboard/organization/training-sessions/${session.id}`}
-											className="block"
-										>
-											<div className="flex items-center justify-between rounded-lg border p-3 transition-colors hover:bg-muted/50">
-												<div className="space-y-1">
-													<div className="flex items-center gap-2">
-														<span className="font-medium">{session.title}</span>
-														<Badge
-															className={cn(
-																"border-none",
-																sessionStatusColors[session.status],
-															)}
-														>
-															{capitalize(session.status)}
-														</Badge>
-													</div>
-													<div className="flex items-center gap-4 text-muted-foreground text-sm">
-														<div className="flex items-center gap-1">
-															<CalendarIcon className="size-3.5" />
-															<span>
-																{format(
-																	new Date(session.startTime),
-																	"MMM d, yyyy",
-																)}
-															</span>
-														</div>
-														<div className="flex items-center gap-1">
-															<ClockIcon className="size-3.5" />
-															<span>
-																{format(new Date(session.startTime), "h:mm a")}
-															</span>
-														</div>
-														{session.location && (
-															<div className="flex items-center gap-1">
-																<MapPinIcon className="size-3.5" />
-																<span>{session.location.name}</span>
-															</div>
-														)}
-													</div>
-												</div>
-												{session.coaches[0] && (
-													<div className="flex items-center gap-2">
-														<UserAvatar
-															className="size-6"
-															name={session.coaches[0].coach.user?.name ?? ""}
-															src={
-																session.coaches[0].coach.user?.image ??
-																undefined
-															}
-														/>
-														<span className="text-muted-foreground text-sm">
-															{session.coaches[0].coach.user?.name}
-														</span>
-													</div>
-												)}
-											</div>
-										</Link>
-									))}
-									{sessions.length > 20 && (
-										<p className="pt-2 text-center text-muted-foreground text-sm">
-											Showing 20 of {sessions.length} sessions
-										</p>
-									)}
-								</div>
-							)}
-						</CardContent>
-					</Card>
+				<TabsContent value="sessions" className="space-y-4">
+					<div className="flex justify-end">
+						<Button
+							size="sm"
+							onClick={() =>
+								NiceModal.show(TrainingSessionsModal, {
+									initialAthleteIds: [athleteId],
+								})
+							}
+						>
+							<PlusIcon className="mr-2 size-4" />
+							{t("sessions.newSession")}
+						</Button>
+					</div>
+					<SessionsListTable
+						sessions={sessions}
+						initialAthleteIds={[athleteId]}
+						emptyStateMessage={t("sessions.noSessions")}
+						maxItems={20}
+						onAddEvaluation={(sessionId) => {
+							const completedSessions = sessions
+								.filter((s) => s.status === "completed")
+								.map((s) => ({
+									id: s.id,
+									title: s.title,
+									startTime: new Date(s.startTime),
+									status: s.status,
+								}));
+							NiceModal.show(AddEvaluationModal, {
+								athleteId,
+								athleteName: athlete.user?.name,
+								sessions: completedSessions,
+								initialSessionId: sessionId,
+							});
+						}}
+						onAddAttendance={(sessionId) => {
+							const availableSessions = sessions
+								.filter((s) => s.status !== "cancelled")
+								.map((s) => ({
+									id: s.id,
+									title: s.title,
+									startTime: new Date(s.startTime),
+									status: s.status,
+								}));
+							NiceModal.show(AddAttendanceModal, {
+								athleteId,
+								athleteName: athlete.user?.name,
+								sessions: availableSessions,
+								initialSessionId: sessionId,
+							});
+						}}
+						onChangeStatus={(sessionId, status) => {
+							updateSessionStatusMutation.mutate({
+								ids: [sessionId],
+								status: status as
+									| "pending"
+									| "confirmed"
+									| "completed"
+									| "cancelled",
+							});
+						}}
+						onDeleteSession={(sessionId, sessionTitle) => {
+							NiceModal.show(ConfirmationModal, {
+								title: t("groups.profile.deleteSession.title"),
+								message: t("groups.profile.deleteSession.message", {
+									name: sessionTitle,
+								}),
+								confirmLabel: t("groups.profile.deleteSession.confirm"),
+								destructive: true,
+								onConfirm: () =>
+									deleteSessionMutation.mutate({ id: sessionId }),
+							});
+						}}
+					/>
 				</TabsContent>
 
-				<TabsContent value="evaluations">
-					<Card>
-						<CardHeader className="flex flex-row items-center justify-between">
-							<CardTitle>Performance Evaluations</CardTitle>
-							<Button
-								size="sm"
-								onClick={() => {
-									const completedSessions = sessions
-										.filter((s) => s.status === "completed")
-										.map((s) => ({
-											id: s.id,
-											title: s.title,
-											startTime: new Date(s.startTime),
-											status: s.status,
-										}));
-									NiceModal.show(AddEvaluationModal, {
-										athleteId,
-										athleteName: athlete.user?.name,
-										sessions: completedSessions,
-									});
-								}}
-							>
-								<PlusIcon className="mr-2 size-4" />
-								Add Evaluation
-							</Button>
-						</CardHeader>
-						<CardContent>
-							{evaluations.length === 0 ? (
-								<p className="py-6 text-center text-muted-foreground">
-									No evaluations yet
-								</p>
-							) : (
-								<div className="space-y-4">
+				<TabsContent value="evaluations" className="space-y-4">
+					<div className="flex justify-end">
+						<Button
+							size="sm"
+							onClick={() => {
+								const completedSessions = sessions
+									.filter((s) => s.status === "completed")
+									.map((s) => ({
+										id: s.id,
+										title: s.title,
+										startTime: new Date(s.startTime),
+										status: s.status,
+									}));
+								NiceModal.show(AddEvaluationModal, {
+									athleteId,
+									athleteName: athlete.user?.name,
+									sessions: completedSessions,
+								});
+							}}
+						>
+							<PlusIcon className="mr-2 size-4" />
+							{t("evaluations.addEvaluation")}
+						</Button>
+					</div>
+					{evaluations.length === 0 ? (
+						<EmptyState
+							icon={StarIcon}
+							title={t("evaluations.noEvaluations")}
+						/>
+					) : (
+						<div className="rounded-lg border">
+							<table className="w-full">
+								<thead>
+									<tr className="border-b bg-muted/50">
+										<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+											{t("evaluations.table.session")}
+										</th>
+										<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+											{t("evaluations.table.date")}
+										</th>
+										<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+											{t("evaluations.table.ratings")}
+										</th>
+										<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground sm:table-cell">
+											{t("evaluations.table.evaluator")}
+										</th>
+										<th className="w-[50px] px-4 py-3 text-right text-xs font-medium text-muted-foreground">
+											<span className="sr-only">
+												{t("evaluations.table.actions")}
+											</span>
+										</th>
+									</tr>
+								</thead>
+								<tbody className="divide-y">
 									{evaluations.map((evaluation) => (
-										<div key={evaluation.id} className="rounded-lg border p-4">
-											<div className="flex items-center justify-between">
-												<div>
-													<Link
-														href={`/dashboard/organization/training-sessions/${evaluation.session.id}`}
-														className="font-medium hover:underline"
-													>
-														{evaluation.session.title}
-													</Link>
-													<p className="text-muted-foreground text-sm">
-														{format(
-															new Date(evaluation.session.startTime),
-															"MMM d, yyyy",
-														)}
-													</p>
+										<tr key={evaluation.id} className="hover:bg-muted/30">
+											<td className="px-4 py-3">
+												<Link
+													href={`/dashboard/organization/training-sessions/${evaluation.session.id}`}
+													className="font-medium text-sm hover:underline"
+												>
+													{evaluation.session.title}
+												</Link>
+											</td>
+											<td className="px-4 py-3 text-sm">
+												{format(
+													new Date(evaluation.session.startTime),
+													"dd MMM yyyy",
+												)}
+											</td>
+											<td className="px-4 py-3">
+												<div className="flex items-center gap-3">
+													{evaluation.performanceRating && (
+														<div
+															className="flex items-center gap-1 text-sm"
+															title={t("evaluations.performance")}
+														>
+															<StarIcon className="size-3.5 fill-yellow-400 text-yellow-400" />
+															<span className="tabular-nums">
+																{evaluation.performanceRating}/5
+															</span>
+														</div>
+													)}
+													{evaluation.attitudeRating && (
+														<div
+															className="flex items-center gap-1 text-sm"
+															title={t("evaluations.attitude")}
+														>
+															<StarIcon className="size-3.5 fill-yellow-400 text-yellow-400" />
+															<span className="tabular-nums">
+																{evaluation.attitudeRating}/5
+															</span>
+														</div>
+													)}
+													{evaluation.physicalFitnessRating && (
+														<div
+															className="flex items-center gap-1 text-sm"
+															title={t("evaluations.physicalFitness")}
+														>
+															<StarIcon className="size-3.5 fill-yellow-400 text-yellow-400" />
+															<span className="tabular-nums">
+																{evaluation.physicalFitnessRating}/5
+															</span>
+														</div>
+													)}
 												</div>
-												{evaluation.evaluatedByUser && (
+											</td>
+											<td className="hidden px-4 py-3 sm:table-cell">
+												{evaluation.evaluatedByUser ? (
 													<div className="flex items-center gap-2 text-sm">
-														<span className="text-muted-foreground">by</span>
 														<UserAvatar
 															className="size-5"
 															name={evaluation.evaluatedByUser.name ?? ""}
@@ -463,613 +606,1136 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 														/>
 														<span>{evaluation.evaluatedByUser.name}</span>
 													</div>
+												) : (
+													<span className="text-muted-foreground">-</span>
 												)}
-											</div>
-											<div className="mt-3 flex flex-wrap gap-6">
-												{evaluation.performanceRating && (
-													<div>
-														<p className="text-muted-foreground text-xs">
-															Performance
-														</p>
-														<div className="flex items-center gap-1">
-															<StarIcon className="size-4 fill-yellow-400 text-yellow-400" />
-															<span className="font-medium">
-																{evaluation.performanceRating}/5
-															</span>
-														</div>
-													</div>
-												)}
-												{evaluation.attitudeRating && (
-													<div>
-														<p className="text-muted-foreground text-xs">
-															Attitude
-														</p>
-														<div className="flex items-center gap-1">
-															<StarIcon className="size-4 fill-yellow-400 text-yellow-400" />
-															<span className="font-medium">
-																{evaluation.attitudeRating}/5
-															</span>
-														</div>
-													</div>
-												)}
-												{evaluation.physicalFitnessRating && (
-													<div>
-														<p className="text-muted-foreground text-xs">
-															Physical Fitness
-														</p>
-														<div className="flex items-center gap-1">
-															<StarIcon className="size-4 fill-yellow-400 text-yellow-400" />
-															<span className="font-medium">
-																{evaluation.physicalFitnessRating}/5
-															</span>
-														</div>
-													</div>
-												)}
-											</div>
-											{(evaluation.performanceNotes ||
-												evaluation.attitudeNotes ||
-												evaluation.generalNotes) && (
-												<div className="mt-3 space-y-2 text-sm">
-													{evaluation.performanceNotes && (
-														<p>
-															<span className="font-medium">Performance: </span>
-															{evaluation.performanceNotes}
-														</p>
-													)}
-													{evaluation.attitudeNotes && (
-														<p>
-															<span className="font-medium">Attitude: </span>
-															{evaluation.attitudeNotes}
-														</p>
-													)}
-													{evaluation.generalNotes && (
-														<p>
-															<span className="font-medium">Notes: </span>
-															{evaluation.generalNotes}
-														</p>
-													)}
+											</td>
+											<td className="px-4 py-3">
+												<div className="flex justify-end">
+													<DropdownMenu>
+														<DropdownMenuTrigger asChild>
+															<Button
+																className="size-8 text-muted-foreground data-[state=open]:bg-muted"
+																size="icon"
+																variant="ghost"
+															>
+																<MoreHorizontalIcon className="shrink-0" />
+															</Button>
+														</DropdownMenuTrigger>
+														<DropdownMenuContent align="end">
+															<DropdownMenuItem
+																onClick={() => {
+																	const completedSessions = sessions
+																		.filter((s) => s.status === "completed")
+																		.map((s) => ({
+																			id: s.id,
+																			title: s.title,
+																			startTime: new Date(s.startTime),
+																			status: s.status,
+																		}));
+																	NiceModal.show(AddEvaluationModal, {
+																		athleteId,
+																		athleteName: athlete.user?.name,
+																		sessions: completedSessions,
+																		initialSessionId: evaluation.session.id,
+																		initialValues: {
+																			performanceRating:
+																				evaluation.performanceRating,
+																			performanceNotes:
+																				evaluation.performanceNotes ?? "",
+																			attitudeRating: evaluation.attitudeRating,
+																			attitudeNotes:
+																				evaluation.attitudeNotes ?? "",
+																			physicalFitnessRating:
+																				evaluation.physicalFitnessRating,
+																			physicalFitnessNotes:
+																				evaluation.physicalFitnessNotes ?? "",
+																			generalNotes:
+																				evaluation.generalNotes ?? "",
+																		},
+																	});
+																}}
+															>
+																<PencilIcon className="mr-2 size-4" />
+																{t("evaluations.actions.edit")}
+															</DropdownMenuItem>
+															<DropdownMenuSeparator />
+															<DropdownMenuItem
+																variant="destructive"
+																onClick={() => {
+																	NiceModal.show(ConfirmationModal, {
+																		title: t("evaluations.deleteConfirm.title"),
+																		message: t(
+																			"evaluations.deleteConfirm.message",
+																			{ name: evaluation.session.title },
+																		),
+																		confirmLabel: t(
+																			"evaluations.deleteConfirm.confirm",
+																		),
+																		destructive: true,
+																		onConfirm: () =>
+																			deleteEvaluationMutation.mutate({
+																				id: evaluation.id,
+																			}),
+																	});
+																}}
+															>
+																<Trash2Icon className="mr-2 size-4" />
+																{t("evaluations.actions.delete")}
+															</DropdownMenuItem>
+														</DropdownMenuContent>
+													</DropdownMenu>
 												</div>
-											)}
-										</div>
+											</td>
+										</tr>
 									))}
-								</div>
-							)}
-						</CardContent>
-					</Card>
+								</tbody>
+							</table>
+						</div>
+					)}
 				</TabsContent>
 
-				<TabsContent value="attendance">
-					<Card>
-						<CardHeader className="flex flex-row items-center justify-between">
-							<CardTitle>Attendance History</CardTitle>
-							<Button
-								size="sm"
-								onClick={() => {
-									const upcomingSessions = sessions
-										.filter((s) => s.status !== "cancelled")
-										.map((s) => ({
-											id: s.id,
-											title: s.title,
-											startTime: new Date(s.startTime),
-											status: s.status,
-										}));
-									NiceModal.show(AddAttendanceModal, {
-										athleteId,
-										athleteName: athlete.user?.name,
-										sessions: upcomingSessions,
-									});
-								}}
-							>
-								<PlusIcon className="mr-2 size-4" />
-								Add Attendance
-							</Button>
-						</CardHeader>
-						<CardContent>
-							{attendanceRecords.length === 0 ? (
-								<p className="py-6 text-center text-muted-foreground">
-									No attendance records
-								</p>
-							) : (
-								<div className="space-y-2">
+				<TabsContent value="attendance" className="space-y-4">
+					<div className="flex justify-end">
+						<Button
+							size="sm"
+							onClick={() => {
+								const availableSessions = sessions
+									.filter((s) => s.status !== "cancelled")
+									.map((s) => ({
+										id: s.id,
+										title: s.title,
+										startTime: new Date(s.startTime),
+										status: s.status,
+									}));
+								NiceModal.show(AddAttendanceModal, {
+									athleteId,
+									athleteName: athlete.user?.name,
+									sessions: availableSessions,
+								});
+							}}
+						>
+							<PlusIcon className="mr-2 size-4" />
+							{t("attendance.addAttendance")}
+						</Button>
+					</div>
+					{attendanceRecords.length === 0 ? (
+						<EmptyState
+							icon={CheckCircleIcon}
+							title={t("attendance.noRecords")}
+						/>
+					) : (
+						<div className="rounded-lg border">
+							<table className="w-full">
+								<thead>
+									<tr className="border-b bg-muted/50">
+										<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+											{t("attendance.table.session")}
+										</th>
+										<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+											{t("attendance.table.date")}
+										</th>
+										<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+											{t("attendance.table.status")}
+										</th>
+										<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground sm:table-cell">
+											{t("attendance.table.checkedIn")}
+										</th>
+										<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground md:table-cell">
+											{t("attendance.table.notes")}
+										</th>
+										<th className="w-[50px] px-4 py-3 text-right text-xs font-medium text-muted-foreground">
+											<span className="sr-only">
+												{t("attendance.table.actions")}
+											</span>
+										</th>
+									</tr>
+								</thead>
+								<tbody className="divide-y">
 									{attendanceRecords.map((record) => (
-										<div
-											key={record.id}
-											className="flex items-center justify-between rounded-lg border p-3"
-										>
-											<div className="space-y-1">
+										<tr key={record.id} className="hover:bg-muted/30">
+											<td className="px-4 py-3">
 												<Link
 													href={`/dashboard/organization/training-sessions/${record.session.id}`}
-													className="font-medium hover:underline"
+													className="font-medium text-sm hover:underline"
 												>
 													{record.session.title}
 												</Link>
-												<p className="text-muted-foreground text-sm">
-													{format(
-														new Date(record.session.startTime),
-														"MMM d, yyyy 'at' h:mm a",
-													)}
-												</p>
-											</div>
-											<div className="flex items-center gap-3">
+											</td>
+											<td className="px-4 py-3 text-sm">
+												{format(
+													new Date(record.session.startTime),
+													"dd MMM yyyy",
+												)}
+											</td>
+											<td className="px-4 py-3">
 												<Badge
 													className={cn(
 														"border-none",
 														attendanceStatusColors[record.status],
 													)}
 												>
-													{capitalize(record.status)}
+													{t(`attendance.statuses.${record.status}`)}
 												</Badge>
-												{record.checkedInAt && (
-													<span className="text-muted-foreground text-sm">
-														Checked in:{" "}
+											</td>
+											<td className="hidden px-4 py-3 text-sm sm:table-cell">
+												{record.checkedInAt ? (
+													<span className="flex items-center gap-1 text-muted-foreground">
+														<ClockIcon className="size-3.5" />
 														{format(new Date(record.checkedInAt), "h:mm a")}
 													</span>
+												) : (
+													<span className="text-muted-foreground">-</span>
 												)}
-											</div>
-										</div>
+											</td>
+											<td className="hidden px-4 py-3 text-sm md:table-cell">
+												{record.notes ? (
+													<span className="max-w-[200px] truncate block text-muted-foreground">
+														{record.notes}
+													</span>
+												) : (
+													<span className="text-muted-foreground">-</span>
+												)}
+											</td>
+											<td className="px-4 py-3">
+												<div className="flex justify-end">
+													<DropdownMenu>
+														<DropdownMenuTrigger asChild>
+															<Button
+																className="size-8 text-muted-foreground data-[state=open]:bg-muted"
+																size="icon"
+																variant="ghost"
+															>
+																<MoreHorizontalIcon className="shrink-0" />
+															</Button>
+														</DropdownMenuTrigger>
+														<DropdownMenuContent align="end">
+															<DropdownMenuItem
+																onClick={() => {
+																	const availableSessions = sessions
+																		.filter((s) => s.status !== "cancelled")
+																		.map((s) => ({
+																			id: s.id,
+																			title: s.title,
+																			startTime: new Date(s.startTime),
+																			status: s.status,
+																		}));
+																	NiceModal.show(AddAttendanceModal, {
+																		athleteId,
+																		athleteName: athlete.user?.name,
+																		sessions: availableSessions,
+																		initialSessionId: record.session.id,
+																		initialValues: {
+																			status: record.status,
+																			notes: record.notes ?? "",
+																		},
+																	});
+																}}
+															>
+																<PencilIcon className="mr-2 size-4" />
+																{t("attendance.actions.edit")}
+															</DropdownMenuItem>
+															<DropdownMenuSeparator />
+															<DropdownMenuItem
+																variant="destructive"
+																onClick={() => {
+																	NiceModal.show(ConfirmationModal, {
+																		title: t("attendance.deleteConfirm.title"),
+																		message: t(
+																			"attendance.deleteConfirm.message",
+																			{ name: record.session.title },
+																		),
+																		confirmLabel: t(
+																			"attendance.deleteConfirm.confirm",
+																		),
+																		destructive: true,
+																		onConfirm: () =>
+																			deleteAttendanceMutation.mutate({
+																				id: record.id,
+																			}),
+																	});
+																}}
+															>
+																<Trash2Icon className="mr-2 size-4" />
+																{t("attendance.actions.delete")}
+															</DropdownMenuItem>
+														</DropdownMenuContent>
+													</DropdownMenu>
+												</div>
+											</td>
+										</tr>
 									))}
+								</tbody>
+							</table>
+						</div>
+					)}
+				</TabsContent>
+
+				{/* Physical Metrics Tab */}
+				<TabsContent value="physical" className="space-y-6">
+					{/* Physical Profile Card */}
+					<Card>
+						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+							<CardTitle className="flex items-center gap-2 text-base">
+								<RulerIcon className="size-4" />
+								{t("physical.profileTitle")}
+							</CardTitle>
+							<Button
+								size="sm"
+								variant="ghost"
+								onClick={() => {
+									NiceModal.show(OrgAthletePhysicalProfileEditModal, {
+										athleteId,
+										height: athlete.height,
+										wingspan: athlete.wingspan,
+										standingReach: athlete.standingReach,
+										dominantFoot: athlete.dominantFoot,
+										dominantHand: athlete.dominantHand,
+									});
+								}}
+							>
+								<PencilIcon className="size-4" />
+							</Button>
+						</CardHeader>
+						<CardContent>
+							{!athlete.height &&
+							!athlete.wingspan &&
+							!athlete.standingReach &&
+							!athlete.dominantFoot &&
+							!athlete.dominantHand ? (
+								<p className="py-6 text-center text-muted-foreground">
+									{t("physical.noProfile")}
+								</p>
+							) : (
+								<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
+									<div>
+										<p className="text-muted-foreground text-xs">
+											{t("physical.height")}
+										</p>
+										<p className="font-medium">
+											{athlete.height ? `${athlete.height} cm` : "-"}
+										</p>
+									</div>
+									<div>
+										<p className="text-muted-foreground text-xs">
+											{t("physical.wingspan")}
+										</p>
+										<p className="font-medium">
+											{athlete.wingspan ? `${athlete.wingspan} cm` : "-"}
+										</p>
+									</div>
+									<div>
+										<p className="text-muted-foreground text-xs">
+											{t("physical.standingReach")}
+										</p>
+										<p className="font-medium">
+											{athlete.standingReach
+												? `${athlete.standingReach} cm`
+												: "-"}
+										</p>
+									</div>
+									<div>
+										<p className="text-muted-foreground text-xs">
+											{t("physical.dominantFoot")}
+										</p>
+										<p className="font-medium capitalize">
+											{athlete.dominantFoot
+												? t(`physical.${athlete.dominantFoot}`)
+												: "-"}
+										</p>
+									</div>
+									<div>
+										<p className="text-muted-foreground text-xs">
+											{t("physical.dominantHand")}
+										</p>
+										<p className="font-medium capitalize">
+											{athlete.dominantHand
+												? t(`physical.${athlete.dominantHand}`)
+												: "-"}
+										</p>
+									</div>
 								</div>
 							)}
 						</CardContent>
 					</Card>
-				</TabsContent>
 
-				{/* Physical Metrics Tab */}
-				<TabsContent value="physical">
-					<Card>
-						<CardHeader className="flex flex-row items-center justify-between">
-							<CardTitle>Physical Metrics History</CardTitle>
+					{/* Body Composition History */}
+					<div className="space-y-4">
+						<div className="flex items-center justify-end">
 							<Button
 								size="sm"
 								onClick={() => {
 									NiceModal.show(AddPhysicalMetricsModal, { athleteId });
 								}}
 							>
-								<PlusIcon className="mr-2 size-4" />
-								Add Measurement
+								<PlusIcon className="mr-1 size-4" />
+								{t("physical.addMeasurement")}
 							</Button>
-						</CardHeader>
-						<CardContent>
-							{!physicalMetrics || physicalMetrics.length === 0 ? (
-								<p className="py-6 text-center text-muted-foreground">
-									No physical metrics recorded yet
-								</p>
-							) : (
-								<div className="space-y-3">
-									{physicalMetrics.map((metric) => (
-										<div key={metric.id} className="rounded-lg border p-4">
-											<div className="flex items-center justify-between">
-												<p className="font-medium text-sm">
-													{format(new Date(metric.measuredAt), "MMMM d, yyyy")}
-												</p>
-											</div>
-											<div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-												{metric.height && (
-													<div className="flex items-center gap-2">
-														<RulerIcon className="size-4 text-muted-foreground" />
-														<div>
-															<p className="text-muted-foreground text-xs">
-																Height
-															</p>
-															<p className="font-medium">{metric.height} cm</p>
-														</div>
-													</div>
-												)}
-												{metric.weight && (
-													<div className="flex items-center gap-2">
-														<WeightIcon className="size-4 text-muted-foreground" />
-														<div>
-															<p className="text-muted-foreground text-xs">
-																Weight
-															</p>
-															<p className="font-medium">
-																{(metric.weight / 1000).toFixed(1)} kg
-															</p>
-														</div>
-													</div>
-												)}
-												{metric.bodyFatPercentage && (
-													<div className="flex items-center gap-2">
-														<PercentIcon className="size-4 text-muted-foreground" />
-														<div>
-															<p className="text-muted-foreground text-xs">
-																Body Fat
-															</p>
-															<p className="font-medium">
-																{(metric.bodyFatPercentage / 10).toFixed(1)}%
-															</p>
-														</div>
-													</div>
-												)}
-												{metric.muscleMass && (
-													<div className="flex items-center gap-2">
-														<ActivityIcon className="size-4 text-muted-foreground" />
-														<div>
-															<p className="text-muted-foreground text-xs">
-																Muscle Mass
-															</p>
-															<p className="font-medium">
-																{(metric.muscleMass / 1000).toFixed(1)} kg
-															</p>
-														</div>
-													</div>
-												)}
-												{metric.wingspan && (
-													<div className="flex items-center gap-2">
-														<RulerIcon className="size-4 text-muted-foreground" />
-														<div>
-															<p className="text-muted-foreground text-xs">
-																Wingspan
-															</p>
-															<p className="font-medium">
-																{metric.wingspan} cm
-															</p>
-														</div>
-													</div>
-												)}
-												{metric.standingReach && (
-													<div className="flex items-center gap-2">
-														<TrendingUpIcon className="size-4 text-muted-foreground" />
-														<div>
-															<p className="text-muted-foreground text-xs">
-																Standing Reach
-															</p>
-															<p className="font-medium">
-																{metric.standingReach} cm
-															</p>
-														</div>
-													</div>
-												)}
-											</div>
-											{metric.notes && (
-												<p className="mt-3 text-muted-foreground text-sm">
-													{metric.notes}
-												</p>
-											)}
-										</div>
-									))}
-								</div>
-							)}
-						</CardContent>
-					</Card>
+						</div>
+
+						{!physicalMetrics || physicalMetrics.length === 0 ? (
+							<EmptyState icon={WeightIcon} title={t("physical.noMetrics")} />
+						) : (
+							<div className="overflow-hidden rounded-lg border">
+								<table className="w-full text-sm">
+									<thead>
+										<tr className="border-b bg-muted/50">
+											<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+												{t("physical.table.date")}
+											</th>
+											<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+												{t("physical.table.weight")}
+											</th>
+											<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+												{t("physical.table.bodyFat")}
+											</th>
+											<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+												{t("physical.table.muscleMass")}
+											</th>
+											<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground md:table-cell">
+												{t("physical.table.notes")}
+											</th>
+											<th className="w-[50px] px-4 py-3 text-right text-xs font-medium text-muted-foreground">
+												{t("physical.table.actions")}
+											</th>
+										</tr>
+									</thead>
+									<tbody className="divide-y">
+										{physicalMetrics.map((metric) => (
+											<tr
+												key={metric.id}
+												className="transition-colors hover:bg-muted/30"
+											>
+												<td className="px-4 py-3 font-medium">
+													{format(new Date(metric.measuredAt), "MMM d, yyyy")}
+												</td>
+												<td className="px-4 py-3">
+													{metric.weight
+														? `${(metric.weight / 1000).toFixed(1)} kg`
+														: "-"}
+												</td>
+												<td className="px-4 py-3">
+													{metric.bodyFatPercentage
+														? `${(metric.bodyFatPercentage / 10).toFixed(1)}%`
+														: "-"}
+												</td>
+												<td className="px-4 py-3">
+													{metric.muscleMass
+														? `${(metric.muscleMass / 1000).toFixed(1)} kg`
+														: "-"}
+												</td>
+												<td className="hidden max-w-[200px] truncate px-4 py-3 text-muted-foreground md:table-cell">
+													{metric.notes || "-"}
+												</td>
+												<td className="px-4 py-3 text-right">
+													<DropdownMenu>
+														<DropdownMenuTrigger asChild>
+															<Button
+																variant="ghost"
+																size="icon"
+																className="size-8"
+															>
+																<MoreHorizontalIcon className="size-4" />
+															</Button>
+														</DropdownMenuTrigger>
+														<DropdownMenuContent align="end">
+															<DropdownMenuItem
+																onClick={() => {
+																	NiceModal.show(AddPhysicalMetricsModal, {
+																		athleteId,
+																		initialValues: {
+																			id: metric.id,
+																			measuredAt: metric.measuredAt,
+																			weight: metric.weight,
+																			bodyFatPercentage:
+																				metric.bodyFatPercentage,
+																			muscleMass: metric.muscleMass,
+																			notes: metric.notes,
+																		},
+																	});
+																}}
+															>
+																<PencilIcon className="mr-2 size-4" />
+																{t("physical.actions.edit")}
+															</DropdownMenuItem>
+															<DropdownMenuSeparator />
+															<DropdownMenuItem
+																className="text-destructive"
+																onClick={() => {
+																	NiceModal.show(ConfirmationModal, {
+																		title: t("physical.deleteConfirm.title"),
+																		message: t(
+																			"physical.deleteConfirm.message",
+																			{
+																				date: format(
+																					new Date(metric.measuredAt),
+																					"MMM d, yyyy",
+																				),
+																			},
+																		),
+																		confirmLabel: t(
+																			"physical.deleteConfirm.confirm",
+																		),
+																		onConfirm: () => {
+																			deletePhysicalMetricsMutation.mutate({
+																				id: metric.id,
+																				athleteId,
+																			});
+																		},
+																	});
+																}}
+															>
+																<Trash2Icon className="mr-2 size-4" />
+																{t("physical.actions.delete")}
+															</DropdownMenuItem>
+														</DropdownMenuContent>
+													</DropdownMenu>
+												</td>
+											</tr>
+										))}
+									</tbody>
+								</table>
+							</div>
+						)}
+					</div>
 				</TabsContent>
 
 				{/* Fitness Tests Tab */}
-				<TabsContent value="fitness">
-					<Card>
-						<CardHeader className="flex flex-row items-center justify-between">
-							<CardTitle>Fitness Tests</CardTitle>
-							<Button
-								size="sm"
-								onClick={() => {
-									NiceModal.show(AddFitnessTestModal, { athleteId });
-								}}
-							>
-								<PlusIcon className="mr-2 size-4" />
-								Add Test Result
-							</Button>
-						</CardHeader>
-						<CardContent>
-							{!fitnessTests || fitnessTests.length === 0 ? (
-								<p className="py-6 text-center text-muted-foreground">
-									No fitness tests recorded yet
-								</p>
-							) : (
-								<div className="space-y-3">
+				<TabsContent value="fitness" className="space-y-4">
+					<div className="flex justify-end">
+						<Button
+							size="sm"
+							onClick={() => {
+								NiceModal.show(AddFitnessTestModal, { athleteId });
+							}}
+						>
+							<PlusIcon className="mr-1 size-4" />
+							{t("fitness.addTest")}
+						</Button>
+					</div>
+					{!fitnessTests || fitnessTests.length === 0 ? (
+						<EmptyState icon={ActivityIcon} title={t("fitness.noTests")} />
+					) : (
+						<div className="rounded-lg border">
+							<table className="w-full">
+								<thead>
+									<tr className="border-b bg-muted/50">
+										<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+											{t("fitness.table.testType")}
+										</th>
+										<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+											{t("fitness.table.date")}
+										</th>
+										<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+											{t("fitness.table.result")}
+										</th>
+										<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground md:table-cell">
+											{t("fitness.table.notes")}
+										</th>
+										<th className="w-[50px] px-4 py-3 text-right text-xs font-medium text-muted-foreground">
+											<span className="sr-only">
+												{t("fitness.table.actions")}
+											</span>
+										</th>
+									</tr>
+								</thead>
+								<tbody className="divide-y">
 									{fitnessTests.map((test) => (
-										<div
-											key={test.id}
-											className="flex items-center justify-between rounded-lg border p-4"
-										>
-											<div className="flex items-center gap-4">
-												<div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
-													<ActivityIcon className="size-5 text-primary" />
-												</div>
-												<div>
-													<p className="font-medium">
-														{formatTestType(test.testType)}
-													</p>
-													<p className="text-muted-foreground text-sm">
-														{format(new Date(test.testDate), "MMM d, yyyy")}
-													</p>
-												</div>
-											</div>
-											<div className="text-right">
-												<p className="font-bold text-lg">
-													{test.result} {test.unit}
-												</p>
-												{test.notes && (
-													<p className="max-w-[200px] truncate text-muted-foreground text-xs">
+										<tr key={test.id} className="hover:bg-muted/30">
+											<td className="px-4 py-3">
+												<span className="font-medium text-sm">
+													{t(`fitness.testTypes.${test.testType}`)}
+												</span>
+											</td>
+											<td className="px-4 py-3 text-sm">
+												{format(new Date(test.testDate), "dd MMM yyyy")}
+											</td>
+											<td className="px-4 py-3">
+												<span className="font-semibold tabular-nums">
+													{test.result}
+												</span>
+												<span className="ml-1 text-muted-foreground text-sm">
+													{test.unit}
+												</span>
+											</td>
+											<td className="hidden px-4 py-3 text-sm md:table-cell">
+												{test.notes ? (
+													<span className="max-w-[200px] truncate block text-muted-foreground">
 														{test.notes}
-													</p>
+													</span>
+												) : (
+													<span className="text-muted-foreground">-</span>
 												)}
-											</div>
-										</div>
+											</td>
+											<td className="px-4 py-3">
+												<div className="flex justify-end">
+													<DropdownMenu>
+														<DropdownMenuTrigger asChild>
+															<Button
+																className="size-8 text-muted-foreground data-[state=open]:bg-muted"
+																size="icon"
+																variant="ghost"
+															>
+																<MoreHorizontalIcon className="shrink-0" />
+															</Button>
+														</DropdownMenuTrigger>
+														<DropdownMenuContent align="end">
+															<DropdownMenuItem
+																onClick={() => {
+																	NiceModal.show(AddFitnessTestModal, {
+																		athleteId,
+																		initialValues: {
+																			id: test.id,
+																			testType: test.testType,
+																			testDate: test.testDate,
+																			result: test.result,
+																			unit: test.unit,
+																			notes: test.notes,
+																		},
+																	});
+																}}
+															>
+																<PencilIcon className="mr-2 size-4" />
+																{t("fitness.actions.edit")}
+															</DropdownMenuItem>
+															<DropdownMenuSeparator />
+															<DropdownMenuItem
+																variant="destructive"
+																onClick={() => {
+																	NiceModal.show(ConfirmationModal, {
+																		title: t("fitness.deleteConfirm.title"),
+																		message: t(
+																			"fitness.deleteConfirm.message",
+																			{
+																				name: t(
+																					`fitness.testTypes.${test.testType}`,
+																				),
+																			},
+																		),
+																		confirmLabel: t(
+																			"fitness.deleteConfirm.confirm",
+																		),
+																		destructive: true,
+																		onConfirm: () => {
+																			deleteFitnessTestMutation.mutate({
+																				id: test.id,
+																				athleteId,
+																			});
+																		},
+																	});
+																}}
+															>
+																<Trash2Icon className="mr-2 size-4" />
+																{t("fitness.actions.delete")}
+															</DropdownMenuItem>
+														</DropdownMenuContent>
+													</DropdownMenu>
+												</div>
+											</td>
+										</tr>
 									))}
-								</div>
-							)}
-						</CardContent>
-					</Card>
+								</tbody>
+							</table>
+						</div>
+					)}
 				</TabsContent>
 
 				{/* Career History Tab */}
-				<TabsContent value="career">
-					<Card>
-						<CardHeader className="flex flex-row items-center justify-between">
-							<CardTitle>Career History</CardTitle>
-							<Button
-								size="sm"
-								onClick={() => {
-									NiceModal.show(AddCareerHistoryModal, { athleteId });
-								}}
-							>
-								<PlusIcon className="mr-2 size-4" />
-								Add Entry
-							</Button>
-						</CardHeader>
-						<CardContent>
-							{!careerHistory || careerHistory.length === 0 ? (
-								<div className="py-10 text-center">
-									<BriefcaseIcon className="mx-auto size-12 text-muted-foreground/50" />
-									<p className="mt-3 text-muted-foreground">
-										No career history recorded yet
-									</p>
-									<Button
-										variant="outline"
-										size="sm"
-										className="mt-4"
-										onClick={() => {
-											NiceModal.show(AddCareerHistoryModal, { athleteId });
-										}}
-									>
-										<PlusIcon className="mr-2 size-4" />
-										Add First Entry
-									</Button>
-								</div>
-							) : (
-								<div className="space-y-8">
-									{/* Clubs Section */}
-									<CareerClubsSection careerHistory={careerHistory} />
-									{/* National Teams Section */}
-									<CareerNationalTeamsSection careerHistory={careerHistory} />
-								</div>
-							)}
-						</CardContent>
-					</Card>
+				<TabsContent value="career" className="space-y-4">
+					<div className="flex items-center justify-end">
+						<Button
+							size="sm"
+							onClick={() => {
+								NiceModal.show(AddCareerHistoryModal, { athleteId });
+							}}
+						>
+							<PlusIcon className="mr-1 size-4" />
+							{t("career.addEntry")}
+						</Button>
+					</div>
+
+					{!careerHistory || careerHistory.length === 0 ? (
+						<EmptyState icon={BriefcaseIcon} title={t("career.noHistory")} />
+					) : (
+						<div className="overflow-hidden rounded-lg border">
+							<table className="w-full text-sm">
+								<thead>
+									<tr className="border-b bg-muted/50">
+										<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+											{t("career.table.team")}
+										</th>
+										<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+											{t("career.table.period")}
+										</th>
+										<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground md:table-cell">
+											{t("career.table.position")}
+										</th>
+										<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground lg:table-cell">
+											{t("career.table.achievements")}
+										</th>
+										<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+											{t("career.table.type")}
+										</th>
+										<th className="w-[50px] px-4 py-3 text-right text-xs font-medium text-muted-foreground">
+											{t("career.table.actions")}
+										</th>
+									</tr>
+								</thead>
+								<tbody className="divide-y">
+									{careerHistory.map((entry) => (
+										<tr
+											key={entry.id}
+											className="transition-colors hover:bg-muted/30"
+										>
+											<td className="px-4 py-3">
+												<div className="font-medium">{entry.clubName}</div>
+												{entry.wasNationalTeam && entry.nationalTeamLevel && (
+													<span className="text-muted-foreground text-xs">
+														{entry.nationalTeamLevel}
+													</span>
+												)}
+											</td>
+											<td className="px-4 py-3 text-muted-foreground">
+												{entry.startDate
+													? format(new Date(entry.startDate), "MMM yyyy")
+													: "?"}
+												{" — "}
+												{entry.endDate
+													? format(new Date(entry.endDate), "MMM yyyy")
+													: t("career.present")}
+											</td>
+											<td className="hidden px-4 py-3 text-muted-foreground md:table-cell">
+												{entry.position || "-"}
+											</td>
+											<td className="hidden max-w-[200px] truncate px-4 py-3 text-muted-foreground lg:table-cell">
+												{entry.achievements || "-"}
+											</td>
+											<td className="px-4 py-3">
+												{entry.wasNationalTeam ? (
+													<Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400">
+														<FlagIcon className="mr-1 size-3" />
+														{t("career.types.national")}
+													</Badge>
+												) : (
+													<Badge variant="secondary">
+														{t("career.types.club")}
+													</Badge>
+												)}
+											</td>
+											<td className="px-4 py-3 text-right">
+												<DropdownMenu>
+													<DropdownMenuTrigger asChild>
+														<Button
+															variant="ghost"
+															size="icon"
+															className="size-8"
+														>
+															<MoreHorizontalIcon className="size-4" />
+														</Button>
+													</DropdownMenuTrigger>
+													<DropdownMenuContent align="end">
+														<DropdownMenuItem
+															onClick={() => {
+																NiceModal.show(AddCareerHistoryModal, {
+																	athleteId,
+																	initialValues: {
+																		id: entry.id,
+																		clubName: entry.clubName,
+																		startDate: entry.startDate,
+																		endDate: entry.endDate,
+																		position: entry.position,
+																		achievements: entry.achievements,
+																		wasNationalTeam: entry.wasNationalTeam,
+																		nationalTeamLevel: entry.nationalTeamLevel,
+																		notes: entry.notes,
+																	},
+																});
+															}}
+														>
+															<PencilIcon className="mr-2 size-4" />
+															{t("career.actions.edit")}
+														</DropdownMenuItem>
+														<DropdownMenuSeparator />
+														<DropdownMenuItem
+															className="text-destructive"
+															onClick={() => {
+																NiceModal.show(ConfirmationModal, {
+																	title: t("career.deleteConfirm.title"),
+																	message: t("career.deleteConfirm.message", {
+																		clubName: entry.clubName,
+																	}),
+																	confirmLabel: t(
+																		"career.deleteConfirm.confirm",
+																	),
+																	onConfirm: () => {
+																		deleteCareerHistoryMutation.mutate({
+																			id: entry.id,
+																		});
+																	},
+																});
+															}}
+														>
+															<Trash2Icon className="mr-2 size-4" />
+															{t("career.actions.delete")}
+														</DropdownMenuItem>
+													</DropdownMenuContent>
+												</DropdownMenu>
+											</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
+						</div>
+					)}
 				</TabsContent>
 
 				{/* Teams Tab */}
-				<TabsContent value="teams">
-					<Card>
-						<CardHeader>
-							<CardTitle>Teams</CardTitle>
-						</CardHeader>
-						<CardContent>
-							{!teams || teams.length === 0 ? (
-								<div className="py-10 text-center">
-									<ShieldIcon className="mx-auto size-12 text-muted-foreground/50" />
-									<p className="mt-3 text-muted-foreground">
-										Not a member of any team
-									</p>
-								</div>
-							) : (
-								<div className="space-y-4">
+				<TabsContent value="teams" className="space-y-4">
+					<div className="flex justify-end">
+						<Button
+							size="sm"
+							onClick={() => {
+								NiceModal.show(AssignTeamModal, {
+									athleteId,
+									existingTeamIds: teams?.map((t) => t.id) ?? [],
+								});
+							}}
+						>
+							<PlusIcon className="mr-1 size-4" />
+							{t("teams.assignToTeam")}
+						</Button>
+					</div>
+					{!teams || teams.length === 0 ? (
+						<EmptyState icon={ShieldIcon} title={t("teams.noTeams")} />
+					) : (
+						<div className="rounded-lg border">
+							<table className="w-full">
+								<thead>
+									<tr className="border-b bg-muted/50">
+										<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+											{t("teams.table.team")}
+										</th>
+										<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground md:table-cell">
+											{t("teams.table.season")}
+										</th>
+										<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+											{t("teams.table.role")}
+										</th>
+										<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground sm:table-cell">
+											{t("teams.table.jersey")}
+										</th>
+										<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground md:table-cell">
+											{t("teams.table.position")}
+										</th>
+										<th className="w-[50px] px-4 py-3 text-right text-xs font-medium text-muted-foreground">
+											<span className="sr-only">
+												{t("teams.table.actions")}
+											</span>
+										</th>
+									</tr>
+								</thead>
+								<tbody className="divide-y">
 									{teams.map((team) => (
-										<Link
-											key={team.id}
-											href={`/dashboard/organization/teams/${team.id}`}
-											className="flex items-center justify-between rounded-lg border p-4 hover:bg-muted/50 transition-colors"
-										>
-											<div className="flex items-center gap-3">
-												<div
-													className="flex h-10 w-10 items-center justify-center rounded-full"
-													style={{
-														backgroundColor: team.primaryColor ?? "#3B82F6",
-													}}
+										<tr key={team.id} className="hover:bg-muted/30">
+											<td className="px-4 py-3">
+												<Link
+													href={`/dashboard/organization/teams/${team.id}`}
+													className="flex items-center gap-2.5 hover:underline"
 												>
-													<ShieldIcon className="h-5 w-5 text-white" />
-												</div>
-												<div>
-													<div className="font-medium">{team.name}</div>
-													<div className="flex items-center gap-2 text-sm text-muted-foreground">
-														{team.season && <span>{team.season.name}</span>}
-														{team.ageCategory && (
-															<span className="flex items-center gap-1">
-																<UsersIcon className="h-3 w-3" />
-																{team.ageCategory.name}
-															</span>
-														)}
-													</div>
-												</div>
-											</div>
-											<div className="flex items-center gap-2">
-												{team.membership.jerseyNumber && (
+													<span
+														className="flex size-7 shrink-0 items-center justify-center rounded-full"
+														style={{
+															backgroundColor: team.primaryColor ?? "#3B82F6",
+														}}
+													>
+														<ShieldIcon className="size-3.5 text-white" />
+													</span>
+													<span className="font-medium text-sm">
+														{team.name}
+													</span>
+												</Link>
+											</td>
+											<td className="hidden px-4 py-3 text-sm md:table-cell">
+												{team.season ? (
+													<span>{team.season.name}</span>
+												) : (
+													<span className="text-muted-foreground">-</span>
+												)}
+											</td>
+											<td className="px-4 py-3">
+												<Badge variant="secondary">
+													{team.membership.role === "captain"
+														? t("captain")
+														: team.membership.role === "vice_captain"
+															? t("viceCaptain")
+															: t("player")}
+												</Badge>
+											</td>
+											<td className="hidden px-4 py-3 text-sm sm:table-cell">
+												{team.membership.jerseyNumber ? (
 													<Badge variant="outline" className="font-bold">
 														#{team.membership.jerseyNumber}
 													</Badge>
+												) : (
+													<span className="text-muted-foreground">-</span>
 												)}
-												<Badge variant="secondary">
-													{team.membership.role === "captain"
-														? "Capitán"
-														: team.membership.role === "vice_captain"
-															? "Vice-capitán"
-															: team.membership.position || "Jugador"}
-												</Badge>
-											</div>
-										</Link>
+											</td>
+											<td className="hidden px-4 py-3 text-sm md:table-cell">
+												{team.membership.position ? (
+													<span>{team.membership.position}</span>
+												) : (
+													<span className="text-muted-foreground">-</span>
+												)}
+											</td>
+											<td className="px-4 py-3">
+												<div className="flex justify-end">
+													<DropdownMenu>
+														<DropdownMenuTrigger asChild>
+															<Button
+																className="size-8 text-muted-foreground data-[state=open]:bg-muted"
+																size="icon"
+																variant="ghost"
+															>
+																<MoreHorizontalIcon className="shrink-0" />
+															</Button>
+														</DropdownMenuTrigger>
+														<DropdownMenuContent align="end">
+															<DropdownMenuItem asChild>
+																<Link
+																	href={`/dashboard/organization/teams/${team.id}`}
+																>
+																	<ShieldIcon className="mr-2 size-4" />
+																	{t("teams.actions.viewTeam")}
+																</Link>
+															</DropdownMenuItem>
+															<DropdownMenuSeparator />
+															<DropdownMenuItem
+																variant="destructive"
+																onClick={() => {
+																	NiceModal.show(ConfirmationModal, {
+																		title: t("teams.removeConfirm.title"),
+																		message: t("teams.removeConfirm.message", {
+																			name: team.name,
+																		}),
+																		confirmLabel: t(
+																			"teams.removeConfirm.confirm",
+																		),
+																		destructive: true,
+																		onConfirm: () => {
+																			removeTeamMemberMutation.mutate({
+																				teamId: team.id,
+																				athleteIds: [athleteId],
+																			});
+																		},
+																	});
+																}}
+															>
+																<Trash2Icon className="mr-2 size-4" />
+																{t("teams.actions.remove")}
+															</DropdownMenuItem>
+														</DropdownMenuContent>
+													</DropdownMenu>
+												</div>
+											</td>
+										</tr>
 									))}
-								</div>
-							)}
-						</CardContent>
-					</Card>
+								</tbody>
+							</table>
+						</div>
+					)}
 				</TabsContent>
 
 				{/* Wellness Tab */}
-				<TabsContent value="wellness">
-					<Card>
-						<CardHeader className="flex flex-row items-center justify-between">
-							<CardTitle>Wellness History</CardTitle>
-							<Button
-								size="sm"
-								onClick={() => {
-									NiceModal.show(AddWellnessModal, {
-										athleteId,
-										athleteName: athlete.user?.name,
-									});
-								}}
-							>
-								<PlusIcon className="mr-2 size-4" />
-								Add Survey
-							</Button>
-						</CardHeader>
-						<CardContent>
-							{!wellnessSurveys || wellnessSurveys.length === 0 ? (
-								<div className="py-10 text-center">
-									<HeartPulseIcon className="mx-auto size-12 text-muted-foreground/50" />
-									<p className="mt-3 text-muted-foreground">
-										No wellness surveys recorded yet
-									</p>
-									<Button
-										variant="outline"
-										size="sm"
-										className="mt-4"
-										onClick={() => {
-											NiceModal.show(AddWellnessModal, {
-												athleteId,
-												athleteName: athlete.user?.name,
-											});
-										}}
-									>
-										<PlusIcon className="mr-2 size-4" />
-										Add First Survey
-									</Button>
-								</div>
-							) : (
-								<div className="space-y-3">
+				<TabsContent value="wellness" className="space-y-4">
+					<div className="flex items-center justify-end">
+						<Button
+							size="sm"
+							onClick={() => {
+								NiceModal.show(AddWellnessModal, { athleteId });
+							}}
+						>
+							<PlusIcon className="mr-1 size-4" />
+							{t("wellness.addSurvey")}
+						</Button>
+					</div>
+
+					{!wellnessSurveys || wellnessSurveys.length === 0 ? (
+						<EmptyState icon={HeartPulseIcon} title={t("wellness.noSurveys")} />
+					) : (
+						<div className="overflow-hidden rounded-lg border">
+							<table className="w-full text-sm">
+								<thead>
+									<tr className="border-b bg-muted/50">
+										<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+											{t("wellness.table.date")}
+										</th>
+										<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+											{t("wellness.table.sleep")}
+										</th>
+										<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+											{t("wellness.table.quality")}
+										</th>
+										<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground sm:table-cell">
+											{t("wellness.table.energy")}
+										</th>
+										<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground sm:table-cell">
+											{t("wellness.table.fatigue")}
+										</th>
+										<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground md:table-cell">
+											{t("wellness.table.soreness")}
+										</th>
+										<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground md:table-cell">
+											{t("wellness.table.mood")}
+										</th>
+										<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground md:table-cell">
+											{t("wellness.table.stress")}
+										</th>
+										<th className="w-[50px] px-4 py-3 text-right text-xs font-medium text-muted-foreground">
+											<span className="sr-only">
+												{t("wellness.table.actions")}
+											</span>
+										</th>
+									</tr>
+								</thead>
+								<tbody className="divide-y">
 									{wellnessSurveys.map((survey) => (
-										<div key={survey.id} className="rounded-lg border p-4">
-											<div className="flex items-center justify-between">
-												<div className="flex items-center gap-2">
-													<HeartPulseIcon className="size-4 text-red-500" />
-													<p className="font-medium text-sm">
-														{format(
-															new Date(survey.surveyDate),
-															"EEEE, MMMM d, yyyy",
-														)}
-													</p>
+										<tr key={survey.id} className="hover:bg-muted/30">
+											<td className="px-4 py-3 font-medium text-sm">
+												{format(new Date(survey.surveyDate), "MMM d, yyyy")}
+											</td>
+											<td className="px-4 py-3 text-sm">
+												{(survey.sleepHours / 60).toFixed(1)}h
+											</td>
+											<td className="px-4 py-3">
+												<span
+													className={cn(
+														"font-medium text-sm",
+														getWellnessScoreColor(survey.sleepQuality),
+													)}
+												>
+													{survey.sleepQuality}/10
+												</span>
+											</td>
+											<td className="hidden px-4 py-3 sm:table-cell">
+												<span
+													className={cn(
+														"font-medium text-sm",
+														getWellnessScoreColor(survey.energy),
+													)}
+												>
+													{survey.energy}/10
+												</span>
+											</td>
+											<td className="hidden px-4 py-3 sm:table-cell">
+												<span
+													className={cn(
+														"font-medium text-sm",
+														getWellnessScoreColor(survey.fatigue, true),
+													)}
+												>
+													{survey.fatigue}/10
+												</span>
+											</td>
+											<td className="hidden px-4 py-3 md:table-cell">
+												<span
+													className={cn(
+														"font-medium text-sm",
+														getWellnessScoreColor(survey.muscleSoreness, true),
+													)}
+												>
+													{survey.muscleSoreness}/10
+												</span>
+											</td>
+											<td className="hidden px-4 py-3 md:table-cell">
+												<span
+													className={cn(
+														"font-medium text-sm",
+														getWellnessScoreColor(survey.mood),
+													)}
+												>
+													{getMoodEmoji(survey.mood)} {survey.mood}/10
+												</span>
+											</td>
+											<td className="hidden px-4 py-3 md:table-cell">
+												<span
+													className={cn(
+														"font-medium text-sm",
+														getWellnessScoreColor(survey.stressLevel, true),
+													)}
+												>
+													{survey.stressLevel}/10
+												</span>
+											</td>
+											<td className="px-4 py-3">
+												<div className="flex justify-end">
+													<DropdownMenu>
+														<DropdownMenuTrigger asChild>
+															<Button
+																className="size-8 text-muted-foreground data-[state=open]:bg-muted"
+																size="icon"
+																variant="ghost"
+															>
+																<MoreHorizontalIcon className="shrink-0" />
+															</Button>
+														</DropdownMenuTrigger>
+														<DropdownMenuContent align="end">
+															<DropdownMenuItem
+																onClick={() => {
+																	NiceModal.show(AddWellnessModal, {
+																		athleteId,
+																		initialValues: {
+																			id: survey.id,
+																			surveyDate: survey.surveyDate,
+																			sleepHours: survey.sleepHours,
+																			sleepQuality: survey.sleepQuality,
+																			fatigue: survey.fatigue,
+																			muscleSoreness: survey.muscleSoreness,
+																			mood: survey.mood,
+																			stressLevel: survey.stressLevel,
+																			energy: survey.energy,
+																			notes: survey.notes,
+																		},
+																	});
+																}}
+															>
+																<PencilIcon className="mr-2 size-4" />
+																{t("wellness.actions.edit")}
+															</DropdownMenuItem>
+															<DropdownMenuSeparator />
+															<DropdownMenuItem
+																variant="destructive"
+																onClick={() => {
+																	NiceModal.show(ConfirmationModal, {
+																		title: t("wellness.deleteConfirm.title"),
+																		message: t(
+																			"wellness.deleteConfirm.message",
+																		),
+																		confirmLabel: t(
+																			"wellness.deleteConfirm.confirm",
+																		),
+																		destructive: true,
+																		onConfirm: () => {
+																			deleteWellnessSurveyMutation.mutate({
+																				id: survey.id,
+																				athleteId,
+																			});
+																		},
+																	});
+																}}
+															>
+																<Trash2Icon className="mr-2 size-4" />
+																{t("wellness.actions.delete")}
+															</DropdownMenuItem>
+														</DropdownMenuContent>
+													</DropdownMenu>
 												</div>
-												<p className="text-muted-foreground text-xs">
-													{format(new Date(survey.createdAt), "h:mm a")}
-												</p>
-											</div>
-											<div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-7">
-												<div className="flex flex-col items-center rounded-lg bg-muted/50 p-2">
-													<BedIcon className="size-4 text-muted-foreground" />
-													<p className="text-muted-foreground text-xs">Sleep</p>
-													<p className="font-medium text-sm">
-														{(survey.sleepHours / 60).toFixed(1)}h
-													</p>
-												</div>
-												<div className="flex flex-col items-center rounded-lg bg-muted/50 p-2">
-													<StarIcon className="size-4 text-muted-foreground" />
-													<p className="text-muted-foreground text-xs">
-														Quality
-													</p>
-													<p
-														className={cn(
-															"font-medium text-sm",
-															getWellnessScoreColor(survey.sleepQuality),
-														)}
-													>
-														{survey.sleepQuality}/10
-													</p>
-												</div>
-												<div className="flex flex-col items-center rounded-lg bg-muted/50 p-2">
-													<ActivityIcon className="size-4 text-muted-foreground" />
-													<p className="text-muted-foreground text-xs">
-														Energy
-													</p>
-													<p
-														className={cn(
-															"font-medium text-sm",
-															getWellnessScoreColor(survey.energy),
-														)}
-													>
-														{survey.energy}/10
-													</p>
-												</div>
-												<div className="flex flex-col items-center rounded-lg bg-muted/50 p-2">
-													<span className="text-sm">😴</span>
-													<p className="text-muted-foreground text-xs">
-														Fatigue
-													</p>
-													<p
-														className={cn(
-															"font-medium text-sm",
-															getWellnessScoreColor(survey.fatigue, true),
-														)}
-													>
-														{survey.fatigue}/10
-													</p>
-												</div>
-												<div className="flex flex-col items-center rounded-lg bg-muted/50 p-2">
-													<span className="text-sm">💪</span>
-													<p className="text-muted-foreground text-xs">
-														Soreness
-													</p>
-													<p
-														className={cn(
-															"font-medium text-sm",
-															getWellnessScoreColor(
-																survey.muscleSoreness,
-																true,
-															),
-														)}
-													>
-														{survey.muscleSoreness}/10
-													</p>
-												</div>
-												<div className="flex flex-col items-center rounded-lg bg-muted/50 p-2">
-													<span className="text-sm">
-														{getMoodEmoji(survey.mood)}
-													</span>
-													<p className="text-muted-foreground text-xs">Mood</p>
-													<p
-														className={cn(
-															"font-medium text-sm",
-															getWellnessScoreColor(survey.mood),
-														)}
-													>
-														{survey.mood}/10
-													</p>
-												</div>
-												<div className="flex flex-col items-center rounded-lg bg-muted/50 p-2">
-													<span className="text-sm">😰</span>
-													<p className="text-muted-foreground text-xs">
-														Stress
-													</p>
-													<p
-														className={cn(
-															"font-medium text-sm",
-															getWellnessScoreColor(survey.stressLevel, true),
-														)}
-													>
-														{survey.stressLevel}/10
-													</p>
-												</div>
-											</div>
-											{survey.notes && (
-												<p className="mt-3 text-muted-foreground text-sm">
-													<span className="font-medium">Notes:</span>{" "}
-													{survey.notes}
-												</p>
-											)}
-										</div>
+											</td>
+										</tr>
 									))}
-								</div>
-							)}
-						</CardContent>
-					</Card>
+								</tbody>
+							</table>
+						</div>
+					)}
 				</TabsContent>
 
 				{/* Medical Tab */}
@@ -1085,24 +1751,127 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 				{/* Info Tab - Additional Profile Information */}
 				<TabsContent value="info">
 					<div className="grid gap-4 md:grid-cols-2">
-						{/* Contact Information */}
+						{/* Contact & Residence Card */}
 						<Card>
-							<CardHeader>
-								<CardTitle className="flex items-center gap-2">
-									<MapPinIcon className="size-4" />
-									Contacto y Residencia
+							<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+								<CardTitle className="flex items-center gap-2 text-base">
+									<PhoneIcon className="size-4" />
+									{t("info.contactResidence")}
 								</CardTitle>
+								<Button
+									size="sm"
+									variant="ghost"
+									onClick={() =>
+										NiceModal.show(OrgAthleteContactEditModal, {
+											athleteId,
+											phone: athlete.phone,
+											parentName: athlete.parentName,
+											parentRelationship: athlete.parentRelationship,
+											parentPhone: athlete.parentPhone,
+											parentEmail: athlete.parentEmail,
+										})
+									}
+								>
+									<PencilIcon className="size-4" />
+								</Button>
 							</CardHeader>
 							<CardContent className="space-y-3">
 								{athlete.phone && (
 									<div>
-										<p className="text-muted-foreground text-xs">Teléfono</p>
-										<p className="font-medium">{athlete.phone}</p>
+										<p className="text-muted-foreground text-xs">
+											{t("info.phone")}
+										</p>
+										<WhatsAppLink
+											phone={athlete.phone}
+											variant="whatsapp"
+											className="font-medium"
+										/>
 									</div>
 								)}
+								{athlete.parentName && (
+									<div className="pt-2 border-t">
+										<p className="text-muted-foreground text-xs font-medium mb-2">
+											{t("info.parentContact")}
+										</p>
+										<div className="space-y-2">
+											<div>
+												<p className="text-muted-foreground text-xs">
+													{t("info.name")}
+												</p>
+												<p className="font-medium">{athlete.parentName}</p>
+											</div>
+											{athlete.parentRelationship && (
+												<div>
+													<p className="text-muted-foreground text-xs">
+														{t("info.relationship")}
+													</p>
+													<p className="font-medium capitalize">
+														{athlete.parentRelationship}
+													</p>
+												</div>
+											)}
+											{athlete.parentPhone && (
+												<div>
+													<p className="text-muted-foreground text-xs">
+														{t("info.phone")}
+													</p>
+													<WhatsAppLink
+														phone={athlete.parentPhone}
+														variant="whatsapp"
+														className="font-medium"
+													/>
+												</div>
+											)}
+											{athlete.parentEmail && (
+												<div>
+													<p className="text-muted-foreground text-xs">Email</p>
+													<MailtoLink
+														email={athlete.parentEmail}
+														className="font-medium"
+													/>
+												</div>
+											)}
+										</div>
+									</div>
+								)}
+								{!athlete.phone && !athlete.parentName && (
+									<EmptyState
+										icon={PhoneIcon}
+										title={t("info.noContactInfo")}
+										size="sm"
+									/>
+								)}
+							</CardContent>
+						</Card>
+
+						{/* Residence Card */}
+						<Card>
+							<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+								<CardTitle className="flex items-center gap-2 text-base">
+									<MapPinIcon className="size-4" />
+									{t("info.residence")}
+								</CardTitle>
+								<Button
+									size="sm"
+									variant="ghost"
+									onClick={() =>
+										NiceModal.show(OrgAthleteResidenceEditModal, {
+											athleteId,
+											residenceCity: athlete.residenceCity,
+											residenceCountry: athlete.residenceCountry,
+											nationality: athlete.nationality,
+										})
+									}
+								>
+									<PencilIcon className="size-4" />
+								</Button>
+							</CardHeader>
+							<CardContent className="space-y-3">
 								{(athlete.residenceCity || athlete.residenceCountry) && (
 									<div>
-										<p className="text-muted-foreground text-xs">Residencia</p>
+										<p className="text-muted-foreground text-xs">
+											{t("info.residence")}
+										</p>
 										<p className="font-medium">
 											{[athlete.residenceCity, athlete.residenceCountry]
 												.filter(Boolean)
@@ -1113,185 +1882,278 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 								{athlete.nationality && (
 									<div>
 										<p className="text-muted-foreground text-xs">
-											Nacionalidad
+											{t("info.nationality")}
 										</p>
 										<p className="font-medium">{athlete.nationality}</p>
 									</div>
 								)}
-								{!athlete.phone &&
-									!athlete.residenceCity &&
+								{!athlete.residenceCity &&
 									!athlete.residenceCountry &&
 									!athlete.nationality && (
-										<p className="text-muted-foreground text-sm">
-											No hay información de contacto disponible
-										</p>
+										<EmptyState
+											icon={MapPinIcon}
+											title={t("info.noContactInfo")}
+											size="sm"
+										/>
 									)}
-							</CardContent>
-						</Card>
-
-						{/* Parent/Guardian Contact */}
-						<Card>
-							<CardHeader>
-								<CardTitle className="flex items-center gap-2">
-									<UsersIcon className="size-4" />
-									Contacto de Padre/Tutor
-								</CardTitle>
-							</CardHeader>
-							<CardContent className="space-y-3">
-								{athlete.parentName ? (
-									<>
-										<div>
-											<p className="text-muted-foreground text-xs">Nombre</p>
-											<p className="font-medium">{athlete.parentName}</p>
-										</div>
-										{athlete.parentRelationship && (
-											<div>
-												<p className="text-muted-foreground text-xs">
-													Relación
-												</p>
-												<p className="font-medium capitalize">
-													{athlete.parentRelationship}
-												</p>
-											</div>
-										)}
-										{athlete.parentPhone && (
-											<div>
-												<p className="text-muted-foreground text-xs">
-													Teléfono
-												</p>
-												<p className="font-medium">{athlete.parentPhone}</p>
-											</div>
-										)}
-										{athlete.parentEmail && (
-											<div>
-												<p className="text-muted-foreground text-xs">Email</p>
-												<p className="font-medium">{athlete.parentEmail}</p>
-											</div>
-										)}
-									</>
-								) : (
-									<p className="text-muted-foreground text-sm">
-										No hay información de padre/tutor disponible
-									</p>
-								)}
 							</CardContent>
 						</Card>
 
 						{/* Education */}
 						<Card>
-							<CardHeader>
-								<CardTitle className="flex items-center gap-2">
-									<StarIcon className="size-4" />
-									Educación
+							<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+								<CardTitle className="flex items-center gap-2 text-base">
+									<GraduationCapIcon className="size-4" />
+									{t("info.education")}
+									{education && education.length > 0 && (
+										<Badge variant="secondary" className="ml-1">
+											{education.length}
+										</Badge>
+									)}
 								</CardTitle>
+								<Button
+									size="sm"
+									variant="ghost"
+									onClick={() =>
+										NiceModal.show(OrgAthleteEducationEditModal, {
+											athleteId,
+										})
+									}
+								>
+									<PlusIcon className="size-4" />
+								</Button>
 							</CardHeader>
 							<CardContent className="space-y-3">
-								{athlete.educationInstitution ? (
-									<>
-										<div>
-											<p className="text-muted-foreground text-xs">
-												Institución Educativa
-											</p>
-											<p className="font-medium">
-												{athlete.educationInstitution}
-											</p>
-										</div>
-										{athlete.educationYear && (
-											<div>
-												<p className="text-muted-foreground text-xs">
-													Año Académico
-												</p>
-												<p className="font-medium">{athlete.educationYear}</p>
+								{education && education.length > 0 ? (
+									<div className="space-y-3">
+										{education.map((entry) => (
+											<div
+												key={entry.id}
+												role="button"
+												tabIndex={0}
+												className="group relative rounded-lg border p-3 hover:bg-muted/50 transition-colors cursor-pointer"
+												onClick={() =>
+													NiceModal.show(OrgAthleteEducationEditModal, {
+														athleteId,
+														entry: {
+															id: entry.id,
+															institution: entry.institution,
+															degree: entry.degree,
+															fieldOfStudy: entry.fieldOfStudy,
+															academicYear: entry.academicYear,
+															startDate: entry.startDate
+																? new Date(entry.startDate)
+																: null,
+															endDate: entry.endDate
+																? new Date(entry.endDate)
+																: null,
+															expectedGraduationDate:
+																entry.expectedGraduationDate
+																	? new Date(entry.expectedGraduationDate)
+																	: null,
+															gpa: entry.gpa,
+															isCurrent: entry.isCurrent,
+															notes: entry.notes,
+														},
+													})
+												}
+												onKeyDown={(e) => {
+													if (e.key === "Enter" || e.key === " ") {
+														e.preventDefault();
+														NiceModal.show(OrgAthleteEducationEditModal, {
+															athleteId,
+															entry: {
+																id: entry.id,
+																institution: entry.institution,
+																degree: entry.degree,
+																fieldOfStudy: entry.fieldOfStudy,
+																academicYear: entry.academicYear,
+																startDate: entry.startDate
+																	? new Date(entry.startDate)
+																	: null,
+																endDate: entry.endDate
+																	? new Date(entry.endDate)
+																	: null,
+																expectedGraduationDate:
+																	entry.expectedGraduationDate
+																		? new Date(entry.expectedGraduationDate)
+																		: null,
+																gpa: entry.gpa,
+																isCurrent: entry.isCurrent,
+																notes: entry.notes,
+															},
+														});
+													}
+												}}
+											>
+												<div className="flex items-start justify-between gap-2">
+													<div className="space-y-1">
+														<div className="flex items-center gap-2">
+															<p className="font-medium">{entry.institution}</p>
+															{entry.isCurrent && (
+																<Badge variant="outline" className="text-xs">
+																	{t("info.educationCurrent")}
+																</Badge>
+															)}
+														</div>
+														{(entry.degree || entry.fieldOfStudy) && (
+															<p className="text-muted-foreground text-sm">
+																{[entry.degree, entry.fieldOfStudy]
+																	.filter(Boolean)
+																	.join(" - ")}
+															</p>
+														)}
+														<div className="flex flex-wrap items-center gap-3 text-muted-foreground text-xs">
+															{entry.academicYear && (
+																<span>{entry.academicYear}</span>
+															)}
+															{entry.gpa && <span>GPA: {entry.gpa}</span>}
+															{(entry.startDate ||
+																entry.endDate ||
+																entry.expectedGraduationDate) && (
+																<span>
+																	{entry.startDate
+																		? format(
+																				new Date(entry.startDate),
+																				"MMM yyyy",
+																			)
+																		: ""}
+																	{entry.startDate &&
+																	(entry.endDate || entry.isCurrent)
+																		? " - "
+																		: ""}
+																	{entry.isCurrent
+																		? t("info.educationPresent")
+																		: entry.endDate
+																			? format(
+																					new Date(entry.endDate),
+																					"MMM yyyy",
+																				)
+																			: ""}
+																</span>
+															)}
+														</div>
+													</div>
+													<PencilIcon className="size-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+												</div>
 											</div>
-										)}
-										{athlete.expectedGraduationDate && (
-											<div>
-												<p className="text-muted-foreground text-xs">
-													Graduación Estimada
-												</p>
-												<p className="font-medium">
-													{format(
-														new Date(athlete.expectedGraduationDate),
-														"MMMM yyyy",
-													)}
-												</p>
-											</div>
-										)}
-										{athlete.gpa && (
-											<div>
-												<p className="text-muted-foreground text-xs">
-													Promedio (GPA)
-												</p>
-												<p className="font-medium">{athlete.gpa}</p>
-											</div>
-										)}
-									</>
+										))}
+									</div>
 								) : (
-									<p className="text-muted-foreground text-sm">
-										No hay información educativa disponible
-									</p>
+									<EmptyState
+										icon={GraduationCapIcon}
+										title={t("info.noEducationInfo")}
+										size="sm"
+									/>
 								)}
 							</CardContent>
 						</Card>
 
 						{/* Health & Dietary */}
 						<Card>
-							<CardHeader>
-								<CardTitle className="flex items-center gap-2">
+							<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+								<CardTitle className="flex items-center gap-2 text-base">
 									<HeartPulseIcon className="size-4" />
-									Salud y Alimentación
+									{t("info.healthDietary")}
 								</CardTitle>
+								<Button
+									size="sm"
+									variant="ghost"
+									onClick={() =>
+										NiceModal.show(OrgAthleteHealthEditModal, {
+											athleteId,
+											dietaryRestrictions: athlete.dietaryRestrictions,
+											allergies: athlete.allergies,
+										})
+									}
+								>
+									<PencilIcon className="size-4" />
+								</Button>
 							</CardHeader>
 							<CardContent className="space-y-3">
 								{athlete.dietaryRestrictions && (
 									<div>
 										<p className="text-muted-foreground text-xs">
-											Restricciones Alimenticias
+											{t("info.dietaryRestrictions")}
 										</p>
 										<p className="font-medium">{athlete.dietaryRestrictions}</p>
 									</div>
 								)}
 								{athlete.allergies && (
 									<div>
-										<p className="text-muted-foreground text-xs">Alergias</p>
+										<p className="text-muted-foreground text-xs">
+											{t("info.allergies")}
+										</p>
 										<p className="font-medium text-red-600">
 											{athlete.allergies}
 										</p>
 									</div>
 								)}
 								{!athlete.dietaryRestrictions && !athlete.allergies && (
-									<p className="text-muted-foreground text-sm">
-										No hay restricciones ni alergias registradas
-									</p>
+									<EmptyState
+										icon={HeartPulseIcon}
+										title={t("info.noHealthInfo")}
+										size="sm"
+									/>
 								)}
 							</CardContent>
 						</Card>
 
 						{/* Bio */}
-						{athlete.bio && (
-							<Card className="md:col-span-2">
-								<CardHeader>
-									<CardTitle className="flex items-center gap-2">
-										<UserIcon className="size-4" />
-										Biografía / Notas
-									</CardTitle>
-								</CardHeader>
-								<CardContent>
+						<Card className="md:col-span-2">
+							<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+								<CardTitle className="flex items-center gap-2 text-base">
+									<UserIcon className="size-4" />
+									{t("info.bioNotes")}
+								</CardTitle>
+								<Button
+									size="sm"
+									variant="ghost"
+									onClick={() =>
+										NiceModal.show(OrgAthleteBioEditModal, {
+											athleteId,
+											bio: athlete.bio,
+										})
+									}
+								>
+									<PencilIcon className="size-4" />
+								</Button>
+							</CardHeader>
+							<CardContent>
+								{athlete.bio ? (
 									<p className="whitespace-pre-wrap">{athlete.bio}</p>
-								</CardContent>
-							</Card>
-						)}
+								) : (
+									<EmptyState
+										icon={UserIcon}
+										title={t("info.bioNotes")}
+										size="sm"
+									/>
+								)}
+							</CardContent>
+						</Card>
 
 						{/* YouTube Videos */}
-						{athlete.youtubeVideos && athlete.youtubeVideos.length > 0 && (
-							<Card className="md:col-span-2">
-								<CardHeader>
-									<CardTitle className="flex items-center gap-2">
-										<TrendingUpIcon className="size-4" />
-										Videos Destacados
-									</CardTitle>
-								</CardHeader>
-								<CardContent>
+						<Card className="md:col-span-2">
+							<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+								<CardTitle className="flex items-center gap-2 text-base">
+									<VideoIcon className="size-4" />
+									{t("info.featuredVideos")}
+								</CardTitle>
+								<Button
+									size="sm"
+									variant="ghost"
+									onClick={() =>
+										NiceModal.show(OrgAthleteVideosEditModal, {
+											athleteId,
+											videos: athlete.youtubeVideos ?? [],
+										})
+									}
+								>
+									<PencilIcon className="size-4" />
+								</Button>
+							</CardHeader>
+							<CardContent>
+								{athlete.youtubeVideos && athlete.youtubeVideos.length > 0 ? (
 									<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 										{athlete.youtubeVideos.map((url, index) => {
 											const videoId = getYoutubeVideoId(url);
@@ -1311,7 +2173,7 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 														/>
 													) : (
 														<div className="aspect-video w-full bg-muted flex items-center justify-center">
-															<TrendingUpIcon className="size-8 text-muted-foreground" />
+															<VideoIcon className="size-8 text-muted-foreground" />
 														</div>
 													)}
 													<div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity group-hover:opacity-100">
@@ -1323,9 +2185,15 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 											);
 										})}
 									</div>
-								</CardContent>
-							</Card>
-						)}
+								) : (
+									<EmptyState
+										icon={VideoIcon}
+										title={t("info.featuredVideos")}
+										size="sm"
+									/>
+								)}
+							</CardContent>
+						</Card>
 					</div>
 				</TabsContent>
 			</Tabs>
@@ -1357,165 +2225,6 @@ function getMoodEmoji(value: number): string {
 	if (value <= 6) return "😐";
 	if (value <= 8) return "🙂";
 	return "😊";
-}
-
-// Helper function to format fitness test type for display
-function formatTestType(testType: string): string {
-	const testTypeLabels: Record<string, string> = {
-		sprint_40m: "40m Sprint",
-		sprint_60m: "60m Sprint",
-		sprint_100m: "100m Sprint",
-		vertical_jump: "Vertical Jump",
-		standing_long_jump: "Standing Long Jump",
-		yo_yo_test: "Yo-Yo Test",
-		beep_test: "Beep Test",
-		cooper_test: "Cooper Test",
-		agility_t_test: "Agility T-Test",
-		illinois_agility: "Illinois Agility",
-		max_speed: "Max Speed",
-		reaction_time: "Reaction Time",
-		flexibility: "Flexibility",
-		plank_hold: "Plank Hold",
-		push_ups: "Push Ups",
-		sit_ups: "Sit Ups",
-		other: "Other",
-	};
-	return testTypeLabels[testType] ?? testType;
-}
-
-// Career Entry types and components
-interface CareerEntry {
-	id: string;
-	clubName: string;
-	startDate: Date | null;
-	endDate: Date | null;
-	position: string | null;
-	achievements: string | null;
-	wasNationalTeam: boolean;
-	nationalTeamLevel: string | null;
-	notes: string | null;
-}
-
-// Career Sections - extracted from IIFEs for better performance
-function CareerClubsSection({
-	careerHistory,
-}: {
-	careerHistory: CareerEntry[];
-}) {
-	const clubs = careerHistory.filter((e) => !e.wasNationalTeam);
-	if (clubs.length === 0) return null;
-	return (
-		<div>
-			<div className="flex items-center gap-2 mb-4">
-				<div className="flex items-center justify-center size-8 rounded-full bg-primary/10">
-					<BriefcaseIcon className="size-4 text-primary" />
-				</div>
-				<h3 className="font-semibold">Clubs & Teams</h3>
-				<Badge variant="secondary" className="ml-auto">
-					{clubs.length}
-				</Badge>
-			</div>
-			<div className="relative ml-4 space-y-0 border-l-2 border-primary/20 pl-6">
-				{clubs.map((entry) => (
-					<CareerEntryCard key={entry.id} entry={entry} />
-				))}
-			</div>
-		</div>
-	);
-}
-
-function CareerNationalTeamsSection({
-	careerHistory,
-}: {
-	careerHistory: CareerEntry[];
-}) {
-	const nationalTeams = careerHistory.filter((e) => e.wasNationalTeam);
-	if (nationalTeams.length === 0) return null;
-	return (
-		<div>
-			<div className="flex items-center gap-2 mb-4">
-				<div className="flex items-center justify-center size-8 rounded-full bg-yellow-500/10">
-					<FlagIcon className="size-4 text-yellow-600" />
-				</div>
-				<h3 className="font-semibold">National Team Selections</h3>
-				<Badge
-					variant="secondary"
-					className="ml-auto bg-yellow-100 text-yellow-700"
-				>
-					{nationalTeams.length}
-				</Badge>
-			</div>
-			<div className="relative ml-4 space-y-0 border-l-2 border-yellow-500/30 pl-6">
-				{nationalTeams.map((entry) => (
-					<CareerEntryCard key={entry.id} entry={entry} isNationalTeam />
-				))}
-			</div>
-		</div>
-	);
-}
-
-// Career Entry Card component
-function CareerEntryCard({
-	entry,
-	isNationalTeam = false,
-}: {
-	entry: CareerEntry;
-	isNationalTeam?: boolean;
-}) {
-	return (
-		<div className="relative pb-6 last:pb-0">
-			{/* Timeline dot */}
-			<div
-				className={cn(
-					"absolute -left-[31px] top-1 flex size-4 items-center justify-center rounded-full",
-					isNationalTeam ? "bg-yellow-500" : "bg-primary",
-				)}
-			/>
-
-			<div className="rounded-lg border bg-card p-4 hover:shadow-sm transition-shadow">
-				<div className="flex flex-wrap items-start justify-between gap-2">
-					<div className="space-y-1">
-						<div className="flex items-center gap-2 flex-wrap">
-							<h4 className="font-semibold">{entry.clubName}</h4>
-							{isNationalTeam && entry.nationalTeamLevel && (
-								<Badge
-									variant="outline"
-									className="border-yellow-500/50 bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400"
-								>
-									{entry.nationalTeamLevel}
-								</Badge>
-							)}
-						</div>
-						{entry.position && (
-							<p className="text-muted-foreground text-sm">{entry.position}</p>
-						)}
-					</div>
-					<Badge variant="secondary" className="font-normal">
-						{entry.startDate
-							? format(new Date(entry.startDate), "MMM yyyy")
-							: "?"}
-						{" — "}
-						{entry.endDate
-							? format(new Date(entry.endDate), "MMM yyyy")
-							: "Present"}
-					</Badge>
-				</div>
-
-				{entry.achievements && (
-					<div className="mt-3 flex items-start gap-2 rounded-md bg-muted/50 p-2">
-						<TrophyIcon className="size-4 text-yellow-600 shrink-0 mt-0.5" />
-						<p className="text-sm">{entry.achievements}</p>
-					</div>
-				)}
-
-				{entry.notes && (
-					<p className="mt-2 text-muted-foreground text-sm italic">
-						{entry.notes}
-					</p>
-				)}
-			</div>
-		</div>
-	);
 }
 
 function AthleteProfileSkeleton() {

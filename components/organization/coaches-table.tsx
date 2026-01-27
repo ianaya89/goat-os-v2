@@ -6,15 +6,15 @@ import type {
 	ColumnFiltersState,
 	SortingState,
 } from "@tanstack/react-table";
-import { format } from "date-fns";
 import {
+	EyeIcon,
 	MoreHorizontalIcon,
 	PencilIcon,
 	PlusIcon,
 	Trash2Icon,
-	UserIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
 	parseAsArrayOf,
 	parseAsInteger,
@@ -27,8 +27,8 @@ import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/confirmation-modal";
 import { CoachesBulkActions } from "@/components/organization/coaches-bulk-actions";
 import { CoachesModal } from "@/components/organization/coaches-modal";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { MailtoLink, WhatsAppLink } from "@/components/ui/contact-links";
 import {
 	createSelectionColumn,
 	DataTable,
@@ -42,10 +42,14 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { appConfig } from "@/config/app.config";
-import { CoachStatuses } from "@/lib/db/schema/enums";
-import { capitalize, cn } from "@/lib/utils";
+import {
+	type AthleteSport,
+	AthleteSports,
+	CoachStatuses,
+} from "@/lib/db/schema/enums";
 import { CoachSortField } from "@/schemas/organization-coach-schemas";
 import { trpc } from "@/trpc/client";
 
@@ -55,6 +59,9 @@ interface Coach {
 	id: string;
 	organizationId: string;
 	userId: string | null;
+	phone: string | null;
+	birthDate: Date | null;
+	sport: string | null;
 	specialty: string;
 	bio: string | null;
 	status: string;
@@ -69,13 +76,17 @@ interface Coach {
 	} | null;
 }
 
-const statusColors: Record<string, string> = {
-	active: "bg-green-100 dark:bg-green-900",
-	inactive: "bg-gray-100 dark:bg-gray-800",
-};
-
 export function CoachesTable(): React.JSX.Element {
+	const t = useTranslations("coaches");
+	const tCommon = useTranslations("common.sports");
 	const [rowSelection, setRowSelection] = React.useState({});
+
+	const translateSport = (sport: AthleteSport) => {
+		const normalizedSport = sport.toLowerCase() as Parameters<
+			typeof tCommon
+		>[0];
+		return tCommon(normalizedSport);
+	};
 
 	const [searchQuery, setSearchQuery] = useQueryState(
 		"query",
@@ -112,6 +123,13 @@ export function CoachesTable(): React.JSX.Element {
 		}),
 	);
 
+	const [sportFilter, setSportFilter] = useQueryState(
+		"sport",
+		parseAsArrayOf(parseAsString).withDefault([]).withOptions({
+			shallow: true,
+		}),
+	);
+
 	const [sorting, setSorting] = useQueryState<SortingState>(
 		"sort",
 		parseAsJson<SortingState>((value) => {
@@ -139,8 +157,11 @@ export function CoachesTable(): React.JSX.Element {
 		if (createdAtFilter && createdAtFilter.length > 0) {
 			filters.push({ id: "createdAt", value: createdAtFilter });
 		}
+		if (sportFilter && sportFilter.length > 0) {
+			filters.push({ id: "sport", value: sportFilter });
+		}
 		return filters;
-	}, [statusFilter, createdAtFilter]);
+	}, [statusFilter, createdAtFilter, sportFilter]);
 
 	const handleFiltersChange = (filters: ColumnFiltersState): void => {
 		const getFilterValue = (id: string): string[] => {
@@ -150,6 +171,7 @@ export function CoachesTable(): React.JSX.Element {
 
 		setStatusFilter(getFilterValue("status"));
 		setCreatedAtFilter(getFilterValue("createdAt"));
+		setSportFilter(getFilterValue("sport"));
 
 		if (pageIndex !== 0) {
 			setPageIndex(0);
@@ -201,11 +223,11 @@ export function CoachesTable(): React.JSX.Element {
 
 	const deleteCoachMutation = trpc.organization.coach.delete.useMutation({
 		onSuccess: () => {
-			toast.success("Coach deleted successfully");
+			toast.success(t("success.deleted"));
 			utils.organization.coach.list.invalidate();
 		},
 		onError: (error) => {
-			toast.error(error.message || "Failed to delete coach");
+			toast.error(error.message || t("error.deleteFailed"));
 		},
 	});
 
@@ -218,57 +240,115 @@ export function CoachesTable(): React.JSX.Element {
 		}
 	};
 
+	// Calculate age from birth date
+	const calculateAge = (birthDate: Date | null): number | null => {
+		if (!birthDate) return null;
+		const today = new Date();
+		const birth = new Date(birthDate);
+		let age = today.getFullYear() - birth.getFullYear();
+		const monthDiff = today.getMonth() - birth.getMonth();
+		if (
+			monthDiff < 0 ||
+			(monthDiff === 0 && today.getDate() < birth.getDate())
+		) {
+			age--;
+		}
+		return age;
+	};
+
 	const columns: ColumnDef<Coach>[] = [
 		createSelectionColumn<Coach>(),
 		{
 			accessorKey: "name",
 			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Name" />
+				<SortableColumnHeader column={column} title={t("table.name")} />
 			),
 			cell: ({ row }) => {
 				const name = row.original.user?.name ?? "Unknown";
+				const age = calculateAge(row.original.birthDate);
 				return (
 					<Link
+						className="flex items-center gap-3 hover:opacity-80"
 						href={`/dashboard/organization/coaches/${row.original.id}`}
-						className="flex max-w-[200px] items-center gap-2 hover:opacity-80"
 					>
 						<UserAvatar
-							className="size-6 shrink-0"
+							className="size-9 shrink-0"
 							name={name}
 							src={row.original.user?.image ?? undefined}
 						/>
-						<span
-							className="truncate font-medium text-foreground hover:underline"
-							title={name}
-						>
-							{name}
-						</span>
+						<div className="min-w-0">
+							<p className="truncate font-medium text-foreground" title={name}>
+								{name}
+							</p>
+							{age !== null && (
+								<p className="text-muted-foreground text-xs">
+									<span className="font-semibold">{age}</span>{" "}
+									{t("table.yearsOld")}
+								</p>
+							)}
+						</div>
 					</Link>
 				);
 			},
 		},
 		{
 			accessorKey: "email",
-			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Email" />
-			),
-			cell: ({ row }) => (
-				<span
-					className="block max-w-[250px] truncate text-foreground/80"
-					title={row.original.user?.email ?? ""}
-				>
-					{row.original.user?.email ?? "-"}
-				</span>
-			),
+			header: t("table.email"),
+			cell: ({ row }) => {
+				const email = row.original.user?.email;
+				return email ? (
+					<MailtoLink
+						email={email}
+						className="text-sm"
+						iconSize="size-3.5"
+						truncate
+						onClick={(e) => e.stopPropagation()}
+					/>
+				) : (
+					<span className="text-muted-foreground">-</span>
+				);
+			},
+		},
+		{
+			accessorKey: "phone",
+			header: t("table.phone"),
+			cell: ({ row }) => {
+				const phone = row.original.phone;
+				return phone ? (
+					<WhatsAppLink
+						phone={phone}
+						variant="whatsapp"
+						className="text-sm"
+						iconSize="size-3.5"
+						onClick={(e) => e.stopPropagation()}
+					/>
+				) : (
+					<span className="text-muted-foreground">-</span>
+				);
+			},
+		},
+		{
+			accessorKey: "sport",
+			header: t("table.sport"),
+			cell: ({ row }) => {
+				const sport = row.original.sport;
+				return sport ? (
+					<span className="text-foreground/80 text-sm">
+						{translateSport(sport as AthleteSport)}
+					</span>
+				) : (
+					<span className="text-muted-foreground">-</span>
+				);
+			},
 		},
 		{
 			accessorKey: "specialty",
 			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Specialty" />
+				<SortableColumnHeader column={column} title={t("table.specialty")} />
 			),
 			cell: ({ row }) => (
 				<span
-					className="block max-w-[200px] truncate text-foreground/80"
+					className="block max-w-[200px] truncate text-foreground/80 text-sm"
 					title={row.original.specialty}
 				>
 					{row.original.specialty}
@@ -277,31 +357,8 @@ export function CoachesTable(): React.JSX.Element {
 		},
 		{
 			accessorKey: "status",
-			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Status" />
-			),
-			cell: ({ row }) => (
-				<Badge
-					className={cn(
-						"border-none px-2 py-0.5 font-medium text-foreground text-xs shadow-none",
-						statusColors[row.original.status] || "bg-gray-100 dark:bg-gray-800",
-					)}
-					variant="outline"
-				>
-					{capitalize(row.original.status)}
-				</Badge>
-			),
-		},
-		{
-			accessorKey: "createdAt",
-			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Created" />
-			),
-			cell: ({ row }) => (
-				<span className="text-foreground/80">
-					{format(row.original.createdAt, "dd MMM, yyyy")}
-				</span>
-			),
+			header: t("table.status"),
+			cell: ({ row }) => <StatusBadge status={row.original.status} />,
 		},
 		{
 			id: "actions",
@@ -316,7 +373,7 @@ export function CoachesTable(): React.JSX.Element {
 								variant="ghost"
 							>
 								<MoreHorizontalIcon className="shrink-0" />
-								<span className="sr-only">Open menu</span>
+								<span className="sr-only">{t("table.actions")}</span>
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
@@ -324,8 +381,8 @@ export function CoachesTable(): React.JSX.Element {
 								<Link
 									href={`/dashboard/organization/coaches/${row.original.id}`}
 								>
-									<UserIcon className="mr-2 size-4" />
-									View Profile
+									<EyeIcon className="mr-2 size-4" />
+									{t("table.viewProfile")}
 								</Link>
 							</DropdownMenuItem>
 							<DropdownMenuItem
@@ -334,16 +391,15 @@ export function CoachesTable(): React.JSX.Element {
 								}}
 							>
 								<PencilIcon className="mr-2 size-4" />
-								Edit
+								{t("edit")}
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 							<DropdownMenuItem
 								onClick={() => {
 									NiceModal.show(ConfirmationModal, {
-										title: "Delete coach?",
-										message:
-											"Are you sure you want to delete this coach? This action cannot be undone. The user account will remain in the organization.",
-										confirmLabel: "Delete",
+										title: t("delete.title"),
+										message: t("delete.message"),
+										confirmLabel: t("delete.confirm"),
 										destructive: true,
 										onConfirm: () =>
 											deleteCoachMutation.mutate({ id: row.original.id }),
@@ -352,7 +408,7 @@ export function CoachesTable(): React.JSX.Element {
 								variant="destructive"
 							>
 								<Trash2Icon className="mr-2 size-4" />
-								Delete
+								{t("deleteAction")}
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
@@ -363,22 +419,20 @@ export function CoachesTable(): React.JSX.Element {
 
 	const coachFilters: FilterConfig[] = [
 		{
-			key: "status",
-			title: "Status",
-			options: CoachStatuses.map((status) => ({
-				value: status,
-				label: capitalize(status),
+			key: "sport",
+			title: t("table.sport"),
+			options: AthleteSports.map((sport) => ({
+				value: sport,
+				label: translateSport(sport),
 			})),
 		},
 		{
-			key: "createdAt",
-			title: "Created",
-			options: [
-				{ value: "today", label: "Today" },
-				{ value: "this-week", label: "This week" },
-				{ value: "this-month", label: "This month" },
-				{ value: "older", label: "Older" },
-			],
+			key: "status",
+			title: t("table.status"),
+			options: CoachStatuses.map((status) => ({
+				value: status,
+				label: t(`statuses.${status}` as Parameters<typeof t>[0]),
+			})),
 		},
 	];
 
@@ -387,7 +441,7 @@ export function CoachesTable(): React.JSX.Element {
 			columnFilters={columnFilters}
 			columns={columns}
 			data={(data?.coaches as Coach[]) || []}
-			emptyMessage="No coaches found."
+			emptyMessage={t("table.noCoaches")}
 			enableFilters
 			enablePagination
 			enableRowSelection
@@ -404,14 +458,14 @@ export function CoachesTable(): React.JSX.Element {
 			pageSize={pageSize || appConfig.pagination.defaultLimit}
 			renderBulkActions={(table) => <CoachesBulkActions table={table} />}
 			rowSelection={rowSelection}
-			searchPlaceholder="Search coaches..."
+			searchPlaceholder={t("search")}
 			searchQuery={searchQuery || ""}
 			defaultSorting={DEFAULT_SORTING}
 			sorting={sorting}
 			toolbarActions={
 				<Button onClick={() => NiceModal.show(CoachesModal)} size="sm">
 					<PlusIcon className="size-4 shrink-0" />
-					Add Coach
+					{t("add")}
 				</Button>
 			}
 			totalCount={data?.total ?? 0}

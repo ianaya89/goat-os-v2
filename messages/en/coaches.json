@@ -1,41 +1,105 @@
 {
 	"title": "Coaches",
 	"description": "Manage your organization's coaches.",
+	"yearsOld": "years old",
 	"add": "Add coach",
 	"edit": "Edit coach",
 	"view": "View coach",
-	"delete": "Delete coach",
+	"deleteAction": "Delete coach",
 	"search": "Search coaches...",
 	"filters": {
 		"all": "All",
 		"active": "Active",
-		"inactive": "Inactive"
+		"inactive": "Inactive",
+		"today": "Today",
+		"thisWeek": "This week",
+		"thisMonth": "This month",
+		"older": "Older"
 	},
 	"table": {
 		"name": "Name",
 		"email": "Email",
 		"phone": "Phone",
-		"specialization": "Specialization",
-		"certifications": "Certifications",
+		"specialty": "Specialty",
+		"sport": "Sport",
 		"status": "Status",
-		"actions": "Actions"
+		"actions": "Actions",
+		"created": "Created",
+		"noCoaches": "No coaches found.",
+		"viewProfile": "View Profile",
+		"yearsOld": "years old"
+	},
+	"modal": {
+		"createTitle": "Create Coach",
+		"editTitle": "Edit Coach",
+		"createDescription": "Fill in the details to create a new coach.",
+		"editDescription": "Update the coach information.",
+		"createdSuccess": "Coach created successfully",
+		"createdWithPassword": "Coach created successfully. Please save the temporary password.",
+		"updatedSuccess": "Coach updated successfully",
+		"temporaryPassword": "Temporary Password",
+		"temporaryPasswordTitle": "Coach Created Successfully",
+		"temporaryPasswordDescription": "Please save the temporary password below. It will only be shown once.",
+		"temporaryPasswordNote": "Share this password with the coach. They will need to change it after their first login.",
+		"copyPassword": "Copy Password",
+		"passwordCopied": "Password copied to clipboard",
+		"done": "Done",
+		"cancel": "Cancel",
+		"create": "Create Coach",
+		"update": "Save",
+		"selectStatus": "Select status",
+		"specialtyPlaceholder": "Type a specialty and press Enter or comma...",
+		"addSpecialty": "Add specialty"
 	},
 	"form": {
 		"personalInfo": "Personal information",
 		"name": "Full name",
 		"email": "Email",
 		"phone": "Phone",
+		"birthDate": "Date of birth",
+		"sport": "Sport",
 		"professionalInfo": "Professional information",
-		"specialization": "Specialization",
-		"certifications": "Certifications",
-		"yearsOfExperience": "Years of experience",
-		"bio": "Biography"
+		"specialty": "Specialties",
+		"bio": "Biography",
+		"status": "Status"
+	},
+	"statuses": {
+		"active": "Active",
+		"inactive": "Inactive"
 	},
 	"detail": {
 		"overview": "Overview",
 		"sessions": "Sessions",
 		"athletes": "Athletes",
 		"schedule": "Schedule"
+	},
+	"delete": {
+		"title": "Delete coach?",
+		"message": "Are you sure you want to delete this coach? This action cannot be undone. The user account will remain in the organization.",
+		"confirm": "Delete"
+	},
+	"bulkDelete": {
+		"title": "Delete coaches?",
+		"message": "Are you sure you want to delete {count} coach(es)? This action cannot be undone. User accounts will remain in the organization.",
+		"confirm": "Delete"
+	},
+	"bulkActions": {
+		"noSelected": "No coaches selected.",
+		"changeStatus": "Change status",
+		"setActive": "Set to Active",
+		"setInactive": "Set to Inactive",
+		"delete": "Delete",
+		"deleted": "{count} coach(es) deleted.",
+		"activated": "{count} coach(es) activated.",
+		"deactivated": "{count} coach(es) deactivated.",
+		"deleteFailed": "Failed to delete coaches.",
+		"updateFailed": "Failed to update coaches.",
+		"exportCsv": "Export to CSV",
+		"exportExcel": "Export to Excel",
+		"csvExported": "CSV exported.",
+		"excelExported": "Excel exported.",
+		"csvFailed": "Failed to export CSV.",
+		"excelFailed": "Failed to export Excel."
 	},
 	"success": {
 		"created": "Coach created successfully.",

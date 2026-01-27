@@ -14,7 +14,13 @@ const sportsLogos = [
 	{ name: "World Rugby", icon: "WR" },
 ];
 
-function LogoPlaceholder({ name, icon }: { name: string; icon: string }) {
+function LogoPlaceholder({
+	name: _name,
+	icon,
+}: {
+	name: string;
+	icon: string;
+}) {
 	return (
 		<div
 			className={cn(

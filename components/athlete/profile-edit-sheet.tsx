@@ -1,6 +1,6 @@
 "use client";
 
-import { XIcon } from "lucide-react";
+import { CheckIcon, XIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import * as React from "react";
 import type { FieldValues, UseFormReturn } from "react-hook-form";
@@ -27,7 +27,14 @@ export interface ProfileEditSheetProps<TFieldValues extends FieldValues> {
 	/** Icon component to display in header */
 	icon?: React.ReactNode;
 	/** Accent color for the header stripe */
-	accentColor?: "primary" | "emerald" | "amber" | "rose" | "violet" | "sky";
+	accentColor?:
+		| "primary"
+		| "slate"
+		| "emerald"
+		| "amber"
+		| "rose"
+		| "violet"
+		| "sky";
 	/** Form instance for form-based sheets */
 	form?: UseFormReturn<TFieldValues>;
 	/** Form submission handler */
@@ -50,6 +57,7 @@ export interface ProfileEditSheetProps<TFieldValues extends FieldValues> {
 
 const accentColors = {
 	primary: "from-primary to-primary/80",
+	slate: "from-slate-400 to-slate-500",
 	emerald: "from-emerald-500 to-emerald-600",
 	amber: "from-amber-500 to-amber-600",
 	rose: "from-rose-500 to-rose-600",
@@ -176,6 +184,7 @@ export function ProfileEditSheet<TFieldValues extends FieldValues>({
 							disabled={isPending}
 							className="min-w-[100px]"
 						>
+							<XIcon className="size-4" />
 							{cancelLabel}
 						</Button>
 						<Button
@@ -184,6 +193,7 @@ export function ProfileEditSheet<TFieldValues extends FieldValues>({
 							loading={isPending}
 							className="min-w-[100px]"
 						>
+							<CheckIcon className="size-4" />
 							{submitLabel}
 						</Button>
 					</div>

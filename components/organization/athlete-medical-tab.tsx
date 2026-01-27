@@ -1,7 +1,7 @@
 "use client";
 
+import NiceModal from "@ebay/nice-modal-react";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
 import {
 	AlertCircleIcon,
 	CalendarIcon,
@@ -12,14 +12,17 @@ import {
 	FileTextIcon,
 	HeartPulseIcon,
 	Loader2Icon,
+	MoreHorizontalIcon,
 	PlusIcon,
 	ShieldCheckIcon,
-	TrashIcon,
+	Trash2Icon,
 	UploadIcon,
 	XCircleIcon,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { ConfirmationModal } from "@/components/confirmation-modal";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,6 +41,14 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
@@ -47,7 +58,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { AthleteMedicalDocumentType } from "@/lib/db/schema/enums";
@@ -61,27 +71,13 @@ interface AthleteMedicalTabProps {
 	medicalCertificateExpiresAt: Date | null;
 }
 
-const documentTypeLabels: Record<AthleteMedicalDocumentType, string> = {
-	[AthleteMedicalDocumentType.bloodTest]: "Análisis de sangre",
-	[AthleteMedicalDocumentType.cardiacStudy]: "Estudio cardíaco",
-	[AthleteMedicalDocumentType.xRay]: "Rayos X",
-	[AthleteMedicalDocumentType.mri]: "Resonancia magnética",
-	[AthleteMedicalDocumentType.ultrasound]: "Ecografía",
-	[AthleteMedicalDocumentType.physicalExam]: "Examen físico",
-	[AthleteMedicalDocumentType.injuryReport]: "Informe de lesión",
-	[AthleteMedicalDocumentType.surgeryReport]: "Informe de cirugía",
-	[AthleteMedicalDocumentType.rehabilitation]: "Rehabilitación",
-	[AthleteMedicalDocumentType.vaccination]: "Vacunación",
-	[AthleteMedicalDocumentType.allergy]: "Alergia",
-	[AthleteMedicalDocumentType.other]: "Otro",
-};
-
 export function AthleteMedicalTab({
 	athleteId,
 	hasMedicalCertificate: initialHasCertificate,
 	medicalCertificateUploadedAt: initialCertUploadedAt,
 	medicalCertificateExpiresAt: initialCertExpiresAt,
 }: AthleteMedicalTabProps) {
+	const t = useTranslations("athletes.medical");
 	const utils = trpc.useUtils();
 	const [isUploadingCertificate, setIsUploadingCertificate] = useState(false);
 	const [isUploadingDocument, setIsUploadingDocument] = useState(false);
@@ -112,47 +108,47 @@ export function AthleteMedicalTab({
 	const uploadCertificateMutation =
 		trpc.organization.athleteMedical.uploadCertificate.useMutation({
 			onSuccess: () => {
-				toast.success("Certificado médico subido correctamente");
+				toast.success(t("certificate.uploadSuccess"));
 				utils.organization.athlete.getProfile.invalidate({ id: athleteId });
 				certificateUrlQuery.refetch();
 			},
 			onError: (error) => {
-				toast.error(error.message || "Error al subir el certificado");
+				toast.error(error.message || t("certificate.uploadError"));
 			},
 		});
 
 	const removeCertificateMutation =
 		trpc.organization.athleteMedical.removeCertificate.useMutation({
 			onSuccess: () => {
-				toast.success("Certificado médico eliminado");
+				toast.success(t("certificate.deleteSuccess"));
 				utils.organization.athlete.getProfile.invalidate({ id: athleteId });
 			},
 			onError: (error) => {
-				toast.error(error.message || "Error al eliminar el certificado");
+				toast.error(error.message || t("certificate.deleteError"));
 			},
 		});
 
 	const createDocumentMutation =
 		trpc.organization.athleteMedical.createDocument.useMutation({
 			onSuccess: () => {
-				toast.success("Documento médico agregado correctamente");
+				toast.success(t("documents.createSuccess"));
 				documentsQuery.refetch();
 				setIsAddDocumentOpen(false);
 				resetDocumentForm();
 			},
 			onError: (error) => {
-				toast.error(error.message || "Error al agregar el documento");
+				toast.error(error.message || t("documents.createError"));
 			},
 		});
 
 	const deleteDocumentMutation =
 		trpc.organization.athleteMedical.deleteDocument.useMutation({
 			onSuccess: () => {
-				toast.success("Documento eliminado");
+				toast.success(t("documents.deleteSuccess"));
 				documentsQuery.refetch();
 			},
 			onError: (error) => {
-				toast.error(error.message || "Error al eliminar el documento");
+				toast.error(error.message || t("documents.deleteError"));
 			},
 		});
 
@@ -172,7 +168,6 @@ export function AthleteMedicalTab({
 
 		setIsUploadingCertificate(true);
 		try {
-			// Get presigned upload URL
 			const { uploadUrl, fileKey } = await getUploadUrlMutation.mutateAsync({
 				athleteId,
 				fileName: file.name,
@@ -180,26 +175,22 @@ export function AthleteMedicalTab({
 				isCertificate: true,
 			});
 
-			// Upload to S3
 			const uploadResponse = await fetch(uploadUrl, {
 				method: "PUT",
 				body: file,
-				headers: {
-					"Content-Type": file.type,
-				},
+				headers: { "Content-Type": file.type },
 			});
 
 			if (!uploadResponse.ok) {
-				throw new Error("Error al subir el archivo");
+				throw new Error(t("certificate.uploadError"));
 			}
 
-			// Save to database
 			await uploadCertificateMutation.mutateAsync({
 				athleteId,
 				fileKey,
 			});
 		} catch (_error) {
-			toast.error("Error al subir el certificado");
+			toast.error(t("certificate.uploadError"));
 		} finally {
 			setIsUploadingCertificate(false);
 			if (certificateInputRef.current) {
@@ -211,13 +202,12 @@ export function AthleteMedicalTab({
 	// Document Upload Handler
 	const handleDocumentUpload = async () => {
 		if (!documentFile || !documentTitle.trim()) {
-			toast.error("Por favor completa todos los campos requeridos");
+			toast.error(t("documents.requiredFields"));
 			return;
 		}
 
 		setIsUploadingDocument(true);
 		try {
-			// Get presigned upload URL
 			const { uploadUrl, fileKey } = await getUploadUrlMutation.mutateAsync({
 				athleteId,
 				fileName: documentFile.name,
@@ -225,20 +215,16 @@ export function AthleteMedicalTab({
 				isCertificate: false,
 			});
 
-			// Upload to S3
 			const uploadResponse = await fetch(uploadUrl, {
 				method: "PUT",
 				body: documentFile,
-				headers: {
-					"Content-Type": documentFile.type,
-				},
+				headers: { "Content-Type": documentFile.type },
 			});
 
 			if (!uploadResponse.ok) {
-				throw new Error("Error al subir el archivo");
+				throw new Error(t("documents.uploadError"));
 			}
 
-			// Create document record
 			await createDocumentMutation.mutateAsync({
 				athleteId,
 				documentType: selectedDocumentType,
@@ -250,7 +236,7 @@ export function AthleteMedicalTab({
 				mimeType: documentFile.type,
 			});
 		} catch (_error) {
-			toast.error("Error al agregar el documento");
+			toast.error(t("documents.uploadError"));
 		} finally {
 			setIsUploadingDocument(false);
 		}
@@ -262,60 +248,54 @@ export function AthleteMedicalTab({
 		initialCertExpiresAt &&
 		!isCertificateExpired &&
 		new Date(initialCertExpiresAt).getTime() - Date.now() <
-			30 * 24 * 60 * 60 * 1000; // 30 days
+			30 * 24 * 60 * 60 * 1000;
 
 	return (
 		<div className="space-y-6">
 			{/* Medical Certificate Section */}
 			<Card>
-				<CardHeader>
-					<div className="flex items-center justify-between">
-						<div className="flex items-center gap-2">
-							<ShieldCheckIcon className="size-5 text-primary" />
-							<CardTitle>Certificado de Aptitud Física</CardTitle>
-						</div>
-						{initialHasCertificate ? (
-							<Badge
-								variant="outline"
-								className={cn(
-									isCertificateExpired
-										? "border-red-500 bg-red-50 text-red-700"
-										: isCertificateExpiringSoon
-											? "border-yellow-500 bg-yellow-50 text-yellow-700"
-											: "border-green-500 bg-green-50 text-green-700",
-								)}
-							>
-								{isCertificateExpired ? (
-									<>
-										<XCircleIcon className="mr-1 size-3" />
-										Vencido
-									</>
-								) : isCertificateExpiringSoon ? (
-									<>
-										<AlertCircleIcon className="mr-1 size-3" />
-										Por vencer
-									</>
-								) : (
-									<>
-										<CheckCircle2Icon className="mr-1 size-3" />
-										Vigente
-									</>
-								)}
-							</Badge>
-						) : (
-							<Badge
-								variant="outline"
-								className="border-gray-300 bg-gray-50 text-gray-600"
-							>
-								<XCircleIcon className="mr-1 size-3" />
-								No disponible
-							</Badge>
-						)}
-					</div>
-					<CardDescription>
-						Documento que certifica la aptitud física del atleta para la
-						práctica deportiva
-					</CardDescription>
+				<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+					<CardTitle className="flex items-center gap-2 text-base">
+						<ShieldCheckIcon className="size-4" />
+						{t("certificate.title")}
+					</CardTitle>
+					{initialHasCertificate ? (
+						<Badge
+							variant="outline"
+							className={cn(
+								isCertificateExpired
+									? "border-red-500 bg-red-50 text-red-700"
+									: isCertificateExpiringSoon
+										? "border-yellow-500 bg-yellow-50 text-yellow-700"
+										: "border-green-500 bg-green-50 text-green-700",
+							)}
+						>
+							{isCertificateExpired ? (
+								<>
+									<XCircleIcon className="mr-1 size-3" />
+									{t("certificate.status.expired")}
+								</>
+							) : isCertificateExpiringSoon ? (
+								<>
+									<AlertCircleIcon className="mr-1 size-3" />
+									{t("certificate.status.expiringSoon")}
+								</>
+							) : (
+								<>
+									<CheckCircle2Icon className="mr-1 size-3" />
+									{t("certificate.status.valid")}
+								</>
+							)}
+						</Badge>
+					) : (
+						<Badge
+							variant="outline"
+							className="border-gray-300 bg-gray-50 text-gray-600"
+						>
+							<XCircleIcon className="mr-1 size-3" />
+							{t("certificate.status.notAvailable")}
+						</Badge>
+					)}
 				</CardHeader>
 				<CardContent>
 					{initialHasCertificate ? (
@@ -324,8 +304,7 @@ export function AthleteMedicalTab({
 								<Alert variant="destructive">
 									<AlertCircleIcon className="size-4" />
 									<AlertDescription>
-										El certificado ha vencido. Por favor sube un nuevo
-										certificado.
+										{t("certificate.alerts.expired")}
 									</AlertDescription>
 								</Alert>
 							)}
@@ -334,7 +313,7 @@ export function AthleteMedicalTab({
 								<Alert>
 									<AlertCircleIcon className="size-4" />
 									<AlertDescription>
-										El certificado vencerá pronto. Considera renovarlo.
+										{t("certificate.alerts.expiringSoon")}
 									</AlertDescription>
 								</Alert>
 							)}
@@ -345,30 +324,23 @@ export function AthleteMedicalTab({
 										<FileTextIcon className="size-6 text-primary" />
 									</div>
 									<div>
-										<p className="font-medium">
-											Certificado médico de aptitud física
-										</p>
+										<p className="font-medium">{t("certificate.fileName")}</p>
 										<div className="flex items-center gap-4 text-muted-foreground text-sm">
 											{initialCertUploadedAt && (
 												<span className="flex items-center gap-1">
 													<CalendarIcon className="size-3" />
-													Subido:{" "}
+													{t("certificate.uploaded")}:{" "}
 													{format(
 														new Date(initialCertUploadedAt),
 														"d MMM yyyy",
-														{ locale: es },
 													)}
 												</span>
 											)}
 											{initialCertExpiresAt && (
 												<span className="flex items-center gap-1">
 													<CalendarIcon className="size-3" />
-													Vence:{" "}
-													{format(
-														new Date(initialCertExpiresAt),
-														"d MMM yyyy",
-														{ locale: es },
-													)}
+													{t("certificate.expires")}:{" "}
+													{format(new Date(initialCertExpiresAt), "d MMM yyyy")}
 												</span>
 											)}
 										</div>
@@ -387,7 +359,7 @@ export function AthleteMedicalTab({
 											}
 										>
 											<ExternalLinkIcon className="mr-2 size-4" />
-											Ver
+											{t("certificate.view")}
 										</Button>
 									)}
 									<Button
@@ -401,7 +373,7 @@ export function AthleteMedicalTab({
 										{removeCertificateMutation.isPending ? (
 											<Loader2Icon className="size-4 animate-spin" />
 										) : (
-											<TrashIcon className="size-4 text-destructive" />
+											<Trash2Icon className="size-4 text-destructive" />
 										)}
 									</Button>
 								</div>
@@ -423,25 +395,19 @@ export function AthleteMedicalTab({
 									{isUploadingCertificate ? (
 										<>
 											<Loader2Icon className="mr-2 size-4 animate-spin" />
-											Subiendo...
+											{t("certificate.uploading")}
 										</>
 									) : (
 										<>
 											<UploadIcon className="mr-2 size-4" />
-											Reemplazar certificado
+											{t("certificate.replace")}
 										</>
 									)}
 								</Button>
 							</div>
 						</div>
 					) : (
-						<div className="flex flex-col items-center justify-center py-8">
-							<div className="flex size-16 items-center justify-center rounded-full bg-muted">
-								<HeartPulseIcon className="size-8 text-muted-foreground" />
-							</div>
-							<p className="mt-4 text-muted-foreground">
-								No hay certificado de aptitud física registrado
-							</p>
+						<>
 							<input
 								ref={certificateInputRef}
 								type="file"
@@ -449,154 +415,183 @@ export function AthleteMedicalTab({
 								className="hidden"
 								onChange={handleCertificateUpload}
 							/>
-							<Button
-								className="mt-4"
-								onClick={() => certificateInputRef.current?.click()}
-								disabled={isUploadingCertificate}
-							>
-								{isUploadingCertificate ? (
-									<>
-										<Loader2Icon className="mr-2 size-4 animate-spin" />
-										Subiendo...
-									</>
-								) : (
-									<>
-										<UploadIcon className="mr-2 size-4" />
-										Subir certificado
-									</>
-								)}
-							</Button>
-						</div>
+							<EmptyState
+								icon={HeartPulseIcon}
+								title={t("certificate.noCertificate")}
+								action={
+									<Button
+										size="sm"
+										onClick={() => certificateInputRef.current?.click()}
+										disabled={isUploadingCertificate}
+									>
+										{isUploadingCertificate ? (
+											<>
+												<Loader2Icon className="mr-2 size-4 animate-spin" />
+												{t("certificate.uploading")}
+											</>
+										) : (
+											<>
+												<UploadIcon className="mr-2 size-4" />
+												{t("certificate.upload")}
+											</>
+										)}
+									</Button>
+								}
+							/>
+						</>
 					)}
 				</CardContent>
 			</Card>
 
-			{/* Other Medical Documents Section */}
-			<Card>
-				<CardHeader>
-					<div className="flex items-center justify-between">
-						<div>
-							<div className="flex items-center gap-2">
-								<FileIcon className="size-5 text-primary" />
-								<CardTitle>Estudios Médicos</CardTitle>
-							</div>
-							<CardDescription className="mt-1">
-								Otros estudios médicos y documentación del atleta
-							</CardDescription>
-						</div>
-						<Button onClick={() => setIsAddDocumentOpen(true)}>
-							<PlusIcon className="mr-2 size-4" />
-							Agregar documento
-						</Button>
+			{/* Medical Documents Section */}
+			<div className="space-y-4">
+				<div className="flex justify-end">
+					<Button size="sm" onClick={() => setIsAddDocumentOpen(true)}>
+						<PlusIcon className="mr-1 size-4" />
+						{t("documents.addDocument")}
+					</Button>
+				</div>
+
+				{documentsQuery.isLoading ? (
+					<div className="flex items-center justify-center py-8">
+						<Loader2Icon className="size-6 animate-spin text-muted-foreground" />
 					</div>
-				</CardHeader>
-				<CardContent>
-					{documentsQuery.isLoading ? (
-						<div className="flex items-center justify-center py-8">
-							<Loader2Icon className="size-6 animate-spin text-muted-foreground" />
-						</div>
-					) : documentsQuery.data?.length === 0 ? (
-						<div className="flex flex-col items-center justify-center py-8">
-							<div className="flex size-16 items-center justify-center rounded-full bg-muted">
-								<FileIcon className="size-8 text-muted-foreground" />
-							</div>
-							<p className="mt-4 text-muted-foreground">
-								No hay estudios médicos registrados
-							</p>
-						</div>
-					) : (
-						<div className="space-y-3">
-							{documentsQuery.data?.map((doc) => (
-								<div
-									key={doc.id}
-									className="flex items-center justify-between rounded-lg border p-4"
-								>
-									<div className="flex items-center gap-4">
-										<div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
-											<FileTextIcon className="size-5 text-primary" />
-										</div>
-										<div>
-											<div className="flex items-center gap-2">
-												<p className="font-medium">{doc.title}</p>
-												<Badge variant="secondary">
-													{
-														documentTypeLabels[
-															doc.documentType as AthleteMedicalDocumentType
-														]
-													}
-												</Badge>
-											</div>
-											<div className="flex items-center gap-4 text-muted-foreground text-sm">
-												<span className="flex items-center gap-1">
-													<CalendarIcon className="size-3" />
-													{format(new Date(doc.createdAt), "d MMM yyyy", {
-														locale: es,
-													})}
-												</span>
-												{doc.uploadedByUser && (
-													<span className="flex items-center gap-1">
-														<UserAvatar
-															className="size-4"
-															name={doc.uploadedByUser.name ?? ""}
-															src={doc.uploadedByUser.image ?? undefined}
-														/>
-														{doc.uploadedByUser.name}
-													</span>
+				) : !documentsQuery.data || documentsQuery.data.length === 0 ? (
+					<EmptyState icon={FileIcon} title={t("documents.noDocuments")} />
+				) : (
+					<div className="rounded-lg border">
+						<table className="w-full">
+							<thead>
+								<tr className="border-b bg-muted/50">
+									<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+										{t("documents.table.title")}
+									</th>
+									<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+										{t("documents.table.type")}
+									</th>
+									<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground md:table-cell">
+										{t("documents.table.date")}
+									</th>
+									<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground md:table-cell">
+										{t("documents.table.uploadedBy")}
+									</th>
+									<th className="w-[50px] px-4 py-3 text-right text-xs font-medium text-muted-foreground">
+										<span className="sr-only">
+											{t("documents.table.actions")}
+										</span>
+									</th>
+								</tr>
+							</thead>
+							<tbody className="divide-y">
+								{documentsQuery.data.map((doc) => (
+									<tr key={doc.id} className="hover:bg-muted/30">
+										<td className="px-4 py-3">
+											<div>
+												<span className="font-medium text-sm">{doc.title}</span>
+												{doc.description && (
+													<p className="max-w-[250px] truncate text-muted-foreground text-xs">
+														{doc.description}
+													</p>
 												)}
 											</div>
-											{doc.description && (
-												<p className="mt-1 text-muted-foreground text-sm">
-													{doc.description}
-												</p>
-											)}
-										</div>
-									</div>
-									<div className="flex items-center gap-2">
-										{doc.signedUrl && (
-											<Button
-												variant="outline"
-												size="sm"
-												onClick={() => window.open(doc.signedUrl!, "_blank")}
-											>
-												<DownloadIcon className="mr-2 size-4" />
-												Ver
-											</Button>
-										)}
-										<Button
-											variant="outline"
-											size="sm"
-											onClick={() =>
-												deleteDocumentMutation.mutate({ id: doc.id })
-											}
-											disabled={deleteDocumentMutation.isPending}
-										>
-											{deleteDocumentMutation.isPending ? (
-												<Loader2Icon className="size-4 animate-spin" />
+										</td>
+										<td className="px-4 py-3">
+											<Badge variant="secondary">
+												{t(
+													`documents.types.${doc.documentType as AthleteMedicalDocumentType}`,
+												)}
+											</Badge>
+										</td>
+										<td className="hidden px-4 py-3 text-sm md:table-cell">
+											{format(new Date(doc.createdAt), "dd MMM yyyy")}
+										</td>
+										<td className="hidden px-4 py-3 md:table-cell">
+											{doc.uploadedByUser ? (
+												<span className="flex items-center gap-1.5 text-sm">
+													<UserAvatar
+														className="size-5"
+														name={doc.uploadedByUser.name ?? ""}
+														src={doc.uploadedByUser.image ?? undefined}
+													/>
+													{doc.uploadedByUser.name}
+												</span>
 											) : (
-												<TrashIcon className="size-4 text-destructive" />
+												<span className="text-muted-foreground">-</span>
 											)}
-										</Button>
-									</div>
-								</div>
-							))}
-						</div>
-					)}
-				</CardContent>
-			</Card>
+										</td>
+										<td className="px-4 py-3">
+											<div className="flex justify-end">
+												<DropdownMenu>
+													<DropdownMenuTrigger asChild>
+														<Button
+															className="size-8 text-muted-foreground data-[state=open]:bg-muted"
+															size="icon"
+															variant="ghost"
+														>
+															<MoreHorizontalIcon className="shrink-0" />
+														</Button>
+													</DropdownMenuTrigger>
+													<DropdownMenuContent align="end">
+														{doc.signedUrl && (
+															<DropdownMenuItem
+																onClick={() =>
+																	window.open(doc.signedUrl!, "_blank")
+																}
+															>
+																<DownloadIcon className="mr-2 size-4" />
+																{t("documents.actions.view")}
+															</DropdownMenuItem>
+														)}
+														<DropdownMenuSeparator />
+														<DropdownMenuItem
+															variant="destructive"
+															onClick={() => {
+																NiceModal.show(ConfirmationModal, {
+																	title: t("documents.deleteConfirm.title"),
+																	message: t(
+																		"documents.deleteConfirm.message",
+																		{ name: doc.title },
+																	),
+																	confirmLabel: t(
+																		"documents.deleteConfirm.confirm",
+																	),
+																	destructive: true,
+																	onConfirm: () => {
+																		deleteDocumentMutation.mutate({
+																			id: doc.id,
+																		});
+																	},
+																});
+															}}
+														>
+															<Trash2Icon className="mr-2 size-4" />
+															{t("documents.actions.delete")}
+														</DropdownMenuItem>
+													</DropdownMenuContent>
+												</DropdownMenu>
+											</div>
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
+				)}
+			</div>
 
 			{/* Add Document Dialog */}
 			<Dialog open={isAddDocumentOpen} onOpenChange={setIsAddDocumentOpen}>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Agregar estudio médico</DialogTitle>
+						<DialogTitle>{t("documents.addDialogTitle")}</DialogTitle>
 						<DialogDescription>
-							Sube un nuevo documento médico para el atleta
+							{t("documents.addDialogDescription")}
 						</DialogDescription>
 					</DialogHeader>
 
 					<div className="space-y-4">
 						<Field>
-							<FieldLabel>Tipo de documento *</FieldLabel>
+							<FieldLabel>{t("documents.documentType")} *</FieldLabel>
 							<Select
 								value={selectedDocumentType}
 								onValueChange={(v) =>
@@ -607,9 +602,9 @@ export function AthleteMedicalTab({
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
-									{Object.entries(documentTypeLabels).map(([value, label]) => (
-										<SelectItem key={value} value={value}>
-											{label}
+									{Object.values(AthleteMedicalDocumentType).map((type) => (
+										<SelectItem key={type} value={type}>
+											{t(`documents.types.${type}`)}
 										</SelectItem>
 									))}
 								</SelectContent>
@@ -617,26 +612,26 @@ export function AthleteMedicalTab({
 						</Field>
 
 						<Field>
-							<FieldLabel>Título *</FieldLabel>
+							<FieldLabel>{t("documents.documentTitle")} *</FieldLabel>
 							<Input
 								value={documentTitle}
 								onChange={(e) => setDocumentTitle(e.target.value)}
-								placeholder="Ej: Análisis de sangre - Enero 2024"
+								placeholder={t("documents.documentTitlePlaceholder")}
 							/>
 						</Field>
 
 						<Field>
-							<FieldLabel>Descripción (opcional)</FieldLabel>
+							<FieldLabel>{t("documents.documentDescription")}</FieldLabel>
 							<Textarea
 								value={documentDescription}
 								onChange={(e) => setDocumentDescription(e.target.value)}
-								placeholder="Notas adicionales sobre el documento..."
+								placeholder={t("documents.documentDescriptionPlaceholder")}
 								rows={3}
 							/>
 						</Field>
 
 						<Field>
-							<FieldLabel>Archivo *</FieldLabel>
+							<FieldLabel>{t("documents.file")} *</FieldLabel>
 							<input
 								ref={documentInputRef}
 								type="file"
@@ -672,9 +667,9 @@ export function AthleteMedicalTab({
 								) : (
 									<div className="flex flex-col items-center gap-2 text-muted-foreground">
 										<UploadIcon className="size-8" />
-										<span>Haz clic para seleccionar un archivo</span>
+										<span>{t("documents.fileSelect")}</span>
 										<span className="text-xs">
-											PDF, JPG, PNG, DOC (máx. 10MB)
+											{t("documents.fileFormats")}
 										</span>
 									</div>
 								)}
@@ -687,7 +682,7 @@ export function AthleteMedicalTab({
 							variant="outline"
 							onClick={() => setIsAddDocumentOpen(false)}
 						>
-							Cancelar
+							{t("documents.cancel")}
 						</Button>
 						<Button
 							onClick={handleDocumentUpload}
@@ -698,12 +693,12 @@ export function AthleteMedicalTab({
 							{isUploadingDocument ? (
 								<>
 									<Loader2Icon className="mr-2 size-4 animate-spin" />
-									Subiendo...
+									{t("documents.uploading")}
 								</>
 							) : (
 								<>
 									<UploadIcon className="mr-2 size-4" />
-									Subir documento
+									{t("documents.uploadDocument")}
 								</>
 							)}
 						</Button>

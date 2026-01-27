@@ -1,15 +1,13 @@
 "use client";
 
-import NiceModal, { useModal } from "@ebay/nice-modal-react";
+import NiceModal from "@ebay/nice-modal-react";
 import { format } from "date-fns";
-import { CalendarCheckIcon, MapPinIcon } from "lucide-react";
+import { CalendarCheckIcon, MapPinIcon, XIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { AttendanceForm } from "@/components/organization/attendance-form";
-import {
-	Sheet,
-	SheetContent,
-	SheetHeader,
-	SheetTitle,
-} from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 
 interface SessionAttendanceModalProps {
 	sessionId: string;
@@ -21,29 +19,40 @@ interface SessionAttendanceModalProps {
 export const SessionAttendanceModal =
 	NiceModal.create<SessionAttendanceModalProps>(
 		({ sessionId, sessionTitle, sessionDate, locationName }) => {
-			const modal = useModal();
+			const modal = useEnhancedModal();
+			const t = useTranslations("training.attendance");
 
 			return (
 				<Sheet
 					open={modal.visible}
 					onOpenChange={(open) => {
-						if (!open) modal.hide();
+						if (!open) modal.handleClose();
 					}}
 				>
-					<SheetContent className="sm:max-w-2xl p-0 flex flex-col">
-						{/* Header */}
-						<div className="bg-gradient-to-br from-green-500/10 via-green-500/5 to-transparent px-6 pt-6 pb-4">
-							<SheetHeader>
-								<SheetTitle className="flex items-center gap-3 text-xl">
-									<div className="flex items-center justify-center size-10 rounded-full bg-green-500/10">
-										<CalendarCheckIcon className="size-5 text-green-500" />
+					<SheetContent
+						className="flex flex-col p-0 sm:max-w-2xl"
+						onAnimationEndCapture={modal.handleAnimationEndCapture}
+						hideDefaultHeader
+					>
+						{/* Custom Header with accent stripe */}
+						<div className="relative shrink-0">
+							{/* Accent stripe */}
+							<div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-slate-400 to-slate-500" />
+
+							{/* Header content */}
+							<div className="flex items-start justify-between gap-4 px-6 pt-6 pb-4">
+								<div className="flex items-start gap-3">
+									<div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-slate-400 to-slate-500 text-white shadow-sm">
+										<CalendarCheckIcon className="size-5" />
 									</div>
 									<div>
-										<span>Session Attendance</span>
-										<p className="text-sm font-normal text-muted-foreground mt-0.5">
+										<h2 className="font-semibold text-lg tracking-tight">
+											{t("modalTitle")}
+										</h2>
+										<p className="mt-0.5 text-muted-foreground text-sm">
 											{sessionTitle}
 										</p>
-										<div className="flex items-center gap-3 text-xs font-normal text-muted-foreground mt-1">
+										<div className="flex items-center gap-3 text-muted-foreground text-xs mt-1">
 											<span>
 												{format(
 													new Date(sessionDate),
@@ -58,14 +67,27 @@ export const SessionAttendanceModal =
 											)}
 										</div>
 									</div>
-								</SheetTitle>
-							</SheetHeader>
+								</div>
+								<button
+									type="button"
+									onClick={modal.handleClose}
+									className="flex size-8 items-center justify-center rounded-lg transition-all duration-150 text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+								>
+									<XIcon className="size-4" />
+									<span className="sr-only">{t("close")}</span>
+								</button>
+							</div>
+
+							{/* Separator */}
+							<div className="h-px bg-border" />
 						</div>
 
 						{/* Content */}
-						<div className="flex-1 overflow-y-auto px-6 py-4">
-							<AttendanceForm sessionId={sessionId} />
-						</div>
+						<ScrollArea className="flex-1">
+							<div className="px-6 py-4">
+								<AttendanceForm sessionId={sessionId} />
+							</div>
+						</ScrollArea>
 					</SheetContent>
 				</Sheet>
 			);

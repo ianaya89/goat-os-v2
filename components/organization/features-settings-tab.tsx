@@ -35,6 +35,14 @@ const FEATURE_CATEGORIES = {
 			OrganizationFeature.equipmentAudit,
 		],
 	},
+	competitions: {
+		labelKey: "features.categories.competitions",
+		features: [
+			OrganizationFeature.teams,
+			OrganizationFeature.competitions,
+			OrganizationFeature.matches,
+		],
+	},
 	finance: {
 		labelKey: "features.categories.finance",
 		features: [

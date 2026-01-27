@@ -8,6 +8,20 @@
       "when": 1769465510500,
       "tag": "20260126221150_boring_ogun",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1769494997081,
+      "tag": "20260127062317_grey_serpent_society",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1769495491884,
+      "tag": "20260127063131_open_wild_pack",
+      "breakpoints": true
     }
   ]
 }

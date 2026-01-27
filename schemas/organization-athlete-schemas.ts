@@ -30,9 +30,7 @@ export const listAthletesSchema = z.object({
 		.object({
 			status: z.array(z.nativeEnum(AthleteStatus)).optional(),
 			level: z.array(z.nativeEnum(AthleteLevel)).optional(),
-			createdAt: z
-				.array(z.enum(["today", "this-week", "this-month", "older"]))
-				.optional(),
+			sport: z.array(z.nativeEnum(AthleteSport)).optional(),
 		})
 		.optional(),
 });
@@ -69,7 +67,7 @@ export const createAthleteSchema = z.object({
 	bio: z.string().trim().max(2000).optional(),
 	yearsOfExperience: z.number().int().min(0).max(50).optional(),
 	// Contact information
-	phone: z.string().trim().max(30).optional(),
+	phone: z.string().trim().min(1, "Phone is required").max(30),
 	// Parent/Guardian contact (especially for minors)
 	parentName: z.string().trim().max(200).optional(),
 	parentPhone: z.string().trim().max(30).optional(),
@@ -93,6 +91,20 @@ export const createAthleteSchema = z.object({
 // Update athlete
 export const updateAthleteSchema = z.object({
 	id: z.string().uuid(),
+	// User data (synced to user table)
+	name: z
+		.string()
+		.trim()
+		.min(1, "Name is required")
+		.max(100, "Name is too long")
+		.optional(),
+	email: z
+		.string()
+		.trim()
+		.email("Invalid email address")
+		.max(255, "Email is too long")
+		.optional(),
+	// Athlete specific data
 	sport: z.nativeEnum(AthleteSport).optional(),
 	birthDate: z.coerce.date().optional().nullable(),
 	level: z.nativeEnum(AthleteLevel).optional(),
@@ -102,6 +114,8 @@ export const updateAthleteSchema = z.object({
 	weight: z.number().int().min(10000).max(300000).optional().nullable(),
 	dominantFoot: z.nativeEnum(DominantSide).optional().nullable(),
 	dominantHand: z.nativeEnum(DominantSide).optional().nullable(),
+	wingspan: z.number().int().min(50).max(350).optional().nullable(),
+	standingReach: z.number().int().min(100).max(400).optional().nullable(),
 	// Profile information
 	nationality: z.string().trim().max(100).optional().nullable(),
 	position: z.string().trim().max(100).optional().nullable(),
@@ -160,12 +174,9 @@ export const exportAthletesSchema = z.object({
 export const createPhysicalMetricsSchema = z.object({
 	athleteId: z.string().uuid(),
 	measuredAt: z.coerce.date().optional(),
-	height: z.number().int().min(50).max(300).optional(), // cm
 	weight: z.number().int().min(10000).max(300000).optional(), // grams
 	bodyFatPercentage: z.number().int().min(0).max(600).optional(), // x10, e.g., 125 = 12.5%
 	muscleMass: z.number().int().min(0).optional(), // grams
-	wingspan: z.number().int().min(50).max(350).optional(), // cm
-	standingReach: z.number().int().min(100).max(400).optional(), // cm
 	notes: z.string().trim().max(1000).optional(),
 });
 
@@ -173,6 +184,21 @@ export const listPhysicalMetricsSchema = z.object({
 	athleteId: z.string().uuid(),
 	limit: z.number().min(1).max(100).default(20),
 	offset: z.number().min(0).default(0),
+});
+
+export const updatePhysicalMetricsSchema = z.object({
+	id: z.string().uuid(),
+	athleteId: z.string().uuid(),
+	measuredAt: z.coerce.date().optional(),
+	weight: z.number().int().min(10000).max(300000).optional(),
+	bodyFatPercentage: z.number().int().min(0).max(600).optional(),
+	muscleMass: z.number().int().min(0).optional(),
+	notes: z.string().trim().max(1000).optional(),
+});
+
+export const deletePhysicalMetricsSchema = z.object({
+	id: z.string().uuid(),
+	athleteId: z.string().uuid(),
 });
 
 // ============================================================================
@@ -195,8 +221,19 @@ export const listFitnessTestsSchema = z.object({
 	offset: z.number().min(0).default(0),
 });
 
+export const updateFitnessTestSchema = z.object({
+	id: z.string().uuid(),
+	athleteId: z.string().uuid(),
+	testDate: z.coerce.date().optional(),
+	testType: z.nativeEnum(FitnessTestType).optional(),
+	result: z.number().int().optional(),
+	unit: z.string().trim().min(1).max(50).optional(),
+	notes: z.string().trim().max(1000).optional().nullable(),
+});
+
 export const deleteFitnessTestSchema = z.object({
 	id: z.string().uuid(),
+	athleteId: z.string().uuid(),
 });
 
 // ============================================================================
@@ -238,6 +275,46 @@ export const deleteCareerHistorySchema = z.object({
 });
 
 // ============================================================================
+// EDUCATION SCHEMAS
+// ============================================================================
+
+export const createEducationSchema = z.object({
+	athleteId: z.string().uuid(),
+	institution: z.string().trim().min(2, "Institution is required").max(200),
+	degree: z.string().trim().max(100).optional().nullable(),
+	fieldOfStudy: z.string().trim().max(100).optional().nullable(),
+	academicYear: z.string().trim().max(50).optional().nullable(),
+	startDate: z.coerce.date().optional().nullable(),
+	endDate: z.coerce.date().optional().nullable(),
+	expectedGraduationDate: z.coerce.date().optional().nullable(),
+	gpa: z.string().trim().max(10).optional().nullable(),
+	isCurrent: z.boolean().default(false),
+	notes: z.string().trim().max(500).optional().nullable(),
+});
+
+export const updateEducationSchema = z.object({
+	id: z.string().uuid(),
+	institution: z.string().trim().min(2, "Institution is required").max(200),
+	degree: z.string().trim().max(100).optional().nullable(),
+	fieldOfStudy: z.string().trim().max(100).optional().nullable(),
+	academicYear: z.string().trim().max(50).optional().nullable(),
+	startDate: z.coerce.date().optional().nullable(),
+	endDate: z.coerce.date().optional().nullable(),
+	expectedGraduationDate: z.coerce.date().optional().nullable(),
+	gpa: z.string().trim().max(10).optional().nullable(),
+	isCurrent: z.boolean().default(false),
+	notes: z.string().trim().max(500).optional().nullable(),
+});
+
+export const listEducationSchema = z.object({
+	athleteId: z.string().uuid(),
+});
+
+export const deleteEducationSchema = z.object({
+	id: z.string().uuid(),
+});
+
+// ============================================================================
 // TYPE EXPORTS
 // ============================================================================
 
@@ -261,6 +338,7 @@ export type ListPhysicalMetricsInput = z.infer<
 
 // Fitness test types
 export type CreateFitnessTestInput = z.infer<typeof createFitnessTestSchema>;
+export type UpdateFitnessTestInput = z.infer<typeof updateFitnessTestSchema>;
 export type ListFitnessTestsInput = z.infer<typeof listFitnessTestsSchema>;
 export type DeleteFitnessTestInput = z.infer<typeof deleteFitnessTestSchema>;
 
@@ -275,3 +353,9 @@ export type ListCareerHistoryInput = z.infer<typeof listCareerHistorySchema>;
 export type DeleteCareerHistoryInput = z.infer<
 	typeof deleteCareerHistorySchema
 >;
+
+// Education types
+export type CreateEducationInput = z.infer<typeof createEducationSchema>;
+export type UpdateEducationInput = z.infer<typeof updateEducationSchema>;
+export type ListEducationInput = z.infer<typeof listEducationSchema>;
+export type DeleteEducationInput = z.infer<typeof deleteEducationSchema>;

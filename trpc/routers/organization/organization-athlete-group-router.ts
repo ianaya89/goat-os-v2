@@ -53,8 +53,18 @@ export const organizationAthleteGroupRouter = createTRPCRouter({
 				conditions.push(eq(athleteGroupTable.isActive, input.filters.isActive));
 			}
 
-			// Age category filter
-			if (input.filters?.ageCategoryId) {
+			// Age category filter (single or multiple)
+			if (
+				input.filters?.ageCategoryIds &&
+				input.filters.ageCategoryIds.length > 0
+			) {
+				conditions.push(
+					inArray(
+						athleteGroupTable.ageCategoryId,
+						input.filters.ageCategoryIds,
+					),
+				);
+			} else if (input.filters?.ageCategoryId) {
 				conditions.push(
 					eq(athleteGroupTable.ageCategoryId, input.filters.ageCategoryId),
 				);
@@ -140,6 +150,12 @@ export const organizationAthleteGroupRouter = createTRPCRouter({
 					members: {
 						with: {
 							athlete: {
+								columns: {
+									id: true,
+									birthDate: true,
+									level: true,
+									phone: true,
+								},
 								with: {
 									user: {
 										columns: {

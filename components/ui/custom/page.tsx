@@ -206,11 +206,13 @@ function PageBody({
 export type PageContentProps = React.PropsWithChildren<{
 	title: string;
 	action?: React.ReactNode;
+	leftAction?: React.ReactNode;
 }>;
 
 function PageContent({
 	title,
 	action,
+	leftAction,
 	children,
 }: PageContentProps): React.JSX.Element {
 	return (
@@ -218,10 +220,15 @@ function PageContent({
 			<div className="mx-auto w-full space-y-4">
 				<div
 					className={
-						action ? "flex flex-row items-center justify-between" : undefined
+						action || leftAction
+							? "flex flex-row items-center justify-between"
+							: undefined
 					}
 				>
-					<PageTitle>{title}</PageTitle>
+					<div className="flex items-center gap-2">
+						{leftAction}
+						<PageTitle>{title}</PageTitle>
+					</div>
 					{action}
 				</div>
 				{children}

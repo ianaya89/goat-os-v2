@@ -18,6 +18,7 @@ import { AttendanceStatus, MemberRole } from "@/lib/db/schema/enums";
 import {
 	accountTable,
 	athleteCareerHistoryTable,
+	athleteEducationTable,
 	athleteEvaluationTable,
 	athleteFitnessTestTable,
 	athleteGroupMemberTable,
@@ -38,18 +39,25 @@ import {
 	bulkUpdateAthletesStatusSchema,
 	createAthleteSchema,
 	createCareerHistorySchema,
+	createEducationSchema,
 	createFitnessTestSchema,
 	createPhysicalMetricsSchema,
 	deleteAthleteSchema,
 	deleteCareerHistorySchema,
+	deleteEducationSchema,
 	deleteFitnessTestSchema,
+	deletePhysicalMetricsSchema,
 	exportAthletesSchema,
 	listAthletesSchema,
 	listCareerHistorySchema,
+	listEducationSchema,
 	listFitnessTestsSchema,
 	listPhysicalMetricsSchema,
 	updateAthleteSchema,
 	updateCareerHistorySchema,
+	updateEducationSchema,
+	updateFitnessTestSchema,
+	updatePhysicalMetricsSchema,
 } from "@/schemas/organization-athlete-schemas";
 import { createTRPCRouter, protectedOrganizationProcedure } from "@/trpc/init";
 
@@ -98,59 +106,8 @@ export const organizationAthleteRouter = createTRPCRouter({
 				conditions.push(inArray(athleteTable.level, input.filters.level));
 			}
 
-			if (input.filters?.createdAt && input.filters.createdAt.length > 0) {
-				const dateConditions = input.filters.createdAt
-					.map((range) => {
-						const now = new Date();
-						switch (range) {
-							case "today": {
-								const todayStart = new Date(
-									now.getFullYear(),
-									now.getMonth(),
-									now.getDate(),
-								);
-								const todayEnd = new Date(
-									now.getFullYear(),
-									now.getMonth(),
-									now.getDate() + 1,
-								);
-								return and(
-									gte(athleteTable.createdAt, todayStart),
-									lte(athleteTable.createdAt, todayEnd),
-								);
-							}
-							case "this-week": {
-								const weekStart = new Date(
-									now.getFullYear(),
-									now.getMonth(),
-									now.getDate() - now.getDay(),
-								);
-								return gte(athleteTable.createdAt, weekStart);
-							}
-							case "this-month": {
-								const monthStart = new Date(
-									now.getFullYear(),
-									now.getMonth(),
-									1,
-								);
-								return gte(athleteTable.createdAt, monthStart);
-							}
-							case "older": {
-								const monthAgo = new Date(
-									now.getFullYear(),
-									now.getMonth() - 1,
-									now.getDate(),
-								);
-								return lte(athleteTable.createdAt, monthAgo);
-							}
-							default:
-								return null;
-						}
-					})
-					.filter((v): v is NonNullable<typeof v> => v !== null);
-				if (dateConditions.length > 0) {
-					conditions.push(or(...dateConditions)!);
-				}
+			if (input.filters?.sport && input.filters.sport.length > 0) {
+				conditions.push(inArray(athleteTable.sport, input.filters.sport));
 			}
 
 			const whereCondition = and(...conditions);
@@ -289,6 +246,7 @@ export const organizationAthleteRouter = createTRPCRouter({
 				fitnessTests,
 				careerHistory,
 				wellnessSurveys,
+				education,
 			] = await Promise.all([
 				// Get athlete groups
 				db.query.athleteGroupMemberTable.findMany({
@@ -350,6 +308,14 @@ export const organizationAthleteRouter = createTRPCRouter({
 					orderBy: desc(athleteWellnessSurveyTable.surveyDate),
 					limit: 30,
 				}),
+				// Get education history
+				db.query.athleteEducationTable.findMany({
+					where: eq(athleteEducationTable.athleteId, athlete.id),
+					orderBy: [
+						desc(athleteEducationTable.isCurrent),
+						desc(athleteEducationTable.startDate),
+					],
+				}),
 			]);
 
 			const directSessionIds = directSessions.map((s) => s.sessionId);
@@ -377,14 +343,29 @@ export const organizationAthleteRouter = createTRPCRouter({
 			let sessions: Array<{
 				id: string;
 				title: string;
+				description: string | null;
 				startTime: Date;
 				endTime: Date;
 				status: string;
+				objectives: string | null;
+				planning: string | null;
+				postSessionNotes: string | null;
+				isRecurring: boolean;
+				rrule: string | null;
+				attachmentKey: string | null;
 				location: { id: string; name: string } | null;
 				athleteGroup: { id: string; name: string } | null;
 				coaches: Array<{
+					id: string;
 					isPrimary: boolean;
 					coach: {
+						id: string;
+						user: { id: string; name: string; image: string | null } | null;
+					};
+				}>;
+				athletes: Array<{
+					id: string;
+					athlete: {
 						id: string;
 						user: { id: string; name: string; image: string | null } | null;
 					};
@@ -404,6 +385,15 @@ export const organizationAthleteRouter = createTRPCRouter({
 						coaches: {
 							with: {
 								coach: {
+									with: {
+										user: { columns: { id: true, name: true, image: true } },
+									},
+								},
+							},
+						},
+						athletes: {
+							with: {
+								athlete: {
 									with: {
 										user: { columns: { id: true, name: true, image: true } },
 									},
@@ -505,6 +495,7 @@ export const organizationAthleteRouter = createTRPCRouter({
 				fitnessTests,
 				careerHistory,
 				wellnessSurveys,
+				education,
 				stats: {
 					totalSessions,
 					completedSessions,
@@ -687,11 +678,76 @@ export const organizationAthleteRouter = createTRPCRouter({
 	update: protectedOrganizationProcedure
 		.input(updateAthleteSchema)
 		.mutation(async ({ ctx, input }) => {
-			const { id, ...data } = input;
+			const { id, name, email, ...athleteData } = input;
 
+			// First, get the athlete to verify ownership and get userId
+			const existingAthlete = await db.query.athleteTable.findFirst({
+				where: and(
+					eq(athleteTable.id, id),
+					eq(athleteTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!existingAthlete) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Athlete not found",
+				});
+			}
+
+			// If email is being changed, check if it's already in use by another user
+			if (email) {
+				const _existingUserWithEmail = await db.query.userTable.findFirst({
+					where: and(
+						eq(userTable.email, email.toLowerCase()),
+						// Exclude the current user
+						existingAthlete.userId
+							? eq(userTable.id, existingAthlete.userId)
+							: undefined,
+					),
+				});
+
+				// Check if another user has this email
+				const anotherUserWithEmail = await db.query.userTable.findFirst({
+					where: eq(userTable.email, email.toLowerCase()),
+				});
+
+				if (
+					anotherUserWithEmail &&
+					anotherUserWithEmail.id !== existingAthlete.userId
+				) {
+					throw new TRPCError({
+						code: "CONFLICT",
+						message: "Email already in use by another user",
+					});
+				}
+			}
+
+			// Update user table if name or email are provided
+			if ((name || email) && existingAthlete.userId) {
+				const userUpdateData: { name?: string; email?: string } = {};
+				if (name) userUpdateData.name = name;
+				if (email) userUpdateData.email = email.toLowerCase();
+
+				await db
+					.update(userTable)
+					.set(userUpdateData)
+					.where(eq(userTable.id, existingAthlete.userId));
+
+				logger.info(
+					{
+						userId: existingAthlete.userId,
+						athleteId: id,
+						updatedFields: Object.keys(userUpdateData),
+					},
+					"Updated user data for athlete",
+				);
+			}
+
+			// Update athlete table
 			const [updatedAthlete] = await db
 				.update(athleteTable)
-				.set(data)
+				.set(athleteData)
 				.where(
 					and(
 						eq(athleteTable.id, id),
@@ -699,13 +755,6 @@ export const organizationAthleteRouter = createTRPCRouter({
 					),
 				)
 				.returning();
-
-			if (!updatedAthlete) {
-				throw new TRPCError({
-					code: "NOT_FOUND",
-					message: "Athlete not found",
-				});
-			}
 
 			return updatedAthlete;
 		}),
@@ -888,12 +937,9 @@ export const organizationAthleteRouter = createTRPCRouter({
 				.values({
 					athleteId: input.athleteId,
 					measuredAt: input.measuredAt ?? new Date(),
-					height: input.height,
 					weight: input.weight,
 					bodyFatPercentage: input.bodyFatPercentage,
 					muscleMass: input.muscleMass,
-					wingspan: input.wingspan,
-					standingReach: input.standingReach,
 					notes: input.notes,
 					recordedBy: ctx.user.id,
 				})
@@ -944,6 +990,90 @@ export const organizationAthleteRouter = createTRPCRouter({
 			};
 		}),
 
+	updatePhysicalMetrics: protectedOrganizationProcedure
+		.input(updatePhysicalMetricsSchema)
+		.mutation(async ({ ctx, input }) => {
+			const athlete = await db.query.athleteTable.findFirst({
+				where: and(
+					eq(athleteTable.id, input.athleteId),
+					eq(athleteTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!athlete) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Athlete not found",
+				});
+			}
+
+			const existingMetric =
+				await db.query.athletePhysicalMetricsTable.findFirst({
+					where: and(
+						eq(athletePhysicalMetricsTable.id, input.id),
+						eq(athletePhysicalMetricsTable.athleteId, input.athleteId),
+					),
+				});
+
+			if (!existingMetric) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Physical metric not found",
+				});
+			}
+
+			const [updatedMetric] = await db
+				.update(athletePhysicalMetricsTable)
+				.set({
+					measuredAt: input.measuredAt ?? existingMetric.measuredAt,
+					weight: input.weight,
+					bodyFatPercentage: input.bodyFatPercentage,
+					muscleMass: input.muscleMass,
+					notes: input.notes,
+				})
+				.where(eq(athletePhysicalMetricsTable.id, input.id))
+				.returning();
+
+			return updatedMetric;
+		}),
+
+	deletePhysicalMetrics: protectedOrganizationProcedure
+		.input(deletePhysicalMetricsSchema)
+		.mutation(async ({ ctx, input }) => {
+			const athlete = await db.query.athleteTable.findFirst({
+				where: and(
+					eq(athleteTable.id, input.athleteId),
+					eq(athleteTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!athlete) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Athlete not found",
+				});
+			}
+
+			const [deletedMetric] = await db
+				.delete(athletePhysicalMetricsTable)
+				.where(
+					and(
+						eq(athletePhysicalMetricsTable.id, input.id),
+						eq(athletePhysicalMetricsTable.athleteId, input.athleteId),
+					),
+				)
+				.returning();
+
+			if (!deletedMetric) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Physical metric not found",
+				});
+			}
+
+			return { success: true };
+		}),
+
 	// ============================================================================
 	// FITNESS TEST PROCEDURES
 	// ============================================================================
@@ -980,6 +1110,54 @@ export const organizationAthleteRouter = createTRPCRouter({
 				.returning();
 
 			return test;
+		}),
+
+	updateFitnessTest: protectedOrganizationProcedure
+		.input(updateFitnessTestSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify athlete belongs to organization
+			const athlete = await db.query.athleteTable.findFirst({
+				where: and(
+					eq(athleteTable.id, input.athleteId),
+					eq(athleteTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!athlete) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Athlete not found",
+				});
+			}
+
+			// Verify test exists and belongs to athlete
+			const existingTest = await db.query.athleteFitnessTestTable.findFirst({
+				where: and(
+					eq(athleteFitnessTestTable.id, input.id),
+					eq(athleteFitnessTestTable.athleteId, input.athleteId),
+				),
+			});
+
+			if (!existingTest) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Fitness test not found",
+				});
+			}
+
+			const [updated] = await db
+				.update(athleteFitnessTestTable)
+				.set({
+					...(input.testDate && { testDate: input.testDate }),
+					...(input.testType && { testType: input.testType }),
+					...(input.result !== undefined && { result: input.result }),
+					...(input.unit && { unit: input.unit }),
+					...(input.notes !== undefined && { notes: input.notes }),
+				})
+				.where(eq(athleteFitnessTestTable.id, input.id))
+				.returning();
+
+			return updated;
 		}),
 
 	listFitnessTests: protectedOrganizationProcedure
@@ -1036,17 +1214,30 @@ export const organizationAthleteRouter = createTRPCRouter({
 	deleteFitnessTest: protectedOrganizationProcedure
 		.input(deleteFitnessTestSchema)
 		.mutation(async ({ ctx, input }) => {
-			// Get the test and verify it belongs to an athlete in this organization
-			const test = await db.query.athleteFitnessTestTable.findFirst({
-				where: eq(athleteFitnessTestTable.id, input.id),
-				with: {
-					athlete: {
-						columns: { organizationId: true },
-					},
-				},
+			// Verify athlete belongs to organization
+			const athlete = await db.query.athleteTable.findFirst({
+				where: and(
+					eq(athleteTable.id, input.athleteId),
+					eq(athleteTable.organizationId, ctx.organization.id),
+				),
 			});
 
-			if (!test || test.athlete.organizationId !== ctx.organization.id) {
+			if (!athlete) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Athlete not found",
+				});
+			}
+
+			// Verify test exists and belongs to athlete
+			const test = await db.query.athleteFitnessTestTable.findFirst({
+				where: and(
+					eq(athleteFitnessTestTable.id, input.id),
+					eq(athleteFitnessTestTable.athleteId, input.athleteId),
+				),
+			});
+
+			if (!test) {
 				throw new TRPCError({
 					code: "NOT_FOUND",
 					message: "Fitness test not found",
@@ -1191,6 +1382,152 @@ export const organizationAthleteRouter = createTRPCRouter({
 			await db
 				.delete(athleteCareerHistoryTable)
 				.where(eq(athleteCareerHistoryTable.id, input.id));
+
+			return { success: true };
+		}),
+
+	// ============================================================================
+	// EDUCATION ENDPOINTS
+	// ============================================================================
+
+	listEducation: protectedOrganizationProcedure
+		.input(listEducationSchema)
+		.query(async ({ ctx, input }) => {
+			// Verify athlete belongs to organization
+			const athlete = await db.query.athleteTable.findFirst({
+				where: and(
+					eq(athleteTable.id, input.athleteId),
+					eq(athleteTable.organizationId, ctx.organization.id),
+				),
+				columns: { id: true },
+			});
+
+			if (!athlete) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Athlete not found",
+				});
+			}
+
+			const education = await db.query.athleteEducationTable.findMany({
+				where: eq(athleteEducationTable.athleteId, input.athleteId),
+				orderBy: [
+					desc(athleteEducationTable.isCurrent),
+					desc(athleteEducationTable.startDate),
+				],
+			});
+
+			return education;
+		}),
+
+	addEducation: protectedOrganizationProcedure
+		.input(createEducationSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify athlete belongs to organization
+			const athlete = await db.query.athleteTable.findFirst({
+				where: and(
+					eq(athleteTable.id, input.athleteId),
+					eq(athleteTable.organizationId, ctx.organization.id),
+				),
+				columns: { id: true },
+			});
+
+			if (!athlete) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Athlete not found",
+				});
+			}
+
+			const [education] = await db
+				.insert(athleteEducationTable)
+				.values({
+					athleteId: input.athleteId,
+					institution: input.institution,
+					degree: input.degree ?? null,
+					fieldOfStudy: input.fieldOfStudy ?? null,
+					academicYear: input.academicYear ?? null,
+					startDate: input.startDate ?? null,
+					endDate: input.isCurrent ? null : (input.endDate ?? null),
+					expectedGraduationDate: input.expectedGraduationDate ?? null,
+					gpa: input.gpa ?? null,
+					isCurrent: input.isCurrent ?? false,
+					notes: input.notes ?? null,
+				})
+				.returning();
+
+			return education;
+		}),
+
+	updateEducation: protectedOrganizationProcedure
+		.input(updateEducationSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Get education and verify it belongs to an athlete in this organization
+			const education = await db.query.athleteEducationTable.findFirst({
+				where: eq(athleteEducationTable.id, input.id),
+				with: {
+					athlete: {
+						columns: { organizationId: true },
+					},
+				},
+			});
+
+			if (
+				!education ||
+				education.athlete.organizationId !== ctx.organization.id
+			) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Education not found",
+				});
+			}
+
+			const [updated] = await db
+				.update(athleteEducationTable)
+				.set({
+					institution: input.institution,
+					degree: input.degree ?? null,
+					fieldOfStudy: input.fieldOfStudy ?? null,
+					academicYear: input.academicYear ?? null,
+					startDate: input.startDate ?? null,
+					endDate: input.isCurrent ? null : (input.endDate ?? null),
+					expectedGraduationDate: input.expectedGraduationDate ?? null,
+					gpa: input.gpa ?? null,
+					isCurrent: input.isCurrent ?? false,
+					notes: input.notes ?? null,
+				})
+				.where(eq(athleteEducationTable.id, input.id))
+				.returning();
+
+			return updated;
+		}),
+
+	deleteEducation: protectedOrganizationProcedure
+		.input(deleteEducationSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Get education and verify it belongs to an athlete in this organization
+			const education = await db.query.athleteEducationTable.findFirst({
+				where: eq(athleteEducationTable.id, input.id),
+				with: {
+					athlete: {
+						columns: { organizationId: true },
+					},
+				},
+			});
+
+			if (
+				!education ||
+				education.athlete.organizationId !== ctx.organization.id
+			) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Education not found",
+				});
+			}
+
+			await db
+				.delete(athleteEducationTable)
+				.where(eq(athleteEducationTable.id, input.id));
 
 			return { success: true };
 		}),
