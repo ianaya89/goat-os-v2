@@ -111,5 +111,109 @@
 		"createFailed": "No se pudo crear el entrenador.",
 		"updateFailed": "No se pudo actualizar el entrenador.",
 		"deleteFailed": "No se pudo eliminar el entrenador."
+	},
+	"profile": {
+		"notFound": "Entrenador no encontrado",
+		"backToCoaches": "Volver a Entrenadores",
+		"stats": {
+			"totalSessions": "Sesiones Totales",
+			"completedUpcoming": "{completed} completadas, {upcoming} pr\u00f3ximas",
+			"primaryCoach": "Entrenador Principal",
+			"sessionsAsPrimary": "sesiones como entrenador principal",
+			"athletesCoached": "Atletas Entrenados",
+			"uniqueAthletes": "atletas \u00fanicos entrenados",
+			"evaluationsGiven": "Evaluaciones Realizadas",
+			"avg": "prom {rating}",
+			"athleteEvaluations": "evaluaciones de atletas"
+		},
+		"tabs": {
+			"info": "Info",
+			"sessions": "Sesiones ({count})",
+			"attendance": "Asistencia ({count})",
+			"athletes": "Atletas ({count})",
+			"evaluations": "Evaluaciones ({count})"
+		},
+		"info": {
+			"personalContact": "Personal y Contacto",
+			"phone": "Tel\u00e9fono",
+			"email": "Email",
+			"birthDate": "Fecha de nacimiento",
+			"noContactInfo": "Sin informaci\u00f3n de contacto",
+			"editContact": "Editar Contacto",
+			"editContactSubtitle": "Actualizar tel\u00e9fono y fecha de nacimiento",
+			"professionalInfo": "Informaci\u00f3n Profesional",
+			"sport": "Deporte",
+			"specialty": "Especialidades",
+			"status": "Estado",
+			"noProfessionalInfo": "Sin informaci\u00f3n profesional",
+			"editProfessional": "Editar Informaci\u00f3n Profesional",
+			"editProfessionalSubtitle": "Actualizar deporte, especialidades y estado",
+			"bioNotes": "Biograf\u00eda",
+			"noBio": "Sin biograf\u00eda",
+			"editBio": "Editar Biograf\u00eda",
+			"editBioSubtitle": "Escribe una biograf\u00eda para este entrenador",
+			"bioPlaceholder": "Escribe una biograf\u00eda..."
+		},
+		"sessions": {
+			"noSessions": "No se encontraron sesiones",
+			"newSession": "Nueva Sesi\u00f3n",
+			"deleteTitle": "\u00bfEliminar sesi\u00f3n?",
+			"deleteMessage": "\u00bfEst\u00e1s seguro de que quieres eliminar \"{name}\"? Esta acci\u00f3n no se puede deshacer.",
+			"deleteConfirm": "Eliminar",
+			"statusChanged": "Estado de sesi\u00f3n actualizado",
+			"deleted": "Sesi\u00f3n eliminada"
+		},
+		"attendance": {
+			"title": "Resumen de Asistencia",
+			"totalRecords": "Registros Totales",
+			"present": "Presentes",
+			"absent": "Ausentes",
+			"lateExcused": "Tarde / Justificados",
+			"sessionsWithAttendance": "Sesiones con Asistencia",
+			"percentAttendance": "{percentage}% asistencia",
+			"view": "Ver",
+			"empty": "No se encontraron registros de asistencia"
+		},
+		"athletes": {
+			"title": "Atletas Entrenados",
+			"empty": "No se encontraron atletas",
+			"session": "{count} sesi\u00f3n",
+			"sessions": "{count} sesiones",
+			"table": {
+				"name": "Nombre",
+				"level": "Nivel",
+				"sport": "Deporte",
+				"contact": "Contacto",
+				"sessions": "Sesiones",
+				"actions": "Acciones"
+			},
+			"viewProfile": "Ver Perfil"
+		},
+		"evaluations": {
+			"title": "Evaluaciones Realizadas",
+			"addEvaluation": "Agregar Evaluaci\u00f3n",
+			"empty": "A\u00fan no hay evaluaciones",
+			"performance": "Rendimiento",
+			"attitude": "Actitud",
+			"physicalFitness": "Condici\u00f3n F\u00edsica",
+			"notes": "Notas",
+			"table": {
+				"athlete": "Atleta",
+				"session": "Sesi\u00f3n",
+				"date": "Fecha",
+				"ratings": "Calificaciones",
+				"actions": "Acciones"
+			},
+			"actions": {
+				"edit": "Editar Evaluaci\u00f3n",
+				"delete": "Eliminar Evaluaci\u00f3n"
+			},
+			"deleteConfirm": {
+				"title": "\u00bfEliminar evaluaci\u00f3n?",
+				"message": "\u00bfEst\u00e1s seguro de que quieres eliminar esta evaluaci\u00f3n de \"{name}\"? Esta acci\u00f3n no se puede deshacer.",
+				"confirm": "Eliminar"
+			},
+			"deleted": "Evaluaci\u00f3n eliminada correctamente"
+		}
 	}
 }

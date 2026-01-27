@@ -1,0 +1,91 @@
+{
+	"title": "Ubicaciones",
+	"description": "Gestiona las ubicaciones de tu organización.",
+	"add": "Agregar Ubicación",
+	"search": "Buscar ubicaciones...",
+	"table": {
+		"name": "Nombre",
+		"address": "Dirección",
+		"capacity": "Capacidad",
+		"status": "Estado",
+		"created": "Creado",
+		"noLocations": "No se encontraron ubicaciones."
+	},
+	"statuses": {
+		"active": "Activo",
+		"inactive": "Inactivo"
+	},
+	"filters": {
+		"status": "Estado",
+		"active": "Activo",
+		"inactive": "Inactivo"
+	},
+	"modal": {
+		"createTitle": "Crear Ubicación",
+		"editTitle": "Editar Ubicación",
+		"createDescription": "Completa los datos para crear una nueva ubicación.",
+		"editDescription": "Actualiza la información de la ubicación.",
+		"cancel": "Cancelar",
+		"create": "Crear Ubicación",
+		"update": "Actualizar Ubicación",
+		"clear": "Limpiar",
+		"close": "Cerrar"
+	},
+	"form": {
+		"name": "Nombre",
+		"namePlaceholder": "ej., Centro de Entrenamiento Principal",
+		"address": "Dirección",
+		"addressPlaceholder": "Dirección",
+		"city": "Ciudad",
+		"cityPlaceholder": "Ciudad",
+		"state": "Estado/Provincia",
+		"statePlaceholder": "Estado",
+		"country": "País",
+		"countryPlaceholder": "País",
+		"postalCode": "Código Postal",
+		"postalCodePlaceholder": "Código postal",
+		"capacity": "Capacidad",
+		"capacityPlaceholder": "Capacidad máxima",
+		"notes": "Notas",
+		"notesPlaceholder": "Notas adicionales sobre la ubicación...",
+		"calendarColor": "Color del Calendario",
+		"active": "Activo",
+		"activeDescription": "Esta ubicación estará disponible para sesiones de entrenamiento."
+	},
+	"actions": {
+		"edit": "Editar ubicación",
+		"delete": "Eliminar ubicación"
+	},
+	"delete": {
+		"title": "¿Eliminar ubicación?",
+		"message": "¿Estás seguro de que quieres eliminar esta ubicación? Esta acción no se puede deshacer.",
+		"confirm": "Eliminar"
+	},
+	"bulkDelete": {
+		"title": "¿Eliminar ubicaciones?",
+		"message": "¿Estás seguro de que quieres eliminar {count} ubicación(es)? Esta acción no se puede deshacer.",
+		"confirm": "Eliminar"
+	},
+	"bulkActions": {
+		"noSelected": "No hay ubicaciones seleccionadas.",
+		"changeStatus": "Cambiar estado",
+		"setActive": "Establecer como Activo",
+		"setInactive": "Establecer como Inactivo",
+		"delete": "Eliminar",
+		"deleted": "{count} ubicación(es) eliminada(s).",
+		"activated": "{count} ubicación(es) activada(s).",
+		"deactivated": "{count} ubicación(es) desactivada(s).",
+		"deleteFailed": "No se pudieron eliminar las ubicaciones.",
+		"updateFailed": "No se pudieron actualizar las ubicaciones."
+	},
+	"success": {
+		"created": "Ubicación creada correctamente",
+		"updated": "Ubicación actualizada correctamente",
+		"deleted": "Ubicación eliminada correctamente"
+	},
+	"error": {
+		"createFailed": "No se pudo crear la ubicación",
+		"updateFailed": "No se pudo actualizar la ubicación",
+		"deleteFailed": "No se pudo eliminar la ubicación"
+	}
+}

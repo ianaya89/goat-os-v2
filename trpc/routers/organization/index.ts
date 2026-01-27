@@ -91,6 +91,7 @@ export const organizationRouter = createTRPCRouter({
 						eq(memberTable.organizationId, organizationTable.id),
 					)
 					.as("membersCount"),
+				memberRole: memberTable.role,
 			})
 			.from(organizationTable)
 			.innerJoin(

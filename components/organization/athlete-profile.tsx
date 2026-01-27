@@ -51,6 +51,8 @@ import { OrgAthletePhysicalProfileEditModal } from "@/components/organization/at
 import { OrgAthleteResidenceEditModal } from "@/components/organization/athlete-info/org-athlete-residence-edit-modal";
 import { OrgAthleteVideosEditModal } from "@/components/organization/athlete-info/org-athlete-videos-edit-modal";
 import { AthleteMedicalTab } from "@/components/organization/athlete-medical-tab";
+import { AthleteEvaluationsTable } from "@/components/organization/evaluations-table";
+import { ProfileImageUpload } from "@/components/organization/profile-image-upload";
 import { SessionsListTable } from "@/components/organization/sessions-list-table";
 import { TrainingSessionsModal } from "@/components/organization/training-sessions-modal";
 import { Badge } from "@/components/ui/badge";
@@ -112,17 +114,6 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 		trpc.organization.trainingSession.delete.useMutation({
 			onSuccess: () => {
 				toast.success(t("groups.success.sessionDeleted"));
-				utils.organization.athlete.getProfile.invalidate({ id: athleteId });
-			},
-			onError: (error) => {
-				toast.error(error.message);
-			},
-		});
-
-	const deleteEvaluationMutation =
-		trpc.organization.athleteEvaluation.delete.useMutation({
-			onSuccess: () => {
-				toast.success(t("evaluations.deleted"));
 				utils.organization.athlete.getProfile.invalidate({ id: athleteId });
 			},
 			onError: (error) => {
@@ -234,11 +225,19 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 			{/* Header */}
 			<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 				<div className="flex items-start gap-4">
-					<UserAvatar
-						className="size-16"
-						name={athlete.user?.name ?? ""}
-						src={athlete.user?.image ?? undefined}
-					/>
+					{athlete.user ? (
+						<ProfileImageUpload
+							userId={athlete.user.id}
+							userName={athlete.user.name ?? ""}
+							currentImageUrl={
+								athlete.user.imageKey ? undefined : athlete.user.image
+							}
+							hasS3Image={!!athlete.user.imageKey}
+							size="sm"
+						/>
+					) : (
+						<UserAvatar className="size-16" name="" src={undefined} />
+					)}
 					<div>
 						<div className="flex items-center gap-3">
 							<h1 className="font-bold text-2xl">
@@ -488,211 +487,24 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 				</TabsContent>
 
 				<TabsContent value="evaluations" className="space-y-4">
-					<div className="flex justify-end">
-						<Button
-							size="sm"
-							onClick={() => {
-								const completedSessions = sessions
-									.filter((s) => s.status === "completed")
-									.map((s) => ({
-										id: s.id,
-										title: s.title,
-										startTime: new Date(s.startTime),
-										status: s.status,
-									}));
-								NiceModal.show(AddEvaluationModal, {
-									athleteId,
-									athleteName: athlete.user?.name,
-									sessions: completedSessions,
-								});
-							}}
-						>
-							<PlusIcon className="mr-2 size-4" />
-							{t("evaluations.addEvaluation")}
-						</Button>
-					</div>
-					{evaluations.length === 0 ? (
-						<EmptyState
-							icon={StarIcon}
-							title={t("evaluations.noEvaluations")}
-						/>
-					) : (
-						<div className="rounded-lg border">
-							<table className="w-full">
-								<thead>
-									<tr className="border-b bg-muted/50">
-										<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
-											{t("evaluations.table.session")}
-										</th>
-										<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
-											{t("evaluations.table.date")}
-										</th>
-										<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
-											{t("evaluations.table.ratings")}
-										</th>
-										<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground sm:table-cell">
-											{t("evaluations.table.evaluator")}
-										</th>
-										<th className="w-[50px] px-4 py-3 text-right text-xs font-medium text-muted-foreground">
-											<span className="sr-only">
-												{t("evaluations.table.actions")}
-											</span>
-										</th>
-									</tr>
-								</thead>
-								<tbody className="divide-y">
-									{evaluations.map((evaluation) => (
-										<tr key={evaluation.id} className="hover:bg-muted/30">
-											<td className="px-4 py-3">
-												<Link
-													href={`/dashboard/organization/training-sessions/${evaluation.session.id}`}
-													className="font-medium text-sm hover:underline"
-												>
-													{evaluation.session.title}
-												</Link>
-											</td>
-											<td className="px-4 py-3 text-sm">
-												{format(
-													new Date(evaluation.session.startTime),
-													"dd MMM yyyy",
-												)}
-											</td>
-											<td className="px-4 py-3">
-												<div className="flex items-center gap-3">
-													{evaluation.performanceRating && (
-														<div
-															className="flex items-center gap-1 text-sm"
-															title={t("evaluations.performance")}
-														>
-															<StarIcon className="size-3.5 fill-yellow-400 text-yellow-400" />
-															<span className="tabular-nums">
-																{evaluation.performanceRating}/5
-															</span>
-														</div>
-													)}
-													{evaluation.attitudeRating && (
-														<div
-															className="flex items-center gap-1 text-sm"
-															title={t("evaluations.attitude")}
-														>
-															<StarIcon className="size-3.5 fill-yellow-400 text-yellow-400" />
-															<span className="tabular-nums">
-																{evaluation.attitudeRating}/5
-															</span>
-														</div>
-													)}
-													{evaluation.physicalFitnessRating && (
-														<div
-															className="flex items-center gap-1 text-sm"
-															title={t("evaluations.physicalFitness")}
-														>
-															<StarIcon className="size-3.5 fill-yellow-400 text-yellow-400" />
-															<span className="tabular-nums">
-																{evaluation.physicalFitnessRating}/5
-															</span>
-														</div>
-													)}
-												</div>
-											</td>
-											<td className="hidden px-4 py-3 sm:table-cell">
-												{evaluation.evaluatedByUser ? (
-													<div className="flex items-center gap-2 text-sm">
-														<UserAvatar
-															className="size-5"
-															name={evaluation.evaluatedByUser.name ?? ""}
-															src={
-																evaluation.evaluatedByUser.image ?? undefined
-															}
-														/>
-														<span>{evaluation.evaluatedByUser.name}</span>
-													</div>
-												) : (
-													<span className="text-muted-foreground">-</span>
-												)}
-											</td>
-											<td className="px-4 py-3">
-												<div className="flex justify-end">
-													<DropdownMenu>
-														<DropdownMenuTrigger asChild>
-															<Button
-																className="size-8 text-muted-foreground data-[state=open]:bg-muted"
-																size="icon"
-																variant="ghost"
-															>
-																<MoreHorizontalIcon className="shrink-0" />
-															</Button>
-														</DropdownMenuTrigger>
-														<DropdownMenuContent align="end">
-															<DropdownMenuItem
-																onClick={() => {
-																	const completedSessions = sessions
-																		.filter((s) => s.status === "completed")
-																		.map((s) => ({
-																			id: s.id,
-																			title: s.title,
-																			startTime: new Date(s.startTime),
-																			status: s.status,
-																		}));
-																	NiceModal.show(AddEvaluationModal, {
-																		athleteId,
-																		athleteName: athlete.user?.name,
-																		sessions: completedSessions,
-																		initialSessionId: evaluation.session.id,
-																		initialValues: {
-																			performanceRating:
-																				evaluation.performanceRating,
-																			performanceNotes:
-																				evaluation.performanceNotes ?? "",
-																			attitudeRating: evaluation.attitudeRating,
-																			attitudeNotes:
-																				evaluation.attitudeNotes ?? "",
-																			physicalFitnessRating:
-																				evaluation.physicalFitnessRating,
-																			physicalFitnessNotes:
-																				evaluation.physicalFitnessNotes ?? "",
-																			generalNotes:
-																				evaluation.generalNotes ?? "",
-																		},
-																	});
-																}}
-															>
-																<PencilIcon className="mr-2 size-4" />
-																{t("evaluations.actions.edit")}
-															</DropdownMenuItem>
-															<DropdownMenuSeparator />
-															<DropdownMenuItem
-																variant="destructive"
-																onClick={() => {
-																	NiceModal.show(ConfirmationModal, {
-																		title: t("evaluations.deleteConfirm.title"),
-																		message: t(
-																			"evaluations.deleteConfirm.message",
-																			{ name: evaluation.session.title },
-																		),
-																		confirmLabel: t(
-																			"evaluations.deleteConfirm.confirm",
-																		),
-																		destructive: true,
-																		onConfirm: () =>
-																			deleteEvaluationMutation.mutate({
-																				id: evaluation.id,
-																			}),
-																	});
-																}}
-															>
-																<Trash2Icon className="mr-2 size-4" />
-																{t("evaluations.actions.delete")}
-															</DropdownMenuItem>
-														</DropdownMenuContent>
-													</DropdownMenu>
-												</div>
-											</td>
-										</tr>
-									))}
-								</tbody>
-							</table>
-						</div>
-					)}
+					<AthleteEvaluationsTable
+						athleteId={athleteId}
+						athleteName={athlete.user?.name}
+						evaluations={evaluations}
+						sessions={sessions
+							.filter((s) => s.status === "completed")
+							.map((s) => ({
+								id: s.id,
+								title: s.title,
+								startTime: new Date(s.startTime),
+								status: s.status,
+							}))}
+						onEvaluationDeleted={() =>
+							utils.organization.athlete.getProfile.invalidate({
+								id: athleteId,
+							})
+						}
+					/>
 				</TabsContent>
 
 				<TabsContent value="attendance" className="space-y-4">

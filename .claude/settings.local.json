@@ -60,7 +60,11 @@
 			"Bash(xxd:*)",
 			"Bash(perl:*)",
 			"Bash(python3:*)",
-			"Bash(echo:*)"
+			"Bash(echo:*)",
+			"Bash(node -e:*)",
+			"Bash(tree:*)",
+			"Bash(npx sharp --help:*)",
+			"Bash(magick:*)"
 		]
 	}
 }

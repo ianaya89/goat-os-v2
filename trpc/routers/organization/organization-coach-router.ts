@@ -226,9 +226,21 @@ export const organizationCoachRouter = createTRPCRouter({
 								athletes: {
 									with: {
 										athlete: {
+											columns: {
+												id: true,
+												sport: true,
+												birthDate: true,
+												level: true,
+												phone: true,
+											},
 											with: {
 												user: {
-													columns: { id: true, name: true, image: true },
+													columns: {
+														id: true,
+														name: true,
+														email: true,
+														image: true,
+													},
 												},
 											},
 										},
@@ -296,6 +308,11 @@ export const organizationCoachRouter = createTRPCRouter({
 					id: string;
 					name: string;
 					image: string | null;
+					email: string | null;
+					phone: string | null;
+					birthDate: Date | null;
+					level: string | null;
+					sport: string | null;
 					sessionCount: number;
 				}
 			>();
@@ -312,6 +329,11 @@ export const organizationCoachRouter = createTRPCRouter({
 							id: athlete.id,
 							name: athlete.user?.name ?? "Unknown",
 							image: athlete.user?.image ?? null,
+							email: athlete.user?.email ?? null,
+							phone: athlete.phone ?? null,
+							birthDate: athlete.birthDate ?? null,
+							level: athlete.level ?? null,
+							sport: athlete.sport ?? null,
 							sessionCount: 1,
 						});
 					}
@@ -332,8 +354,17 @@ export const organizationCoachRouter = createTRPCRouter({
 					where: inArray(athleteGroupMemberTable.groupId, groupIds),
 					with: {
 						athlete: {
+							columns: {
+								id: true,
+								sport: true,
+								birthDate: true,
+								level: true,
+								phone: true,
+							},
 							with: {
-								user: { columns: { id: true, name: true, image: true } },
+								user: {
+									columns: { id: true, name: true, email: true, image: true },
+								},
 							},
 						},
 					},
@@ -346,6 +377,11 @@ export const organizationCoachRouter = createTRPCRouter({
 							id: athlete.id,
 							name: athlete.user?.name ?? "Unknown",
 							image: athlete.user?.image ?? null,
+							email: athlete.user?.email ?? null,
+							phone: athlete.phone ?? null,
+							birthDate: athlete.birthDate ?? null,
+							level: athlete.level ?? null,
+							sport: athlete.sport ?? null,
 							sessionCount: 0,
 						});
 					}

@@ -68,6 +68,29 @@
 		"absentLabel": "Ausentes",
 		"excusedLabel": "Justificados"
 	},
+	"home": {
+		"title": "Inicio",
+		"subtitle": "Tu panel personal",
+		"myOrganizations": "Mis Organizaciones",
+		"myOrganizationsDescription": "Selecciona una organizacion para acceder a su panel",
+		"noOrganizations": "Aun no perteneces a ninguna organizacion.",
+		"noOrganizationsHint": "Contacta con un administrador para que te agregue.",
+		"organizationCount": "{count, plural, one {organizacion} other {organizaciones}}",
+		"quickAccess": "Acceso Rapido",
+		"memberSince": "Desde {date}",
+		"role": {
+			"owner": "Propietario",
+			"admin": "Admin",
+			"staff": "Staff",
+			"member": "Miembro"
+		},
+		"links": {
+			"profile": "Perfil",
+			"security": "Seguridad",
+			"sessions": "Sesiones Activas",
+			"orgSettings": "Configuracion de organizacion"
+		}
+	},
 	"cashRegister": {
 		"title": "Caja del Día",
 		"history": "Historial",

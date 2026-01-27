@@ -68,6 +68,29 @@
 		"absentLabel": "Absent",
 		"excusedLabel": "Excused"
 	},
+	"home": {
+		"title": "Home",
+		"subtitle": "Your personal dashboard",
+		"myOrganizations": "My Organizations",
+		"myOrganizationsDescription": "Select an organization to access its dashboard",
+		"noOrganizations": "You don't belong to any organization yet.",
+		"noOrganizationsHint": "Contact an administrator to be added.",
+		"organizationCount": "{count, plural, one {organization} other {organizations}}",
+		"quickAccess": "Quick Access",
+		"memberSince": "Since {date}",
+		"role": {
+			"owner": "Owner",
+			"admin": "Admin",
+			"staff": "Staff",
+			"member": "Member"
+		},
+		"links": {
+			"profile": "Profile",
+			"security": "Security",
+			"sessions": "Active Sessions",
+			"orgSettings": "Organization settings"
+		}
+	},
 	"cashRegister": {
 		"title": "Today's Cash Register",
 		"history": "History",

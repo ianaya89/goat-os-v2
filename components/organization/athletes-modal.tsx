@@ -473,6 +473,28 @@ export const AthletesModal = NiceModal.create<AthletesModalProps>(
 
 									{isEditing && athlete?.user && (
 										<>
+											<div className="flex items-center gap-3 rounded-lg border bg-muted/50 p-3">
+												<ProfileImageUpload
+													userId={athlete.user.id}
+													userName={athlete.user.name}
+													currentImageUrl={
+														athlete.user.imageKey
+															? undefined
+															: athlete.user.image
+													}
+													hasS3Image={!!athlete.user.imageKey}
+													size="sm"
+												/>
+												<div>
+													<p className="font-medium text-sm">
+														{athlete.user.name}
+													</p>
+													<p className="text-muted-foreground text-sm">
+														{athlete.user.email}
+													</p>
+												</div>
+											</div>
+
 											<FormField
 												control={form.control}
 												name="name"

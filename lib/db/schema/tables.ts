@@ -2038,7 +2038,6 @@ export const ageCategoryTable = pgTable(
 		displayName: text("display_name").notNull(), // e.g., "Nacidos en 2012"
 		minBirthYear: integer("min_birth_year"), // Minimum birth year (inclusive), e.g., 2012
 		maxBirthYear: integer("max_birth_year"), // Maximum birth year (inclusive), e.g., 2014
-		sortOrder: integer("sort_order").notNull().default(0),
 		isActive: boolean("is_active").notNull().default(true),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.notNull()
@@ -2050,7 +2049,6 @@ export const ageCategoryTable = pgTable(
 	},
 	(table) => [
 		index("age_category_organization_id_idx").on(table.organizationId),
-		index("age_category_sort_order_idx").on(table.sortOrder),
 		index("age_category_is_active_idx").on(table.isActive),
 		uniqueIndex("age_category_org_name_unique").on(
 			table.organizationId,

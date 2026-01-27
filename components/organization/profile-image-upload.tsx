@@ -1,10 +1,11 @@
 "use client";
 
-import { CameraIcon, Loader2Icon, TrashIcon, UserIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import NiceModal from "@ebay/nice-modal-react";
+import { CameraIcon, Loader2Icon, UserIcon, XIcon } from "lucide-react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { CropImageModal } from "@/components/crop-image-modal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
@@ -54,6 +55,8 @@ export function ProfileImageUpload({
 				utils.organization.user.get.invalidate({ userId });
 				utils.organization.athlete.getProfile.invalidate();
 				utils.organization.athlete.list.invalidate();
+				utils.organization.coach.list.invalidate();
+				utils.organization.coach.getProfile.invalidate();
 				onImageUpdated?.();
 			},
 			onError: (error) => {
@@ -72,6 +75,8 @@ export function ProfileImageUpload({
 				utils.organization.user.get.invalidate({ userId });
 				utils.organization.athlete.getProfile.invalidate();
 				utils.organization.athlete.list.invalidate();
+				utils.organization.coach.list.invalidate();
+				utils.organization.coach.getProfile.invalidate();
 				onImageUpdated?.();
 			},
 			onError: (error) => {
@@ -79,43 +84,26 @@ export function ProfileImageUpload({
 			},
 		});
 
-	const handleFileSelect = async (
-		event: React.ChangeEvent<HTMLInputElement>,
-	) => {
-		const file = event.target.files?.[0];
-		if (!file) return;
-
-		// Validate file type
-		if (!file.type.startsWith("image/")) {
-			toast.error("Por favor selecciona una imagen válida");
-			return;
-		}
-
-		// Validate file size (max 5MB)
-		if (file.size > 5 * 1024 * 1024) {
-			toast.error("La imagen debe ser menor a 5MB");
-			return;
-		}
-
-		// Show preview
-		const objectUrl = URL.createObjectURL(file);
-		setPreviewUrl(objectUrl);
-
+	const uploadImage = async (blob: Blob, fileName: string) => {
 		setIsUploading(true);
 		try {
+			// Show preview
+			const objectUrl = URL.createObjectURL(blob);
+			setPreviewUrl(objectUrl);
+
 			// Get upload URL
 			const { uploadUrl, imageKey } = await getUploadUrlMutation.mutateAsync({
 				userId,
-				fileName: file.name,
-				contentType: file.type,
+				fileName,
+				contentType: blob.type || "image/png",
 			});
 
 			// Upload to S3
 			const uploadResponse = await fetch(uploadUrl, {
 				method: "PUT",
-				body: file,
+				body: blob,
 				headers: {
-					"Content-Type": file.type,
+					"Content-Type": blob.type || "image/png",
 				},
 			});
 
@@ -139,6 +127,39 @@ export function ProfileImageUpload({
 		}
 	};
 
+	const handleFileSelect = async (
+		event: React.ChangeEvent<HTMLInputElement>,
+	) => {
+		const file = event.target.files?.[0];
+		if (!file) return;
+
+		// Validate file type
+		if (!file.type.startsWith("image/")) {
+			toast.error("Por favor selecciona una imagen válida");
+			return;
+		}
+
+		// Validate file size (max 5MB)
+		if (file.size > 5 * 1024 * 1024) {
+			toast.error("La imagen debe ser menor a 5MB");
+			return;
+		}
+
+		// Reset input so the same file can be selected again
+		if (fileInputRef.current) {
+			fileInputRef.current.value = "";
+		}
+
+		// Open crop modal
+		NiceModal.show(CropImageModal, {
+			image: file,
+			onCrop: (croppedBlob: Blob | null) => {
+				if (!croppedBlob) return;
+				uploadImage(croppedBlob, file.name);
+			},
+		});
+	};
+
 	const handleRemoveImage = async () => {
 		await removeImageMutation.mutateAsync({ userId });
 	};
@@ -153,71 +174,70 @@ export function ProfileImageUpload({
 		.toUpperCase()
 		.slice(0, 2);
 
+	const hasImage =
+		hasS3Image || profileImageQuery.data?.source === "s3" || previewUrl;
+
 	return (
-		<div className="flex flex-col items-center gap-4">
-			<div className="relative">
-				<Avatar
-					className={cn(
-						sizeClasses[size],
-						"border-4 border-background shadow-lg",
-					)}
-				>
-					<AvatarImage src={displayUrl ?? undefined} alt={userName} />
-					<AvatarFallback className="bg-primary/10 text-2xl font-semibold">
-						{initials || <UserIcon className="size-1/2" />}
-					</AvatarFallback>
-				</Avatar>
-
-				{isUploading && (
-					<div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50">
-						<Loader2Icon className="size-8 animate-spin text-white" />
-					</div>
+		<div className="group/avatar relative">
+			<Avatar
+				className={cn(
+					sizeClasses[size],
+					"border-4 border-background shadow-lg",
 				)}
+			>
+				<AvatarImage src={displayUrl ?? undefined} alt={userName} />
+				<AvatarFallback className="bg-primary/10 text-2xl font-semibold">
+					{initials || <UserIcon className="size-1/2" />}
+				</AvatarFallback>
+			</Avatar>
 
-				{/* Upload button overlay */}
-				<input
-					ref={fileInputRef}
-					type="file"
-					accept="image/jpeg,image/png,image/webp,image/gif"
-					className="hidden"
-					onChange={handleFileSelect}
+			{isUploading && (
+				<div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50">
+					<Loader2Icon className="size-8 animate-spin text-white" />
+				</div>
+			)}
+
+			{/* Upload button overlay - bottom right */}
+			<input
+				ref={fileInputRef}
+				type="file"
+				accept="image/jpeg,image/png,image/webp,image/gif"
+				className="hidden"
+				onChange={handleFileSelect}
+			/>
+			<button
+				type="button"
+				onClick={() => fileInputRef.current?.click()}
+				disabled={isUploading}
+				className={cn(
+					"absolute bottom-0 right-0 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform hover:scale-110",
+					size === "sm" ? "size-6" : size === "md" ? "size-8" : "size-10",
+				)}
+			>
+				<CameraIcon
+					className={
+						size === "sm" ? "size-3" : size === "md" ? "size-4" : "size-5"
+					}
 				/>
+			</button>
+
+			{/* Remove button overlay - top left, visible on hover */}
+			{hasImage && (
 				<button
 					type="button"
-					onClick={() => fileInputRef.current?.click()}
-					disabled={isUploading}
-					className={cn(
-						"absolute bottom-0 right-0 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform hover:scale-110",
-						size === "sm" ? "size-6" : size === "md" ? "size-8" : "size-10",
-					)}
-				>
-					<CameraIcon
-						className={
-							size === "sm" ? "size-3" : size === "md" ? "size-4" : "size-5"
-						}
-					/>
-				</button>
-			</div>
-
-			{/* Remove button - show only if there's an S3 image or preview */}
-			{(hasS3Image ||
-				profileImageQuery.data?.source === "s3" ||
-				previewUrl) && (
-				<Button
-					type="button"
-					variant="ghost"
-					size="sm"
 					onClick={handleRemoveImage}
 					disabled={isUploading || removeImageMutation.isPending}
-					className="text-muted-foreground hover:text-destructive"
+					className={cn(
+						"absolute top-0 left-0 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-md opacity-0 transition-all hover:scale-110 group-hover/avatar:opacity-100 disabled:pointer-events-none",
+						size === "sm" ? "size-5" : size === "md" ? "size-6" : "size-7",
+					)}
 				>
 					{removeImageMutation.isPending ? (
-						<Loader2Icon className="mr-2 size-4 animate-spin" />
+						<Loader2Icon className="size-3 animate-spin" />
 					) : (
-						<TrashIcon className="mr-2 size-4" />
+						<XIcon className={size === "sm" ? "size-3" : "size-3.5"} />
 					)}
-					Eliminar foto
-				</Button>
+				</button>
 			)}
 		</div>
 	);

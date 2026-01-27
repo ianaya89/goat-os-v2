@@ -94,7 +94,6 @@ export async function seedAgeCategoriesAndRegistrations(
 
 	const existingNames = new Set(existingCategories.map((c: any) => c.name));
 
-	let sortOrder = existingCategories.length;
 	for (const cat of categories) {
 		if (!existingNames.has(cat.name)) {
 			const id = randomUUID();
@@ -106,7 +105,6 @@ export async function seedAgeCategoriesAndRegistrations(
 				displayName: cat.displayName,
 				minBirthYear: cat.minBirthYear,
 				maxBirthYear: cat.maxBirthYear,
-				sortOrder: sortOrder++,
 				isActive: true,
 			});
 		} else {

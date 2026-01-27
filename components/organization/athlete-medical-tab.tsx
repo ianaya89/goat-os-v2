@@ -418,6 +418,7 @@ export function AthleteMedicalTab({
 							<EmptyState
 								icon={HeartPulseIcon}
 								title={t("certificate.noCertificate")}
+								size="sm"
 								action={
 									<Button
 										size="sm"

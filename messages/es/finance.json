@@ -22,18 +22,40 @@
 			"paidDate": "Fecha de pago",
 			"status": "Estado",
 			"method": "Método",
+			"date": "Fecha",
 			"actions": "Acciones"
 		},
 		"form": {
 			"athlete": "Atleta",
+			"athleteOptional": "Atleta (Opcional)",
+			"selectAthlete": "Seleccionar atleta",
+			"noAthlete": "Sin atleta",
 			"concept": "Concepto",
 			"amount": "Monto",
+			"amountCents": "Monto (centavos)",
+			"paidAmountCents": "Monto Pagado (centavos)",
 			"dueDate": "Fecha de vencimiento",
 			"method": "Método de pago",
-			"notes": "Notas"
+			"selectMethod": "Seleccionar método",
+			"notSpecified": "No especificado",
+			"notes": "Notas",
+			"notesPlaceholder": "Notas adicionales...",
+			"description": "Descripción",
+			"descriptionPlaceholder": "ej., Cuota mensual de entrenamiento",
+			"session": "Sesión (Opcional)",
+			"selectSession": "Seleccionar sesión",
+			"noSession": "Sin sesión",
+			"status": "Estado",
+			"selectStatus": "Seleccionar estado",
+			"paymentDate": "Fecha de Pago",
+			"receiptNumber": "Número de Recibo",
+			"receiptPlaceholder": "Recibo #",
+			"receiptUpload": "Comprobante de Pago"
 		},
 		"methods": {
 			"cash": "Efectivo",
+			"bankTransfer": "Transferencia Bancaria",
+			"mercadoPago": "Mercado Pago",
 			"card": "Tarjeta",
 			"transfer": "Transferencia",
 			"check": "Cheque",
@@ -41,9 +63,25 @@
 		},
 		"status": {
 			"pending": "Pendiente",
+			"paid": "Pagado",
+			"partial": "Parcial",
 			"completed": "Completado",
 			"overdue": "Vencido",
 			"cancelled": "Cancelado"
+		},
+		"modal": {
+			"createTitle": "Registrar Pago",
+			"createSubtitle": "Completa los datos para registrar un nuevo pago.",
+			"editTitle": "Editar Pago",
+			"editSubtitle": "Actualiza la información del pago.",
+			"cancel": "Cancelar",
+			"create": "Registrar Pago",
+			"update": "Actualizar Pago"
+		},
+		"deleteConfirm": {
+			"title": "¿Eliminar pago?",
+			"message": "¿Estás seguro de que deseas eliminar este pago? Esta acción no se puede deshacer.",
+			"confirm": "Eliminar"
 		},
 		"success": {
 			"created": "Pago registrado correctamente.",

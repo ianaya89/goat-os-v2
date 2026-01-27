@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import type * as React from "react";
 import { AthleteHomeDashboard } from "@/components/athlete/athlete-home-dashboard";
-import { HomeAutoRedirect } from "@/components/organization/home-auto-redirect";
-import { getOrganizationList, getSession } from "@/lib/auth/server";
+import { UserHomeDashboard } from "@/components/user/user-home-dashboard";
+import { getSession } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import { athleteTable, coachTable } from "@/lib/db/schema/tables";
 
@@ -15,8 +15,8 @@ export const metadata: Metadata = {
 /**
  * Dashboard home page.
  * - For athletes/coaches: Show their personal home dashboard
- * - For regular users with active organization: redirect to /dashboard/organization
- * - For regular users without active organization: auto-redirect component
+ * - For admin users with active org: Redirect to organization dashboard
+ * - For admin users without active org: Show user home dashboard to select one
  */
 export default async function AccountPage(): Promise<React.JSX.Element> {
 	const session = await getSession();
@@ -47,16 +47,11 @@ export default async function AccountPage(): Promise<React.JSX.Element> {
 		return <AthleteHomeDashboard isAthlete={isAthlete} isCoach={isCoach} />;
 	}
 
-	// Regular users: if they have an active organization, redirect immediately
+	// Admin users with an active organization go straight to the organization dashboard
 	if (session.session.activeOrganizationId) {
 		redirect("/dashboard/organization");
 	}
 
-	// Get list of organizations the user belongs to
-	const organizations = await getOrganizationList();
-
-	// Render the auto-redirect component which handles:
-	// - Auto-activating first organization and redirecting
-	// - Showing empty state for users without organizations
-	return <HomeAutoRedirect organizations={organizations} />;
+	// Users without an active organization see the home dashboard to select one
+	return <UserHomeDashboard />;
 }

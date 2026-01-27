@@ -2,22 +2,16 @@
 
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import {
-	ActivityIcon,
-	ChevronDownIcon,
-	ChevronUpIcon,
-	MessageSquareIcon,
-	SmileIcon,
-} from "lucide-react";
-import * as React from "react";
+import { ActivityIcon, MessageSquareIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-	Collapsible,
-	CollapsibleContent,
-	CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
@@ -144,32 +138,46 @@ export function SessionFeedbackView({
 
 		if (!myFeedback) {
 			return (
-				<div className="py-6 text-center">
-					<ActivityIcon className="mx-auto mb-4 size-10 text-muted-foreground" />
-					<p className="text-muted-foreground">
-						Aún no has enviado feedback para esta sesión.
-					</p>
-					<p className="mt-1 text-muted-foreground text-sm">
-						Puedes agregar tu evaluación de esfuerzo y satisfacción usando el
-						botón "Dar Feedback".
-					</p>
-				</div>
+				<EmptyState
+					icon={ActivityIcon}
+					title="Aún no has enviado feedback para esta sesión"
+				/>
 			);
 		}
 
-		// Show single feedback item for the athlete
+		// Show single feedback as a simple summary
 		return (
-			<div className="space-y-4">
-				<FeedbackItem
-					feedback={{
-						...myFeedback,
-						athlete: {
-							id: "",
-							user: { id: "", name: "Mi Feedback", email: "", image: null },
-						},
-					}}
-					defaultOpen
-				/>
+			<div className="rounded-lg border">
+				<table className="w-full">
+					<thead>
+						<tr className="border-b bg-muted/50">
+							<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+								RPE
+							</th>
+							<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+								Satisfacción
+							</th>
+							<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground sm:table-cell">
+								Notas
+							</th>
+							<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground sm:table-cell">
+								Fecha
+							</th>
+						</tr>
+					</thead>
+					<tbody className="divide-y">
+						<FeedbackRow
+							feedback={{
+								...myFeedback,
+								athlete: {
+									id: "",
+									user: { id: "", name: "Mi Feedback", email: "", image: null },
+								},
+							}}
+							hideAthlete
+						/>
+					</tbody>
+				</table>
 			</div>
 		);
 	}
@@ -179,17 +187,7 @@ export function SessionFeedbackView({
 
 	if (!data || data.totalFeedback === 0) {
 		return (
-			<Card>
-				<CardContent className="py-10 text-center">
-					<ActivityIcon className="mx-auto mb-4 size-10 text-muted-foreground" />
-					<p className="text-muted-foreground">
-						Aún no hay feedback de atletas.
-					</p>
-					<p className="mt-1 text-muted-foreground text-sm">
-						Los atletas pueden enviar su feedback después de la sesión.
-					</p>
-				</CardContent>
-			</Card>
+			<EmptyState icon={ActivityIcon} title="Aún no hay feedback de atletas" />
 		);
 	}
 
@@ -258,196 +256,160 @@ export function SessionFeedbackView({
 				</CardContent>
 			</Card>
 
-			{/* Individual Feedback */}
-			<div className="space-y-3">
-				{data.feedback.map((item) => (
-					<FeedbackItem key={item.id} feedback={item} />
-				))}
+			{/* Feedback Table */}
+			<div className="rounded-lg border">
+				<table className="w-full">
+					<thead>
+						<tr className="border-b bg-muted/50">
+							<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+								Atleta
+							</th>
+							<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+								RPE
+							</th>
+							<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+								Satisfacción
+							</th>
+							<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground sm:table-cell">
+								Notas
+							</th>
+							<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground sm:table-cell">
+								Fecha
+							</th>
+						</tr>
+					</thead>
+					<tbody className="divide-y">
+						{data.feedback.map((item) => (
+							<FeedbackRow key={item.id} feedback={item} />
+						))}
+					</tbody>
+				</table>
 			</div>
 		</div>
 	);
 }
 
-interface FeedbackItemProps {
-	feedback: {
+type FeedbackData = {
+	id: string;
+	rpeRating: number | null;
+	satisfactionRating: number | null;
+	notes: string | null;
+	createdAt: Date;
+	athlete: {
 		id: string;
-		rpeRating: number | null;
-		satisfactionRating: number | null;
-		notes: string | null;
-		createdAt: Date;
-		athlete: {
+		user?: {
 			id: string;
-			user?: {
-				id: string;
-				name: string | null;
-				email: string;
-				image: string | null;
-			} | null;
-		};
+			name: string | null;
+			email: string;
+			image: string | null;
+		} | null;
 	};
-	defaultOpen?: boolean;
-}
+};
 
-function FeedbackItem({ feedback, defaultOpen = false }: FeedbackItemProps) {
-	const [isOpen, setIsOpen] = React.useState(defaultOpen);
-	const hasNotes = feedback.notes && feedback.notes.trim().length > 0;
-
+function FeedbackRow({
+	feedback,
+	hideAthlete,
+}: {
+	feedback: FeedbackData;
+	hideAthlete?: boolean;
+}) {
 	return (
-		<Collapsible open={isOpen} onOpenChange={setIsOpen}>
-			<Card>
-				<CollapsibleTrigger asChild>
-					<CardHeader className="cursor-pointer py-4 hover:bg-muted/50 transition-colors">
-						<div className="flex items-center justify-between">
-							<div className="flex items-center gap-3">
-								<UserAvatar
-									className="size-10"
-									name={feedback.athlete.user?.name ?? "Desconocido"}
-									src={feedback.athlete.user?.image ?? undefined}
-								/>
-								<div>
-									<p className="font-medium">
-										{feedback.athlete.user?.name ?? "Atleta Desconocido"}
-									</p>
-									<p className="text-muted-foreground text-xs">
-										{format(new Date(feedback.createdAt), "d 'de' MMM, HH:mm", {
-											locale: es,
-										})}
-									</p>
-								</div>
+		<tr className="hover:bg-muted/30">
+			{/* Athlete */}
+			{!hideAthlete && (
+				<td className="px-4 py-3">
+					<div className="flex items-center gap-2">
+						<UserAvatar
+							className="size-6"
+							name={feedback.athlete.user?.name ?? ""}
+							src={feedback.athlete.user?.image ?? undefined}
+						/>
+						<span className="font-medium text-sm">
+							{feedback.athlete.user?.name ?? "Atleta Desconocido"}
+						</span>
+					</div>
+				</td>
+			)}
+
+			{/* RPE */}
+			<td className="px-4 py-3">
+				{feedback.rpeRating ? (
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Badge
+								variant="outline"
+								className={cn(
+									"gap-1.5 px-2.5 py-1",
+									getRpeBgColor(feedback.rpeRating),
+									getRpeColor(feedback.rpeRating),
+								)}
+							>
+								<ActivityIcon className="size-3.5" />
+								{feedback.rpeRating}/10
+							</Badge>
+						</TooltipTrigger>
+						<TooltipContent>
+							{rpeDescriptions[feedback.rpeRating]}
+						</TooltipContent>
+					</Tooltip>
+				) : (
+					<span className="text-muted-foreground text-sm">-</span>
+				)}
+			</td>
+
+			{/* Satisfaction */}
+			<td className="px-4 py-3">
+				{feedback.satisfactionRating ? (
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Badge
+								variant="outline"
+								className={cn(
+									"gap-1.5 px-2.5 py-1",
+									getSatisfactionBgColor(feedback.satisfactionRating),
+									getSatisfactionColor(feedback.satisfactionRating),
+								)}
+							>
+								{getSatisfactionEmoji(feedback.satisfactionRating)}{" "}
+								{feedback.satisfactionRating}/10
+							</Badge>
+						</TooltipTrigger>
+						<TooltipContent>
+							{satisfactionDescriptions[feedback.satisfactionRating]}
+						</TooltipContent>
+					</Tooltip>
+				) : (
+					<span className="text-muted-foreground text-sm">-</span>
+				)}
+			</td>
+
+			{/* Notes */}
+			<td className="hidden px-4 py-3 sm:table-cell">
+				{feedback.notes && feedback.notes.trim().length > 0 ? (
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+								<MessageSquareIcon className="size-3.5" />
+								<span className="max-w-[200px] truncate">{feedback.notes}</span>
 							</div>
+						</TooltipTrigger>
+						<TooltipContent className="max-w-xs">
+							<p className="whitespace-pre-wrap">{feedback.notes}</p>
+						</TooltipContent>
+					</Tooltip>
+				) : (
+					<span className="text-muted-foreground text-sm">-</span>
+				)}
+			</td>
 
-							<div className="flex items-center gap-2">
-								{/* RPE Badge */}
-								{feedback.rpeRating && (
-									<Badge
-										variant="outline"
-										className={cn(
-											"gap-1.5 px-2.5 py-1",
-											getRpeBgColor(feedback.rpeRating),
-											getRpeColor(feedback.rpeRating),
-										)}
-									>
-										<ActivityIcon className="size-3.5" />
-										{feedback.rpeRating}/10
-									</Badge>
-								)}
-
-								{/* Satisfaction Badge */}
-								{feedback.satisfactionRating && (
-									<Badge
-										variant="outline"
-										className={cn(
-											"gap-1.5 px-2.5 py-1",
-											getSatisfactionBgColor(feedback.satisfactionRating),
-											getSatisfactionColor(feedback.satisfactionRating),
-										)}
-									>
-										{getSatisfactionEmoji(feedback.satisfactionRating)}{" "}
-										{feedback.satisfactionRating}/10
-									</Badge>
-								)}
-
-								{/* Notes indicator */}
-								{hasNotes && (
-									<MessageSquareIcon className="size-4 text-muted-foreground" />
-								)}
-
-								{/* Expand/Collapse */}
-								{isOpen ? (
-									<ChevronUpIcon className="size-5 text-muted-foreground" />
-								) : (
-									<ChevronDownIcon className="size-5 text-muted-foreground" />
-								)}
-							</div>
-						</div>
-					</CardHeader>
-				</CollapsibleTrigger>
-
-				<CollapsibleContent>
-					<CardContent className="pt-0 pb-4">
-						<div className="grid gap-4 sm:grid-cols-2">
-							{/* RPE Details */}
-							{feedback.rpeRating && (
-								<div
-									className={cn(
-										"rounded-xl p-4 border",
-										getRpeBgColor(feedback.rpeRating),
-									)}
-								>
-									<div className="flex items-center gap-2">
-										<ActivityIcon
-											className={cn("size-5", getRpeColor(feedback.rpeRating))}
-										/>
-										<span className="font-semibold text-sm">
-											Esfuerzo Percibido
-										</span>
-									</div>
-									<p
-										className={cn(
-											"mt-2 font-bold text-2xl",
-											getRpeColor(feedback.rpeRating),
-										)}
-									>
-										{feedback.rpeRating}/10
-									</p>
-									<p className="text-muted-foreground text-sm mt-1">
-										{rpeDescriptions[feedback.rpeRating]}
-									</p>
-								</div>
-							)}
-
-							{/* Satisfaction Details */}
-							{feedback.satisfactionRating && (
-								<div
-									className={cn(
-										"rounded-xl p-4 border",
-										getSatisfactionBgColor(feedback.satisfactionRating),
-									)}
-								>
-									<div className="flex items-center gap-2">
-										<SmileIcon
-											className={cn(
-												"size-5",
-												getSatisfactionColor(feedback.satisfactionRating),
-											)}
-										/>
-										<span className="font-semibold text-sm">Satisfacción</span>
-									</div>
-									<div className="mt-2 flex items-center gap-3">
-										<span className="text-3xl">
-											{getSatisfactionEmoji(feedback.satisfactionRating)}
-										</span>
-										<span
-											className={cn(
-												"font-bold text-2xl",
-												getSatisfactionColor(feedback.satisfactionRating),
-											)}
-										>
-											{feedback.satisfactionRating}/10
-										</span>
-									</div>
-									<p className="text-muted-foreground text-sm mt-1">
-										{satisfactionDescriptions[feedback.satisfactionRating]}
-									</p>
-								</div>
-							)}
-						</div>
-
-						{/* Notes */}
-						{hasNotes && (
-							<div className="mt-4 rounded-xl border bg-muted/30 p-4">
-								<div className="flex items-center gap-2 text-muted-foreground">
-									<MessageSquareIcon className="size-4" />
-									<span className="font-medium text-sm">Comentarios</span>
-								</div>
-								<p className="mt-2 whitespace-pre-wrap text-sm">
-									{feedback.notes}
-								</p>
-							</div>
-						)}
-					</CardContent>
-				</CollapsibleContent>
-			</Card>
-		</Collapsible>
+			{/* Date */}
+			<td className="hidden px-4 py-3 sm:table-cell">
+				<span className="text-sm text-muted-foreground">
+					{format(new Date(feedback.createdAt), "d MMM, HH:mm", {
+						locale: es,
+					})}
+				</span>
+			</td>
+		</tr>
 	);
 }

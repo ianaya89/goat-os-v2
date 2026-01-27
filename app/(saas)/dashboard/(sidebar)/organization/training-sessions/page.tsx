@@ -1,3 +1,4 @@
+import { CalendarIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -41,7 +42,10 @@ export default async function TrainingSessionsPage(): Promise<React.JSX.Element>
 				</PagePrimaryBar>
 			</PageHeader>
 			<PageBody>
-				<PageContent title={t("sessions.title")}>
+				<PageContent
+					title={t("sessions.title")}
+					leftAction={<CalendarIcon className="size-5 text-muted-foreground" />}
+				>
 					<TrainingSessionsView />
 				</PageContent>
 			</PageBody>

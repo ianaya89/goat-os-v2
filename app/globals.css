@@ -508,32 +508,44 @@ input[cmdk-input] {
     --fc-button-hover-border-color: var(--border);
     --fc-button-active-bg-color: var(--primary);
     --fc-button-active-border-color: var(--primary);
-    --fc-today-bg-color: var(--accent);
+    --fc-today-bg-color: color-mix(in srgb, var(--primary), transparent 96%);
     --fc-neutral-bg-color: var(--muted);
-    --fc-page-bg-color: var(--background);
-    --fc-event-text-color: #ffffff;
+    --fc-page-bg-color: transparent;
+    font-family: inherit;
   }
 
   /* Header toolbar */
+  .fc .fc-toolbar {
+    margin-bottom: 1rem !important;
+  }
+
   .fc .fc-toolbar-title {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     font-weight: 600;
     color: var(--foreground);
+    letter-spacing: -0.01em;
   }
 
   .fc .fc-button {
     border-radius: var(--radius);
-    font-size: 0.875rem;
-    padding: 0.5rem 1rem;
+    font-size: 0.8125rem;
+    padding: 0.375rem 0.75rem;
     font-weight: 500;
     transition: all 0.15s ease;
+    line-height: 1.4;
   }
 
   .fc .fc-button:focus {
     box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
   }
 
-  /* View switcher active state - ensure primary color */
+  /* Navigation buttons (prev/next) */
+  .fc .fc-prev-button,
+  .fc .fc-next-button {
+    padding: 0.375rem 0.5rem;
+  }
+
+  /* View switcher active state */
   .fc .fc-button-active,
   .fc .fc-button.fc-button-active,
   .fc .fc-button-group .fc-button-active {
@@ -542,25 +554,35 @@ input[cmdk-input] {
     color: var(--primary-foreground) !important;
   }
 
-  /* Pressed state for view buttons */
   .fc .fc-button[aria-pressed="true"] {
     background-color: var(--primary) !important;
     border-color: var(--primary) !important;
     color: var(--primary-foreground) !important;
   }
 
+  /* Button group - tighter corners */
+  .fc .fc-button-group > .fc-button:not(:first-child) {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+
+  .fc .fc-button-group > .fc-button:not(:last-child) {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
   /* Day grid */
   .fc .fc-daygrid-day {
-    transition: background-color 0.15s ease;
+    transition: background-color 0.1s ease;
   }
 
   .fc .fc-daygrid-day:hover {
-    background-color: var(--accent);
+    background-color: color-mix(in srgb, var(--accent), transparent 50%);
   }
 
   .fc .fc-daygrid-day-number {
-    padding: 0.5rem;
-    font-size: 0.875rem;
+    padding: 0.375rem 0.5rem;
+    font-size: 0.8125rem;
     color: var(--foreground);
   }
 
@@ -569,36 +591,37 @@ input[cmdk-input] {
     color: var(--primary-foreground);
     background-color: var(--primary);
     border-radius: 9999px;
-    width: 1.75rem;
-    height: 1.75rem;
+    width: 1.625rem;
+    height: 1.625rem;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 0.75rem;
   }
 
   /* Today column highlight in time grid */
   .fc .fc-timegrid-col.fc-day-today {
-    background-color: hsl(var(--primary) / 0.03);
+    background-color: color-mix(in srgb, var(--primary), transparent 97%);
   }
 
   /* Events */
   .fc .fc-event {
-    border-radius: calc(var(--radius) - 2px);
-    padding: 2px 4px;
+    border-radius: calc(var(--radius) - 1px);
+    padding: 1px 2px;
     font-size: 0.75rem;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: box-shadow 0.15s ease, opacity 0.15s ease;
     border-left-width: 3px;
+    border-left-style: solid;
   }
 
   .fc .fc-event:hover {
-    transform: translateY(-2px) scale(1.01);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     z-index: 10;
   }
 
   .fc .fc-event:active {
-    transform: translateY(0) scale(0.99);
+    opacity: 0.9;
   }
 
   .fc .fc-daygrid-event-dot {
@@ -611,18 +634,20 @@ input[cmdk-input] {
   }
 
   .fc .fc-timegrid-slot-label {
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     color: var(--muted-foreground);
+    font-variant-numeric: tabular-nums;
   }
 
   .fc .fc-timegrid-axis-cushion {
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     color: var(--muted-foreground);
   }
 
   /* Now indicator */
   .fc .fc-timegrid-now-indicator-line {
     border-color: var(--destructive);
+    border-width: 1.5px;
   }
 
   .fc .fc-timegrid-now-indicator-arrow {
@@ -633,38 +658,69 @@ input[cmdk-input] {
 
   /* More link */
   .fc .fc-daygrid-more-link {
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     color: var(--primary);
     font-weight: 500;
+    padding: 1px 4px;
+    border-radius: var(--radius);
   }
 
   .fc .fc-daygrid-more-link:hover {
     color: var(--primary);
-    text-decoration: underline;
+    background-color: color-mix(in srgb, var(--primary), transparent 92%);
+    text-decoration: none;
   }
 
   /* Popover */
   .fc .fc-popover {
     background-color: var(--popover);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-radius: calc(var(--radius) + 2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
   }
 
   .fc .fc-popover-header {
     background-color: var(--muted);
-    padding: 0.5rem;
+    padding: 0.5rem 0.75rem;
     font-weight: 500;
-    border-radius: var(--radius) var(--radius) 0 0;
+    font-size: 0.8125rem;
+    border-radius: calc(var(--radius) + 2px) calc(var(--radius) + 2px) 0 0;
   }
 
   /* Weekday headers */
   .fc .fc-col-header-cell {
-    padding: 0.75rem 0;
+    padding: 0.625rem 0;
     font-weight: 500;
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     color: var(--muted-foreground);
     text-transform: uppercase;
     letter-spacing: 0.05em;
+  }
+
+  /* Scrollbar in time grid */
+  .fc .fc-scroller::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .fc .fc-scroller::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .fc .fc-scroller::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border-radius: 3px;
+  }
+
+  /* Remove outer border for cleaner look */
+  .fc .fc-scrollgrid {
+    border-color: var(--border);
+  }
+
+  .fc .fc-scrollgrid td:last-of-type {
+    border-right: none;
+  }
+
+  .fc .fc-scrollgrid-section > th {
+    border-right: none;
   }
 }

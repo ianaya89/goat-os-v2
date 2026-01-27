@@ -299,8 +299,8 @@ export function DataTable<TData>({
 
 			{/* Toolbar */}
 			{(enableFilters || enableSearch || toolbarActions) && (
-				<div className="flex items-center justify-between">
-					<div className="flex items-center gap-2">
+				<div className="flex flex-wrap items-center justify-between gap-2">
+					<div className="flex flex-wrap items-center gap-2">
 						{enableSearch && (
 							<InputSearch
 								className="h-8 w-[150px] shadow-none lg:w-[250px]"

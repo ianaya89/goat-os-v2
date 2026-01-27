@@ -12,25 +12,18 @@ import interactionPlugin from "@fullcalendar/interaction";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import { addMonths, endOfMonth, startOfMonth } from "date-fns";
-import {
-	CheckCircle2Icon,
-	CircleDashedIcon,
-	CircleIcon,
-	FilterXIcon,
-	RepeatIcon,
-	UsersIcon,
-	XCircleIcon,
-} from "lucide-react";
+import { FilterXIcon, RepeatIcon, UsersIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { toast } from "sonner";
 import {
 	type SessionPreviewData,
 	TrainingSessionPreviewSheet,
 } from "@/components/organization/training-session-preview-sheet";
+import { trainingSessionStatusConfig } from "@/components/organization/training-session-status-badge";
 import { TrainingSessionsModal } from "@/components/organization/training-sessions-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
 	Select,
 	SelectContent,
@@ -40,10 +33,21 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserAvatar } from "@/components/user/user-avatar";
-import { getLocationColor } from "@/lib/utils/location-colors";
+import {
+	getContrastTextColor,
+	getLocationColor,
+	getSafeEventColor,
+} from "@/lib/utils/location-colors";
 import { trpc } from "@/trpc/client";
 
-export function TrainingSessionCalendar() {
+type TrainingSessionCalendarProps = {
+	toolbarActions?: React.ReactNode;
+};
+
+export function TrainingSessionCalendar({
+	toolbarActions,
+}: TrainingSessionCalendarProps) {
+	const t = useTranslations("training");
 	const calendarRef = React.useRef<FullCalendar>(null);
 	const utils = trpc.useUtils();
 
@@ -97,13 +101,13 @@ export function TrainingSessionCalendar() {
 	// Delete mutation
 	const deleteMutation = trpc.organization.trainingSession.delete.useMutation({
 		onSuccess: () => {
-			toast.success("Session deleted");
+			toast.success(t("success.deleted"));
 			utils.organization.trainingSession.listForCalendar.invalidate();
 			setIsPreviewOpen(false);
 			setSelectedSession(null);
 		},
 		onError: (error) => {
-			toast.error(error.message || "Failed to delete session");
+			toast.error(error.message || t("error.deleteFailed"));
 		},
 	});
 
@@ -112,10 +116,11 @@ export function TrainingSessionCalendar() {
 		if (!sessions) return [];
 
 		return sessions.map((session) => {
-			// Get location color (or fallback)
-			const locationColor = session.location?.id
+			// Get location color, then normalize for safe calendar display
+			const rawColor = session.location?.id
 				? getLocationColor(session.location.id, session.location.color)
 				: "#6b7280"; // Default gray for no location
+			const locationColor = getSafeEventColor(rawColor);
 
 			// Get athletes from group or direct assignment
 			const athletesList = session.athleteGroup?.members
@@ -142,6 +147,8 @@ export function TrainingSessionCalendar() {
 			const primaryCoach =
 				coachesList.find((c) => c.isPrimary) ?? coachesList[0];
 
+			const textColor = getContrastTextColor(locationColor);
+
 			return {
 				id: session.id,
 				title: session.title,
@@ -149,6 +156,7 @@ export function TrainingSessionCalendar() {
 				end: session.endTime,
 				backgroundColor: locationColor,
 				borderColor: locationColor,
+				textColor,
 				classNames: [
 					session.status === "cancelled" ? "opacity-60" : "",
 					session.status === "pending" ? "border-dashed" : "",
@@ -162,6 +170,7 @@ export function TrainingSessionCalendar() {
 					coaches: coachesList,
 					primaryCoach,
 					isRecurring: session.isRecurring,
+					textColor,
 				},
 			};
 		});
@@ -265,357 +274,372 @@ export function TrainingSessionCalendar() {
 
 	if (isLoading) {
 		return (
-			<Card>
-				<CardContent className="p-6">
-					<div className="space-y-4">
-						<div className="flex items-center justify-between">
-							<Skeleton className="h-8 w-32" />
-							<div className="flex gap-2">
-								<Skeleton className="h-8 w-20" />
-								<Skeleton className="h-8 w-20" />
-								<Skeleton className="h-8 w-20" />
-							</div>
-						</div>
-						<Skeleton className="h-[600px] w-full" />
+			<div className="space-y-4">
+				{/* Filter skeleton */}
+				<div className="flex items-center gap-2">
+					<Skeleton className="h-9 w-[140px] rounded-md" />
+					<Skeleton className="h-9 w-[140px] rounded-md" />
+					<Skeleton className="h-9 w-[140px] rounded-md" />
+					<div className="ml-auto">
+						<Skeleton className="h-6 w-24 rounded-full" />
 					</div>
-				</CardContent>
-			</Card>
+				</div>
+				{/* Calendar toolbar skeleton */}
+				<div className="flex items-center justify-between">
+					<div className="flex gap-1">
+						<Skeleton className="h-9 w-9 rounded-md" />
+						<Skeleton className="h-9 w-9 rounded-md" />
+						<Skeleton className="h-9 w-16 rounded-md" />
+					</div>
+					<Skeleton className="h-7 w-36" />
+					<div className="flex gap-1">
+						<Skeleton className="h-9 w-16 rounded-md" />
+						<Skeleton className="h-9 w-16 rounded-md" />
+						<Skeleton className="h-9 w-14 rounded-md" />
+					</div>
+				</div>
+				{/* Calendar grid skeleton */}
+				<div className="space-y-0">
+					{/* Header row */}
+					<div className="grid grid-cols-7 gap-px border-b pb-2">
+						{Array.from({ length: 7 }).map((_, i) => (
+							<Skeleton key={`h-${i}`} className="h-4 w-8 mx-auto" />
+						))}
+					</div>
+					{/* Time slots */}
+					{Array.from({ length: 8 }).map((_, i) => (
+						<div
+							key={`r-${i}`}
+							className="grid grid-cols-7 gap-px border-b border-muted/50 py-3"
+						>
+							{Array.from({ length: 7 }).map((_, j) => (
+								<div key={`c-${j}`} className="px-1">
+									{(i + j) % 3 === 0 && (
+										<Skeleton className="h-5 w-full rounded-sm" />
+									)}
+								</div>
+							))}
+						</div>
+					))}
+				</div>
+			</div>
 		);
 	}
 
 	return (
-		<Card>
-			<CardContent className="p-4">
-				{/* Filters */}
-				<div className="mb-4 flex flex-wrap items-center gap-3">
-					<Select
-						value={filters.locationId ?? "all"}
-						onValueChange={(v) =>
-							updateFilter("locationId", v === "all" ? undefined : v)
-						}
-					>
-						<SelectTrigger className="w-[180px]">
-							<SelectValue placeholder="All Locations" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="all">All Locations</SelectItem>
-							{locations.map((loc) => (
-								<SelectItem key={loc.id} value={loc.id}>
-									<div className="flex items-center gap-2">
-										<div
-											className="size-3 rounded-full shrink-0"
-											style={{
-												backgroundColor: getLocationColor(
-													loc.id,
-													(loc as { color?: string | null }).color,
-												),
-											}}
-										/>
-										{loc.name}
-									</div>
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
+		<div>
+			{/* Actions row */}
+			<div className="mb-3 flex items-center justify-between">
+				<Badge variant="outline" className="font-medium text-xs">
+					{t("calendar.sessionCount", { count: activeSessionsCount })}
+				</Badge>
+				<div className="flex items-center gap-2">{toolbarActions}</div>
+			</div>
 
-					<Select
-						value={filters.coachId ?? "all"}
-						onValueChange={(v) =>
-							updateFilter("coachId", v === "all" ? undefined : v)
-						}
-					>
-						<SelectTrigger className="w-[180px]">
-							<SelectValue placeholder="All Coaches" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="all">All Coaches</SelectItem>
-							{coaches.map((coach) => (
-								<SelectItem key={coach.id} value={coach.id}>
-									{coach.user?.name ?? "Unknown"}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-
-					<Select
-						value={filters.athleteId ?? "all"}
-						onValueChange={(v) =>
-							updateFilter("athleteId", v === "all" ? undefined : v)
-						}
-					>
-						<SelectTrigger className="w-[180px]">
-							<SelectValue placeholder="All Athletes" />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="all">All Athletes</SelectItem>
-							{athletes.map((athlete) => (
-								<SelectItem key={athlete.id} value={athlete.id}>
-									{athlete.user?.name ?? "Unknown"}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-
-					{hasActiveFilters && (
-						<Button
-							variant="ghost"
-							size="sm"
-							onClick={clearFilters}
-							className="h-9 px-3 text-muted-foreground hover:text-foreground"
-						>
-							<FilterXIcon className="mr-1.5 size-4" />
-							Clear
-						</Button>
-					)}
-
-					{/* Session counter */}
-					<div className="ml-auto">
-						<Badge variant="secondary" className="font-medium">
-							{activeSessionsCount} session
-							{activeSessionsCount !== 1 ? "s" : ""}
-						</Badge>
-					</div>
-				</div>
-
-				<div className="training-session-calendar">
-					<FullCalendar
-						key={`calendar-${filters.locationId ?? "all"}-${filters.coachId ?? "all"}-${filters.athleteId ?? "all"}`}
-						ref={calendarRef}
-						plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-						initialView={currentView}
-						headerToolbar={{
-							left: "prev,next today",
-							center: "title",
-							right: "dayGridMonth,timeGridWeek,timeGridDay",
-						}}
-						events={events}
-						eventClick={handleEventClick}
-						dateClick={handleDateClick}
-						datesSet={handleDatesSet}
-						editable={false}
-						selectable={true}
-						selectMirror={true}
-						dayMaxEvents={3}
-						weekends={true}
-						nowIndicator={true}
-						height="auto"
-						eventDisplay="block"
-						eventTimeFormat={{
-							hour: "numeric",
-							minute: "2-digit",
-							meridiem: "short",
-						}}
-						slotMinTime="06:00:00"
-						slotMaxTime="22:00:00"
-						slotDuration="00:30:00"
-						slotLabelInterval="01:00:00"
-						expandRows={true}
-						allDaySlot={false}
-						eventContent={(eventInfo: EventContentArg) => {
-							const {
-								location,
-								status,
-								primaryCoach,
-								athletes,
-								athleteGroup,
-								isRecurring,
-							} = eventInfo.event.extendedProps;
-							const isCancelled = status === "cancelled";
-							const viewType = eventInfo.view.type;
-							const isDetailedView =
-								viewType === "timeGridWeek" || viewType === "timeGridDay";
-
-							// Status icon helper
-							const StatusIcon = () => {
-								switch (status) {
-									case "completed":
-										return (
-											<CheckCircle2Icon className="size-3 text-green-700" />
-										);
-									case "cancelled":
-										return <XCircleIcon className="size-3 text-red-600" />;
-									case "pending":
-										return (
-											<CircleDashedIcon className="size-3 text-amber-600" />
-										);
-									default:
-										// "confirmed" or any other status
-										return <CircleIcon className="size-3 text-blue-600" />;
-								}
-							};
-
-							// Get display title - prefer athlete/group name over session title
-							const athletesList = athletes as {
-								id: string;
-								name: string;
-								image: string | null;
-							}[];
-							const getDisplayTitle = () => {
-								if (athleteGroup) {
-									return athleteGroup;
-								}
-								if (athletesList.length === 1) {
-									return athletesList[0]?.name ?? eventInfo.event.title;
-								}
-								if (athletesList.length > 1) {
-									return `${athletesList[0]?.name} +${athletesList.length - 1}`;
-								}
-								return eventInfo.event.title;
-							};
-							const displayTitle = getDisplayTitle();
-
-							// For month view - compact display
-							if (!isDetailedView) {
-								return (
+			{/* Filters */}
+			<div className="mb-4 flex flex-wrap items-center gap-2">
+				<Select
+					value={filters.locationId ?? "all"}
+					onValueChange={(v) =>
+						updateFilter("locationId", v === "all" ? undefined : v)
+					}
+				>
+					<SelectTrigger size="sm">
+						<SelectValue placeholder={t("calendar.allLocations")} />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="all">{t("calendar.allLocations")}</SelectItem>
+						{locations.map((loc) => (
+							<SelectItem key={loc.id} value={loc.id}>
+								<div className="flex items-center gap-2">
 									<div
-										className={`overflow-hidden p-1 ${isCancelled ? "line-through opacity-60" : ""}`}
-									>
-										<div className="flex items-center gap-1">
-											<StatusIcon />
-											{isRecurring && (
-												<RepeatIcon className="size-3 text-purple-600 shrink-0" />
-											)}
-											<span className="truncate font-medium text-xs">
-												{eventInfo.timeText} - {displayTitle}
-											</span>
-										</div>
-										{location && (
-											<div className="truncate text-[10px] opacity-80 ml-4">
-												{location}
-											</div>
-										)}
-									</div>
-								);
+										className="size-2.5 rounded-full shrink-0"
+										style={{
+											backgroundColor: getLocationColor(
+												loc.id,
+												(loc as { color?: string | null }).color,
+											),
+										}}
+									/>
+									{loc.name}
+								</div>
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+
+				<Select
+					value={filters.coachId ?? "all"}
+					onValueChange={(v) =>
+						updateFilter("coachId", v === "all" ? undefined : v)
+					}
+				>
+					<SelectTrigger size="sm">
+						<SelectValue placeholder={t("calendar.allCoaches")} />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="all">{t("calendar.allCoaches")}</SelectItem>
+						{coaches.map((coach) => (
+							<SelectItem key={coach.id} value={coach.id}>
+								{coach.user?.name ?? "Unknown"}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+
+				<Select
+					value={filters.athleteId ?? "all"}
+					onValueChange={(v) =>
+						updateFilter("athleteId", v === "all" ? undefined : v)
+					}
+				>
+					<SelectTrigger size="sm">
+						<SelectValue placeholder={t("calendar.allAthletes")} />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="all">{t("calendar.allAthletes")}</SelectItem>
+						{athletes.map((athlete) => (
+							<SelectItem key={athlete.id} value={athlete.id}>
+								{athlete.user?.name ?? "Unknown"}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+
+				{hasActiveFilters && (
+					<Button
+						variant="ghost"
+						size="sm"
+						onClick={clearFilters}
+						className="h-9 px-2.5 text-muted-foreground hover:text-foreground"
+					>
+						<FilterXIcon className="mr-1 size-3.5" />
+						{t("calendar.clear")}
+					</Button>
+				)}
+			</div>
+
+			<div className="training-session-calendar">
+				<FullCalendar
+					key={`calendar-${filters.locationId ?? "all"}-${filters.coachId ?? "all"}-${filters.athleteId ?? "all"}`}
+					ref={calendarRef}
+					plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+					initialView={currentView}
+					headerToolbar={{
+						left: "prev,next today",
+						center: "title",
+						right: "dayGridMonth,timeGridWeek,timeGridDay",
+					}}
+					events={events}
+					eventClick={handleEventClick}
+					dateClick={handleDateClick}
+					datesSet={handleDatesSet}
+					editable={false}
+					selectable={true}
+					selectMirror={true}
+					dayMaxEvents={3}
+					weekends={true}
+					nowIndicator={true}
+					height="auto"
+					eventDisplay="block"
+					eventTimeFormat={{
+						hour: "numeric",
+						minute: "2-digit",
+						meridiem: "short",
+					}}
+					slotMinTime="06:00:00"
+					slotMaxTime="22:00:00"
+					slotDuration="00:30:00"
+					slotLabelInterval="01:00:00"
+					expandRows={true}
+					allDaySlot={false}
+					eventContent={(eventInfo: EventContentArg) => {
+						const {
+							location,
+							status,
+							primaryCoach,
+							athletes,
+							athleteGroup,
+							isRecurring,
+							textColor,
+						} = eventInfo.event.extendedProps;
+						const isCancelled = status === "cancelled";
+						const viewType = eventInfo.view.type;
+						const isDetailedView =
+							viewType === "timeGridWeek" || viewType === "timeGridDay";
+
+						// Status dot - subtle inline indicator
+						const statusCfg =
+							trainingSessionStatusConfig[
+								status as keyof typeof trainingSessionStatusConfig
+							] ?? trainingSessionStatusConfig.pending;
+						const dotClass = statusCfg.dot;
+
+						// Get display title - prefer athlete/group name over session title
+						const athletesList = athletes as {
+							id: string;
+							name: string;
+							image: string | null;
+						}[];
+						const getDisplayTitle = () => {
+							if (athleteGroup) {
+								return athleteGroup;
 							}
+							if (athletesList.length === 1) {
+								return athletesList[0]?.name ?? eventInfo.event.title;
+							}
+							if (athletesList.length > 1) {
+								return `${athletesList[0]?.name} +${athletesList.length - 1}`;
+							}
+							return eventInfo.event.title;
+						};
+						const displayTitle = getDisplayTitle();
 
-							// For day/week views - detailed display
-							const coach = primaryCoach as
-								| { id: string; name: string; image: string | null }
-								| undefined;
+						const eventTextColor = (textColor as string) ?? "#ffffff";
 
+						// For month view - compact display
+						if (!isDetailedView) {
 							return (
 								<div
-									className={`overflow-hidden p-1.5 h-full ${isCancelled ? "opacity-60" : ""}`}
+									className={`overflow-hidden px-1.5 py-0.5 ${isCancelled ? "line-through opacity-50" : ""}`}
+									style={{ color: eventTextColor }}
 								>
-									{/* Header: Status + Title */}
-									<div className="flex items-center gap-1.5 mb-1">
-										<StatusIcon />
-										{isRecurring && (
-											<RepeatIcon className="size-3 text-purple-600 shrink-0" />
-										)}
-										{athleteGroup && (
-											<UsersIcon className="size-3 opacity-70 shrink-0" />
-										)}
+									<div className="flex items-center gap-1.5">
 										<span
-											className={`truncate font-semibold text-xs ${isCancelled ? "line-through" : ""}`}
-										>
-											{displayTitle}
+											className={`size-2 rounded-full shrink-0 ${dotClass}`}
+										/>
+										{isRecurring && (
+											<RepeatIcon className="size-2.5 opacity-70 shrink-0" />
+										)}
+										<span className="truncate font-medium text-[11px] leading-tight">
+											{eventInfo.timeText} {displayTitle}
 										</span>
 									</div>
-
-									{/* Coach with avatar - prioritized */}
-									{coach && (
-										<div className="flex items-center gap-1.5 mb-1">
-											<UserAvatar
-												className="size-5 text-[9px]"
-												name={coach.name}
-												src={coach.image ?? undefined}
-											/>
-											<span className="truncate text-[11px] font-medium">
-												{coach.name}
-											</span>
-										</div>
-									)}
-
-									{/* Location */}
-									{location && (
-										<div className="truncate text-[10px] opacity-80">
-											{location}
-										</div>
-									)}
-
-									{/* Athletes avatars - only show if multiple athletes (not group) */}
-									{!athleteGroup && athletesList.length > 1 && (
-										<div className="flex items-center gap-1 mt-1">
-											<div className="flex -space-x-1">
-												{athletesList.slice(0, 3).map((athlete) => (
-													<UserAvatar
-														key={athlete.id}
-														className="size-4 border border-white text-[8px]"
-														name={athlete.name}
-														src={athlete.image ?? undefined}
-													/>
-												))}
-											</div>
-											{athletesList.length > 3 && (
-												<span className="text-[10px] opacity-80 ml-0.5">
-													+{athletesList.length - 3}
-												</span>
-											)}
-										</div>
-									)}
 								</div>
 							);
-						}}
-					/>
-				</div>
+						}
 
-				{/* Combined Legend */}
-				<div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-muted-foreground border-t pt-3">
-					{/* Status Legend */}
-					<div className="flex items-center gap-3">
-						<div className="flex items-center gap-1">
-							<CircleDashedIcon className="size-3 text-amber-600" />
-							<span>Pending</span>
-						</div>
-						<div className="flex items-center gap-1">
-							<CircleIcon className="size-3 text-blue-600" />
-							<span>Confirmed</span>
-						</div>
-						<div className="flex items-center gap-1">
-							<CheckCircle2Icon className="size-3 text-green-700" />
-							<span>Completed</span>
-						</div>
-						<div className="flex items-center gap-1">
-							<XCircleIcon className="size-3 text-red-600" />
-							<span>Cancelled</span>
-						</div>
-						<div className="flex items-center gap-1">
-							<RepeatIcon className="size-3 text-purple-600" />
-							<span>Recurring</span>
-						</div>
-					</div>
+						// For day/week views - detailed display
+						const coach = primaryCoach as
+							| { id: string; name: string; image: string | null }
+							| undefined;
 
-					{/* Location Legend - separated by a subtle divider */}
-					{locations.length > 0 && (
-						<>
-							<div className="hidden sm:block h-4 w-px bg-border" />
-							<div className="flex items-center gap-3">
-								{locations.slice(0, 5).map((loc) => (
-									<div key={loc.id} className="flex items-center gap-1">
-										<div
-											className="size-2.5 rounded-full"
-											style={{
-												backgroundColor: getLocationColor(
-													loc.id,
-													(loc as { color?: string | null }).color,
-												),
-											}}
-										/>
-										<span>{loc.name}</span>
-									</div>
-								))}
-								{locations.length > 5 && (
-									<span className="text-muted-foreground/70">
-										+{locations.length - 5}
+						return (
+							<div
+								className={`overflow-hidden p-1.5 h-full flex flex-col ${isCancelled ? "opacity-50" : ""}`}
+								style={{ color: eventTextColor }}
+							>
+								{/* Header: Title + indicators */}
+								<div className="flex items-center gap-1.5 mb-0.5">
+									<span
+										className={`size-2 rounded-full shrink-0 ${dotClass}`}
+									/>
+									{isRecurring && (
+										<RepeatIcon className="size-2.5 opacity-70 shrink-0" />
+									)}
+									{athleteGroup && (
+										<UsersIcon className="size-3 opacity-70 shrink-0" />
+									)}
+									<span
+										className={`truncate font-semibold text-xs leading-tight ${isCancelled ? "line-through" : ""}`}
+									>
+										{displayTitle}
 									</span>
+								</div>
+
+								{/* Coach with avatar */}
+								{coach && (
+									<div className="flex items-center gap-1.5 mt-0.5">
+										<UserAvatar
+											className="size-4 text-[8px]"
+											name={coach.name}
+											src={coach.image ?? undefined}
+										/>
+										<span className="truncate text-[10px] opacity-90">
+											{coach.name}
+										</span>
+									</div>
+								)}
+
+								{/* Location */}
+								{location && (
+									<div className="truncate text-[10px] opacity-70 mt-auto pt-0.5">
+										{location}
+									</div>
+								)}
+
+								{/* Athletes avatars - only show if multiple athletes (not group) */}
+								{!athleteGroup && athletesList.length > 1 && (
+									<div className="flex items-center gap-1 mt-1">
+										<div className="flex -space-x-1">
+											{athletesList.slice(0, 3).map((athlete) => (
+												<UserAvatar
+													key={athlete.id}
+													className="size-4 border border-white/50 text-[7px]"
+													name={athlete.name}
+													src={athlete.image ?? undefined}
+												/>
+											))}
+										</div>
+										{athletesList.length > 3 && (
+											<span className="text-[9px] opacity-70 ml-0.5">
+												+{athletesList.length - 3}
+											</span>
+										)}
+									</div>
 								)}
 							</div>
+						);
+					}}
+				/>
+			</div>
+
+			{/* Legend */}
+			<div className="mt-4 pt-3 border-t border-border/50">
+				<div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-muted-foreground">
+					{/* Status Legend */}
+					{(["pending", "confirmed", "completed", "cancelled"] as const).map(
+						(s) => (
+							<div key={s} className="flex items-center gap-1.5">
+								<span
+									className={`size-2 rounded-full ${trainingSessionStatusConfig[s].dot}`}
+								/>
+								<span>{t(`calendar.${s}`)}</span>
+							</div>
+						),
+					)}
+					<div className="flex items-center gap-1.5">
+						<RepeatIcon className="size-3 text-muted-foreground" />
+						<span>{t("calendar.recurring")}</span>
+					</div>
+
+					{/* Location Legend */}
+					{locations.length > 0 && (
+						<>
+							<div className="hidden sm:block h-3 w-px bg-border" />
+							{locations.slice(0, 5).map((loc) => (
+								<div key={loc.id} className="flex items-center gap-1.5">
+									<span
+										className="size-2 rounded-full"
+										style={{
+											backgroundColor: getLocationColor(
+												loc.id,
+												(loc as { color?: string | null }).color,
+											),
+										}}
+									/>
+									<span>{loc.name}</span>
+								</div>
+							))}
+							{locations.length > 5 && (
+								<span className="text-muted-foreground/60">
+									+{locations.length - 5}
+								</span>
+							)}
 						</>
 					)}
 				</div>
-			</CardContent>
-
+			</div>
 			{/* Session Preview Sheet */}
 			<TrainingSessionPreviewSheet
 				session={selectedSession}
@@ -625,6 +649,6 @@ export function TrainingSessionCalendar() {
 				onDelete={handleDeleteFromPreview}
 				isDeleting={deleteMutation.isPending}
 			/>
-		</Card>
+		</div>
 	);
 }

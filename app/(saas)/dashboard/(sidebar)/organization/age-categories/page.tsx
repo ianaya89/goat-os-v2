@@ -1,3 +1,4 @@
+import { TagsIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -40,7 +41,10 @@ export default async function AgeCategoriesPage(): Promise<React.JSX.Element> {
 				</PagePrimaryBar>
 			</PageHeader>
 			<PageBody>
-				<PageContent title={t("ageCategories.title")}>
+				<PageContent
+					title={t("ageCategories.title")}
+					leftAction={<TagsIcon className="size-5 text-muted-foreground" />}
+				>
 					<AgeCategoriesTable />
 				</PageContent>
 			</PageBody>

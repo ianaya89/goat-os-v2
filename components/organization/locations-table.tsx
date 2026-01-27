@@ -6,13 +6,13 @@ import type {
 	ColumnFiltersState,
 	SortingState,
 } from "@tanstack/react-table";
-import { format } from "date-fns";
 import {
 	MoreHorizontalIcon,
 	PencilIcon,
 	PlusIcon,
 	Trash2Icon,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
 	parseAsArrayOf,
 	parseAsInteger,
@@ -25,7 +25,6 @@ import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/confirmation-modal";
 import { LocationsBulkActions } from "@/components/organization/locations-bulk-actions";
 import { LocationsModal } from "@/components/organization/locations-modal";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	createSelectionColumn,
@@ -40,8 +39,9 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { appConfig } from "@/config/app.config";
-import { cn } from "@/lib/utils";
+import { getLocationColor } from "@/lib/utils/location-colors";
 import { LocationSortField } from "@/schemas/organization-location-schemas";
 import { trpc } from "@/trpc/client";
 
@@ -58,17 +58,14 @@ interface Location {
 	postalCode: string | null;
 	capacity: number | null;
 	notes: string | null;
+	color: string | null;
 	isActive: boolean;
 	createdAt: Date;
 	updatedAt: Date;
 }
 
-const statusColors: Record<string, string> = {
-	active: "bg-green-100 dark:bg-green-900",
-	inactive: "bg-gray-100 dark:bg-gray-800",
-};
-
 export function LocationsTable(): React.JSX.Element {
+	const t = useTranslations("locations");
 	const [rowSelection, setRowSelection] = React.useState({});
 
 	const [searchQuery, setSearchQuery] = useQueryState(
@@ -190,11 +187,11 @@ export function LocationsTable(): React.JSX.Element {
 
 	const deleteLocationMutation = trpc.organization.location.delete.useMutation({
 		onSuccess: () => {
-			toast.success("Location deleted successfully");
+			toast.success(t("success.deleted"));
 			utils.organization.location.list.invalidate();
 		},
 		onError: (error) => {
-			toast.error(error.message || "Failed to delete location");
+			toast.error(error.message || t("error.deleteFailed"));
 		},
 	});
 
@@ -212,21 +209,30 @@ export function LocationsTable(): React.JSX.Element {
 		{
 			accessorKey: "name",
 			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Name" />
+				<SortableColumnHeader column={column} title={t("table.name")} />
 			),
-			cell: ({ row }) => (
-				<span
-					className="block max-w-[200px] truncate font-medium text-foreground"
-					title={row.original.name}
-				>
-					{row.original.name}
-				</span>
-			),
+			cell: ({ row }) => {
+				const color = getLocationColor(row.original.id, row.original.color);
+				return (
+					<div className="flex items-center gap-2">
+						<span
+							className="size-2.5 shrink-0 rounded-full"
+							style={{ backgroundColor: color }}
+						/>
+						<span
+							className="block max-w-[200px] truncate font-medium text-foreground"
+							title={row.original.name}
+						>
+							{row.original.name}
+						</span>
+					</div>
+				);
+			},
 		},
 		{
 			accessorKey: "address",
 			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Address" />
+				<SortableColumnHeader column={column} title={t("table.address")} />
 			),
 			cell: ({ row }) => {
 				const parts = [
@@ -248,7 +254,7 @@ export function LocationsTable(): React.JSX.Element {
 		{
 			accessorKey: "capacity",
 			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Capacity" />
+				<SortableColumnHeader column={column} title={t("table.capacity")} />
 			),
 			cell: ({ row }) => (
 				<span className="text-foreground/80">
@@ -259,29 +265,10 @@ export function LocationsTable(): React.JSX.Element {
 		{
 			accessorKey: "isActive",
 			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Status" />
+				<SortableColumnHeader column={column} title={t("table.status")} />
 			),
 			cell: ({ row }) => (
-				<Badge
-					className={cn(
-						"border-none px-2 py-0.5 font-medium text-foreground text-xs shadow-none",
-						row.original.isActive ? statusColors.active : statusColors.inactive,
-					)}
-					variant="outline"
-				>
-					{row.original.isActive ? "Active" : "Inactive"}
-				</Badge>
-			),
-		},
-		{
-			accessorKey: "createdAt",
-			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Created" />
-			),
-			cell: ({ row }) => (
-				<span className="text-foreground/80">
-					{format(row.original.createdAt, "dd MMM, yyyy")}
-				</span>
+				<StatusBadge status={row.original.isActive ? "active" : "inactive"} />
 			),
 		},
 		{
@@ -307,16 +294,15 @@ export function LocationsTable(): React.JSX.Element {
 								}}
 							>
 								<PencilIcon className="mr-2 size-4" />
-								Edit
+								{t("actions.edit")}
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 							<DropdownMenuItem
 								onClick={() => {
 									NiceModal.show(ConfirmationModal, {
-										title: "Delete location?",
-										message:
-											"Are you sure you want to delete this location? This action cannot be undone.",
-										confirmLabel: "Delete",
+										title: t("delete.title"),
+										message: t("delete.message"),
+										confirmLabel: t("delete.confirm"),
 										destructive: true,
 										onConfirm: () =>
 											deleteLocationMutation.mutate({ id: row.original.id }),
@@ -325,7 +311,7 @@ export function LocationsTable(): React.JSX.Element {
 								variant="destructive"
 							>
 								<Trash2Icon className="mr-2 size-4" />
-								Delete
+								{t("actions.delete")}
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
@@ -337,10 +323,10 @@ export function LocationsTable(): React.JSX.Element {
 	const locationFilters: FilterConfig[] = [
 		{
 			key: "isActive",
-			title: "Status",
+			title: t("filters.status"),
 			options: [
-				{ value: "active", label: "Active" },
-				{ value: "inactive", label: "Inactive" },
+				{ value: "active", label: t("filters.active") },
+				{ value: "inactive", label: t("filters.inactive") },
 			],
 		},
 	];
@@ -350,7 +336,7 @@ export function LocationsTable(): React.JSX.Element {
 			columnFilters={columnFilters}
 			columns={columns}
 			data={(data?.locations as Location[]) || []}
-			emptyMessage="No locations found."
+			emptyMessage={t("table.noLocations")}
 			enableFilters
 			enablePagination
 			enableRowSelection
@@ -367,14 +353,14 @@ export function LocationsTable(): React.JSX.Element {
 			pageSize={pageSize || appConfig.pagination.defaultLimit}
 			renderBulkActions={(table) => <LocationsBulkActions table={table} />}
 			rowSelection={rowSelection}
-			searchPlaceholder="Search locations..."
+			searchPlaceholder={t("search")}
 			searchQuery={searchQuery || ""}
 			defaultSorting={DEFAULT_SORTING}
 			sorting={sorting}
 			toolbarActions={
 				<Button onClick={() => NiceModal.show(LocationsModal)} size="sm">
 					<PlusIcon className="size-4 shrink-0" />
-					Add Location
+					{t("add")}
 				</Button>
 			}
 			totalCount={data?.total ?? 0}

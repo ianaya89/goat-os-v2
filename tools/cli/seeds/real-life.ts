@@ -249,7 +249,6 @@ interface RealLifeAgeCategory {
 	displayName: string;
 	birthYearFrom: number; // Oldest birth year in category
 	birthYearTo: number; // Youngest birth year in category
-	sortOrder: number;
 }
 
 // Age categories based on birth year (2 years per category)
@@ -261,7 +260,6 @@ const AGE_CATEGORIES: RealLifeAgeCategory[] = [
 		displayName: "Sub 10 (2016-2015)",
 		birthYearFrom: 2015,
 		birthYearTo: 2016,
-		sortOrder: 1,
 	},
 	{
 		id: AGE_CATEGORY_SUB12_ID,
@@ -269,7 +267,6 @@ const AGE_CATEGORIES: RealLifeAgeCategory[] = [
 		displayName: "Sub 12 (2014-2013)",
 		birthYearFrom: 2013,
 		birthYearTo: 2014,
-		sortOrder: 2,
 	},
 	{
 		id: AGE_CATEGORY_SUB14_ID,
@@ -277,7 +274,6 @@ const AGE_CATEGORIES: RealLifeAgeCategory[] = [
 		displayName: "Sub 14 (2012-2011)",
 		birthYearFrom: 2011,
 		birthYearTo: 2012,
-		sortOrder: 3,
 	},
 	{
 		id: AGE_CATEGORY_SUB16_ID,
@@ -285,7 +281,6 @@ const AGE_CATEGORIES: RealLifeAgeCategory[] = [
 		displayName: "Sub 16 (2010-2009)",
 		birthYearFrom: 2009,
 		birthYearTo: 2010,
-		sortOrder: 4,
 	},
 	{
 		id: AGE_CATEGORY_SUB18_ID,
@@ -293,7 +288,6 @@ const AGE_CATEGORIES: RealLifeAgeCategory[] = [
 		displayName: "Sub 18 (2008-2007)",
 		birthYearFrom: 2007,
 		birthYearTo: 2008,
-		sortOrder: 5,
 	},
 ];
 
@@ -608,7 +602,6 @@ export async function runRealLifeSeed(): Promise<void> {
 					displayName: cat.displayName,
 					minBirthYear: cat.birthYearFrom,
 					maxBirthYear: cat.birthYearTo,
-					sortOrder: cat.sortOrder,
 					isActive: true,
 				})
 				.onConflictDoNothing();

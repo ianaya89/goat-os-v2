@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type * as React from "react";
+import * as React from "react";
 import {
 	Select,
 	SelectContent,

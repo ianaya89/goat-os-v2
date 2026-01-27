@@ -1,0 +1,63 @@
+{
+	"title": "Age Categories",
+	"description": "Manage age categories",
+	"add": "New Category",
+	"search": "Search categories...",
+	"table": {
+		"name": "Name",
+		"code": "Code",
+		"birthYearRange": "Birth years",
+		"status": "Status",
+		"actions": "Actions",
+		"openMenu": "Open menu",
+		"edit": "Edit category",
+		"delete": "Delete category",
+		"noCategories": "No age categories found."
+	},
+	"modal": {
+		"createTitle": "New Age Category",
+		"editTitle": "Edit Category",
+		"createDescription": "Fill in the details to create a new age category.",
+		"editDescription": "Update the age category details.",
+		"cancel": "Cancel",
+		"create": "Create Category",
+		"update": "Update",
+		"close": "Close"
+	},
+	"form": {
+		"displayName": "Display name",
+		"displayNamePlaceholder": "E.g.: Sub-12",
+		"code": "Internal code",
+		"codePlaceholder": "E.g.: sub-12",
+		"minBirthYear": "From year",
+		"minBirthYearPlaceholder": "2012",
+		"maxBirthYear": "To year",
+		"maxBirthYearPlaceholder": "2014",
+		"isActive": "Active",
+		"isActiveDescription": "Inactive categories will not be shown in new events"
+	},
+	"statuses": {
+		"active": "Active",
+		"inactive": "Inactive"
+	},
+	"filters": {
+		"all": "All",
+		"active": "Active",
+		"inactive": "Inactive"
+	},
+	"delete": {
+		"title": "Delete category?",
+		"message": "Are you sure you want to delete this age category? This action cannot be undone.",
+		"confirm": "Delete"
+	},
+	"success": {
+		"created": "Age category created",
+		"updated": "Age category updated",
+		"deleted": "Age category deleted"
+	},
+	"error": {
+		"createFailed": "Failed to create category",
+		"updateFailed": "Failed to update category",
+		"deleteFailed": "Failed to delete category"
+	}
+}

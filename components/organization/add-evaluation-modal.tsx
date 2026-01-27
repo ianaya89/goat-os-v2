@@ -154,6 +154,7 @@ export const AddEvaluationModal = NiceModal.create<AddEvaluationModalProps>(
 				onSuccess: () => {
 					toast.success(t("modal.savedSuccess"));
 					utils.organization.athlete.getProfile.invalidate({ id: athleteId });
+					utils.organization.athleteEvaluation.getSessionEvaluations.invalidate();
 					modal.handleClose();
 				},
 				onError: (error) => {

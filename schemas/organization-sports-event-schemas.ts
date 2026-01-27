@@ -23,7 +23,6 @@ export const createAgeCategorySchema = z.object({
 	displayName: z.string().trim().min(1, "Display name is required").max(100),
 	minBirthYear: z.number().int().min(1950).max(2050).optional(),
 	maxBirthYear: z.number().int().min(1950).max(2050).optional(),
-	sortOrder: z.number().int().default(0),
 	isActive: z.boolean().default(true),
 });
 
@@ -33,7 +32,6 @@ export const updateAgeCategorySchema = z.object({
 	displayName: z.string().trim().min(1).max(100).optional(),
 	minBirthYear: z.number().int().min(1950).max(2050).optional().nullable(),
 	maxBirthYear: z.number().int().min(1950).max(2050).optional().nullable(),
-	sortOrder: z.number().int().optional(),
 	isActive: z.boolean().optional(),
 });
 

@@ -1,0 +1,63 @@
+{
+	"title": "Categorías de Edad",
+	"description": "Gestiona las categorías de edad",
+	"add": "Nueva Categoría",
+	"search": "Buscar categorías...",
+	"table": {
+		"name": "Nombre",
+		"code": "Código",
+		"birthYearRange": "Años de nacimiento",
+		"status": "Estado",
+		"actions": "Acciones",
+		"openMenu": "Abrir menú",
+		"edit": "Editar categoría",
+		"delete": "Eliminar categoría",
+		"noCategories": "No hay categorías de edad."
+	},
+	"modal": {
+		"createTitle": "Nueva Categoría de Edad",
+		"editTitle": "Editar Categoría",
+		"createDescription": "Completa los datos para crear una nueva categoría de edad.",
+		"editDescription": "Actualiza los datos de la categoría de edad.",
+		"cancel": "Cancelar",
+		"create": "Crear Categoría",
+		"update": "Actualizar",
+		"close": "Cerrar"
+	},
+	"form": {
+		"displayName": "Nombre para mostrar",
+		"displayNamePlaceholder": "Ej: Sub-12",
+		"code": "Código interno",
+		"codePlaceholder": "Ej: sub-12",
+		"minBirthYear": "Año desde",
+		"minBirthYearPlaceholder": "2012",
+		"maxBirthYear": "Año hasta",
+		"maxBirthYearPlaceholder": "2014",
+		"isActive": "Activo",
+		"isActiveDescription": "Las categorías inactivas no se mostrarán en nuevos eventos"
+	},
+	"statuses": {
+		"active": "Activo",
+		"inactive": "Inactivo"
+	},
+	"filters": {
+		"all": "Todos",
+		"active": "Activo",
+		"inactive": "Inactivo"
+	},
+	"delete": {
+		"title": "¿Eliminar categoría?",
+		"message": "¿Estás seguro de que deseas eliminar esta categoría de edad? Esta acción no se puede deshacer.",
+		"confirm": "Eliminar"
+	},
+	"success": {
+		"created": "Categoría de edad creada",
+		"updated": "Categoría de edad actualizada",
+		"deleted": "Categoría de edad eliminada"
+	},
+	"error": {
+		"createFailed": "Error al crear la categoría",
+		"updateFailed": "Error al actualizar la categoría",
+		"deleteFailed": "Error al eliminar la categoría"
+	}
+}

@@ -1,6 +1,8 @@
 "use client";
 
 import NiceModal, { type NiceModalHocProps } from "@ebay/nice-modal-react";
+import { CheckIcon, PlusIcon, TagsIcon, XIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -15,14 +17,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-	Sheet,
-	SheetContent,
-	SheetDescription,
-	SheetFooter,
-	SheetHeader,
-	SheetTitle,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetFooter } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 import { useZodForm } from "@/hooks/use-zod-form";
@@ -39,13 +34,13 @@ export type AgeCategoriesModalProps = NiceModalHocProps & {
 		displayName: string;
 		minBirthYear: number | null;
 		maxBirthYear: number | null;
-		sortOrder: number;
 		isActive: boolean;
 	};
 };
 
 export const AgeCategoriesModal = NiceModal.create<AgeCategoriesModalProps>(
 	({ ageCategory }) => {
+		const t = useTranslations("ageCategories");
 		const modal = useEnhancedModal();
 		const utils = trpc.useUtils();
 		const isEditing = !!ageCategory;
@@ -53,24 +48,24 @@ export const AgeCategoriesModal = NiceModal.create<AgeCategoriesModalProps>(
 		const createAgeCategoryMutation =
 			trpc.organization.sportsEvent.createAgeCategory.useMutation({
 				onSuccess: () => {
-					toast.success("Categoría de edad creada");
+					toast.success(t("success.created"));
 					utils.organization.sportsEvent.listAgeCategories.invalidate();
 					modal.handleClose();
 				},
 				onError: (error: { message?: string }) => {
-					toast.error(error.message || "Error al crear la categoría");
+					toast.error(error.message || t("error.createFailed"));
 				},
 			});
 
 		const updateAgeCategoryMutation =
 			trpc.organization.sportsEvent.updateAgeCategory.useMutation({
 				onSuccess: () => {
-					toast.success("Categoría de edad actualizada");
+					toast.success(t("success.updated"));
 					utils.organization.sportsEvent.listAgeCategories.invalidate();
 					modal.handleClose();
 				},
 				onError: (error: { message?: string }) => {
-					toast.error(error.message || "Error al actualizar la categoría");
+					toast.error(error.message || t("error.updateFailed"));
 				},
 			});
 
@@ -83,7 +78,6 @@ export const AgeCategoriesModal = NiceModal.create<AgeCategoriesModalProps>(
 						displayName: ageCategory.displayName,
 						minBirthYear: ageCategory.minBirthYear ?? undefined,
 						maxBirthYear: ageCategory.maxBirthYear ?? undefined,
-						sortOrder: ageCategory.sortOrder,
 						isActive: ageCategory.isActive,
 					}
 				: {
@@ -91,7 +85,6 @@ export const AgeCategoriesModal = NiceModal.create<AgeCategoriesModalProps>(
 						displayName: "",
 						minBirthYear: undefined,
 						maxBirthYear: undefined,
-						sortOrder: 0,
 						isActive: true,
 					},
 		});
@@ -120,17 +113,44 @@ export const AgeCategoriesModal = NiceModal.create<AgeCategoriesModalProps>(
 				<SheetContent
 					className="sm:max-w-lg"
 					onAnimationEndCapture={modal.handleAnimationEndCapture}
+					hideDefaultHeader
 				>
-					<SheetHeader>
-						<SheetTitle>
-							{isEditing ? "Editar Categoría" : "Nueva Categoría de Edad"}
-						</SheetTitle>
-						<SheetDescription className="sr-only">
-							{isEditing
-								? "Actualiza los datos de la categoría de edad."
-								: "Completa los datos para crear una nueva categoría de edad."}
-						</SheetDescription>
-					</SheetHeader>
+					{/* Custom Header with accent stripe */}
+					<div className="relative shrink-0">
+						{/* Accent stripe */}
+						<div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-slate-400 to-slate-500" />
+
+						{/* Header content */}
+						<div className="flex items-start justify-between gap-4 px-6 pt-6 pb-4">
+							<div className="flex items-start gap-3">
+								<div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-slate-400 to-slate-500 text-white shadow-sm">
+									<TagsIcon className="size-5" />
+								</div>
+								<div>
+									<h2 className="font-semibold text-lg tracking-tight">
+										{isEditing ? t("modal.editTitle") : t("modal.createTitle")}
+									</h2>
+									<p className="mt-0.5 text-muted-foreground text-sm">
+										{isEditing
+											? t("modal.editDescription")
+											: t("modal.createDescription")}
+									</p>
+								</div>
+							</div>
+							<button
+								type="button"
+								onClick={modal.handleClose}
+								disabled={isPending}
+								className="flex size-8 items-center justify-center rounded-lg transition-all duration-150 text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+							>
+								<XIcon className="size-4" />
+								<span className="sr-only">{t("modal.close")}</span>
+							</button>
+						</div>
+
+						{/* Separator */}
+						<div className="h-px bg-border" />
+					</div>
 
 					<Form {...form}>
 						<form
@@ -145,10 +165,10 @@ export const AgeCategoriesModal = NiceModal.create<AgeCategoriesModalProps>(
 										render={({ field }) => (
 											<FormItem asChild>
 												<Field>
-													<FormLabel>Nombre para mostrar</FormLabel>
+													<FormLabel>{t("form.displayName")}</FormLabel>
 													<FormControl>
 														<Input
-															placeholder="Ej: Sub-12"
+															placeholder={t("form.displayNamePlaceholder")}
 															autoComplete="off"
 															{...field}
 														/>
@@ -165,10 +185,10 @@ export const AgeCategoriesModal = NiceModal.create<AgeCategoriesModalProps>(
 										render={({ field }) => (
 											<FormItem asChild>
 												<Field>
-													<FormLabel>Código interno</FormLabel>
+													<FormLabel>{t("form.code")}</FormLabel>
 													<FormControl>
 														<Input
-															placeholder="Ej: sub-12"
+															placeholder={t("form.codePlaceholder")}
 															autoComplete="off"
 															{...field}
 														/>
@@ -186,11 +206,11 @@ export const AgeCategoriesModal = NiceModal.create<AgeCategoriesModalProps>(
 											render={({ field }) => (
 												<FormItem asChild>
 													<Field>
-														<FormLabel>Año desde</FormLabel>
+														<FormLabel>{t("form.minBirthYear")}</FormLabel>
 														<FormControl>
 															<Input
 																type="number"
-																placeholder="2012"
+																placeholder={t("form.minBirthYearPlaceholder")}
 																min={1950}
 																max={2050}
 																{...field}
@@ -216,11 +236,11 @@ export const AgeCategoriesModal = NiceModal.create<AgeCategoriesModalProps>(
 											render={({ field }) => (
 												<FormItem asChild>
 													<Field>
-														<FormLabel>Año hasta</FormLabel>
+														<FormLabel>{t("form.maxBirthYear")}</FormLabel>
 														<FormControl>
 															<Input
 																type="number"
-																placeholder="2014"
+																placeholder={t("form.maxBirthYearPlaceholder")}
 																min={1950}
 																max={2050}
 																{...field}
@@ -243,38 +263,16 @@ export const AgeCategoriesModal = NiceModal.create<AgeCategoriesModalProps>(
 
 									<FormField
 										control={form.control}
-										name="sortOrder"
-										render={({ field }) => (
-											<FormItem asChild>
-												<Field>
-													<FormLabel>Orden de visualización</FormLabel>
-													<FormControl>
-														<Input
-															type="number"
-															placeholder="0"
-															{...field}
-															onChange={(e) =>
-																field.onChange(Number(e.target.value) || 0)
-															}
-														/>
-													</FormControl>
-													<FormMessage />
-												</Field>
-											</FormItem>
-										)}
-									/>
-
-									<FormField
-										control={form.control}
 										name="isActive"
 										render={({ field }) => (
 											<FormItem>
 												<div className="flex items-center justify-between rounded-lg border p-4">
 													<div className="space-y-0.5">
-														<FormLabel className="text-base">Activo</FormLabel>
+														<FormLabel className="text-base">
+															{t("form.isActive")}
+														</FormLabel>
 														<p className="text-muted-foreground text-sm">
-															Las categorías inactivas no se mostrarán en nuevos
-															eventos
+															{t("form.isActiveDescription")}
 														</p>
 													</div>
 													<FormControl>
@@ -290,17 +288,29 @@ export const AgeCategoriesModal = NiceModal.create<AgeCategoriesModalProps>(
 								</div>
 							</ScrollArea>
 
-							<SheetFooter className="flex-row justify-end gap-2 border-t">
+							<SheetFooter className="flex-row justify-end gap-3 border-t bg-muted/30 px-6 py-4">
 								<Button
 									type="button"
-									variant="outline"
+									variant="ghost"
 									onClick={modal.handleClose}
 									disabled={isPending}
+									className="min-w-[100px]"
 								>
-									Cancelar
+									<XIcon className="size-4" />
+									{t("modal.cancel")}
 								</Button>
-								<Button type="submit" disabled={isPending} loading={isPending}>
-									{isEditing ? "Actualizar" : "Crear Categoría"}
+								<Button
+									type="submit"
+									disabled={isPending}
+									loading={isPending}
+									className="min-w-[100px]"
+								>
+									{isEditing ? (
+										<CheckIcon className="size-4" />
+									) : (
+										<PlusIcon className="size-4" />
+									)}
+									{isEditing ? t("modal.update") : t("modal.create")}
 								</Button>
 							</SheetFooter>
 						</form>

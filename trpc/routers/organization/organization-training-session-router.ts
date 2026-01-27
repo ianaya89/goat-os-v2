@@ -142,7 +142,7 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 					orderBy: orderByColumn,
 					with: {
 						location: {
-							columns: { id: true, name: true },
+							columns: { id: true, name: true, color: true },
 						},
 						athleteGroup: {
 							columns: { id: true, name: true },

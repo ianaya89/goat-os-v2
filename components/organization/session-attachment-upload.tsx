@@ -238,27 +238,7 @@ export function SessionAttachmentUpload({
 	}
 
 	return (
-		<div
-			role="button"
-			tabIndex={disabled ? -1 : 0}
-			className={cn(
-				"relative border-2 border-dashed rounded-lg p-3 transition-colors cursor-pointer",
-				isDragging
-					? "border-primary bg-primary/5"
-					: "border-muted-foreground/25 hover:border-muted-foreground/50",
-				(isUploading || disabled) && "pointer-events-none opacity-50",
-			)}
-			onDragOver={handleDragOver}
-			onDragLeave={handleDragLeave}
-			onDrop={handleDrop}
-			onClick={() => !disabled && fileInputRef.current?.click()}
-			onKeyDown={(e) => {
-				if ((e.key === "Enter" || e.key === " ") && !disabled) {
-					e.preventDefault();
-					fileInputRef.current?.click();
-				}
-			}}
-		>
+		<>
 			<input
 				ref={fileInputRef}
 				type="file"
@@ -267,19 +247,29 @@ export function SessionAttachmentUpload({
 				onChange={handleInputChange}
 				disabled={disabled}
 			/>
-			<div className="flex items-center justify-center gap-2 text-muted-foreground text-sm">
-				{isUploading ? (
-					<>
-						<Loader2 className="size-4 animate-spin" />
-						<span>Subiendo...</span>
-					</>
-				) : (
-					<>
-						<Upload className="size-4" />
-						<span>Adjuntar PDF o imagen</span>
-					</>
+			{/* biome-ignore lint/a11y/noStaticElementInteractions: drag-and-drop zone wrapping interactive button */}
+			<div
+				onDragOver={handleDragOver}
+				onDragLeave={handleDragLeave}
+				onDrop={handleDrop}
+				className={cn(
+					"rounded-lg transition-colors",
+					isDragging && "bg-primary/5 ring-2 ring-primary ring-offset-2",
 				)}
+			>
+				<Button
+					onClick={() => !disabled && fileInputRef.current?.click()}
+					disabled={isUploading || disabled}
+					size="sm"
+				>
+					{isUploading ? (
+						<Loader2 className="size-4 animate-spin" />
+					) : (
+						<Upload className="size-4" />
+					)}
+					{isUploading ? "Subiendo..." : "Subir archivo"}
+				</Button>
 			</div>
-		</div>
+		</>
 	);
 }

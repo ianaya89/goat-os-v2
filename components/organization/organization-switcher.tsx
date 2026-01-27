@@ -6,10 +6,12 @@ import {
 	CheckIcon,
 	ChevronsUpDownIcon,
 	PlusIcon,
+	SettingsIcon,
 	ShieldIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { CreateOrganizationModal } from "@/components/organization/create-organization-modal";
 import { OrganizationLogo } from "@/components/organization/organization-logo";
@@ -56,6 +58,7 @@ export type OrganizationSwitcherProps = {
 export function OrganizationSwitcher({
 	variant = "sidebar",
 }: OrganizationSwitcherProps): React.JSX.Element | null {
+	const t = useTranslations("common.orgSwitcher");
 	const { user } = useSession();
 	const router = useProgressRouter();
 	const pathname = usePathname();
@@ -164,10 +167,10 @@ export function OrganizationSwitcher({
 		(isActiveOrgPending && !hasLoadedActiveOrgRef.current);
 
 	const currentLabel = isAdminArea
-		? "Admin Panel"
+		? t("adminPanel")
 		: activeOrganization && isOrganizationArea
 			? activeOrganization.name
-			: "Personal";
+			: t("personal");
 
 	const CurrentIcon = () => {
 		if (isAdminArea) {
@@ -226,6 +229,13 @@ export function OrganizationSwitcher({
 		return null;
 	}
 
+	// Check if user is admin/owner of the active organization
+	const activeOrgMemberRole = allOrganizations?.find(
+		(org) => org.id === activeOrganization?.id,
+	)?.memberRole;
+	const isActiveOrgAdmin =
+		activeOrgMemberRole === "owner" || activeOrgMemberRole === "admin";
+
 	// Hide the switcher if user has no organizations (only personal account)
 	const hasOrganizations =
 		Array.isArray(allOrganizations) && allOrganizations.length > 0;
@@ -253,7 +263,10 @@ export function OrganizationSwitcher({
 				</PopoverTrigger>
 				<PopoverContent align="start" className="w-60 p-0" forceMount>
 					<Command onValueChange={setSelectedValue} value={selectedValue}>
-						<CommandInput className="h-9" placeholder="Search..." />
+						<CommandInput
+							className="h-9"
+							placeholder={t("searchPlaceholder")}
+						/>
 						<CommandList>
 							<CommandGroup>
 								<CommandItem
@@ -262,7 +275,7 @@ export function OrganizationSwitcher({
 									value={user.id}
 								>
 									<PersonalAccountAvatar className="size-5 shrink-0" />
-									<span className="mr-2">Personal</span>
+									<span className="mr-2">{t("personal")}</span>
 									<Icon type="personal" />
 								</CommandItem>
 							</CommandGroup>
@@ -271,7 +284,9 @@ export function OrganizationSwitcher({
 									<>
 										<CommandSeparator />
 										<CommandGroup
-											heading={`Your Organizations (${allOrganizations.length})`}
+											heading={t("yourOrganizations", {
+												count: allOrganizations.length,
+											})}
 										>
 											{allOrganizations.map((organization) => (
 												<CommandItem
@@ -308,6 +323,26 @@ export function OrganizationSwitcher({
 						</CommandList>
 					</Command>
 					<div className="space-y-1 p-1">
+						{isActiveOrgAdmin && activeOrganization && (
+							<>
+								<Separator />
+								<Button
+									asChild
+									className="h-8 w-full justify-start gap-1.5 font-normal text-sm"
+									size="sm"
+									variant="ghost"
+								>
+									<Link
+										href="/dashboard/organization/settings?tab=profile"
+										onClick={() => setOpen(false)}
+										className="flex items-center"
+									>
+										<SettingsIcon className="size-4 shrink-0" />
+										<span className="flex-1">{t("organizationSettings")}</span>
+									</Link>
+								</Button>
+							</>
+						)}
 						{user?.role === "admin" && (
 							<>
 								<Separator />
@@ -325,7 +360,7 @@ export function OrganizationSwitcher({
 										<div className="mr-0.75 -ml-0.75 flex size-5 items-center justify-center rounded-md bg-foreground text-background">
 											<ShieldIcon className="size-3 shrink-0" />
 										</div>
-										<span className="flex-1">Admin Panel</span>
+										<span className="flex-1">{t("adminPanel")}</span>
 										<div
 											className={cn(
 												"ml-auto flex size-4 items-center justify-center rounded-full text-primary-foreground",
@@ -356,7 +391,7 @@ export function OrganizationSwitcher({
 									variant="ghost"
 								>
 									<PlusIcon className="size-5 shrink-0" />
-									<span>Create an Organization</span>
+									<span>{t("createOrganization")}</span>
 								</Button>
 							</>
 						)}
@@ -382,14 +417,17 @@ export function OrganizationSwitcher({
 							src={activeOrganization?.logo}
 						/>
 						<span className="font-medium text-sm text-foreground/80 group-hover:text-foreground">
-							{activeOrganization?.name ?? "Organization"}
+							{activeOrganization?.name ?? t("organization")}
 						</span>
 						<ChevronsUpDownIcon className="size-3 text-muted-foreground/60 group-hover:text-muted-foreground" />
 					</button>
 				</PopoverTrigger>
 				<PopoverContent align="start" className="w-60 p-0" forceMount>
 					<Command onValueChange={setSelectedValue} value={selectedValue}>
-						<CommandInput className="h-9" placeholder="Search..." />
+						<CommandInput
+							className="h-9"
+							placeholder={t("searchPlaceholder")}
+						/>
 						<CommandList>
 							<CommandGroup>
 								<CommandItem
@@ -398,7 +436,7 @@ export function OrganizationSwitcher({
 									value={user.id}
 								>
 									<PersonalAccountAvatar className="size-5 shrink-0" />
-									<span className="mr-2">Personal</span>
+									<span className="mr-2">{t("personal")}</span>
 									<Icon type="personal" />
 								</CommandItem>
 							</CommandGroup>
@@ -407,7 +445,9 @@ export function OrganizationSwitcher({
 									<>
 										<CommandSeparator />
 										<CommandGroup
-											heading={`Your Organizations (${allOrganizations.length})`}
+											heading={t("yourOrganizations", {
+												count: allOrganizations.length,
+											})}
 										>
 											{allOrganizations.map((organization) => (
 												<CommandItem
@@ -444,6 +484,26 @@ export function OrganizationSwitcher({
 						</CommandList>
 					</Command>
 					<div className="space-y-1 p-1">
+						{isActiveOrgAdmin && activeOrganization && (
+							<>
+								<Separator />
+								<Button
+									asChild
+									className="h-8 w-full justify-start gap-1.5 font-normal text-sm"
+									size="sm"
+									variant="ghost"
+								>
+									<Link
+										href="/dashboard/organization/settings?tab=profile"
+										onClick={() => setOpen(false)}
+										className="flex items-center"
+									>
+										<SettingsIcon className="size-4 shrink-0" />
+										<span className="flex-1">{t("organizationSettings")}</span>
+									</Link>
+								</Button>
+							</>
+						)}
 						{user?.role === "admin" && (
 							<>
 								<Separator />
@@ -461,7 +521,7 @@ export function OrganizationSwitcher({
 										<div className="mr-0.75 -ml-0.75 flex size-5 items-center justify-center rounded-md bg-foreground text-background">
 											<ShieldIcon className="size-3 shrink-0" />
 										</div>
-										<span className="flex-1">Admin Panel</span>
+										<span className="flex-1">{t("adminPanel")}</span>
 										<div
 											className={cn(
 												"ml-auto flex size-4 items-center justify-center rounded-full text-primary-foreground",
@@ -492,7 +552,7 @@ export function OrganizationSwitcher({
 									variant="ghost"
 								>
 									<PlusIcon className="size-5 shrink-0" />
-									<span>Create an Organization</span>
+									<span>{t("createOrganization")}</span>
 								</Button>
 							</>
 						)}
@@ -526,7 +586,10 @@ export function OrganizationSwitcher({
 					</PopoverTrigger>
 					<PopoverContent align="start" className="w-60 p-0" forceMount>
 						<Command onValueChange={setSelectedValue} value={selectedValue}>
-							<CommandInput className="h-9" placeholder="Search..." />
+							<CommandInput
+								className="h-9"
+								placeholder={t("searchPlaceholder")}
+							/>
 							<CommandList>
 								<CommandGroup>
 									<CommandItem
@@ -535,7 +598,7 @@ export function OrganizationSwitcher({
 										value={user.id}
 									>
 										<PersonalAccountAvatar className="size-5 shrink-0" />
-										<span className="mr-2">Personal</span>
+										<span className="mr-2">{t("personal")}</span>
 										<Icon type="personal" />
 									</CommandItem>
 								</CommandGroup>
@@ -544,7 +607,9 @@ export function OrganizationSwitcher({
 										<>
 											<CommandSeparator />
 											<CommandGroup
-												heading={`Your Organizations (${allOrganizations.length})`}
+												heading={t("yourOrganizations", {
+													count: allOrganizations.length,
+												})}
 											>
 												{allOrganizations.map((organization) => (
 													<CommandItem
@@ -581,6 +646,28 @@ export function OrganizationSwitcher({
 							</CommandList>
 						</Command>
 						<div className="space-y-1 p-1">
+							{isActiveOrgAdmin && activeOrganization && (
+								<>
+									<Separator />
+									<Button
+										asChild
+										className="h-8 w-full justify-start gap-1.5 font-normal text-sm"
+										size="sm"
+										variant="ghost"
+									>
+										<Link
+											href="/dashboard/organization/settings?tab=profile"
+											onClick={() => setOpen(false)}
+											className="flex items-center"
+										>
+											<SettingsIcon className="size-4 shrink-0" />
+											<span className="flex-1">
+												{t("organizationSettings")}
+											</span>
+										</Link>
+									</Button>
+								</>
+							)}
 							{user?.role === "admin" && (
 								<>
 									<Separator />
@@ -598,7 +685,7 @@ export function OrganizationSwitcher({
 											<div className="mr-0.75 -ml-0.75 flex size-5 items-center justify-center rounded-md bg-foreground text-background">
 												<ShieldIcon className="size-3 shrink-0" />
 											</div>
-											<span className="flex-1">Admin Panel</span>
+											<span className="flex-1">{t("adminPanel")}</span>
 											<div
 												className={cn(
 													"ml-auto flex size-4 items-center justify-center rounded-full text-primary-foreground",
@@ -629,7 +716,7 @@ export function OrganizationSwitcher({
 										variant="ghost"
 									>
 										<PlusIcon className="size-5 shrink-0" />
-										<span>Create an Organization</span>
+										<span>{t("createOrganization")}</span>
 									</Button>
 								</>
 							)}

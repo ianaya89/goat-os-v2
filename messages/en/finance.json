@@ -22,18 +22,40 @@
 			"paidDate": "Paid date",
 			"status": "Status",
 			"method": "Method",
+			"date": "Date",
 			"actions": "Actions"
 		},
 		"form": {
 			"athlete": "Athlete",
+			"athleteOptional": "Athlete (Optional)",
+			"selectAthlete": "Select athlete",
+			"noAthlete": "No athlete",
 			"concept": "Concept",
 			"amount": "Amount",
+			"amountCents": "Amount (cents)",
+			"paidAmountCents": "Paid Amount (cents)",
 			"dueDate": "Due date",
 			"method": "Payment method",
-			"notes": "Notes"
+			"selectMethod": "Select method",
+			"notSpecified": "Not specified",
+			"notes": "Notes",
+			"notesPlaceholder": "Additional notes...",
+			"description": "Description",
+			"descriptionPlaceholder": "e.g., Monthly training fee",
+			"session": "Session (Optional)",
+			"selectSession": "Select session",
+			"noSession": "No session",
+			"status": "Status",
+			"selectStatus": "Select status",
+			"paymentDate": "Payment Date",
+			"receiptNumber": "Receipt Number",
+			"receiptPlaceholder": "Receipt #",
+			"receiptUpload": "Payment Receipt"
 		},
 		"methods": {
 			"cash": "Cash",
+			"bankTransfer": "Bank Transfer",
+			"mercadoPago": "Mercado Pago",
 			"card": "Card",
 			"transfer": "Transfer",
 			"check": "Check",
@@ -41,9 +63,25 @@
 		},
 		"status": {
 			"pending": "Pending",
+			"paid": "Paid",
+			"partial": "Partial",
 			"completed": "Completed",
 			"overdue": "Overdue",
 			"cancelled": "Cancelled"
+		},
+		"modal": {
+			"createTitle": "Record Payment",
+			"createSubtitle": "Fill in the details to record a new payment.",
+			"editTitle": "Edit Payment",
+			"editSubtitle": "Update the payment information below.",
+			"cancel": "Cancel",
+			"create": "Record Payment",
+			"update": "Update Payment"
+		},
+		"deleteConfirm": {
+			"title": "Delete payment?",
+			"message": "Are you sure you want to delete this payment? This action cannot be undone.",
+			"confirm": "Delete"
 		},
 		"success": {
 			"created": "Payment recorded successfully.",

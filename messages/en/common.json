@@ -94,7 +94,17 @@
 		"profile": "Profile",
 		"security": "Security",
 		"sessions": "Sessions",
-		"athleteProfile": "Athlete Profile"
+		"athleteProfile": "Athlete Profile",
+		"backToOrganization": "Back to organization"
+	},
+	"orgSwitcher": {
+		"searchPlaceholder": "Search...",
+		"personal": "Personal",
+		"yourOrganizations": "Your Organizations ({count})",
+		"organizationSettings": "Organization Settings",
+		"adminPanel": "Admin Panel",
+		"createOrganization": "Create an Organization",
+		"organization": "Organization"
 	},
 	"search": {
 		"placeholder": "Search...",

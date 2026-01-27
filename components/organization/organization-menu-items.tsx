@@ -164,12 +164,6 @@ export function OrganizationMenuItems(): React.JSX.Element {
 			feature: OrganizationFeature.eventTemplates,
 		},
 		{
-			label: t("ageCategories"),
-			href: `${basePath}/age-categories`,
-			icon: TagsIcon,
-			feature: OrganizationFeature.ageCategories,
-		},
-		{
 			label: t("waitlist"),
 			href: `${basePath}/waitlist`,
 			icon: ClipboardListIcon,
@@ -321,6 +315,12 @@ export function OrganizationMenuItems(): React.JSX.Element {
 			label: t("groups.general"),
 			icon: LayoutDashboardIcon,
 			items: [
+				{
+					label: t("ageCategories"),
+					href: `${basePath}/age-categories`,
+					icon: TagsIcon,
+					feature: OrganizationFeature.ageCategories,
+				},
 				{
 					label: t("locations"),
 					href: `${basePath}/locations`,

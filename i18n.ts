@@ -38,6 +38,9 @@ export default getRequestConfig(async () => {
 		athletes: (await import(`./messages/${locale}/athletes.json`)).default,
 		coaches: (await import(`./messages/${locale}/coaches.json`)).default,
 		training: (await import(`./messages/${locale}/training.json`)).default,
+		ageCategories: (await import(`./messages/${locale}/ageCategories.json`))
+			.default,
+		locations: (await import(`./messages/${locale}/locations.json`)).default,
 		events: (await import(`./messages/${locale}/events.json`)).default,
 		finance: (await import(`./messages/${locale}/finance.json`)).default,
 		settings: (await import(`./messages/${locale}/settings.json`)).default,

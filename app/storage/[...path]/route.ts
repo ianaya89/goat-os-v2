@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { storageConfig } from "@/config/storage.config";
 import { getSignedUrl } from "@/lib/storage";
 
@@ -8,7 +7,8 @@ export const GET = async (
 ) => {
 	const { path } = await params;
 
-	const [bucket, filePath] = path;
+	const [bucket, ...rest] = path;
+	const filePath = rest.join("/");
 
 	if (!(bucket && filePath)) {
 		return new Response("Invalid path", { status: 400 });
@@ -19,8 +19,20 @@ export const GET = async (
 			expiresIn: 60 * 60,
 		});
 
-		return NextResponse.redirect(signedUrl, {
-			headers: { "Cache-Control": "max-age=3600" },
+		// Proxy the image instead of redirecting to avoid issues with
+		// components that don't handle redirects well (e.g. Radix AvatarImage)
+		const imageResponse = await fetch(signedUrl);
+
+		if (!imageResponse.ok) {
+			return new Response("Image not found", { status: 404 });
+		}
+
+		return new Response(imageResponse.body, {
+			headers: {
+				"Content-Type":
+					imageResponse.headers.get("Content-Type") || "image/jpeg",
+				"Cache-Control": "public, max-age=3600",
+			},
 		});
 	}
 

@@ -1,22 +1,25 @@
 "use client";
 
 import NiceModal from "@ebay/nice-modal-react";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef, ColumnFiltersState } from "@tanstack/react-table";
 import {
 	MoreHorizontalIcon,
 	PencilIcon,
 	PlusIcon,
 	Trash2Icon,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { parseAsArrayOf, parseAsString, useQueryState } from "nuqs";
 import * as React from "react";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/confirmation-modal";
 import { AgeCategoriesModal } from "@/components/organization/age-categories-modal";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CategoryBadge } from "@/components/ui/category-badge";
 import {
 	createSelectionColumn,
 	DataTable,
+	type FilterConfig,
 } from "@/components/ui/custom/data-table";
 import {
 	DropdownMenu,
@@ -25,8 +28,8 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { formatBirthYearRange } from "@/lib/format-event";
-import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
 interface AgeCategory {
@@ -42,14 +45,17 @@ interface AgeCategory {
 	updatedAt: Date;
 }
 
-const statusColors: Record<string, string> = {
-	active: "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200",
-	inactive: "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200",
-};
-
 export function AgeCategoriesTable(): React.JSX.Element {
+	const t = useTranslations("ageCategories");
 	const [rowSelection, setRowSelection] = React.useState({});
 	const utils = trpc.useUtils();
+
+	const [statusFilter, setStatusFilter] = useQueryState(
+		"status",
+		parseAsArrayOf(parseAsString).withDefault([]).withOptions({
+			shallow: true,
+		}),
+	);
 
 	const { data, isPending } =
 		trpc.organization.sportsEvent.listAgeCategories.useQuery(
@@ -57,40 +63,77 @@ export function AgeCategoriesTable(): React.JSX.Element {
 			{ placeholderData: (prev) => prev },
 		);
 
+	const filteredData = React.useMemo(() => {
+		if (!data) return [];
+		if (!statusFilter || statusFilter.length === 0) return data;
+
+		return data.filter((category) => {
+			const status = category.isActive ? "active" : "inactive";
+			return statusFilter.includes(status);
+		});
+	}, [data, statusFilter]);
+
 	const deleteAgeCategoryMutation =
 		trpc.organization.sportsEvent.deleteAgeCategory.useMutation({
 			onSuccess: () => {
-				toast.success("Categoría de edad eliminada");
+				toast.success(t("success.deleted"));
 				utils.organization.sportsEvent.listAgeCategories.invalidate();
 			},
 			onError: (error: { message?: string }) => {
-				toast.error(error.message || "Error al eliminar la categoría");
+				toast.error(error.message || t("error.deleteFailed"));
 			},
 		});
+
+	const columnFilters: ColumnFiltersState = React.useMemo(() => {
+		const filters: ColumnFiltersState = [];
+		if (statusFilter && statusFilter.length > 0) {
+			filters.push({ id: "status", value: statusFilter });
+		}
+		return filters;
+	}, [statusFilter]);
+
+	const handleFiltersChange = (filters: ColumnFiltersState): void => {
+		const getFilterValue = (id: string): string[] => {
+			const filter = filters.find((f) => f.id === id);
+			return Array.isArray(filter?.value) ? (filter.value as string[]) : [];
+		};
+		setStatusFilter(getFilterValue("status"));
+	};
+
+	const ageCategoryFilters: FilterConfig[] = [
+		{
+			key: "status",
+			title: t("table.status"),
+			options: [
+				{
+					value: "active",
+					label: t("statuses.active"),
+				},
+				{
+					value: "inactive",
+					label: t("statuses.inactive"),
+				},
+			],
+		},
+	];
 
 	const columns: ColumnDef<AgeCategory>[] = [
 		createSelectionColumn<AgeCategory>(),
 		{
 			accessorKey: "displayName",
-			header: "Nombre",
+			header: t("table.name"),
 			cell: ({ row }) => (
-				<span className="font-medium text-foreground">
-					{row.original.displayName}
-				</span>
-			),
-		},
-		{
-			accessorKey: "name",
-			header: "Código",
-			cell: ({ row }) => (
-				<span className="text-foreground/80 font-mono text-sm">
-					{row.original.name}
-				</span>
+				<div className="flex items-center gap-2">
+					<CategoryBadge name={row.original.name} />
+					<span className="font-medium text-foreground">
+						{row.original.displayName}
+					</span>
+				</div>
 			),
 		},
 		{
 			id: "birthYearRange",
-			header: "Años de nacimiento",
+			header: t("table.birthYearRange"),
 			cell: ({ row }) => (
 				<span className="text-foreground/80">
 					{formatBirthYearRange(
@@ -101,25 +144,10 @@ export function AgeCategoriesTable(): React.JSX.Element {
 			),
 		},
 		{
-			accessorKey: "sortOrder",
-			header: "Orden",
-			cell: ({ row }) => (
-				<span className="text-foreground/80">{row.original.sortOrder}</span>
-			),
-		},
-		{
 			accessorKey: "isActive",
-			header: "Estado",
+			header: t("table.status"),
 			cell: ({ row }) => (
-				<Badge
-					className={cn(
-						"border-none px-2 py-0.5 font-medium text-xs shadow-none",
-						row.original.isActive ? statusColors.active : statusColors.inactive,
-					)}
-					variant="outline"
-				>
-					{row.original.isActive ? "Activo" : "Inactivo"}
-				</Badge>
+				<StatusBadge status={row.original.isActive ? "active" : "inactive"} />
 			),
 		},
 		{
@@ -135,7 +163,7 @@ export function AgeCategoriesTable(): React.JSX.Element {
 								variant="ghost"
 							>
 								<MoreHorizontalIcon className="shrink-0" />
-								<span className="sr-only">Abrir menú</span>
+								<span className="sr-only">{t("table.openMenu")}</span>
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
@@ -147,16 +175,15 @@ export function AgeCategoriesTable(): React.JSX.Element {
 								}}
 							>
 								<PencilIcon className="mr-2 size-4" />
-								Editar
+								{t("table.edit")}
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 							<DropdownMenuItem
 								onClick={() => {
 									NiceModal.show(ConfirmationModal, {
-										title: "¿Eliminar categoría?",
-										message:
-											"¿Estás seguro de que deseas eliminar esta categoría de edad? Esta acción no se puede deshacer.",
-										confirmLabel: "Eliminar",
+										title: t("delete.title"),
+										message: t("delete.message"),
+										confirmLabel: t("delete.confirm"),
 										destructive: true,
 										onConfirm: () =>
 											deleteAgeCategoryMutation.mutate({ id: row.original.id }),
@@ -165,7 +192,7 @@ export function AgeCategoriesTable(): React.JSX.Element {
 								variant="destructive"
 							>
 								<Trash2Icon className="mr-2 size-4" />
-								Eliminar
+								{t("table.delete")}
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
@@ -176,20 +203,24 @@ export function AgeCategoriesTable(): React.JSX.Element {
 
 	return (
 		<DataTable
+			columnFilters={columnFilters}
 			columns={columns}
-			data={(data as AgeCategory[] | undefined) || []}
-			emptyMessage="No hay categorías de edad."
+			data={(filteredData as AgeCategory[] | undefined) || []}
+			emptyMessage={t("table.noCategories")}
+			enableFilters
 			enableRowSelection
+			filters={ageCategoryFilters}
 			loading={isPending}
+			onFiltersChange={handleFiltersChange}
 			onRowSelectionChange={setRowSelection}
 			rowSelection={rowSelection}
 			toolbarActions={
 				<Button onClick={() => NiceModal.show(AgeCategoriesModal)} size="sm">
 					<PlusIcon className="size-4 shrink-0" />
-					Nueva Categoría
+					{t("add")}
 				</Button>
 			}
-			totalCount={data?.length ?? 0}
+			totalCount={filteredData?.length ?? 0}
 		/>
 	);
 }

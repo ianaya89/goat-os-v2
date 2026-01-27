@@ -274,7 +274,11 @@ export function CoachesTable(): React.JSX.Element {
 						<UserAvatar
 							className="size-9 shrink-0"
 							name={name}
-							src={row.original.user?.image ?? undefined}
+							src={
+								row.original.user?.imageKey ??
+								row.original.user?.image ??
+								undefined
+							}
 						/>
 						<div className="min-w-0">
 							<p className="truncate font-medium text-foreground" title={name}>

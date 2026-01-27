@@ -1,6 +1,7 @@
 "use client";
 
 import {
+	ArrowLeftIcon,
 	HomeIcon,
 	MedalIcon,
 	MonitorSmartphoneIcon,
@@ -19,6 +20,7 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { authClient } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
@@ -38,6 +40,9 @@ export function UserMenuItems(): React.JSX.Element {
 	const t = useTranslations("common.menu");
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
+
+	// Check if user has an active organization to show "back" link
+	const { data: activeOrganization } = authClient.useActiveOrganization();
 
 	// Check if user is an athlete
 	const { data: isAthlete } = trpc.athlete.isAthlete.useQuery();
@@ -72,18 +77,26 @@ export function UserMenuItems(): React.JSX.Element {
 		},
 	);
 
+	// Build application items - Home is only shown for athletes/coaches
+	const applicationItems: MenuItem[] = [];
+	if (isAthlete) {
+		applicationItems.push({
+			label: t("home"),
+			href: "/dashboard",
+			icon: HomeIcon,
+			exactMatch: true,
+		});
+	}
+
 	const menuGroups: MenuGroup[] = [
-		{
-			label: t("application"),
-			items: [
-				{
-					label: t("home"),
-					href: "/dashboard",
-					icon: HomeIcon,
-					exactMatch: true,
-				},
-			],
-		},
+		...(applicationItems.length > 0
+			? [
+					{
+						label: t("application"),
+						items: applicationItems,
+					},
+				]
+			: []),
 		{
 			label: t("settings"),
 			items: settingsItems,
@@ -148,6 +161,22 @@ export function UserMenuItems(): React.JSX.Element {
 			className="[&>[data-radix-scroll-area-viewport]>div]:flex! h-full [&>[data-radix-scroll-area-viewport]>div]:h-full [&>[data-radix-scroll-area-viewport]>div]:flex-col"
 			verticalScrollBar
 		>
+			{activeOrganization && (
+				<SidebarGroup>
+					<SidebarMenu>
+						<SidebarMenuItem>
+							<SidebarMenuButton asChild tooltip={t("backToOrganization")}>
+								<Link href="/dashboard/organization">
+									<ArrowLeftIcon className="size-4 shrink-0 text-muted-foreground" />
+									<span className="dark:text-muted-foreground">
+										{t("backToOrganization")}
+									</span>
+								</Link>
+							</SidebarMenuButton>
+						</SidebarMenuItem>
+					</SidebarMenu>
+				</SidebarGroup>
+			)}
 			{menuGroups.map((group, groupIndex) => (
 				<SidebarGroup key={groupIndex}>
 					<SidebarGroupLabel>{group.label}</SidebarGroupLabel>

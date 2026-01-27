@@ -11,6 +11,7 @@ import {
 	RepeatIcon,
 	XIcon,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { toast } from "sonner";
 import { RecurringSessionForm } from "@/components/organization/recurring-session-form";
@@ -131,6 +132,7 @@ export type TrainingSessionsModalProps = NiceModalHocProps & {
 export const TrainingSessionsModal =
 	NiceModal.create<TrainingSessionsModalProps>(
 		({ session, initialAthleteIds, initialGroupId }) => {
+			const t = useTranslations("training");
 			const modal = useEnhancedModal();
 			const utils = trpc.useUtils();
 			const isEditing = !!session;
@@ -198,32 +200,34 @@ export const TrainingSessionsModal =
 			const createSessionMutation =
 				trpc.organization.trainingSession.create.useMutation({
 					onSuccess: () => {
-						toast.success("Session created successfully");
+						toast.success(t("success.created"));
 						utils.organization.trainingSession.list.invalidate();
+						utils.organization.trainingSession.listForCalendar.invalidate();
 						utils.organization.athleteGroup.get.invalidate();
 						utils.organization.athlete.get.invalidate();
 						modal.handleClose();
 					},
 					onError: (error) => {
-						toast.error(error.message || "Failed to create session");
+						toast.error(error.message || t("error.createFailed"));
 					},
 				});
 
 			const updateSessionMutation =
 				trpc.organization.trainingSession.update.useMutation({
 					onSuccess: () => {
-						toast.success("Session updated successfully");
+						toast.success(t("success.updated"));
 						utils.organization.trainingSession.list.invalidate();
+						utils.organization.trainingSession.listForCalendar.invalidate();
 					},
 					onError: (error) => {
-						toast.error(error.message || "Failed to update session");
+						toast.error(error.message || t("error.updateFailed"));
 					},
 				});
 
 			const updateCoachesMutation =
 				trpc.organization.trainingSession.updateCoaches.useMutation({
 					onError: (error) => {
-						toast.error(error.message || "Failed to update coaches");
+						toast.error(error.message || t("error.updateCoachesFailed"));
 					},
 				});
 
@@ -231,10 +235,11 @@ export const TrainingSessionsModal =
 				trpc.organization.trainingSession.updateAthletes.useMutation({
 					onSuccess: () => {
 						utils.organization.trainingSession.list.invalidate();
+						utils.organization.trainingSession.listForCalendar.invalidate();
 						modal.handleClose();
 					},
 					onError: (error) => {
-						toast.error(error.message || "Failed to update athletes");
+						toast.error(error.message || t("error.updateAthletesFailed"));
 					},
 				});
 
@@ -416,12 +421,14 @@ export const TrainingSessionsModal =
 									</div>
 									<div>
 										<h2 className="font-semibold text-lg tracking-tight">
-											{isEditing ? "Edit Session" : "Create Session"}
+											{isEditing
+												? t("modal.editTitle")
+												: t("modal.createTitle")}
 										</h2>
 										<p className="mt-0.5 text-muted-foreground text-sm">
 											{isEditing
-												? "Update the session information below."
-												: "Fill in the details to create a new training session."}
+												? t("modal.editDescription")
+												: t("modal.createDescription")}
 										</p>
 									</div>
 								</div>
@@ -432,7 +439,7 @@ export const TrainingSessionsModal =
 									className="flex size-8 items-center justify-center rounded-lg transition-all duration-150 text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
 								>
 									<XIcon className="size-4" />
-									<span className="sr-only">Cerrar</span>
+									<span className="sr-only">{t("modal.close")}</span>
 								</button>
 							</div>
 
@@ -448,13 +455,19 @@ export const TrainingSessionsModal =
 								<ScrollArea className="flex-1">
 									<Tabs defaultValue="basic" className="w-full">
 										<TabsList className="mx-6 mt-4 grid w-auto grid-cols-4">
-											<TabsTrigger value="basic">Basic</TabsTrigger>
-											<TabsTrigger value="assignment">Assignment</TabsTrigger>
+											<TabsTrigger value="basic">
+												{t("modal.tabs.basic")}
+											</TabsTrigger>
+											<TabsTrigger value="assignment">
+												{t("modal.tabs.assignment")}
+											</TabsTrigger>
 											<TabsTrigger value="recurring" disabled={isEditing}>
 												<RepeatIcon className="mr-1 size-3" />
-												Repeat
+												{t("modal.tabs.repeat")}
 											</TabsTrigger>
-											<TabsTrigger value="content">Content</TabsTrigger>
+											<TabsTrigger value="content">
+												{t("modal.tabs.content")}
+											</TabsTrigger>
 										</TabsList>
 
 										<TabsContent value="basic" className="space-y-4 px-6 py-4">
@@ -464,10 +477,10 @@ export const TrainingSessionsModal =
 												render={({ field }) => (
 													<FormItem asChild>
 														<Field>
-															<FormLabel>Title</FormLabel>
+															<FormLabel>{t("form.title")}</FormLabel>
 															<FormControl>
 																<Input
-																	placeholder="e.g., Morning Training"
+																	placeholder={t("modal.titlePlaceholder")}
 																	autoComplete="off"
 																	{...field}
 																/>
@@ -484,10 +497,12 @@ export const TrainingSessionsModal =
 												render={({ field }) => (
 													<FormItem asChild>
 														<Field>
-															<FormLabel>Description</FormLabel>
+															<FormLabel>{t("form.description")}</FormLabel>
 															<FormControl>
 																<Textarea
-																	placeholder="Session description..."
+																	placeholder={t(
+																		"modal.descriptionPlaceholder",
+																	)}
 																	className="resize-none"
 																	rows={2}
 																	{...field}
@@ -507,7 +522,7 @@ export const TrainingSessionsModal =
 												render={({ field }) => (
 													<FormItem asChild>
 														<Field>
-															<FormLabel>Date</FormLabel>
+															<FormLabel>{t("form.date")}</FormLabel>
 															<Popover>
 																<PopoverTrigger asChild>
 																	<FormControl>
@@ -529,7 +544,7 @@ export const TrainingSessionsModal =
 																						),
 																						"EEE, dd MMM yyyy",
 																					)
-																				: "Select date"}
+																				: t("modal.selectDate")}
 																		</Button>
 																	</FormControl>
 																</PopoverTrigger>
@@ -584,7 +599,7 @@ export const TrainingSessionsModal =
 													render={({ field }) => (
 														<FormItem asChild>
 															<Field>
-																<FormLabel>Time</FormLabel>
+																<FormLabel>{t("form.time")}</FormLabel>
 																<Select
 																	value={getTimeFromDate(
 																		field.value
@@ -607,7 +622,9 @@ export const TrainingSessionsModal =
 																	<FormControl>
 																		<SelectTrigger>
 																			<ClockIcon className="mr-2 size-4 text-muted-foreground" />
-																			<SelectValue placeholder="Select time" />
+																			<SelectValue
+																				placeholder={t("modal.selectTime")}
+																			/>
 																		</SelectTrigger>
 																	</FormControl>
 																	<SelectContent className="max-h-[280px]">
@@ -628,7 +645,7 @@ export const TrainingSessionsModal =
 												/>
 
 												<Field>
-													<FormLabel>Duration</FormLabel>
+													<FormLabel>{t("form.duration")}</FormLabel>
 													<Select
 														onValueChange={(value) =>
 															setDuration(parseInt(value, 10))
@@ -636,7 +653,9 @@ export const TrainingSessionsModal =
 														value={duration.toString()}
 													>
 														<SelectTrigger className="w-full">
-															<SelectValue placeholder="Select duration" />
+															<SelectValue
+																placeholder={t("modal.selectDuration")}
+															/>
 														</SelectTrigger>
 														<SelectContent>
 															<SelectItem value="15">15 min</SelectItem>
@@ -660,7 +679,7 @@ export const TrainingSessionsModal =
 												render={({ field }) => (
 													<FormItem asChild>
 														<Field>
-															<FormLabel>Location</FormLabel>
+															<FormLabel>{t("form.location")}</FormLabel>
 															<Select
 																onValueChange={(value) =>
 																	field.onChange(
@@ -671,12 +690,14 @@ export const TrainingSessionsModal =
 															>
 																<FormControl>
 																	<SelectTrigger className="w-full">
-																		<SelectValue placeholder="Select location" />
+																		<SelectValue
+																			placeholder={t("modal.selectLocation")}
+																		/>
 																	</SelectTrigger>
 																</FormControl>
 																<SelectContent>
 																	<SelectItem value="none">
-																		No location
+																		{t("modal.noLocation")}
 																	</SelectItem>
 																	{locations.map((location) => (
 																		<SelectItem
@@ -700,14 +721,16 @@ export const TrainingSessionsModal =
 												render={({ field }) => (
 													<FormItem asChild>
 														<Field>
-															<FormLabel>Status</FormLabel>
+															<FormLabel>{t("form.status")}</FormLabel>
 															<Select
 																onValueChange={field.onChange}
 																value={field.value}
 															>
 																<FormControl>
 																	<SelectTrigger className="w-full">
-																		<SelectValue placeholder="Select status" />
+																		<SelectValue
+																			placeholder={t("modal.selectStatus")}
+																		/>
 																	</SelectTrigger>
 																</FormControl>
 																<SelectContent>
@@ -731,7 +754,7 @@ export const TrainingSessionsModal =
 										>
 											{/* Coaches */}
 											<Field>
-												<FormLabel>Coaches</FormLabel>
+												<FormLabel>{t("modal.coaches")}</FormLabel>
 												<Popover
 													open={coachPopoverOpen}
 													onOpenChange={setCoachPopoverOpen}
@@ -742,8 +765,10 @@ export const TrainingSessionsModal =
 															className="w-full justify-start font-normal"
 														>
 															{selectedCoachIds.length > 0
-																? `${selectedCoachIds.length} coach${selectedCoachIds.length > 1 ? "es" : ""} selected`
-																: "Select coaches..."}
+																? t("modal.coachesSelected", {
+																		count: selectedCoachIds.length,
+																	})
+																: t("modal.selectCoaches")}
 														</Button>
 													</PopoverTrigger>
 													<PopoverContent
@@ -751,16 +776,18 @@ export const TrainingSessionsModal =
 														align="start"
 													>
 														<Command>
-															<CommandInput placeholder="Search coaches..." />
+															<CommandInput
+																placeholder={t("modal.searchCoaches")}
+															/>
 															<CommandList>
 																{coaches.length === 0 ? (
 																	<div className="px-4 py-6 text-center text-muted-foreground text-sm">
-																		No coaches available. Create a coach first.
+																		{t("modal.noCoachesAvailable")}
 																	</div>
 																) : (
 																	<>
 																		<CommandEmpty>
-																			No coaches found.
+																			{t("modal.noCoachesFound")}
 																		</CommandEmpty>
 																		<CommandGroup>
 																			{coaches.map((coach) => {
@@ -830,7 +857,7 @@ export const TrainingSessionsModal =
 																			variant="secondary"
 																			className="text-xs"
 																		>
-																			Primary
+																			{t("modal.primary")}
 																		</Badge>
 																	)}
 																</div>
@@ -844,7 +871,7 @@ export const TrainingSessionsModal =
 																				setPrimaryCoachId(coach.id)
 																			}
 																		>
-																			Set Primary
+																			{t("modal.setPrimary")}
 																		</Button>
 																	)}
 																	<Button
@@ -865,7 +892,7 @@ export const TrainingSessionsModal =
 
 											{/* Athletes assignment type */}
 											<Field>
-												<FormLabel>Assign Athletes By</FormLabel>
+												<FormLabel>{t("modal.assignAthletesBy")}</FormLabel>
 												<Select
 													value={assignmentType}
 													onValueChange={(value: "group" | "athletes") =>
@@ -876,9 +903,11 @@ export const TrainingSessionsModal =
 														<SelectValue />
 													</SelectTrigger>
 													<SelectContent>
-														<SelectItem value="group">Athlete Group</SelectItem>
+														<SelectItem value="group">
+															{t("modal.athleteGroup")}
+														</SelectItem>
 														<SelectItem value="athletes">
-															Individual Athletes
+															{t("modal.individualAthletes")}
 														</SelectItem>
 													</SelectContent>
 												</Select>
@@ -891,7 +920,7 @@ export const TrainingSessionsModal =
 													render={({ field }) => (
 														<FormItem asChild>
 															<Field>
-																<FormLabel>Athlete Group</FormLabel>
+																<FormLabel>{t("modal.athleteGroup")}</FormLabel>
 																<Select
 																	onValueChange={(value) =>
 																		field.onChange(
@@ -902,12 +931,14 @@ export const TrainingSessionsModal =
 																>
 																	<FormControl>
 																		<SelectTrigger className="w-full">
-																			<SelectValue placeholder="Select group" />
+																			<SelectValue
+																				placeholder={t("modal.selectGroup")}
+																			/>
 																		</SelectTrigger>
 																	</FormControl>
 																	<SelectContent>
 																		<SelectItem value="none">
-																			No group
+																			{t("modal.noGroup")}
 																		</SelectItem>
 																		{groups.map((group) => (
 																			<SelectItem
@@ -915,7 +946,7 @@ export const TrainingSessionsModal =
 																				value={group.id}
 																			>
 																				{group.name} ({group.memberCount}{" "}
-																				members)
+																				{t("modal.members")})
 																			</SelectItem>
 																		))}
 																	</SelectContent>
@@ -927,7 +958,7 @@ export const TrainingSessionsModal =
 												/>
 											) : (
 												<Field>
-													<FormLabel>Athletes</FormLabel>
+													<FormLabel>{t("form.athletes")}</FormLabel>
 													<Popover
 														open={athletePopoverOpen}
 														onOpenChange={setAthletePopoverOpen}
@@ -938,8 +969,10 @@ export const TrainingSessionsModal =
 																className="w-full justify-start font-normal"
 															>
 																{selectedAthleteIds.length > 0
-																	? `${selectedAthleteIds.length} athlete${selectedAthleteIds.length > 1 ? "s" : ""} selected`
-																	: "Select athletes..."}
+																	? t("table.athleteCount", {
+																			count: selectedAthleteIds.length,
+																		})
+																	: t("modal.selectAthletes")}
 															</Button>
 														</PopoverTrigger>
 														<PopoverContent
@@ -947,17 +980,18 @@ export const TrainingSessionsModal =
 															align="start"
 														>
 															<Command>
-																<CommandInput placeholder="Search athletes..." />
+																<CommandInput
+																	placeholder={t("modal.searchAthletes")}
+																/>
 																<CommandList>
 																	{athletes.length === 0 ? (
 																		<div className="px-4 py-6 text-center text-muted-foreground text-sm">
-																			No athletes available. Create an athlete
-																			first.
+																			{t("modal.noAthletesAvailable")}
 																		</div>
 																	) : (
 																		<>
 																			<CommandEmpty>
-																				No athletes found.
+																				{t("modal.noAthletesFound")}
 																			</CommandEmpty>
 																			<CommandGroup>
 																				{athletes.map((athlete) => {
@@ -1057,10 +1091,10 @@ export const TrainingSessionsModal =
 												render={({ field }) => (
 													<FormItem asChild>
 														<Field>
-															<FormLabel>Objectives</FormLabel>
+															<FormLabel>{t("modal.objectives")}</FormLabel>
 															<FormControl>
 																<Textarea
-																	placeholder="Training objectives..."
+																	placeholder={t("modal.objectivesPlaceholder")}
 																	className="resize-none"
 																	rows={3}
 																	{...field}
@@ -1079,10 +1113,10 @@ export const TrainingSessionsModal =
 												render={({ field }) => (
 													<FormItem asChild>
 														<Field>
-															<FormLabel>Planning</FormLabel>
+															<FormLabel>{t("modal.planning")}</FormLabel>
 															<FormControl>
 																<Textarea
-																	placeholder="Session planning and activities..."
+																	placeholder={t("modal.planningPlaceholder")}
 																	className="resize-none"
 																	rows={4}
 																	{...field}
@@ -1102,10 +1136,14 @@ export const TrainingSessionsModal =
 													render={({ field }) => (
 														<FormItem asChild>
 															<Field>
-																<FormLabel>Post-Session Notes</FormLabel>
+																<FormLabel>
+																	{t("modal.postSessionNotes")}
+																</FormLabel>
 																<FormControl>
 																	<Textarea
-																		placeholder="Notes after the session..."
+																		placeholder={t(
+																			"modal.postNotesPlaceholder",
+																		)}
 																		className="resize-none"
 																		rows={3}
 																		{...field}
@@ -1120,7 +1158,7 @@ export const TrainingSessionsModal =
 											)}
 
 											<Field>
-												<FormLabel>Attachment</FormLabel>
+												<FormLabel>{t("modal.attachment")}</FormLabel>
 												<SessionAttachmentUpload
 													sessionId={session?.id}
 													hasAttachment={!!session?.attachmentKey}
@@ -1132,7 +1170,7 @@ export const TrainingSessionsModal =
 													disabled={isPending}
 												/>
 												<FormDescription>
-													Attach a PDF or image (max 10MB)
+													{t("modal.attachmentDescription")}
 												</FormDescription>
 											</Field>
 										</TabsContent>
@@ -1148,7 +1186,7 @@ export const TrainingSessionsModal =
 										className="min-w-[100px]"
 									>
 										<XIcon className="size-4" />
-										Cancel
+										{t("modal.cancelButton")}
 									</Button>
 									<Button
 										type="submit"
@@ -1161,7 +1199,9 @@ export const TrainingSessionsModal =
 										) : (
 											<PlusIcon className="size-4" />
 										)}
-										{isEditing ? "Update Session" : "Create Session"}
+										{isEditing
+											? t("modal.updateSession")
+											: t("modal.createSession")}
 									</Button>
 								</SheetFooter>
 							</form>

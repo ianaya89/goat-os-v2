@@ -7,12 +7,14 @@ import {
 	ClockIcon,
 	MessageSquareIcon,
 	ShieldCheckIcon,
+	UsersIcon,
 	XIcon,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import * as React from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { UserAvatar } from "@/components/user/user-avatar";
@@ -187,11 +189,7 @@ export function AttendanceForm({ sessionId }: AttendanceFormProps) {
 	};
 
 	if (athletes.length === 0) {
-		return (
-			<div className="py-8 text-center text-muted-foreground text-sm">
-				{t("noAthletes")}
-			</div>
-		);
+		return <EmptyState icon={UsersIcon} title={t("noAthletes")} />;
 	}
 
 	const presentCount = [...attendanceMap.values()].filter(

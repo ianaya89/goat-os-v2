@@ -170,6 +170,7 @@
 		"evaluatedBy": "por",
 		"table": {
 			"session": "Sesión",
+			"athlete": "Atleta",
 			"date": "Fecha",
 			"ratings": "Calificaciones",
 			"evaluator": "Evaluador",

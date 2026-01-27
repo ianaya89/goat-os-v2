@@ -22,14 +22,13 @@ import {
 	CopyIcon,
 	EditIcon,
 	EyeIcon,
-	MapPinIcon,
 	MoreHorizontalIcon,
-	PlusIcon,
 	RepeatIcon,
 	Trash2Icon,
 	UsersIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
 	parseAsArrayOf,
 	parseAsInteger,
@@ -40,6 +39,8 @@ import {
 import * as React from "react";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/confirmation-modal";
+import { LocationBadge } from "@/components/organization/location-badge";
+import { TrainingSessionStatusBadge } from "@/components/organization/training-session-status-badge";
 import { TrainingSessionsBulkActions } from "@/components/organization/training-sessions-bulk-actions";
 import { TrainingSessionsModal } from "@/components/organization/training-sessions-modal";
 import { Badge } from "@/components/ui/badge";
@@ -119,6 +120,7 @@ interface TrainingSession {
 	location: {
 		id: string;
 		name: string;
+		color: string | null;
 	} | null;
 	athleteGroup: {
 		id: string;
@@ -130,13 +132,6 @@ interface TrainingSession {
 	createdAt: Date;
 }
 
-const statusColors: Record<string, string> = {
-	pending: "bg-yellow-100 dark:bg-yellow-900",
-	confirmed: "bg-blue-100 dark:bg-blue-900",
-	completed: "bg-green-100 dark:bg-green-900",
-	cancelled: "bg-gray-100 dark:bg-gray-800",
-};
-
 const paymentStatusColors: Record<string, string> = {
 	paid: "bg-green-100 dark:bg-green-900",
 	partial: "bg-yellow-100 dark:bg-yellow-900",
@@ -144,7 +139,14 @@ const paymentStatusColors: Record<string, string> = {
 	cancelled: "bg-gray-100 dark:bg-gray-800",
 };
 
-export function TrainingSessionsTable(): React.JSX.Element {
+type TrainingSessionsTableProps = {
+	toolbarActions?: React.ReactNode;
+};
+
+export function TrainingSessionsTable({
+	toolbarActions,
+}: TrainingSessionsTableProps): React.JSX.Element {
+	const t = useTranslations("training");
 	const [rowSelection, setRowSelection] = React.useState({});
 
 	const [searchQuery, setSearchQuery] = useQueryState(
@@ -343,22 +345,22 @@ export function TrainingSessionsTable(): React.JSX.Element {
 	const createSessionMutation =
 		trpc.organization.trainingSession.create.useMutation({
 			onSuccess: () => {
-				toast.success("Session duplicated successfully");
+				toast.success(t("success.duplicated"));
 				utils.organization.trainingSession.list.invalidate();
 			},
 			onError: (error) => {
-				toast.error(error.message || "Failed to duplicate session");
+				toast.error(error.message || t("error.duplicateFailed"));
 			},
 		});
 
 	const deleteSessionMutation =
 		trpc.organization.trainingSession.delete.useMutation({
 			onSuccess: () => {
-				toast.success("Session deleted successfully");
+				toast.success(t("success.deleted"));
 				utils.organization.trainingSession.list.invalidate();
 			},
 			onError: (error) => {
-				toast.error(error.message || "Failed to delete session");
+				toast.error(error.message || t("error.deleteFailed"));
 			},
 		});
 
@@ -403,7 +405,7 @@ export function TrainingSessionsTable(): React.JSX.Element {
 		{
 			accessorKey: "title",
 			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Title" />
+				<SortableColumnHeader column={column} title={t("table.title")} />
 			),
 			cell: ({ row }) => (
 				<div className="flex items-center gap-2">
@@ -419,7 +421,7 @@ export function TrainingSessionsTable(): React.JSX.Element {
 							<TooltipTrigger>
 								<RepeatIcon className="size-4 text-muted-foreground" />
 							</TooltipTrigger>
-							<TooltipContent>Recurring session</TooltipContent>
+							<TooltipContent>{t("table.recurringSession")}</TooltipContent>
 						</Tooltip>
 					)}
 				</div>
@@ -428,7 +430,7 @@ export function TrainingSessionsTable(): React.JSX.Element {
 		{
 			accessorKey: "startTime",
 			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Date & Time" />
+				<SortableColumnHeader column={column} title={t("table.dateAndTime")} />
 			),
 			cell: ({ row }) => (
 				<div className="flex flex-col gap-0.5">
@@ -448,22 +450,21 @@ export function TrainingSessionsTable(): React.JSX.Element {
 		},
 		{
 			accessorKey: "location",
-			header: "Location",
+			header: t("table.location"),
 			cell: ({ row }) =>
 				row.original.location ? (
-					<div className="flex items-center gap-1.5 text-foreground/80">
-						<MapPinIcon className="size-4" />
-						<span className="max-w-[120px] truncate">
-							{row.original.location.name}
-						</span>
-					</div>
+					<LocationBadge
+						locationId={row.original.location.id}
+						name={row.original.location.name}
+						color={row.original.location.color}
+					/>
 				) : (
 					<span className="text-muted-foreground">-</span>
 				),
 		},
 		{
 			accessorKey: "coaches",
-			header: "Coaches",
+			header: t("table.coaches"),
 			cell: ({ row }) => {
 				const coaches = row.original.coaches;
 				if (coaches.length === 0) return "-";
@@ -492,27 +493,39 @@ export function TrainingSessionsTable(): React.JSX.Element {
 		},
 		{
 			accessorKey: "participants",
-			header: "Participants",
+			header: t("table.participants"),
 			cell: ({ row }) => {
 				const group = row.original.athleteGroup;
-				const athletes = row.original.athletes;
+				const athletesList = row.original.athletes;
 
 				if (group) {
 					return (
 						<div className="flex items-center gap-1.5 text-foreground/80">
-							<UsersIcon className="size-4" />
-							<span className="max-w-[100px] truncate">{group.name}</span>
+							<UsersIcon className="size-4 shrink-0" />
+							<span className="max-w-[140px] truncate">{group.name}</span>
 						</div>
 					);
 				}
 
-				if (athletes.length > 0) {
+				if (athletesList.length > 0) {
+					const first = athletesList[0]?.athlete;
+					const remaining = athletesList.length - 1;
+
 					return (
-						<div className="flex items-center gap-1.5 text-foreground/80">
-							<UsersIcon className="size-4" />
-							<span>
-								{athletes.length} athlete{athletes.length > 1 ? "s" : ""}
+						<div className="flex items-center gap-1.5">
+							<UserAvatar
+								className="size-6"
+								name={first?.user?.name ?? ""}
+								src={first?.user?.image ?? undefined}
+							/>
+							<span className="max-w-[100px] truncate text-foreground/80">
+								{first?.user?.name ?? "Unknown"}
 							</span>
+							{remaining > 0 && (
+								<Badge variant="secondary" className="text-xs">
+									+{remaining}
+								</Badge>
+							)}
 						</div>
 					);
 				}
@@ -523,30 +536,22 @@ export function TrainingSessionsTable(): React.JSX.Element {
 		{
 			accessorKey: "status",
 			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Status" />
+				<SortableColumnHeader column={column} title={t("table.status")} />
 			),
 			cell: ({ row }) => (
-				<Badge
-					className={cn(
-						"border-none px-2 py-0.5 font-medium text-foreground text-xs shadow-none",
-						statusColors[row.original.status] || "bg-gray-100 dark:bg-gray-800",
-					)}
-					variant="outline"
-				>
-					{capitalize(row.original.status)}
-				</Badge>
+				<TrainingSessionStatusBadge status={row.original.status} />
 			),
 		},
 		{
 			id: "payment",
-			header: "Payment",
+			header: t("table.payment"),
 			cell: ({ row }) => {
 				const payments = row.original.payments;
 				if (payments.length === 0) {
 					return (
 						<div className="flex items-center gap-1.5 text-muted-foreground">
 							<BanknoteIcon className="size-4" />
-							<span className="text-xs">No payment</span>
+							<span className="text-xs">{t("table.noPayment")}</span>
 						</div>
 					);
 				}
@@ -595,7 +600,7 @@ export function TrainingSessionsTable(): React.JSX.Element {
 								variant="ghost"
 							>
 								<MoreHorizontalIcon className="shrink-0" />
-								<span className="sr-only">Open menu</span>
+								<span className="sr-only">{t("table.openMenu")}</span>
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
@@ -604,7 +609,7 @@ export function TrainingSessionsTable(): React.JSX.Element {
 									href={`/dashboard/organization/training-sessions/${row.original.id}`}
 								>
 									<EyeIcon className="mr-2 size-4" />
-									View
+									{t("view")}
 								</Link>
 							</DropdownMenuItem>
 							<DropdownMenuItem
@@ -615,23 +620,22 @@ export function TrainingSessionsTable(): React.JSX.Element {
 								}}
 							>
 								<EditIcon className="mr-2 size-4" />
-								Edit
+								{t("edit")}
 							</DropdownMenuItem>
 							<DropdownMenuItem
 								onClick={() => handleDuplicateSession(row.original)}
 								disabled={createSessionMutation.isPending}
 							>
 								<CopyIcon className="mr-2 size-4" />
-								Duplicate
+								{t("table.duplicate")}
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 							<DropdownMenuItem
 								onClick={() => {
 									NiceModal.show(ConfirmationModal, {
-										title: "Delete session?",
-										message:
-											"Are you sure you want to delete this session? This action cannot be undone.",
-										confirmLabel: "Delete",
+										title: t("table.deleteConfirmTitle"),
+										message: t("table.deleteConfirmMessage"),
+										confirmLabel: t("delete"),
 										destructive: true,
 										onConfirm: () =>
 											deleteSessionMutation.mutate({ id: row.original.id }),
@@ -640,7 +644,7 @@ export function TrainingSessionsTable(): React.JSX.Element {
 								variant="destructive"
 							>
 								<Trash2Icon className="mr-2 size-4" />
-								Delete
+								{t("delete")}
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
@@ -652,17 +656,17 @@ export function TrainingSessionsTable(): React.JSX.Element {
 	const sessionFilters: FilterConfig[] = [
 		{
 			key: "period",
-			title: "Period",
+			title: t("table.period"),
 			options: [
-				{ value: "day", label: "Today" },
-				{ value: "week", label: "This Week" },
-				{ value: "month", label: "This Month" },
-				{ value: "all", label: "All Time" },
+				{ value: "day", label: t("table.today") },
+				{ value: "week", label: t("table.thisWeek") },
+				{ value: "month", label: t("table.thisMonth") },
+				{ value: "all", label: t("table.allTime") },
 			],
 		},
 		{
 			key: "status",
-			title: "Status",
+			title: t("table.status"),
 			options: TrainingSessionStatuses.map((status) => ({
 				value: status,
 				label: capitalize(status),
@@ -670,7 +674,7 @@ export function TrainingSessionsTable(): React.JSX.Element {
 		},
 		{
 			key: "locationId",
-			title: "Location",
+			title: t("table.location"),
 			options: locations.map((loc) => ({
 				value: loc.id,
 				label: loc.name,
@@ -678,7 +682,7 @@ export function TrainingSessionsTable(): React.JSX.Element {
 		},
 		{
 			key: "coachId",
-			title: "Coach",
+			title: t("table.coach"),
 			options: coaches.map((coach) => ({
 				value: coach.id,
 				label: coach.user?.name ?? "Unknown",
@@ -686,7 +690,7 @@ export function TrainingSessionsTable(): React.JSX.Element {
 		},
 		{
 			key: "athleteId",
-			title: "Athlete",
+			title: t("table.athlete"),
 			options: athletes.map((athlete) => ({
 				value: athlete.id,
 				label: athlete.user?.name ?? "Unknown",
@@ -699,7 +703,7 @@ export function TrainingSessionsTable(): React.JSX.Element {
 			columnFilters={columnFilters}
 			columns={columns}
 			data={(data?.sessions as TrainingSession[]) || []}
-			emptyMessage="No training sessions found."
+			emptyMessage={t("table.empty")}
 			enableFilters
 			enablePagination
 			enableRowSelection
@@ -718,16 +722,11 @@ export function TrainingSessionsTable(): React.JSX.Element {
 				<TrainingSessionsBulkActions table={table} />
 			)}
 			rowSelection={rowSelection}
-			searchPlaceholder="Search sessions..."
+			searchPlaceholder={t("search")}
 			searchQuery={searchQuery || ""}
 			defaultSorting={DEFAULT_SORTING}
 			sorting={sorting}
-			toolbarActions={
-				<Button onClick={() => NiceModal.show(TrainingSessionsModal)} size="sm">
-					<PlusIcon className="size-4 shrink-0" />
-					Add Session
-				</Button>
-			}
+			toolbarActions={toolbarActions}
 			totalCount={data?.total ?? 0}
 		/>
 	);

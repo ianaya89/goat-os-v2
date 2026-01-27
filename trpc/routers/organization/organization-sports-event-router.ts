@@ -190,7 +190,7 @@ export const organizationSportsEventRouter = createTRPCRouter({
 
 			const categories = await db.query.ageCategoryTable.findMany({
 				where: and(...conditions),
-				orderBy: asc(ageCategoryTable.sortOrder),
+				orderBy: asc(ageCategoryTable.displayName),
 			});
 
 			return categories;
