@@ -70,11 +70,11 @@ export function Header() {
 
 	return (
 		<header
-			className="sticky top-0 z-50 bg-marketing-bg/80 backdrop-blur-md"
+			className="sticky top-0 z-50 bg-marketing-bg/90 backdrop-blur-lg border-b border-marketing-border/50 shadow-sm"
 			id="navbar"
 		>
 			<nav>
-				<div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-8 px-6 lg:px-10">
+				<div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-8 px-6 lg:px-10">
 					{/* Logo - Left */}
 					<div className="flex items-center">
 						<Link href="/" className="inline-flex items-stretch">
@@ -149,19 +149,21 @@ export function Header() {
 								<Link
 									href="/dashboard"
 									className={cn(
-										"inline-flex shrink-0 items-center justify-center gap-1 rounded-full px-3 py-1 text-sm font-medium",
-										"bg-marketing-accent text-marketing-accent-fg hover:bg-marketing-accent-hover transition-colors",
+										"inline-flex shrink-0 items-center justify-center gap-2 rounded-full px-5 py-2 text-sm font-semibold",
+										"bg-[#6b8fa3] text-white hover:bg-[#5a7a8a] transition-all",
+										"shadow-md hover:shadow-lg hover:scale-105",
 									)}
 								>
-									Panel
+									Acceder
 								</Link>
 							) : loaded ? (
-								<div className="flex items-center gap-5">
+								<div className="flex items-center gap-4">
 									<Link
 										href="/auth/sign-in"
 										className={cn(
-											"inline-flex shrink-0 items-center justify-center rounded-full px-3 py-1 text-sm font-medium",
+											"inline-flex shrink-0 items-center justify-center rounded-full px-4 py-2 text-sm font-medium",
 											"text-marketing-fg hover:bg-marketing-card-hover transition-colors",
+											"border border-transparent hover:border-marketing-border",
 										)}
 									>
 										Iniciar Sesion
@@ -169,8 +171,9 @@ export function Header() {
 									<Link
 										href="/athlete-signup"
 										className={cn(
-											"inline-flex shrink-0 items-center justify-center gap-1 rounded-full px-3 py-1 text-sm font-medium",
-											"bg-marketing-accent text-marketing-accent-fg hover:bg-marketing-accent-hover transition-colors",
+											"inline-flex shrink-0 items-center justify-center gap-2 rounded-full px-5 py-2 text-sm font-semibold",
+											"bg-[#6b8fa3] text-white hover:bg-[#5a7a8a] transition-all",
+											"shadow-md hover:shadow-lg hover:scale-105",
 										)}
 									>
 										Registrarme
@@ -202,8 +205,8 @@ export function Header() {
 				{/* Mobile Menu */}
 				{menuOpen && (
 					<div
-						className="fixed inset-x-0 top-14 z-50 overflow-y-auto border-t bg-white px-6 py-6 dark:bg-neutral-950 lg:hidden"
-						style={{ height: "calc(100dvh - 3.5rem)" }}
+						className="fixed inset-x-0 top-16 z-50 overflow-y-auto border-t bg-white px-6 py-6 dark:bg-neutral-950 lg:hidden"
+						style={{ height: "calc(100dvh - 4rem)" }}
 					>
 						<div className="flex flex-col gap-8 pb-20">
 							{/* Mobile Auth */}
@@ -212,9 +215,9 @@ export function Header() {
 									<Link
 										href="/dashboard"
 										onClick={() => setMenuOpen(false)}
-										className="w-full rounded-full bg-marketing-accent py-4 text-center text-xl font-medium text-marketing-accent-fg transition-colors hover:bg-marketing-accent-hover"
+										className="w-full rounded-full bg-[#6b8fa3] py-4 text-center text-xl font-semibold text-white transition-all hover:bg-[#5a7a8a] shadow-md"
 									>
-										Panel
+										Acceder
 									</Link>
 								) : loaded ? (
 									<div className="flex flex-col gap-4">
@@ -228,7 +231,7 @@ export function Header() {
 										<Link
 											href="/athlete-signup"
 											onClick={() => setMenuOpen(false)}
-											className="w-full rounded-full bg-marketing-accent py-4 text-center text-xl font-medium text-marketing-accent-fg transition-colors hover:bg-marketing-accent-hover"
+											className="w-full rounded-full bg-[#6b8fa3] py-4 text-center text-xl font-semibold text-white transition-all hover:bg-[#5a7a8a] shadow-md"
 										>
 											Registrarme
 										</Link>
