@@ -1,6 +1,7 @@
 "use client";
 
 import { FileImage, Loader2, Trash2, Upload } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ export function TrainingPaymentReceiptUpload({
 	hasReceipt,
 	onUploadComplete,
 }: TrainingPaymentReceiptUploadProps): React.JSX.Element {
+	const t = useTranslations("finance.payments.receipt");
 	const [isUploading, setIsUploading] = React.useState(false);
 	const [isDragging, setIsDragging] = React.useState(false);
 	const [previewOpen, setPreviewOpen] = React.useState(false);
@@ -51,13 +53,13 @@ export function TrainingPaymentReceiptUpload({
 	const handleFileSelect = async (file: File): Promise<void> => {
 		// Validate file type
 		if (!ALLOWED_TYPES.includes(file.type as (typeof ALLOWED_TYPES)[number])) {
-			toast.error("Tipo de archivo no permitido. Use JPG, PNG o PDF.");
+			toast.error(t("invalidType"));
 			return;
 		}
 
 		// Validate file size
 		if (file.size > MAX_FILE_SIZE) {
-			toast.error("El archivo es muy grande. Máximo 10MB.");
+			toast.error(t("fileTooLarge"));
 			return;
 		}
 
@@ -81,7 +83,7 @@ export function TrainingPaymentReceiptUpload({
 			});
 
 			if (!uploadResponse.ok) {
-				throw new Error("Error al subir el archivo");
+				throw new Error(t("uploadError"));
 			}
 
 			// Update payment with receipt key
@@ -90,12 +92,12 @@ export function TrainingPaymentReceiptUpload({
 				receiptImageKey: key,
 			});
 
-			toast.success("Comprobante subido correctamente");
+			toast.success(t("uploadSuccess"));
 			utils.organization.trainingPayment.list.invalidate();
 			onUploadComplete?.();
 		} catch (error) {
 			console.error("Upload error:", error);
-			toast.error("Error al subir el comprobante");
+			toast.error(t("uploadFailed"));
 		} finally {
 			setIsUploading(false);
 		}
@@ -104,11 +106,11 @@ export function TrainingPaymentReceiptUpload({
 	const handleDelete = async (): Promise<void> => {
 		try {
 			await deleteReceiptMutation.mutateAsync({ paymentId });
-			toast.success("Comprobante eliminado");
+			toast.success(t("deleted"));
 			utils.organization.trainingPayment.list.invalidate();
 			onUploadComplete?.();
 		} catch {
-			toast.error("Error al eliminar el comprobante");
+			toast.error(t("deleteFailed"));
 		}
 	};
 
@@ -120,7 +122,7 @@ export function TrainingPaymentReceiptUpload({
 				setPreviewOpen(true);
 			}
 		} catch {
-			toast.error("Error al cargar el comprobante");
+			toast.error(t("loadFailed"));
 		}
 	};
 
@@ -164,7 +166,7 @@ export function TrainingPaymentReceiptUpload({
 						className="h-8"
 					>
 						<FileImage className="size-4 mr-1" />
-						Ver
+						{t("view")}
 					</Button>
 					<Button
 						variant="outline"
@@ -184,10 +186,8 @@ export function TrainingPaymentReceiptUpload({
 				<Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
 					<DialogContent className="max-w-3xl">
 						<DialogHeader>
-							<DialogTitle>Comprobante de Pago</DialogTitle>
-							<DialogDescription>
-								Vista previa del comprobante subido
-							</DialogDescription>
+							<DialogTitle>{t("dialogTitle")}</DialogTitle>
+							<DialogDescription>{t("dialogDescription")}</DialogDescription>
 						</DialogHeader>
 						{previewUrl && (
 							<div className="mt-4">
@@ -195,12 +195,12 @@ export function TrainingPaymentReceiptUpload({
 									<iframe
 										src={previewUrl}
 										className="w-full h-[500px] border rounded"
-										title="Comprobante PDF"
+										title={t("pdfTitle")}
 									/>
 								) : (
 									<img
 										src={previewUrl}
-										alt="Comprobante de pago"
+										alt={t("imageAlt")}
 										className="max-w-full max-h-[500px] mx-auto rounded"
 									/>
 								)}
@@ -245,12 +245,12 @@ export function TrainingPaymentReceiptUpload({
 				{isUploading ? (
 					<>
 						<Loader2 className="size-4 animate-spin" />
-						<span>Subiendo...</span>
+						<span>{t("uploading")}</span>
 					</>
 				) : (
 					<>
 						<Upload className="size-4" />
-						<span>Subir comprobante</span>
+						<span>{t("upload")}</span>
 					</>
 				)}
 			</div>

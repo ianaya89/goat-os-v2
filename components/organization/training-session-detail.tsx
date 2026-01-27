@@ -647,7 +647,7 @@ export function TrainingSessionDetail({
 						<SessionFeedbackView sessionId={sessionId} />
 					</TabsContent>
 					<TabsContent value="payments">
-						<SessionPaymentsView sessionId={sessionId} />
+						<SessionPaymentsView sessionId={sessionId} athletes={athletes} />
 					</TabsContent>
 				</Tabs>
 			)}
@@ -1007,7 +1007,13 @@ const paymentStatusColors: Record<string, string> = {
 };
 
 /** Payments view for a specific session */
-function SessionPaymentsView({ sessionId }: { sessionId: string }) {
+function SessionPaymentsView({
+	sessionId,
+	athletes,
+}: {
+	sessionId: string;
+	athletes: { id: string; name: string }[];
+}) {
 	const t = useTranslations("training");
 	const tp = useTranslations("finance.payments");
 	const utils = trpc.useUtils();
@@ -1108,6 +1114,8 @@ function SessionPaymentsView({ sessionId }: { sessionId: string }) {
 					onClick={() =>
 						NiceModal.show(PaymentsModal, {
 							payment: undefined,
+							fixedSessionId: sessionId,
+							fixedAthletes: athletes,
 						})
 					}
 				>
@@ -1235,6 +1243,7 @@ function SessionPaymentsView({ sessionId }: { sessionId: string }) {
 																notes: payment.notes,
 																receiptImageKey: payment.receiptImageKey,
 															},
+															fixedAthletes: athletes,
 														})
 													}
 												>

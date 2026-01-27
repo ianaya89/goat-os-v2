@@ -1,11 +1,11 @@
 "use client";
 
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { enUS, es } from "date-fns/locale";
 import { CalendarCheckIcon, UsersIcon } from "lucide-react";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import type * as React from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -20,6 +20,10 @@ import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
 export function SessionOccupancyCard(): React.JSX.Element {
+	const t = useTranslations("dashboard.sessionOccupancy");
+	const locale = useLocale();
+	const dateLocale = locale === "es" ? es : enUS;
+
 	const { data, isLoading } =
 		trpc.organization.dashboard.getSessionOccupancy.useQuery();
 
@@ -41,8 +45,8 @@ export function SessionOccupancyCard(): React.JSX.Element {
 		return (
 			<Card>
 				<CardHeader>
-					<CardTitle>Ocupacion de Sesiones</CardTitle>
-					<CardDescription>No hay datos disponibles</CardDescription>
+					<CardTitle>{t("title")}</CardTitle>
+					<CardDescription>{t("noData")}</CardDescription>
 				</CardHeader>
 			</Card>
 		);
@@ -67,9 +71,9 @@ export function SessionOccupancyCard(): React.JSX.Element {
 					<div>
 						<CardTitle className="flex items-center gap-2">
 							<CalendarCheckIcon className="size-5 text-indigo-500" />
-							Ocupacion de Sesiones
+							{t("title")}
 						</CardTitle>
-						<CardDescription>Esta semana</CardDescription>
+						<CardDescription>{t("thisWeek")}</CardDescription>
 					</div>
 					<div
 						className={cn(
@@ -85,7 +89,9 @@ export function SessionOccupancyCard(): React.JSX.Element {
 						>
 							{data.averageOccupancy}%
 						</span>
-						<span className="text-xs text-muted-foreground">Promedio</span>
+						<span className="text-xs text-muted-foreground">
+							{t("average")}
+						</span>
 					</div>
 				</div>
 			</CardHeader>
@@ -96,15 +102,17 @@ export function SessionOccupancyCard(): React.JSX.Element {
 						<div className="grid grid-cols-3 gap-2 text-center">
 							<div className="rounded-lg bg-muted/50 p-2">
 								<p className="text-lg font-bold">{data.totalSessions}</p>
-								<p className="text-xs text-muted-foreground">Sesiones</p>
+								<p className="text-xs text-muted-foreground">{t("sessions")}</p>
 							</div>
 							<div className="rounded-lg bg-muted/50 p-2">
 								<p className="text-lg font-bold">{data.totalAttendance}</p>
-								<p className="text-xs text-muted-foreground">Asistentes</p>
+								<p className="text-xs text-muted-foreground">
+									{t("attendees")}
+								</p>
 							</div>
 							<div className="rounded-lg bg-muted/50 p-2">
 								<p className="text-lg font-bold">{data.totalCapacity}</p>
-								<p className="text-xs text-muted-foreground">Capacidad</p>
+								<p className="text-xs text-muted-foreground">{t("capacity")}</p>
 							</div>
 						</div>
 
@@ -112,7 +120,7 @@ export function SessionOccupancyCard(): React.JSX.Element {
 						{data.sessions.length > 0 && (
 							<div className="space-y-2">
 								<h4 className="text-xs font-medium text-muted-foreground">
-									Sesiones de esta semana
+									{t("weekSessions")}
 								</h4>
 								{data.sessions.map((session) => (
 									<div
@@ -139,7 +147,7 @@ export function SessionOccupancyCard(): React.JSX.Element {
 												</p>
 												<p className="text-xs text-muted-foreground">
 													{format(new Date(session.startTime), "EEE d, HH:mm", {
-														locale: es,
+														locale: dateLocale,
 													})}
 												</p>
 											</div>
@@ -160,19 +168,17 @@ export function SessionOccupancyCard(): React.JSX.Element {
 
 						<Button variant="outline" size="sm" asChild className="w-full">
 							<Link href="/dashboard/organization/training-sessions">
-								Ver todas las sesiones
+								{t("viewAllSessions")}
 							</Link>
 						</Button>
 					</div>
 				) : (
 					<div className="flex flex-col items-center py-6 text-center">
 						<CalendarCheckIcon className="size-10 text-muted-foreground/50 mb-2" />
-						<p className="text-muted-foreground text-sm">
-							No hay sesiones esta semana
-						</p>
+						<p className="text-muted-foreground text-sm">{t("noSessions")}</p>
 						<Button variant="link" size="sm" asChild className="mt-2">
 							<Link href="/dashboard/organization/training-sessions">
-								Ver calendario
+								{t("viewCalendar")}
 							</Link>
 						</Button>
 					</div>

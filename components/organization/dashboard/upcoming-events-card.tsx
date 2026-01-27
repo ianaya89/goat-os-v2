@@ -1,9 +1,10 @@
 "use client";
 
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { enUS, es } from "date-fns/locale";
 import { CalendarIcon, MapPinIcon, TrophyIcon, UsersIcon } from "lucide-react";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import type * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,16 +20,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
-const eventTypeLabels: Record<string, string> = {
-	competition: "Competencia",
-	tournament: "Torneo",
-	exhibition: "Exhibicion",
-	training_camp: "Campus",
-	workshop: "Taller",
-	social: "Social",
-	other: "Otro",
-};
-
 const statusColors: Record<string, string> = {
 	draft: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
 	published: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
@@ -38,6 +29,10 @@ const statusColors: Record<string, string> = {
 };
 
 export function UpcomingEventsCard(): React.JSX.Element {
+	const t = useTranslations("dashboard.upcomingEvents");
+	const locale = useLocale();
+	const dateLocale = locale === "es" ? es : enUS;
+
 	const { data, isLoading } =
 		trpc.organization.dashboard.getUpcomingEvents.useQuery();
 
@@ -59,12 +54,24 @@ export function UpcomingEventsCard(): React.JSX.Element {
 		return (
 			<Card>
 				<CardHeader>
-					<CardTitle>Proximos Eventos</CardTitle>
-					<CardDescription>No hay datos disponibles</CardDescription>
+					<CardTitle>{t("title")}</CardTitle>
+					<CardDescription>{t("noData")}</CardDescription>
 				</CardHeader>
 			</Card>
 		);
 	}
+
+	const getEventTypeLabel = (eventType: string) => {
+		const key = `types.${eventType}` as
+			| "types.competition"
+			| "types.tournament"
+			| "types.exhibition"
+			| "types.training_camp"
+			| "types.workshop"
+			| "types.social"
+			| "types.other";
+		return t(key);
+	};
 
 	return (
 		<Card>
@@ -73,12 +80,14 @@ export function UpcomingEventsCard(): React.JSX.Element {
 					<div>
 						<CardTitle className="flex items-center gap-2">
 							<TrophyIcon className="size-5 text-yellow-500" />
-							Proximos Eventos
+							{t("title")}
 						</CardTitle>
-						<CardDescription>Eventos en los proximos 30 dias</CardDescription>
+						<CardDescription>{t("description")}</CardDescription>
 					</div>
 					{data.totalCount > 0 && (
-						<Badge variant="secondary">{data.totalCount} eventos</Badge>
+						<Badge variant="secondary">
+							{t("eventsCount", { count: data.totalCount })}
+						</Badge>
 					)}
 				</div>
 			</CardHeader>
@@ -106,7 +115,7 @@ export function UpcomingEventsCard(): React.JSX.Element {
 												<CalendarIcon className="size-3" />
 												<span>
 													{format(new Date(event.startDate), "d MMM", {
-														locale: es,
+														locale: dateLocale,
 													})}
 												</span>
 												{event.location && (
@@ -127,7 +136,7 @@ export function UpcomingEventsCard(): React.JSX.Element {
 												statusColors[event.status] ?? "",
 											)}
 										>
-											{eventTypeLabels[event.eventType] ?? event.eventType}
+											{getEventTypeLabel(event.eventType)}
 										</Badge>
 									</div>
 
@@ -152,7 +161,7 @@ export function UpcomingEventsCard(): React.JSX.Element {
 						{data.totalCount > 5 && (
 							<Button variant="ghost" size="sm" asChild className="w-full">
 								<Link href="/dashboard/organization/events">
-									Ver todos ({data.totalCount} eventos)
+									{t("viewAll", { count: data.totalCount })}
 								</Link>
 							</Button>
 						)}
@@ -160,12 +169,10 @@ export function UpcomingEventsCard(): React.JSX.Element {
 				) : (
 					<div className="flex flex-col items-center py-6 text-center">
 						<TrophyIcon className="size-10 text-muted-foreground/50 mb-2" />
-						<p className="text-muted-foreground text-sm">
-							No hay eventos programados
-						</p>
+						<p className="text-muted-foreground text-sm">{t("noEvents")}</p>
 						<Button variant="link" size="sm" asChild className="mt-2">
 							<Link href="/dashboard/organization/events/new">
-								Crear evento
+								{t("createEvent")}
 							</Link>
 						</Button>
 					</div>

@@ -14,17 +14,6 @@
 			"overdue": "Vencidos",
 			"cancelled": "Cancelados"
 		},
-		"table": {
-			"athlete": "Atleta",
-			"concept": "Concepto",
-			"amount": "Monto",
-			"dueDate": "Fecha de vencimiento",
-			"paidDate": "Fecha de pago",
-			"status": "Estado",
-			"method": "Método",
-			"date": "Fecha",
-			"actions": "Acciones"
-		},
 		"form": {
 			"athlete": "Atleta",
 			"athleteOptional": "Atleta (Opcional)",
@@ -50,7 +39,13 @@
 			"paymentDate": "Fecha de Pago",
 			"receiptNumber": "Número de Recibo",
 			"receiptPlaceholder": "Recibo #",
-			"receiptUpload": "Comprobante de Pago"
+			"receiptUpload": "Comprobante de Pago",
+			"searchSession": "Buscar sesión...",
+			"typeToSearchSession": "Escribe para buscar sesiones",
+			"noSessionsFound": "No se encontraron sesiones",
+			"searchAthlete": "Buscar atleta...",
+			"typeToSearchAthlete": "Escribe para buscar atletas",
+			"noAthletesFound": "No se encontraron atletas"
 		},
 		"methods": {
 			"cash": "Efectivo",
@@ -76,12 +71,90 @@
 			"editSubtitle": "Actualiza la información del pago.",
 			"cancel": "Cancelar",
 			"create": "Registrar Pago",
-			"update": "Actualizar Pago"
+			"update": "Actualizar Pago",
+			"createdSuccess": "Pago registrado correctamente",
+			"attachReceipt": "¿Deseas adjuntar un comprobante de pago?",
+			"done": "Listo"
+		},
+		"table": {
+			"athlete": "Atleta",
+			"concept": "Concepto",
+			"description": "Descripción",
+			"amount": "Monto",
+			"dueDate": "Fecha de vencimiento",
+			"paidDate": "Fecha de pago",
+			"paidLabel": "Pagado:",
+			"status": "Estado",
+			"method": "Método",
+			"date": "Fecha",
+			"actions": "Acciones",
+			"noPayments": "No se encontraron pagos.",
+			"defaultDescription": "Pago",
+			"unknown": "Desconocido",
+			"openMenu": "Abrir menú",
+			"session": "Sesión"
 		},
 		"deleteConfirm": {
 			"title": "¿Eliminar pago?",
 			"message": "¿Estás seguro de que deseas eliminar este pago? Esta acción no se puede deshacer.",
 			"confirm": "Eliminar"
+		},
+		"bulk": {
+			"noSelected": "No hay pagos seleccionados.",
+			"deleteTitle": "¿Eliminar pagos?",
+			"deleteMessage": "¿Estás seguro de que deseas eliminar {count, plural, one {# pago} other {# pagos}}? Esta acción no se puede deshacer.",
+			"deleted": "{count, plural, one {# pago eliminado} other {# pagos eliminados}}.",
+			"updated": "{count, plural, one {# pago actualizado} other {# pagos actualizados}} a {status}.",
+			"deleteFailed": "No se pudieron eliminar los pagos.",
+			"updateFailed": "No se pudieron actualizar los pagos.",
+			"changeStatus": "Cambiar estado",
+			"setTo": "Marcar como {status}"
+		},
+		"receipt": {
+			"view": "Ver",
+			"manage": "Comprobante",
+			"dialogTitle": "Comprobante de Pago",
+			"dialogDescription": "Gestiona el comprobante de este pago.",
+			"pdfTitle": "Comprobante PDF",
+			"imageAlt": "Comprobante de pago",
+			"uploading": "Subiendo...",
+			"upload": "Subir comprobante",
+			"invalidType": "Tipo de archivo no permitido. Use JPG, PNG o PDF.",
+			"fileTooLarge": "El archivo es muy grande. Máximo 10MB.",
+			"uploadError": "Error al subir el archivo",
+			"uploadFailed": "Error al subir el comprobante",
+			"uploadSuccess": "Comprobante subido correctamente",
+			"uploaded": "Comprobante adjunto",
+			"deleted": "Comprobante eliminado",
+			"deleteFailed": "Error al eliminar el comprobante",
+			"loadFailed": "Error al cargar el comprobante",
+			"noReceipt": "Sin comprobante",
+			"hasReceipt": "Comprobante adjunto",
+			"close": "Cerrar",
+			"deleteConfirm": "¿Estás seguro de que deseas eliminar este comprobante?"
+		},
+		"myPayments": {
+			"summary": {
+				"total": "Total",
+				"paid": "Pagado",
+				"pending": "Pendiente",
+				"paymentsCount": "{count, plural, one {# pago} other {# pagos}}",
+				"completedCount": "{count, plural, one {# completado} other {# completados}}",
+				"pendingCount": "{count, plural, one {# pendiente} other {# pendientes}}"
+			},
+			"history": "Historial de Pagos",
+			"table": {
+				"date": "Fecha",
+				"description": "Descripción",
+				"session": "Sesión",
+				"amount": "Monto",
+				"status": "Estado",
+				"method": "Método"
+			},
+			"empty": {
+				"title": "Sin pagos registrados",
+				"description": "Aún no tienes pagos registrados en esta organización."
+			}
 		},
 		"success": {
 			"created": "Pago registrado correctamente.",

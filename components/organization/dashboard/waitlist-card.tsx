@@ -2,6 +2,7 @@
 
 import { ClockIcon, UsersIcon } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import type * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/trpc/client";
 
 export function WaitlistCard(): React.JSX.Element {
+	const t = useTranslations("dashboard.waitlist");
 	const { data, isLoading } =
 		trpc.organization.dashboard.getWaitlistSummary.useQuery();
 
@@ -38,8 +40,8 @@ export function WaitlistCard(): React.JSX.Element {
 		return (
 			<Card>
 				<CardHeader>
-					<CardTitle>Lista de Espera</CardTitle>
-					<CardDescription>No hay datos disponibles</CardDescription>
+					<CardTitle>{t("title")}</CardTitle>
+					<CardDescription>{t("noData")}</CardDescription>
 				</CardHeader>
 			</Card>
 		);
@@ -55,9 +57,9 @@ export function WaitlistCard(): React.JSX.Element {
 					<div>
 						<CardTitle className="flex items-center gap-2">
 							<ClockIcon className="size-5 text-violet-500" />
-							Lista de Espera
+							{t("title")}
 						</CardTitle>
-						<CardDescription>Personas esperando por grupo</CardDescription>
+						<CardDescription>{t("description")}</CardDescription>
 					</div>
 					{data.totalCount > 0 && (
 						<Badge variant="secondary" className="flex items-center gap-1">
@@ -76,7 +78,7 @@ export function WaitlistCard(): React.JSX.Element {
 								{data.totalCount}
 							</p>
 							<p className="text-sm text-muted-foreground">
-								personas en espera
+								{t("peopleWaiting")}
 							</p>
 						</div>
 
@@ -84,7 +86,7 @@ export function WaitlistCard(): React.JSX.Element {
 						{data.byGroup.length > 0 && (
 							<div className="space-y-3">
 								<h4 className="text-xs font-medium text-muted-foreground">
-									Por grupo
+									{t("byGroup")}
 								</h4>
 								{data.byGroup.slice(0, 5).map((group) => (
 									<div
@@ -105,19 +107,15 @@ export function WaitlistCard(): React.JSX.Element {
 						)}
 
 						<Button variant="outline" size="sm" asChild className="w-full">
-							<Link href="/dashboard/organization/waitlist">
-								Gestionar lista de espera
-							</Link>
+							<Link href="/dashboard/organization/waitlist">{t("manage")}</Link>
 						</Button>
 					</div>
 				) : (
 					<div className="flex flex-col items-center py-6 text-center">
 						<ClockIcon className="size-10 text-green-500/50 mb-2" />
-						<p className="text-muted-foreground text-sm">
-							No hay personas en espera
-						</p>
+						<p className="text-muted-foreground text-sm">{t("noPending")}</p>
 						<p className="text-xs text-muted-foreground mt-1">
-							Todos los grupos tienen disponibilidad
+							{t("allAvailable")}
 						</p>
 					</div>
 				)}

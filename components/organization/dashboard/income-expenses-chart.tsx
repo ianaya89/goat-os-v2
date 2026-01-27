@@ -1,8 +1,9 @@
 "use client";
 
 import { format, subMonths } from "date-fns";
-import { es } from "date-fns/locale";
+import { enUS, es } from "date-fns/locale";
 import { ArrowDownIcon, ArrowUpIcon, WalletIcon } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import type * as React from "react";
 import {
 	Area,
@@ -23,6 +24,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/trpc/client";
 
 export function IncomeExpensesChart(): React.JSX.Element {
+	const t = useTranslations("dashboard.incomeExpenses");
+	const locale = useLocale();
+	const dateLocale = locale === "es" ? es : enUS;
+
 	const sixMonthsAgo = subMonths(new Date(), 6);
 
 	const { data, isLoading, error } =
@@ -35,7 +40,7 @@ export function IncomeExpensesChart(): React.JSX.Element {
 		});
 
 	const formatAmount = (amount: number) => {
-		return new Intl.NumberFormat("es-AR", {
+		return new Intl.NumberFormat(locale === "es" ? "es-AR" : "en-US", {
 			style: "currency",
 			currency: "ARS",
 			notation: "compact",
@@ -48,16 +53,14 @@ export function IncomeExpensesChart(): React.JSX.Element {
 				<CardHeader>
 					<CardTitle className="flex items-center gap-2">
 						<WalletIcon className="size-5 text-emerald-500" />
-						Ingresos vs Gastos
+						{t("title")}
 					</CardTitle>
-					<CardDescription>Ultimos 6 meses</CardDescription>
+					<CardDescription>{t("last6Months")}</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<div className="flex flex-col items-center py-8 text-center">
 						<WalletIcon className="size-10 text-destructive/50 mb-2" />
-						<p className="text-destructive text-sm">
-							Error al cargar datos financieros
-						</p>
+						<p className="text-destructive text-sm">{t("errorLoading")}</p>
 					</div>
 				</CardContent>
 			</Card>
@@ -84,16 +87,14 @@ export function IncomeExpensesChart(): React.JSX.Element {
 				<CardHeader>
 					<CardTitle className="flex items-center gap-2">
 						<WalletIcon className="size-5 text-emerald-500" />
-						Ingresos vs Gastos
+						{t("title")}
 					</CardTitle>
-					<CardDescription>Ultimos 6 meses</CardDescription>
+					<CardDescription>{t("last6Months")}</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<div className="flex flex-col items-center py-8 text-center">
 						<WalletIcon className="size-10 text-muted-foreground/50 mb-2" />
-						<p className="text-muted-foreground text-sm">
-							No hay datos financieros
-						</p>
+						<p className="text-muted-foreground text-sm">{t("noData")}</p>
 					</div>
 				</CardContent>
 			</Card>
@@ -101,10 +102,10 @@ export function IncomeExpensesChart(): React.JSX.Element {
 	}
 
 	const chartData = data.map((d) => ({
-		month: format(new Date(d.period), "MMM", { locale: es }),
-		ingresos: d.revenue / 100,
-		gastos: d.expenses / 100,
-		neto: d.net / 100,
+		month: format(new Date(d.period), "MMM", { locale: dateLocale }),
+		income: d.revenue / 100,
+		expenses: d.expenses / 100,
+		net: d.net / 100,
 	}));
 
 	// Calculate totals
@@ -119,9 +120,9 @@ export function IncomeExpensesChart(): React.JSX.Element {
 					<div>
 						<CardTitle className="flex items-center gap-2">
 							<WalletIcon className="size-5 text-emerald-500" />
-							Ingresos vs Gastos
+							{t("title")}
 						</CardTitle>
-						<CardDescription>Comparativa mensual</CardDescription>
+						<CardDescription>{t("description")}</CardDescription>
 					</div>
 				</div>
 			</CardHeader>
@@ -131,7 +132,9 @@ export function IncomeExpensesChart(): React.JSX.Element {
 					<div className="rounded-lg bg-green-50 p-2 text-center dark:bg-green-950">
 						<div className="flex items-center justify-center gap-1">
 							<ArrowUpIcon className="size-3 text-green-600" />
-							<span className="text-xs text-muted-foreground">Ingresos</span>
+							<span className="text-xs text-muted-foreground">
+								{t("income")}
+							</span>
 						</div>
 						<p className="font-bold text-green-600 text-sm">
 							{formatAmount(totalRevenue)}
@@ -140,14 +143,16 @@ export function IncomeExpensesChart(): React.JSX.Element {
 					<div className="rounded-lg bg-red-50 p-2 text-center dark:bg-red-950">
 						<div className="flex items-center justify-center gap-1">
 							<ArrowDownIcon className="size-3 text-red-600" />
-							<span className="text-xs text-muted-foreground">Gastos</span>
+							<span className="text-xs text-muted-foreground">
+								{t("expenses")}
+							</span>
 						</div>
 						<p className="font-bold text-red-600 text-sm">
 							{formatAmount(totalExpenses)}
 						</p>
 					</div>
 					<div className="rounded-lg bg-blue-50 p-2 text-center dark:bg-blue-950">
-						<span className="text-xs text-muted-foreground">Neto</span>
+						<span className="text-xs text-muted-foreground">{t("net")}</span>
 						<p
 							className={`font-bold text-sm ${totalNet >= 0 ? "text-blue-600" : "text-red-600"}`}
 						>
@@ -160,11 +165,11 @@ export function IncomeExpensesChart(): React.JSX.Element {
 				<ResponsiveContainer width="100%" height={180}>
 					<AreaChart data={chartData}>
 						<defs>
-							<linearGradient id="colorIngresos" x1="0" y1="0" x2="0" y2="1">
+							<linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
 								<stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
 								<stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
 							</linearGradient>
-							<linearGradient id="colorGastos" x1="0" y1="0" x2="0" y2="1">
+							<linearGradient id="colorExpenses" x1="0" y1="0" x2="0" y2="1">
 								<stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
 								<stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
 							</linearGradient>
@@ -180,9 +185,9 @@ export function IncomeExpensesChart(): React.JSX.Element {
 							tickLine={false}
 							axisLine={false}
 							tickFormatter={(value) =>
-								new Intl.NumberFormat("es-AR", { notation: "compact" }).format(
-									value,
-								)
+								new Intl.NumberFormat(locale === "es" ? "es-AR" : "en-US", {
+									notation: "compact",
+								}).format(value)
 							}
 						/>
 						<Tooltip
@@ -195,13 +200,13 @@ export function IncomeExpensesChart(): React.JSX.Element {
 												{data.month}
 											</p>
 											<p className="text-xs text-green-600">
-												Ingresos: {formatAmount(data.ingresos * 100)}
+												{t("income")}: {formatAmount(data.income * 100)}
 											</p>
 											<p className="text-xs text-red-600">
-												Gastos: {formatAmount(data.gastos * 100)}
+												{t("expenses")}: {formatAmount(data.expenses * 100)}
 											</p>
 											<p className="text-xs text-blue-600 font-medium">
-												Neto: {formatAmount(data.neto * 100)}
+												{t("net")}: {formatAmount(data.net * 100)}
 											</p>
 										</div>
 									);
@@ -211,16 +216,16 @@ export function IncomeExpensesChart(): React.JSX.Element {
 						/>
 						<Area
 							type="monotone"
-							dataKey="ingresos"
+							dataKey="income"
 							stroke="#22c55e"
-							fill="url(#colorIngresos)"
+							fill="url(#colorIncome)"
 							strokeWidth={2}
 						/>
 						<Area
 							type="monotone"
-							dataKey="gastos"
+							dataKey="expenses"
 							stroke="#ef4444"
-							fill="url(#colorGastos)"
+							fill="url(#colorExpenses)"
 							strokeWidth={2}
 						/>
 					</AreaChart>

@@ -9,12 +9,16 @@ import type {
 import { format } from "date-fns";
 import {
 	BanknoteIcon,
+	CalendarIcon,
+	FileTextIcon,
 	MoreHorizontalIcon,
 	PencilIcon,
 	PlusIcon,
 	Trash2Icon,
 	UserIcon,
 } from "lucide-react";
+import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
 	parseAsArrayOf,
 	parseAsInteger,
@@ -25,6 +29,7 @@ import {
 import * as React from "react";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/confirmation-modal";
+import { PaymentReceiptModal } from "@/components/organization/payment-receipt-modal";
 import { PaymentsBulkActions } from "@/components/organization/payments-bulk-actions";
 import { PaymentsModal } from "@/components/organization/payments-modal";
 import { Badge } from "@/components/ui/badge";
@@ -49,7 +54,7 @@ import {
 	type TrainingPaymentStatus,
 	TrainingPaymentStatuses,
 } from "@/lib/db/schema/enums";
-import { capitalize, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { TrainingPaymentSortField } from "@/schemas/organization-training-payment-schemas";
 import { trpc } from "@/trpc/client";
 
@@ -69,6 +74,7 @@ interface TrainingPayment {
 	receiptNumber: string | null;
 	description: string | null;
 	notes: string | null;
+	receiptImageKey: string | null;
 	createdAt: Date;
 	session: {
 		id: string;
@@ -90,15 +96,16 @@ const statusColors: Record<string, string> = {
 	cancelled: "bg-gray-100 dark:bg-gray-800",
 };
 
-const methodLabels: Record<string, string> = {
-	cash: "Cash",
-	bank_transfer: "Bank Transfer",
-	mercado_pago: "Mercado Pago",
-	card: "Card",
-	other: "Other",
+const methodKeys: Record<string, string> = {
+	cash: "cash",
+	bank_transfer: "bankTransfer",
+	mercado_pago: "mercadoPago",
+	card: "card",
+	other: "other",
 };
 
 export function PaymentsTable(): React.JSX.Element {
+	const t = useTranslations("finance.payments");
 	const [rowSelection, setRowSelection] = React.useState({});
 
 	const [searchQuery, setSearchQuery] = useQueryState(
@@ -223,11 +230,11 @@ export function PaymentsTable(): React.JSX.Element {
 	const deletePaymentMutation =
 		trpc.organization.trainingPayment.delete.useMutation({
 			onSuccess: () => {
-				toast.success("Payment deleted successfully");
+				toast.success(t("success.deleted"));
 				utils.organization.trainingPayment.list.invalidate();
 			},
 			onError: (error) => {
-				toast.error(error.message || "Failed to delete payment");
+				toast.error(error.message || t("error.deleteFailed"));
 			},
 		});
 
@@ -251,42 +258,54 @@ export function PaymentsTable(): React.JSX.Element {
 		createSelectionColumn<TrainingPayment>(),
 		{
 			accessorKey: "description",
-			header: "Description",
+			header: t("table.description"),
 			cell: ({ row }) => (
-				<div className="flex flex-col gap-0.5">
-					<span
-						className="block max-w-[200px] truncate font-medium text-foreground"
-						title={row.original.description ?? "Payment"}
-					>
-						{row.original.description || "Payment"}
-					</span>
-					{row.original.session && (
-						<span className="text-foreground/70 text-xs">
-							{row.original.session.title}
-						</span>
-					)}
-				</div>
+				<span
+					className="block max-w-[200px] truncate font-medium text-foreground"
+					title={row.original.description ?? t("table.defaultDescription")}
+				>
+					{row.original.description || t("table.defaultDescription")}
+				</span>
 			),
 		},
 		{
-			accessorKey: "athlete",
-			header: "Athlete",
-			cell: ({ row }) =>
-				row.original.athlete ? (
-					<div className="flex items-center gap-1.5 text-foreground/80">
-						<UserIcon className="size-4" />
-						<span className="max-w-[120px] truncate">
-							{row.original.athlete.user?.name ?? "Unknown"}
-						</span>
+			id: "athleteSession",
+			header: t("table.athlete"),
+			cell: ({ row }) => {
+				const { athlete, session } = row.original;
+				if (!athlete && !session) {
+					return <span className="text-muted-foreground">-</span>;
+				}
+				return (
+					<div className="flex flex-col gap-0.5">
+						{athlete && (
+							<Link
+								href={`/dashboard/organization/athletes/${athlete.id}`}
+								className="flex items-center gap-1.5 text-foreground/80 hover:text-foreground hover:underline"
+							>
+								<UserIcon className="size-3.5 shrink-0" />
+								<span className="max-w-[140px] truncate">
+									{athlete.user?.name ?? t("table.unknown")}
+								</span>
+							</Link>
+						)}
+						{session && (
+							<Link
+								href={`/dashboard/organization/training-sessions/${session.id}`}
+								className="flex items-center gap-1.5 text-foreground/60 text-xs hover:text-foreground hover:underline"
+							>
+								<CalendarIcon className="size-3 shrink-0" />
+								<span className="max-w-[140px] truncate">{session.title}</span>
+							</Link>
+						)}
 					</div>
-				) : (
-					<span className="text-muted-foreground">-</span>
-				),
+				);
+			},
 		},
 		{
 			accessorKey: "amount",
 			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Amount" />
+				<SortableColumnHeader column={column} title={t("table.amount")} />
 			),
 			cell: ({ row }) => (
 				<div className="flex flex-col gap-0.5">
@@ -295,33 +314,25 @@ export function PaymentsTable(): React.JSX.Element {
 					</span>
 					{row.original.status === "partial" && (
 						<span className="text-foreground/70 text-xs">
-							Paid:{" "}
+							{t("table.paidLabel")}{" "}
 							{formatAmount(row.original.paidAmount, row.original.currency)}
+						</span>
+					)}
+					{row.original.paymentMethod && (
+						<span className="flex items-center gap-1 text-foreground/60 text-xs">
+							<BanknoteIcon className="size-3 shrink-0" />
+							{t(
+								`methods.${methodKeys[row.original.paymentMethod] ?? row.original.paymentMethod}`,
+							)}
 						</span>
 					)}
 				</div>
 			),
 		},
 		{
-			accessorKey: "paymentMethod",
-			header: "Method",
-			cell: ({ row }) =>
-				row.original.paymentMethod ? (
-					<div className="flex items-center gap-1.5 text-foreground/80">
-						<BanknoteIcon className="size-4" />
-						<span>
-							{methodLabels[row.original.paymentMethod] ??
-								row.original.paymentMethod}
-						</span>
-					</div>
-				) : (
-					<span className="text-muted-foreground">-</span>
-				),
-		},
-		{
 			accessorKey: "status",
 			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Status" />
+				<SortableColumnHeader column={column} title={t("table.status")} />
 			),
 			cell: ({ row }) => (
 				<Badge
@@ -331,14 +342,14 @@ export function PaymentsTable(): React.JSX.Element {
 					)}
 					variant="outline"
 				>
-					{capitalize(row.original.status)}
+					{t(`status.${row.original.status}`)}
 				</Badge>
 			),
 		},
 		{
 			accessorKey: "paymentDate",
 			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Date" />
+				<SortableColumnHeader column={column} title={t("table.date")} />
 			),
 			cell: ({ row }) => (
 				<span className="text-foreground/80">
@@ -361,7 +372,7 @@ export function PaymentsTable(): React.JSX.Element {
 								variant="ghost"
 							>
 								<MoreHorizontalIcon className="shrink-0" />
-								<span className="sr-only">Open menu</span>
+								<span className="sr-only">{t("table.openMenu")}</span>
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
@@ -371,16 +382,26 @@ export function PaymentsTable(): React.JSX.Element {
 								}}
 							>
 								<PencilIcon className="mr-2 size-4" />
-								Edit
+								{t("edit")}
+							</DropdownMenuItem>
+							<DropdownMenuItem
+								onClick={() => {
+									NiceModal.show(PaymentReceiptModal, {
+										paymentId: row.original.id,
+										hasReceipt: !!row.original.receiptImageKey,
+									});
+								}}
+							>
+								<FileTextIcon className="mr-2 size-4" />
+								{t("receipt.manage")}
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 							<DropdownMenuItem
 								onClick={() => {
 									NiceModal.show(ConfirmationModal, {
-										title: "Delete payment?",
-										message:
-											"Are you sure you want to delete this payment? This action cannot be undone.",
-										confirmLabel: "Delete",
+										title: t("deleteConfirm.title"),
+										message: t("deleteConfirm.message"),
+										confirmLabel: t("deleteConfirm.confirm"),
 										destructive: true,
 										onConfirm: () =>
 											deletePaymentMutation.mutate({ id: row.original.id }),
@@ -389,7 +410,7 @@ export function PaymentsTable(): React.JSX.Element {
 								variant="destructive"
 							>
 								<Trash2Icon className="mr-2 size-4" />
-								Delete
+								{t("delete")}
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
@@ -401,18 +422,18 @@ export function PaymentsTable(): React.JSX.Element {
 	const paymentFilters: FilterConfig[] = [
 		{
 			key: "status",
-			title: "Status",
+			title: t("table.status"),
 			options: TrainingPaymentStatuses.map((status) => ({
 				value: status,
-				label: capitalize(status),
+				label: t(`status.${status}`),
 			})),
 		},
 		{
 			key: "paymentMethod",
-			title: "Method",
+			title: t("table.method"),
 			options: TrainingPaymentMethods.map((method) => ({
 				value: method,
-				label: methodLabels[method] ?? method,
+				label: t(`methods.${methodKeys[method] ?? method}`),
 			})),
 		},
 	];
@@ -422,7 +443,7 @@ export function PaymentsTable(): React.JSX.Element {
 			columnFilters={columnFilters}
 			columns={columns}
 			data={(data?.payments as TrainingPayment[]) || []}
-			emptyMessage="No payments found."
+			emptyMessage={t("table.noPayments")}
 			enableFilters
 			enablePagination
 			enableRowSelection
@@ -439,14 +460,14 @@ export function PaymentsTable(): React.JSX.Element {
 			pageSize={pageSize || appConfig.pagination.defaultLimit}
 			renderBulkActions={(table) => <PaymentsBulkActions table={table} />}
 			rowSelection={rowSelection}
-			searchPlaceholder="Search payments..."
+			searchPlaceholder={t("search")}
 			searchQuery={searchQuery || ""}
 			defaultSorting={DEFAULT_SORTING}
 			sorting={sorting}
 			toolbarActions={
 				<Button onClick={() => NiceModal.show(PaymentsModal)} size="sm">
 					<PlusIcon className="size-4 shrink-0" />
-					Add Payment
+					{t("add")}
 				</Button>
 			}
 			totalCount={data?.total ?? 0}

@@ -1,7 +1,7 @@
 "use client";
 
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { enUS, es } from "date-fns/locale";
 import {
 	BanknoteIcon,
 	CalendarDaysIcon,
@@ -10,6 +10,8 @@ import {
 	UsersIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
+import { WelcomeSection } from "@/components/organization/dashboard/welcome-section";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +26,13 @@ import { formatCurrency } from "@/lib/billing/utils";
 import { trpc } from "@/trpc/client";
 
 export function AthleteDashboard() {
+	const t = useTranslations("dashboard.athlete");
+	const locale = useLocale();
+	const dateLocale = locale === "es" ? es : enUS;
+
+	const dateFormat =
+		locale === "es" ? "EEEE d 'de' MMMM, HH:mm" : "EEEE MMMM d, HH:mm";
+
 	const { data: groupsData, isLoading: isLoadingGroups } =
 		trpc.organization.athleteGroup.listMyGroups.useQuery();
 	const { data: paymentsData, isLoading: isLoadingPayments } =
@@ -47,12 +56,17 @@ export function AthleteDashboard() {
 
 	return (
 		<div className="fade-in flex animate-in flex-col space-y-4 duration-500">
+			{/* Welcome Section */}
+			<WelcomeSection variant="athlete" />
+
 			{/* Row 1: Quick stats */}
 			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 				{/* Groups */}
 				<Card>
 					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-						<CardTitle className="font-medium text-sm">Mis Grupos</CardTitle>
+						<CardTitle className="font-medium text-sm">
+							{t("myGroups")}
+						</CardTitle>
 						<UsersIcon className="size-4 text-muted-foreground" />
 					</CardHeader>
 					<CardContent>
@@ -62,8 +76,7 @@ export function AthleteDashboard() {
 							<>
 								<div className="font-bold text-2xl">{groups.length}</div>
 								<p className="text-muted-foreground text-xs">
-									grupo{groups.length !== 1 ? "s" : ""} activo
-									{groups.length !== 1 ? "s" : ""}
+									{t("activeGroups", { count: groups.length })}
 								</p>
 							</>
 						)}
@@ -74,7 +87,7 @@ export function AthleteDashboard() {
 				<Card>
 					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 						<CardTitle className="font-medium text-sm">
-							Proximas Sesiones
+							{t("upcomingSessions")}
 						</CardTitle>
 						<CalendarDaysIcon className="size-4 text-muted-foreground" />
 					</CardHeader>
@@ -87,7 +100,7 @@ export function AthleteDashboard() {
 									{upcomingSessions.length}
 								</div>
 								<p className="text-muted-foreground text-xs">
-									en los proximos 7 dias
+									{t("next7Days")}
 								</p>
 							</>
 						)}
@@ -97,7 +110,7 @@ export function AthleteDashboard() {
 				{/* Paid */}
 				<Card>
 					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-						<CardTitle className="font-medium text-sm">Pagado</CardTitle>
+						<CardTitle className="font-medium text-sm">{t("paid")}</CardTitle>
 						<CheckCircleIcon className="size-4 text-green-600" />
 					</CardHeader>
 					<CardContent>
@@ -108,7 +121,9 @@ export function AthleteDashboard() {
 								<div className="font-bold text-2xl text-green-600">
 									{formatCurrency(summary.paid, "ARS")}
 								</div>
-								<p className="text-muted-foreground text-xs">total pagado</p>
+								<p className="text-muted-foreground text-xs">
+									{t("totalPaid")}
+								</p>
 							</>
 						)}
 					</CardContent>
@@ -117,7 +132,9 @@ export function AthleteDashboard() {
 				{/* Pending */}
 				<Card>
 					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-						<CardTitle className="font-medium text-sm">Pendiente</CardTitle>
+						<CardTitle className="font-medium text-sm">
+							{t("pending")}
+						</CardTitle>
 						<ClockIcon className="size-4 text-yellow-600" />
 					</CardHeader>
 					<CardContent>
@@ -128,7 +145,7 @@ export function AthleteDashboard() {
 								<div className="font-bold text-2xl text-yellow-600">
 									{formatCurrency(summary.pending, "ARS")}
 								</div>
-								<p className="text-muted-foreground text-xs">por pagar</p>
+								<p className="text-muted-foreground text-xs">{t("toPay")}</p>
 							</>
 						)}
 					</CardContent>
@@ -142,9 +159,9 @@ export function AthleteDashboard() {
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2">
 							<CalendarDaysIcon className="size-5" />
-							Proximas Sesiones
+							{t("upcomingSessions")}
 						</CardTitle>
-						<CardDescription>Tus entrenamientos de esta semana</CardDescription>
+						<CardDescription>{t("weekTrainings")}</CardDescription>
 					</CardHeader>
 					<CardContent>
 						{isLoadingSessions ? (
@@ -157,7 +174,7 @@ export function AthleteDashboard() {
 							<div className="flex flex-col items-center justify-center py-8 text-center">
 								<CalendarDaysIcon className="size-10 text-muted-foreground/50" />
 								<p className="mt-2 text-muted-foreground text-sm">
-									No tienes sesiones programadas esta semana
+									{t("noSessionsThisWeek")}
 								</p>
 							</div>
 						) : (
@@ -170,11 +187,9 @@ export function AthleteDashboard() {
 										<div>
 											<p className="font-medium">{session.title}</p>
 											<p className="text-muted-foreground text-sm">
-												{format(
-													new Date(session.startTime),
-													"EEEE d 'de' MMMM, HH:mm",
-													{ locale: es },
-												)}
+												{format(new Date(session.startTime), dateFormat, {
+													locale: dateLocale,
+												})}
 											</p>
 										</div>
 										{session.location && (
@@ -184,7 +199,7 @@ export function AthleteDashboard() {
 								))}
 								<Button variant="outline" className="w-full" asChild>
 									<Link href="/dashboard/organization/my-calendar">
-										Ver calendario completo
+										{t("viewFullCalendar")}
 									</Link>
 								</Button>
 							</div>
@@ -197,9 +212,9 @@ export function AthleteDashboard() {
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2">
 							<UsersIcon className="size-5" />
-							Mis Grupos
+							{t("myGroups")}
 						</CardTitle>
-						<CardDescription>Grupos a los que perteneces</CardDescription>
+						<CardDescription>{t("groupsBelong")}</CardDescription>
 					</CardHeader>
 					<CardContent>
 						{isLoadingGroups ? (
@@ -212,7 +227,7 @@ export function AthleteDashboard() {
 							<div className="flex flex-col items-center justify-center py-8 text-center">
 								<UsersIcon className="size-10 text-muted-foreground/50" />
 								<p className="mt-2 text-muted-foreground text-sm">
-									No perteneces a ningun grupo todavia
+									{t("noGroupsYet")}
 								</p>
 							</div>
 						) : (
@@ -231,15 +246,15 @@ export function AthleteDashboard() {
 											)}
 										</div>
 										<Badge variant="secondary">
-											{group.memberCount} miembro
-											{group.memberCount !== 1 ? "s" : ""}
+											{group.memberCount}{" "}
+											{t("members", { count: group.memberCount })}
 										</Badge>
 									</div>
 								))}
 								{groups.length > 4 && (
 									<Button variant="outline" className="w-full" asChild>
 										<Link href="/dashboard/organization/my-groups">
-											Ver todos los grupos
+											{t("viewAllGroups")}
 										</Link>
 									</Button>
 								)}
@@ -254,9 +269,9 @@ export function AthleteDashboard() {
 				<CardHeader>
 					<CardTitle className="flex items-center gap-2">
 						<BanknoteIcon className="size-5" />
-						Pagos Recientes
+						{t("recentPayments")}
 					</CardTitle>
-					<CardDescription>Historial de tus ultimos pagos</CardDescription>
+					<CardDescription>{t("paymentHistory")}</CardDescription>
 				</CardHeader>
 				<CardContent>
 					{isLoadingPayments ? (
@@ -269,7 +284,7 @@ export function AthleteDashboard() {
 						<div className="flex flex-col items-center justify-center py-8 text-center">
 							<BanknoteIcon className="size-10 text-muted-foreground/50" />
 							<p className="mt-2 text-muted-foreground text-sm">
-								No tienes pagos registrados
+								{t("noPayments")}
 							</p>
 						</div>
 					) : (
@@ -297,7 +312,7 @@ export function AthleteDashboard() {
 											<p className="font-medium">
 												{payment.description ||
 													payment.session?.title ||
-													"Pago"}
+													t("payment")}
 											</p>
 											<p className="text-muted-foreground text-xs">
 												{format(new Date(payment.createdAt), "dd/MM/yyyy")}
@@ -316,7 +331,9 @@ export function AthleteDashboard() {
 													: "bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100"
 											}
 										>
-											{payment.status === "paid" ? "Pagado" : "Pendiente"}
+											{payment.status === "paid"
+												? t("statusPaid")
+												: t("statusPending")}
 										</Badge>
 									</div>
 								</div>
@@ -324,7 +341,7 @@ export function AthleteDashboard() {
 							{payments.length > 5 && (
 								<Button variant="outline" className="w-full" asChild>
 									<Link href="/dashboard/organization/my-payments">
-										Ver todos los pagos
+										{t("viewAllPayments")}
 									</Link>
 								</Button>
 							)}

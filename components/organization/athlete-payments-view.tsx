@@ -7,6 +7,7 @@ import {
 	ClockIcon,
 	WalletIcon,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +24,7 @@ import { formatCurrency } from "@/lib/billing/utils";
 import { trpc } from "@/trpc/client";
 
 export function AthletePaymentsView() {
+	const t = useTranslations("finance.payments");
 	const { data, isLoading } =
 		trpc.organization.trainingPayment.listMyPayments.useQuery();
 
@@ -48,7 +50,9 @@ export function AthletePaymentsView() {
 			<div className="grid gap-4 md:grid-cols-3">
 				<Card>
 					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-						<CardTitle className="font-medium text-sm">Total</CardTitle>
+						<CardTitle className="font-medium text-sm">
+							{t("myPayments.summary.total")}
+						</CardTitle>
 						<WalletIcon className="size-4 text-muted-foreground" />
 					</CardHeader>
 					<CardContent>
@@ -56,13 +60,17 @@ export function AthletePaymentsView() {
 							{formatCurrency(summary.total, "ARS")}
 						</div>
 						<p className="text-muted-foreground text-xs">
-							{payments.length} pago{payments.length !== 1 ? "s" : ""}
+							{t("myPayments.summary.paymentsCount", {
+								count: payments.length,
+							})}
 						</p>
 					</CardContent>
 				</Card>
 				<Card>
 					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-						<CardTitle className="font-medium text-sm">Pagado</CardTitle>
+						<CardTitle className="font-medium text-sm">
+							{t("myPayments.summary.paid")}
+						</CardTitle>
 						<CheckCircleIcon className="size-4 text-green-600" />
 					</CardHeader>
 					<CardContent>
@@ -70,16 +78,17 @@ export function AthletePaymentsView() {
 							{formatCurrency(summary.paid, "ARS")}
 						</div>
 						<p className="text-muted-foreground text-xs">
-							{payments.filter((p) => p.status === "paid").length} completado
-							{payments.filter((p) => p.status === "paid").length !== 1
-								? "s"
-								: ""}
+							{t("myPayments.summary.completedCount", {
+								count: payments.filter((p) => p.status === "paid").length,
+							})}
 						</p>
 					</CardContent>
 				</Card>
 				<Card>
 					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-						<CardTitle className="font-medium text-sm">Pendiente</CardTitle>
+						<CardTitle className="font-medium text-sm">
+							{t("myPayments.summary.pending")}
+						</CardTitle>
 						<ClockIcon className="size-4 text-yellow-600" />
 					</CardHeader>
 					<CardContent>
@@ -87,10 +96,9 @@ export function AthletePaymentsView() {
 							{formatCurrency(summary.pending, "ARS")}
 						</div>
 						<p className="text-muted-foreground text-xs">
-							{payments.filter((p) => p.status === "pending").length} pendiente
-							{payments.filter((p) => p.status === "pending").length !== 1
-								? "s"
-								: ""}
+							{t("myPayments.summary.pendingCount", {
+								count: payments.filter((p) => p.status === "pending").length,
+							})}
 						</p>
 					</CardContent>
 				</Card>
@@ -101,7 +109,7 @@ export function AthletePaymentsView() {
 				<CardHeader>
 					<CardTitle className="flex items-center gap-2">
 						<BanknoteIcon className="size-5" />
-						Historial de Pagos
+						{t("myPayments.history")}
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
@@ -109,22 +117,24 @@ export function AthletePaymentsView() {
 						<div className="flex flex-col items-center justify-center py-12">
 							<BanknoteIcon className="size-12 text-muted-foreground/50" />
 							<h3 className="mt-4 font-semibold text-lg">
-								Sin pagos registrados
+								{t("myPayments.empty.title")}
 							</h3>
 							<p className="mt-2 text-center text-muted-foreground">
-								Aun no tienes pagos registrados en esta organizacion.
+								{t("myPayments.empty.description")}
 							</p>
 						</div>
 					) : (
 						<Table>
 							<TableHeader>
 								<TableRow>
-									<TableHead>Fecha</TableHead>
-									<TableHead>Descripcion</TableHead>
-									<TableHead>Sesion</TableHead>
-									<TableHead className="text-right">Monto</TableHead>
-									<TableHead>Estado</TableHead>
-									<TableHead>Metodo</TableHead>
+									<TableHead>{t("myPayments.table.date")}</TableHead>
+									<TableHead>{t("myPayments.table.description")}</TableHead>
+									<TableHead>{t("myPayments.table.session")}</TableHead>
+									<TableHead className="text-right">
+										{t("myPayments.table.amount")}
+									</TableHead>
+									<TableHead>{t("myPayments.table.status")}</TableHead>
+									<TableHead>{t("myPayments.table.method")}</TableHead>
 								</TableRow>
 							</TableHeader>
 							<TableBody>
@@ -169,13 +179,7 @@ export function AthletePaymentsView() {
 															: ""
 												}
 											>
-												{payment.status === "paid"
-													? "Pagado"
-													: payment.status === "pending"
-														? "Pendiente"
-														: payment.status === "cancelled"
-															? "Cancelado"
-															: payment.status}
+												{t(`status.${payment.status}`)}
 											</Badge>
 										</TableCell>
 										<TableCell className="capitalize">

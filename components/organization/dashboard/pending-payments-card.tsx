@@ -2,6 +2,7 @@
 
 import { AlertCircleIcon, BanknoteIcon, CreditCardIcon } from "lucide-react";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import type * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,16 +13,18 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/trpc/client";
 
 export function PendingPaymentsCard(): React.JSX.Element {
+	const t = useTranslations("dashboard.pendingPayments");
+	const locale = useLocale();
+
 	const { data, isLoading } =
 		trpc.organization.reports.getPendingSummary.useQuery({});
 
 	const formatAmount = (amount: number) => {
-		return new Intl.NumberFormat("es-AR", {
+		return new Intl.NumberFormat(locale === "es" ? "es-AR" : "en-US", {
 			style: "currency",
 			currency: "ARS",
 		}).format(amount / 100);
@@ -45,8 +48,8 @@ export function PendingPaymentsCard(): React.JSX.Element {
 		return (
 			<Card>
 				<CardHeader>
-					<CardTitle>Pagos Pendientes</CardTitle>
-					<CardDescription>No hay datos disponibles</CardDescription>
+					<CardTitle>{t("title")}</CardTitle>
+					<CardDescription>{t("noData")}</CardDescription>
 				</CardHeader>
 			</Card>
 		);
@@ -62,9 +65,9 @@ export function PendingPaymentsCard(): React.JSX.Element {
 					<div>
 						<CardTitle className="flex items-center gap-2">
 							<BanknoteIcon className="size-5 text-amber-500" />
-							Pagos Pendientes
+							{t("title")}
 						</CardTitle>
-						<CardDescription>Cuotas y eventos por cobrar</CardDescription>
+						<CardDescription>{t("description")}</CardDescription>
 					</div>
 					{totalPending > 0 && (
 						<Badge variant="secondary" className="flex items-center gap-1">
@@ -81,7 +84,7 @@ export function PendingPaymentsCard(): React.JSX.Element {
 						<div className="rounded-lg bg-amber-50 p-4 dark:bg-amber-950">
 							<div className="flex items-center justify-between">
 								<span className="text-sm text-muted-foreground">
-									Total por cobrar
+									{t("totalOutstanding")}
 								</span>
 								<span className="text-2xl font-bold text-amber-600">
 									{formatAmount(totalAmount)}
@@ -98,9 +101,9 @@ export function PendingPaymentsCard(): React.JSX.Element {
 										<CreditCardIcon className="size-4 text-blue-600" />
 									</div>
 									<div>
-										<p className="font-medium text-sm">Entrenamientos</p>
+										<p className="font-medium text-sm">{t("training")}</p>
 										<p className="text-xs text-muted-foreground">
-											{data.training.count} pagos pendientes
+											{t("trainingPending", { count: data.training.count })}
 										</p>
 									</div>
 								</div>
@@ -116,9 +119,9 @@ export function PendingPaymentsCard(): React.JSX.Element {
 										<BanknoteIcon className="size-4 text-purple-600" />
 									</div>
 									<div>
-										<p className="font-medium text-sm">Eventos</p>
+										<p className="font-medium text-sm">{t("events")}</p>
 										<p className="text-xs text-muted-foreground">
-											{data.events.count} registros pendientes
+											{t("eventsPending", { count: data.events.count })}
 										</p>
 									</div>
 								</div>
@@ -130,18 +133,16 @@ export function PendingPaymentsCard(): React.JSX.Element {
 
 						<Button variant="outline" size="sm" asChild className="w-full">
 							<Link href="/dashboard/organization/reports/pending">
-								Ver detalle de pagos
+								{t("viewDetails")}
 							</Link>
 						</Button>
 					</div>
 				) : (
 					<div className="flex flex-col items-center py-6 text-center">
 						<BanknoteIcon className="size-10 text-green-500/50 mb-2" />
-						<p className="text-muted-foreground text-sm">
-							No hay pagos pendientes
-						</p>
+						<p className="text-muted-foreground text-sm">{t("noPending")}</p>
 						<p className="text-xs text-muted-foreground mt-1">
-							Todos los pagos estan al dia
+							{t("allUpToDate")}
 						</p>
 					</div>
 				)}

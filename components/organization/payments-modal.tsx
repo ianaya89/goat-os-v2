@@ -2,7 +2,12 @@
 
 import NiceModal, { type NiceModalHocProps } from "@ebay/nice-modal-react";
 import { format } from "date-fns";
-import { BanknoteIcon } from "lucide-react";
+import {
+	BanknoteIcon,
+	ChevronsUpDownIcon,
+	Loader2Icon,
+	XIcon,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import * as React from "react";
 import { toast } from "sonner";
@@ -11,7 +16,16 @@ import {
 	ProfileEditSection,
 	ProfileEditSheet,
 } from "@/components/athlete/profile-edit-sheet";
-import { TrainingPaymentReceiptUpload } from "@/components/organization/training-payment-receipt-upload";
+import { PaymentReceiptModal } from "@/components/organization/payment-receipt-modal";
+import { Button } from "@/components/ui/button";
+import {
+	Command,
+	CommandEmpty,
+	CommandGroup,
+	CommandInput,
+	CommandItem,
+	CommandList,
+} from "@/components/ui/command";
 import { Field } from "@/components/ui/field";
 import {
 	FormControl,
@@ -22,6 +36,11 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+import {
 	Select,
 	SelectContent,
 	SelectItem,
@@ -29,6 +48,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useDebounce } from "@/hooks/use-debounce";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 import { useZodForm } from "@/hooks/use-zod-form";
 import {
@@ -67,38 +87,96 @@ export type PaymentsModalProps = NiceModalHocProps & {
 		notes?: string | null;
 		receiptImageKey?: string | null;
 	};
+	/** When set, the session is fixed and cannot be changed (used from session detail) */
+	fixedSessionId?: string;
+	/** When set, only these athletes are shown in the selector (used from session detail) */
+	fixedAthletes?: { id: string; name: string }[];
 };
 
 export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
-	({ payment }) => {
+	({ payment, fixedSessionId, fixedAthletes }) => {
 		const t = useTranslations("finance.payments");
 		const modal = useEnhancedModal();
 		const utils = trpc.useUtils();
 		const isEditing = !!payment;
 
-		// Fetch data for dropdowns
-		const { data: sessionsData } =
-			trpc.organization.trainingSession.list.useQuery({
-				limit: 100,
-				offset: 0,
-				sortBy: "startTime",
-				sortOrder: "desc",
-			});
-		const { data: athletesData } = trpc.organization.athlete.list.useQuery({
-			limit: 100,
-			offset: 0,
-		});
+		// Session search state
+		const [sessionPopoverOpen, setSessionPopoverOpen] = React.useState(false);
+		const [sessionSearchQuery, setSessionSearchQuery] = React.useState("");
+		const debouncedSessionQuery = useDebounce(sessionSearchQuery, 300);
+		const shouldSearchSessions = debouncedSessionQuery.length >= 2;
+
+		const { data: sessionsData, isFetching: isSearchingSessions } =
+			trpc.organization.trainingSession.list.useQuery(
+				{
+					limit: 20,
+					offset: 0,
+					query: debouncedSessionQuery,
+					sortBy: "startTime",
+					sortOrder: "desc",
+				},
+				{
+					enabled: shouldSearchSessions,
+					staleTime: 10000,
+				},
+			);
+
+		// Track selected session label for display
+		const [selectedSessionLabel, setSelectedSessionLabel] = React.useState<
+			string | null
+		>(null);
+
+		// Athlete search state
+		const [athletePopoverOpen, setAthletePopoverOpen] = React.useState(false);
+		const [athleteSearchQuery, setAthleteSearchQuery] = React.useState("");
+		const debouncedAthleteQuery = useDebounce(athleteSearchQuery, 300);
+		const shouldSearchAthletes =
+			!fixedAthletes && debouncedAthleteQuery.length >= 2;
+
+		const { data: athletesData, isFetching: isSearchingAthletes } =
+			trpc.organization.athlete.list.useQuery(
+				{
+					limit: 20,
+					offset: 0,
+					query: debouncedAthleteQuery,
+				},
+				{
+					enabled: shouldSearchAthletes,
+					staleTime: 10000,
+				},
+			);
+
+		// Track selected athlete label for display
+		const [selectedAthleteLabel, setSelectedAthleteLabel] = React.useState<
+			string | null
+		>(null);
 
 		const sessions = sessionsData?.sessions ?? [];
-		const athletes = athletesData?.athletes ?? [];
+
+		// When fixedAthletes is provided, filter locally; otherwise use tRPC results
+		// Normalize to common shape {id, name}
+		const athletes: { id: string; name: string }[] = fixedAthletes
+			? fixedAthletes.filter((a) =>
+					a.name.toLowerCase().includes(athleteSearchQuery.toLowerCase()),
+				)
+			: (athletesData?.athletes ?? []).map((a) => ({
+					id: a.id,
+					name: a.user?.name ?? "Unknown",
+				}));
 
 		const createPaymentMutation =
 			trpc.organization.trainingPayment.create.useMutation({
-				onSuccess: () => {
+				onSuccess: (data) => {
 					toast.success(t("success.created"));
 					utils.organization.trainingPayment.list.invalidate();
 					utils.organization.trainingPayment.getSessionPayments.invalidate();
 					modal.handleClose();
+					if (data?.id) {
+						NiceModal.show(PaymentReceiptModal, {
+							paymentId: data.id,
+							hasReceipt: false,
+						});
+					}
 				},
 				onError: (error) => {
 					toast.error(error.message || t("error.createFailed"));
@@ -136,7 +214,7 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 						notes: payment.notes ?? "",
 					}
 				: {
-						sessionId: null,
+						sessionId: fixedSessionId ?? null,
 						athleteId: null,
 						amount: 0,
 						currency: "ARS",
@@ -208,43 +286,124 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 
 						{!isEditing && (
 							<>
-								<FormField
-									control={form.control}
-									name="sessionId"
-									render={({ field }) => (
-										<FormItem asChild>
-											<Field>
-												<FormLabel>{t("form.session")}</FormLabel>
-												<Select
-													onValueChange={(value) =>
-														field.onChange(value === "none" ? null : value)
-													}
-													value={field.value ?? "none"}
-												>
-													<FormControl>
-														<SelectTrigger className="w-full">
-															<SelectValue
-																placeholder={t("form.selectSession")}
-															/>
-														</SelectTrigger>
-													</FormControl>
-													<SelectContent>
-														<SelectItem value="none">
-															{t("form.noSession")}
-														</SelectItem>
-														{sessions.map((session) => (
-															<SelectItem key={session.id} value={session.id}>
-																{session.title} -{" "}
-																{format(session.startTime, "dd/MM/yyyy")}
-															</SelectItem>
-														))}
-													</SelectContent>
-												</Select>
-												<FormMessage />
-											</Field>
-										</FormItem>
-									)}
-								/>
+								{!fixedSessionId && (
+									<FormField
+										control={form.control}
+										name="sessionId"
+										render={({ field }) => (
+											<FormItem asChild>
+												<Field>
+													<FormLabel>{t("form.session")}</FormLabel>
+													<Popover
+														open={sessionPopoverOpen}
+														onOpenChange={setSessionPopoverOpen}
+													>
+														<PopoverTrigger asChild>
+															<FormControl>
+																<Button
+																	variant="outline"
+																	className="w-full justify-between font-normal"
+																>
+																	{selectedSessionLabel ?? (
+																		<span className="text-muted-foreground">
+																			{t("form.selectSession")}
+																		</span>
+																	)}
+																	<div className="flex items-center gap-1">
+																		{field.value && (
+																			<span
+																				role="button"
+																				tabIndex={0}
+																				className="rounded-sm p-0.5 hover:bg-muted"
+																				onClick={(e) => {
+																					e.stopPropagation();
+																					field.onChange(null);
+																					setSelectedSessionLabel(null);
+																					setSessionSearchQuery("");
+																				}}
+																				onKeyDown={(e) => {
+																					if (
+																						e.key === "Enter" ||
+																						e.key === " "
+																					) {
+																						e.preventDefault();
+																						e.stopPropagation();
+																						field.onChange(null);
+																						setSelectedSessionLabel(null);
+																						setSessionSearchQuery("");
+																					}
+																				}}
+																			>
+																				<XIcon className="size-3.5 text-muted-foreground" />
+																			</span>
+																		)}
+																		<ChevronsUpDownIcon className="size-4 shrink-0 opacity-50" />
+																	</div>
+																</Button>
+															</FormControl>
+														</PopoverTrigger>
+														<PopoverContent
+															className="w-[350px] p-0"
+															align="start"
+														>
+															<Command shouldFilter={false}>
+																<CommandInput
+																	placeholder={t("form.searchSession")}
+																	value={sessionSearchQuery}
+																	onValueChange={setSessionSearchQuery}
+																/>
+																<CommandList>
+																	{!shouldSearchSessions && (
+																		<div className="py-6 text-center text-muted-foreground text-sm">
+																			{t("form.typeToSearchSession")}
+																		</div>
+																	)}
+																	{shouldSearchSessions &&
+																		isSearchingSessions && (
+																			<div className="flex items-center justify-center py-6">
+																				<Loader2Icon className="size-5 animate-spin text-muted-foreground" />
+																			</div>
+																		)}
+																	{shouldSearchSessions &&
+																		!isSearchingSessions &&
+																		sessions.length === 0 && (
+																			<CommandEmpty>
+																				{t("form.noSessionsFound")}
+																			</CommandEmpty>
+																		)}
+																	{shouldSearchSessions &&
+																		!isSearchingSessions &&
+																		sessions.length > 0 && (
+																			<CommandGroup>
+																				{sessions.map((session) => {
+																					const label = `${session.title} - ${format(session.startTime, "dd/MM/yyyy")}`;
+																					return (
+																						<CommandItem
+																							key={session.id}
+																							value={session.id}
+																							onSelect={() => {
+																								field.onChange(session.id);
+																								setSelectedSessionLabel(label);
+																								setSessionPopoverOpen(false);
+																								setSessionSearchQuery("");
+																							}}
+																						>
+																							<span>{label}</span>
+																						</CommandItem>
+																					);
+																				})}
+																			</CommandGroup>
+																		)}
+																</CommandList>
+															</Command>
+														</PopoverContent>
+													</Popover>
+													<FormMessage />
+												</Field>
+											</FormItem>
+										)}
+									/>
+								)}
 
 								<FormField
 									control={form.control}
@@ -253,30 +412,136 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 										<FormItem asChild>
 											<Field>
 												<FormLabel>{t("form.athleteOptional")}</FormLabel>
-												<Select
-													onValueChange={(value) =>
-														field.onChange(value === "none" ? null : value)
-													}
-													value={field.value ?? "none"}
-												>
-													<FormControl>
-														<SelectTrigger className="w-full">
-															<SelectValue
-																placeholder={t("form.selectAthlete")}
-															/>
-														</SelectTrigger>
-													</FormControl>
-													<SelectContent>
-														<SelectItem value="none">
-															{t("form.noAthlete")}
-														</SelectItem>
-														{athletes.map((athlete) => (
-															<SelectItem key={athlete.id} value={athlete.id}>
-																{athlete.user?.name ?? "Unknown"}
+												{fixedAthletes ? (
+													<Select
+														onValueChange={(value) =>
+															field.onChange(value === "none" ? null : value)
+														}
+														value={field.value ?? "none"}
+													>
+														<FormControl>
+															<SelectTrigger className="w-full">
+																<SelectValue
+																	placeholder={t("form.selectAthlete")}
+																/>
+															</SelectTrigger>
+														</FormControl>
+														<SelectContent>
+															<SelectItem value="none">
+																{t("form.noAthlete")}
 															</SelectItem>
-														))}
-													</SelectContent>
-												</Select>
+															{fixedAthletes.map((athlete) => (
+																<SelectItem key={athlete.id} value={athlete.id}>
+																	{athlete.name}
+																</SelectItem>
+															))}
+														</SelectContent>
+													</Select>
+												) : (
+													<Popover
+														open={athletePopoverOpen}
+														onOpenChange={setAthletePopoverOpen}
+													>
+														<PopoverTrigger asChild>
+															<FormControl>
+																<Button
+																	variant="outline"
+																	className="w-full justify-between font-normal"
+																>
+																	{selectedAthleteLabel ?? (
+																		<span className="text-muted-foreground">
+																			{t("form.selectAthlete")}
+																		</span>
+																	)}
+																	<div className="flex items-center gap-1">
+																		{field.value && (
+																			<span
+																				role="button"
+																				tabIndex={0}
+																				className="rounded-sm p-0.5 hover:bg-muted"
+																				onClick={(e) => {
+																					e.stopPropagation();
+																					field.onChange(null);
+																					setSelectedAthleteLabel(null);
+																					setAthleteSearchQuery("");
+																				}}
+																				onKeyDown={(e) => {
+																					if (
+																						e.key === "Enter" ||
+																						e.key === " "
+																					) {
+																						e.preventDefault();
+																						e.stopPropagation();
+																						field.onChange(null);
+																						setSelectedAthleteLabel(null);
+																						setAthleteSearchQuery("");
+																					}
+																				}}
+																			>
+																				<XIcon className="size-3.5 text-muted-foreground" />
+																			</span>
+																		)}
+																		<ChevronsUpDownIcon className="size-4 shrink-0 opacity-50" />
+																	</div>
+																</Button>
+															</FormControl>
+														</PopoverTrigger>
+														<PopoverContent
+															className="w-[350px] p-0"
+															align="start"
+														>
+															<Command shouldFilter={false}>
+																<CommandInput
+																	placeholder={t("form.searchAthlete")}
+																	value={athleteSearchQuery}
+																	onValueChange={setAthleteSearchQuery}
+																/>
+																<CommandList>
+																	{!shouldSearchAthletes && (
+																		<div className="py-6 text-center text-muted-foreground text-sm">
+																			{t("form.typeToSearchAthlete")}
+																		</div>
+																	)}
+																	{shouldSearchAthletes &&
+																		isSearchingAthletes && (
+																			<div className="flex items-center justify-center py-6">
+																				<Loader2Icon className="size-5 animate-spin text-muted-foreground" />
+																			</div>
+																		)}
+																	{shouldSearchAthletes &&
+																		!isSearchingAthletes &&
+																		athletes.length === 0 && (
+																			<CommandEmpty>
+																				{t("form.noAthletesFound")}
+																			</CommandEmpty>
+																		)}
+																	{shouldSearchAthletes &&
+																		!isSearchingAthletes &&
+																		athletes.length > 0 && (
+																			<CommandGroup>
+																				{athletes.map((athlete) => (
+																					<CommandItem
+																						key={athlete.id}
+																						value={athlete.id}
+																						onSelect={() => {
+																							field.onChange(athlete.id);
+																							setSelectedAthleteLabel(
+																								athlete.name,
+																							);
+																							setAthletePopoverOpen(false);
+																							setAthleteSearchQuery("");
+																						}}
+																					>
+																						<span>{athlete.name}</span>
+																					</CommandItem>
+																				))}
+																			</CommandGroup>
+																		)}
+																</CommandList>
+															</Command>
+														</PopoverContent>
+													</Popover>
+												)}
 												<FormMessage />
 											</Field>
 										</FormItem>
@@ -484,18 +749,25 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 							)}
 						/>
 
-						{/* Receipt Upload - Only show when editing */}
+						{/* Receipt - Only show when editing */}
 						{isEditing && payment && (
 							<Field>
 								<FormLabel>{t("form.receiptUpload")}</FormLabel>
-								<TrainingPaymentReceiptUpload
-									paymentId={payment.id}
-									hasReceipt={!!payment.receiptImageKey}
-									onUploadComplete={() => {
-										utils.organization.trainingPayment.list.invalidate();
-										utils.organization.trainingPayment.getSessionPayments.invalidate();
+								<Button
+									type="button"
+									variant="outline"
+									className="w-full justify-start"
+									onClick={() => {
+										NiceModal.show(PaymentReceiptModal, {
+											paymentId: payment.id,
+											hasReceipt: !!payment.receiptImageKey,
+										});
 									}}
-								/>
+								>
+									{t(
+										`receipt.${payment.receiptImageKey ? "hasReceipt" : "noReceipt"}`,
+									)}
+								</Button>
 							</Field>
 						)}
 					</ProfileEditSection>

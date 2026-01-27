@@ -10,7 +10,6 @@ import {
 	PageBreadcrumb,
 	PageHeader,
 	PagePrimaryBar,
-	PageTitle,
 } from "@/components/ui/custom/page";
 import { getSession } from "@/lib/auth/server";
 
@@ -49,9 +48,6 @@ export default async function DashboardPage(): Promise<React.JSX.Element> {
 			<PageBody>
 				<div className="p-4 sm:px-6 sm:pt-6 sm:pb-24">
 					<div className="mx-auto w-full space-y-4">
-						<div>
-							<PageTitle>{t("title")}</PageTitle>
-						</div>
 						<OrganizationDashboard />
 					</div>
 				</div>

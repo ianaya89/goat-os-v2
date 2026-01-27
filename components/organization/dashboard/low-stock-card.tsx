@@ -2,6 +2,7 @@
 
 import { AlertTriangleIcon, PackageIcon, ShoppingCartIcon } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import type * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
 export function LowStockCard(): React.JSX.Element {
+	const t = useTranslations("dashboard.lowStock");
 	const { data, isLoading } = trpc.organization.stock.listProducts.useQuery({
 		lowStock: true,
 	});
@@ -47,11 +49,9 @@ export function LowStockCard(): React.JSX.Element {
 					<div>
 						<CardTitle className="flex items-center gap-2">
 							<PackageIcon className="size-5 text-orange-500" />
-							Productos con Bajo Stock
+							{t("title")}
 						</CardTitle>
-						<CardDescription>
-							Productos que necesitan reposicion
-						</CardDescription>
+						<CardDescription>{t("description")}</CardDescription>
 					</div>
 					{lowStockProducts.length > 0 && (
 						<Badge variant="destructive" className="flex items-center gap-1">
@@ -71,7 +71,7 @@ export function LowStockCard(): React.JSX.Element {
 									{lowStockProducts.length}
 								</span>
 								<span className="text-muted-foreground text-xs text-center">
-									Bajo stock
+									{t("lowStock")}
 								</span>
 							</div>
 							{criticalCount > 0 && (
@@ -80,7 +80,7 @@ export function LowStockCard(): React.JSX.Element {
 										{criticalCount}
 									</span>
 									<span className="text-muted-foreground text-xs text-center">
-										Sin stock
+										{t("outOfStock")}
 									</span>
 								</div>
 							)}
@@ -125,10 +125,10 @@ export function LowStockCard(): React.JSX.Element {
 											}
 											className="text-xs"
 										>
-											Stock: {product.currentStock}
+											{t("stock")}: {product.currentStock}
 										</Badge>
 										<span className="text-muted-foreground text-xs">
-											Min: {product.lowStockThreshold}
+											{t("min")}: {product.lowStockThreshold}
 										</span>
 									</div>
 								</div>
@@ -138,25 +138,25 @@ export function LowStockCard(): React.JSX.Element {
 						{lowStockProducts.length > 5 && (
 							<Button variant="ghost" size="sm" asChild className="w-full">
 								<Link href="/dashboard/organization/products?lowStock=true">
-									Ver todos ({lowStockProducts.length} productos)
+									{t("viewAll", { count: lowStockProducts.length })}
 								</Link>
 							</Button>
 						)}
 
 						<Button variant="outline" size="sm" asChild className="w-full">
 							<Link href="/dashboard/organization/products">
-								Gestionar Productos
+								{t("manageProducts")}
 							</Link>
 						</Button>
 					</div>
 				) : (
 					<div className="flex flex-col items-center py-6 text-center">
 						<PackageIcon className="size-10 text-green-500/50 mb-2" />
-						<p className="text-muted-foreground text-sm">
-							Todos los productos tienen stock suficiente
-						</p>
+						<p className="text-muted-foreground text-sm">{t("allStocked")}</p>
 						<Button variant="link" size="sm" asChild className="mt-2">
-							<Link href="/dashboard/organization/products">Ver Productos</Link>
+							<Link href="/dashboard/organization/products">
+								{t("viewProducts")}
+							</Link>
 						</Button>
 					</div>
 				)}

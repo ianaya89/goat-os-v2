@@ -2,6 +2,7 @@
 
 import NiceModal from "@ebay/nice-modal-react";
 import type { Table } from "@tanstack/react-table";
+import { useTranslations } from "next-intl";
 import type * as React from "react";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/confirmation-modal";
@@ -13,7 +14,6 @@ import {
 	type TrainingPaymentStatus,
 	TrainingPaymentStatuses,
 } from "@/lib/db/schema/enums";
-import { capitalize } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
 export type PaymentsBulkActionsProps<T> = {
@@ -23,6 +23,7 @@ export type PaymentsBulkActionsProps<T> = {
 export function PaymentsBulkActions<T extends { id: string }>({
 	table,
 }: PaymentsBulkActionsProps<T>): React.JSX.Element {
+	const t = useTranslations("finance.payments");
 	const utils = trpc.useUtils();
 
 	const bulkDelete = trpc.organization.trainingPayment.bulkDelete.useMutation();
@@ -32,26 +33,24 @@ export function PaymentsBulkActions<T extends { id: string }>({
 	const handleBulkDelete = () => {
 		const selectedRows = table.getSelectedRowModel().rows;
 		if (selectedRows.length === 0) {
-			toast.error("No payments selected.");
+			toast.error(t("bulk.noSelected"));
 			return;
 		}
 
 		NiceModal.show(ConfirmationModal, {
-			title: "Delete payments?",
-			message: `Are you sure you want to delete ${selectedRows.length} payment${selectedRows.length > 1 ? "s" : ""}? This action cannot be undone.`,
-			confirmLabel: "Delete",
+			title: t("bulk.deleteTitle"),
+			message: t("bulk.deleteMessage", { count: selectedRows.length }),
+			confirmLabel: t("deleteConfirm.confirm"),
 			destructive: true,
 			onConfirm: async () => {
 				const ids = selectedRows.map((row) => row.original.id);
 				try {
 					await bulkDelete.mutateAsync({ ids });
-					toast.success(
-						`${selectedRows.length} payment${selectedRows.length > 1 ? "s" : ""} deleted.`,
-					);
+					toast.success(t("bulk.deleted", { count: selectedRows.length }));
 					table.resetRowSelection();
 					utils.organization.trainingPayment.list.invalidate();
 				} catch (_err) {
-					toast.error("Failed to delete payments.");
+					toast.error(t("bulk.deleteFailed"));
 				}
 			},
 		});
@@ -60,7 +59,7 @@ export function PaymentsBulkActions<T extends { id: string }>({
 	const handleBulkUpdateStatus = async (status: TrainingPaymentStatus) => {
 		const selectedRows = table.getSelectedRowModel().rows;
 		if (selectedRows.length === 0) {
-			toast.error("No payments selected.");
+			toast.error(t("bulk.noSelected"));
 			return;
 		}
 
@@ -68,29 +67,32 @@ export function PaymentsBulkActions<T extends { id: string }>({
 		try {
 			await bulkUpdateStatus.mutateAsync({ ids, status });
 			toast.success(
-				`${selectedRows.length} payment${selectedRows.length > 1 ? "s" : ""} updated to ${capitalize(status)}.`,
+				t("bulk.updated", {
+					count: selectedRows.length,
+					status: t(`status.${status}`),
+				}),
 			);
 			table.resetRowSelection();
 			utils.organization.trainingPayment.list.invalidate();
 		} catch (_err) {
-			toast.error("Failed to update payments.");
+			toast.error(t("bulk.updateFailed"));
 		}
 	};
 
 	const statusActions: BulkActionItem[] = TrainingPaymentStatuses.map(
 		(status) => ({
-			label: `Set to ${capitalize(status)}`,
+			label: t("bulk.setTo", { status: t(`status.${status}`) }),
 			onClick: () => handleBulkUpdateStatus(status),
 		}),
 	);
 
 	const actions: BulkActionItem[] = [
 		{
-			label: "Change status",
+			label: t("bulk.changeStatus"),
 			actions: statusActions,
 		},
 		{
-			label: "Delete",
+			label: t("delete"),
 			onClick: handleBulkDelete,
 			variant: "destructive",
 			separator: true,

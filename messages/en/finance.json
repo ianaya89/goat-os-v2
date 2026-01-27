@@ -14,17 +14,6 @@
 			"overdue": "Overdue",
 			"cancelled": "Cancelled"
 		},
-		"table": {
-			"athlete": "Athlete",
-			"concept": "Concept",
-			"amount": "Amount",
-			"dueDate": "Due date",
-			"paidDate": "Paid date",
-			"status": "Status",
-			"method": "Method",
-			"date": "Date",
-			"actions": "Actions"
-		},
 		"form": {
 			"athlete": "Athlete",
 			"athleteOptional": "Athlete (Optional)",
@@ -50,7 +39,13 @@
 			"paymentDate": "Payment Date",
 			"receiptNumber": "Receipt Number",
 			"receiptPlaceholder": "Receipt #",
-			"receiptUpload": "Payment Receipt"
+			"receiptUpload": "Payment Receipt",
+			"searchSession": "Search session...",
+			"typeToSearchSession": "Type to search sessions",
+			"noSessionsFound": "No sessions found",
+			"searchAthlete": "Search athlete...",
+			"typeToSearchAthlete": "Type to search athletes",
+			"noAthletesFound": "No athletes found"
 		},
 		"methods": {
 			"cash": "Cash",
@@ -76,12 +71,90 @@
 			"editSubtitle": "Update the payment information below.",
 			"cancel": "Cancel",
 			"create": "Record Payment",
-			"update": "Update Payment"
+			"update": "Update Payment",
+			"createdSuccess": "Payment recorded successfully",
+			"attachReceipt": "Would you like to attach a payment receipt?",
+			"done": "Done"
+		},
+		"table": {
+			"athlete": "Athlete",
+			"concept": "Concept",
+			"description": "Description",
+			"amount": "Amount",
+			"dueDate": "Due date",
+			"paidDate": "Paid date",
+			"paidLabel": "Paid:",
+			"status": "Status",
+			"method": "Method",
+			"date": "Date",
+			"actions": "Actions",
+			"noPayments": "No payments found.",
+			"defaultDescription": "Payment",
+			"unknown": "Unknown",
+			"openMenu": "Open menu",
+			"session": "Session"
 		},
 		"deleteConfirm": {
 			"title": "Delete payment?",
 			"message": "Are you sure you want to delete this payment? This action cannot be undone.",
 			"confirm": "Delete"
+		},
+		"bulk": {
+			"noSelected": "No payments selected.",
+			"deleteTitle": "Delete payments?",
+			"deleteMessage": "Are you sure you want to delete {count, plural, one {# payment} other {# payments}}? This action cannot be undone.",
+			"deleted": "{count, plural, one {# payment} other {# payments}} deleted.",
+			"updated": "{count, plural, one {# payment} other {# payments}} updated to {status}.",
+			"deleteFailed": "Failed to delete payments.",
+			"updateFailed": "Failed to update payments.",
+			"changeStatus": "Change status",
+			"setTo": "Set to {status}"
+		},
+		"receipt": {
+			"view": "View",
+			"manage": "Receipt",
+			"dialogTitle": "Payment Receipt",
+			"dialogDescription": "Manage the receipt for this payment.",
+			"pdfTitle": "Receipt PDF",
+			"imageAlt": "Payment receipt",
+			"uploading": "Uploading...",
+			"upload": "Upload receipt",
+			"invalidType": "File type not allowed. Use JPG, PNG or PDF.",
+			"fileTooLarge": "File is too large. Maximum 10MB.",
+			"uploadError": "Error uploading file",
+			"uploadFailed": "Error uploading receipt",
+			"uploadSuccess": "Receipt uploaded successfully",
+			"uploaded": "Receipt uploaded",
+			"deleted": "Receipt deleted",
+			"deleteFailed": "Error deleting receipt",
+			"loadFailed": "Error loading receipt",
+			"noReceipt": "No receipt attached",
+			"hasReceipt": "Receipt attached",
+			"close": "Close",
+			"deleteConfirm": "Are you sure you want to delete this receipt?"
+		},
+		"myPayments": {
+			"summary": {
+				"total": "Total",
+				"paid": "Paid",
+				"pending": "Pending",
+				"paymentsCount": "{count, plural, one {# payment} other {# payments}}",
+				"completedCount": "{count, plural, one {# completed} other {# completed}}",
+				"pendingCount": "{count, plural, one {# pending} other {# pending}}"
+			},
+			"history": "Payment History",
+			"table": {
+				"date": "Date",
+				"description": "Description",
+				"session": "Session",
+				"amount": "Amount",
+				"status": "Status",
+				"method": "Method"
+			},
+			"empty": {
+				"title": "No payments recorded",
+				"description": "You don't have any payments recorded in this organization yet."
+			}
 		},
 		"success": {
 			"created": "Payment recorded successfully.",

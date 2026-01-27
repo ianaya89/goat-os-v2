@@ -13,6 +13,7 @@ import { UpcomingEventsCard } from "@/components/organization/dashboard/upcoming
 import { WaitlistCard } from "@/components/organization/dashboard/waitlist-card";
 import { WeeklyAttendanceChart } from "@/components/organization/dashboard/weekly-attendance-chart";
 import { WeeklySummaryCard } from "@/components/organization/dashboard/weekly-summary-card";
+import { WelcomeSection } from "@/components/organization/dashboard/welcome-section";
 import { CenteredSpinner } from "@/components/ui/custom/centered-spinner";
 
 // Dynamically import cash register to avoid SSR issues
@@ -46,6 +47,9 @@ export function OrganizationDashboard() {
 	// Render admin dashboard for owners, admins, and coaches
 	return (
 		<div className="fade-in flex animate-in flex-col space-y-4 duration-500">
+			{/* Row 0: Welcome Section */}
+			<WelcomeSection variant="admin" />
+
 			{/* Row 1: Daily Summary + Cash Register */}
 			<div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-3">
 				<div className="lg:col-span-2">
@@ -56,24 +60,24 @@ export function OrganizationDashboard() {
 				</div>
 			</div>
 
-			{/* Row 2: Pending Payments + Upcoming Events + Low Stock */}
-			<div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 lg:grid-cols-3">
-				<PendingPaymentsCard />
-				<UpcomingEventsCard />
-				<LowStockCard />
-			</div>
-
-			{/* Row 3: Charts - Attendance + Income/Expenses */}
+			{/* Row 2: Charts - Attendance + Income/Expenses */}
 			<div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-2">
 				<WeeklyAttendanceChart />
 				<IncomeExpensesChart />
 			</div>
 
-			{/* Row 4: Session Occupancy + Waitlist + Retention */}
+			{/* Row 3: Actionable Metrics - Pending Payments + Session Occupancy + Retention */}
 			<div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 lg:grid-cols-3">
+				<PendingPaymentsCard />
 				<SessionOccupancyCard />
-				<WaitlistCard />
 				<RetentionCard />
+			</div>
+
+			{/* Row 4: Secondary Operational - Upcoming Events + Waitlist + Low Stock */}
+			<div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 lg:grid-cols-3">
+				<UpcomingEventsCard />
+				<WaitlistCard />
+				<LowStockCard />
 			</div>
 
 			{/* Row 5: Weekly Summary */}

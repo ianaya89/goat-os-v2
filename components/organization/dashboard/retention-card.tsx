@@ -1,8 +1,6 @@
 "use client";
 
 import {
-	ArrowDownIcon,
-	ArrowUpIcon,
 	TrendingUpIcon,
 	UserCheckIcon,
 	UserMinusIcon,
@@ -10,8 +8,8 @@ import {
 	UsersIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import type * as React from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -26,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
 export function RetentionCard(): React.JSX.Element {
+	const t = useTranslations("dashboard.retention");
 	const { data, isLoading } =
 		trpc.organization.dashboard.getAthleteRetention.useQuery();
 
@@ -47,8 +46,8 @@ export function RetentionCard(): React.JSX.Element {
 		return (
 			<Card>
 				<CardHeader>
-					<CardTitle>Retencion de Atletas</CardTitle>
-					<CardDescription>No hay datos disponibles</CardDescription>
+					<CardTitle>{t("title")}</CardTitle>
+					<CardDescription>{t("noData")}</CardDescription>
 				</CardHeader>
 			</Card>
 		);
@@ -73,9 +72,9 @@ export function RetentionCard(): React.JSX.Element {
 					<div>
 						<CardTitle className="flex items-center gap-2">
 							<TrendingUpIcon className="size-5 text-cyan-500" />
-							Retencion de Atletas
+							{t("title")}
 						</CardTitle>
-						<CardDescription>Metricas de actividad</CardDescription>
+						<CardDescription>{t("description")}</CardDescription>
 					</div>
 				</div>
 			</CardHeader>
@@ -97,7 +96,9 @@ export function RetentionCard(): React.JSX.Element {
 							>
 								{data.retentionRate}%
 							</p>
-							<p className="text-sm text-muted-foreground">Tasa de retencion</p>
+							<p className="text-sm text-muted-foreground">
+								{t("retentionRate")}
+							</p>
 							<Progress value={data.retentionRate} className="mt-2 h-2" />
 						</div>
 
@@ -106,24 +107,30 @@ export function RetentionCard(): React.JSX.Element {
 							<div className="flex flex-col items-center rounded-lg border p-2">
 								<UserCheckIcon className="size-4 text-green-600 mb-1" />
 								<span className="text-lg font-bold">{data.active}</span>
-								<span className="text-xs text-muted-foreground">Activos</span>
+								<span className="text-xs text-muted-foreground">
+									{t("active")}
+								</span>
 							</div>
 							<div className="flex flex-col items-center rounded-lg border p-2">
 								<UsersIcon className="size-4 text-amber-600 mb-1" />
 								<span className="text-lg font-bold">{data.inactive}</span>
-								<span className="text-xs text-muted-foreground">Inactivos</span>
+								<span className="text-xs text-muted-foreground">
+									{t("inactive")}
+								</span>
 							</div>
 							<div className="flex flex-col items-center rounded-lg border p-2">
 								<UserMinusIcon className="size-4 text-red-600 mb-1" />
 								<span className="text-lg font-bold">{data.churned}</span>
-								<span className="text-xs text-muted-foreground">Bajas</span>
+								<span className="text-xs text-muted-foreground">
+									{t("churned")}
+								</span>
 							</div>
 						</div>
 
 						{/* Recent Activity */}
 						<div className="space-y-2">
 							<h4 className="text-xs font-medium text-muted-foreground">
-								Ultimos 30 dias
+								{t("last30Days")}
 							</h4>
 							<div className="flex gap-2">
 								<div className="flex-1 flex items-center gap-2 rounded-lg bg-green-50 p-2 dark:bg-green-950">
@@ -132,7 +139,7 @@ export function RetentionCard(): React.JSX.Element {
 										<p className="text-sm font-medium text-green-600">
 											+{data.newLast30Days}
 										</p>
-										<p className="text-xs text-muted-foreground">Nuevos</p>
+										<p className="text-xs text-muted-foreground">{t("new")}</p>
 									</div>
 								</div>
 								<div className="flex-1 flex items-center gap-2 rounded-lg bg-red-50 p-2 dark:bg-red-950">
@@ -141,23 +148,27 @@ export function RetentionCard(): React.JSX.Element {
 										<p className="text-sm font-medium text-red-600">
 											-{data.churnedLast30Days}
 										</p>
-										<p className="text-xs text-muted-foreground">Bajas</p>
+										<p className="text-xs text-muted-foreground">
+											{t("churned")}
+										</p>
 									</div>
 								</div>
 							</div>
 						</div>
 
 						<Button variant="outline" size="sm" asChild className="w-full">
-							<Link href="/dashboard/organization/athletes">Ver atletas</Link>
+							<Link href="/dashboard/organization/athletes">
+								{t("viewAthletes")}
+							</Link>
 						</Button>
 					</div>
 				) : (
 					<div className="flex flex-col items-center py-6 text-center">
 						<UsersIcon className="size-10 text-muted-foreground/50 mb-2" />
-						<p className="text-muted-foreground text-sm">No hay atletas</p>
+						<p className="text-muted-foreground text-sm">{t("noAthletes")}</p>
 						<Button variant="link" size="sm" asChild className="mt-2">
 							<Link href="/dashboard/organization/athletes">
-								Agregar atletas
+								{t("addAthletes")}
 							</Link>
 						</Button>
 					</div>
