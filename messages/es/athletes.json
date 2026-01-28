@@ -36,7 +36,14 @@
 		"birthDate": "Fecha de Nacimiento",
 		"createdAt": "Ingreso",
 		"noAthletes": "No se encontraron atletas.",
-		"viewProfile": "Ver Perfil"
+		"viewProfile": "Ver Perfil",
+		"accountStatus": "Cuenta",
+		"noAccount": "Sin cuenta",
+		"noAccountTooltip": "Este atleta no tiene una cuenta de usuario asociada",
+		"accountActive": "Activa",
+		"accountActiveTooltip": "El atleta ha configurado su cuenta y puede acceder a la plataforma",
+		"accountPending": "Pendiente",
+		"accountPendingTooltip": "El atleta aún no ha verificado su email o configurado su contraseña"
 	},
 	"modal": {
 		"createTitle": "Crear Atleta",
@@ -60,7 +67,16 @@
 		"groups": "Grupos",
 		"showGroups": "Mostrar",
 		"hideGroups": "Ocultar",
-		"loadingGroups": "Cargando grupos..."
+		"loadingGroups": "Cargando grupos...",
+		"sendInvitation": "Enviar invitación por email",
+		"sendInvitationDescription": "El atleta recibirá un email para establecer su propia contraseña",
+		"invitationSent": "Invitación enviada correctamente",
+		"invitationSentTitle": "Atleta Creado",
+		"invitationSentDescription": "El atleta ha sido creado y se le ha enviado una invitación.",
+		"invitationSentAlert": "Invitación Enviada",
+		"invitationSentNote": "El atleta recibirá un email con instrucciones para establecer su contraseña y acceder a la plataforma.",
+		"publicProfile": "Perfil público",
+		"publicProfileDescription": "Permitir que el perfil de este atleta sea visible públicamente"
 	},
 	"form": {
 		"personalInfo": "Información personal",
@@ -148,10 +164,12 @@
 		"physical": "Físico",
 		"fitness": "Tests Físicos",
 		"career": "Carrera",
+		"achievements": "Logros",
 		"teams": "Equipos",
 		"wellness": "Bienestar",
 		"medical": "Médico",
-		"info": "Info"
+		"info": "Info",
+		"education": "Educación"
 	},
 	"sessions": {
 		"title": "Sesiones de Entrenamiento",
@@ -893,6 +911,7 @@
 			"addMembers": "Agregar Miembros",
 			"noMembers": "No hay miembros en este grupo aún",
 			"noSessions": "No hay sesiones para este grupo aún",
+			"noSessionsInPeriod": "No hay sesiones en el período seleccionado",
 			"createFirstSession": "Crear Primera Sesión",
 			"trainingSessions": "Sesiones de Entrenamiento",
 			"newSession": "Nueva Sesión",
@@ -962,43 +981,46 @@
 		}
 	},
 	"achievements": {
-		"title": "Palmarés y Reconocimientos",
+		"title": "Palmares y Reconocimientos",
 		"add": "Agregar Logro",
+		"addEntry": "Agregar Logro",
 		"edit": "Editar Logro",
 		"empty": "Sin logros registrados",
-		"emptyDescription": "Agrega tus logros deportivos, premios y reconocimientos para mostrarlos en tu perfil público.",
+		"noAchievements": "Sin logros registrados",
+		"emptyDescription": "Agrega tus logros deportivos, premios y reconocimientos para mostrarlos en tu perfil publico.",
+		"deleted": "Logro eliminado exitosamente",
 		"form": {
-			"title": "Título del Logro",
-			"titlePlaceholder": "Campeón Liga Nacional, MVP del Torneo...",
+			"title": "Titulo del Logro",
+			"titlePlaceholder": "Campeon Liga Nacional, MVP del Torneo...",
 			"type": "Tipo de Logro",
 			"scope": "Alcance",
 			"scopeDescription": "Individual o logro de equipo",
-			"year": "Año",
-			"position": "Posición / Lugar",
+			"year": "Ano",
+			"position": "Posicion / Lugar",
 			"positionPlaceholder": "1er lugar, Medalla de Oro...",
 			"competition": "Competencia / Torneo",
-			"competitionPlaceholder": "Copa América Sub-20, Liga Nacional...",
-			"organization": "Organización",
+			"competitionPlaceholder": "Copa America Sub-20, Liga Nacional...",
+			"organization": "Organizacion",
 			"organizationPlaceholder": "FIFA, CONMEBOL, Liga Nacional...",
-			"organizationDescription": "Entidad que otorgó el reconocimiento",
+			"organizationDescription": "Entidad que otorgo el reconocimiento",
 			"team": "Equipo",
-			"teamPlaceholder": "Selección Argentina, Club Atlético...",
+			"teamPlaceholder": "Seleccion Argentina, Club Atletico...",
 			"teamDescription": "Equipo con el que se obtuvo el logro",
-			"description": "Descripción",
+			"description": "Descripcion",
 			"descriptionPlaceholder": "Describe brevemente este logro...",
-			"isPublic": "Mostrar en perfil público",
-			"isPublicDescription": "Este logro será visible en tu perfil público"
+			"isPublic": "Mostrar en perfil publico",
+			"isPublicDescription": "Este logro sera visible en tu perfil publico"
 		},
 		"types": {
 			"championship": "Campeonato / Título",
 			"award": "Premio Individual",
 			"selection": "Selección",
-			"record": "Record",
+			"record": "Récord",
 			"recognition": "Reconocimiento",
 			"mvp": "MVP",
 			"top_scorer": "Goleador / Máx. Anotador",
 			"best_player": "Mejor Jugador",
-			"all_star": "All-Star / Selección de Estrellas",
+			"all_star": "All-Star / Seleccion de Estrellas",
 			"scholarship": "Beca Deportiva",
 			"other": "Otro"
 		},
@@ -1006,10 +1028,43 @@
 			"individual": "Individual",
 			"collective": "Colectivo (Equipo)"
 		},
+		"table": {
+			"title": "Titulo",
+			"type": "Tipo",
+			"year": "Ano",
+			"competition": "Competencia",
+			"position": "Posicion",
+			"actions": "Acciones"
+		},
+		"actions": {
+			"edit": "Editar Logro",
+			"delete": "Eliminar Logro"
+		},
+		"deleteConfirm": {
+			"title": "Eliminar logro?",
+			"message": "Estas seguro de que deseas eliminar \"{title}\"? Esta accion no se puede deshacer.",
+			"confirm": "Eliminar"
+		},
 		"success": {
 			"created": "Logro agregado",
 			"updated": "Logro actualizado",
 			"deleted": "Logro eliminado"
 		}
+	},
+	"education": {
+		"addEducation": "Agregar Educación",
+		"editEducation": "Editar Educación",
+		"deleteEducation": "Eliminar Educación",
+		"noEducation": "Sin educación registrada",
+		"noEducationDescription": "Agrega la formación académica del atleta",
+		"current": "Actual",
+		"present": "Actualidad",
+		"unknown": "Fecha desconocida",
+		"gpaLabel": "Promedio",
+		"notesLabel": "Notas",
+		"deleteConfirmTitle": "¿Eliminar educación?",
+		"deleteConfirmDesc": "¿Estás seguro de que deseas eliminar esta educación? Esta acción no se puede deshacer.",
+		"deleteConfirm": "Eliminar",
+		"deleted": "Educación eliminada correctamente"
 	}
 }

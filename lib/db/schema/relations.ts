@@ -22,6 +22,9 @@ import {
 	billingEventTable,
 	cashMovementTable,
 	cashRegisterTable,
+	coachAchievementTable,
+	coachEducationTable,
+	coachSportsExperienceTable,
 	coachTable,
 	competitionTable,
 	creditBalanceTable,
@@ -81,6 +84,7 @@ import {
 	seasonTable,
 	servicePriceHistoryTable,
 	serviceTable,
+	sessionConfirmationHistoryTable,
 	sessionTable,
 	sponsorTable,
 	sportsEventTable,
@@ -98,6 +102,7 @@ import {
 	trainingSessionCoachTable,
 	trainingSessionTable,
 	twoFactorTable,
+	userNotificationSettingsTable,
 	userTable,
 	waitlistEntryTable,
 } from "./tables";
@@ -319,7 +324,42 @@ export const coachRelations = relations(coachTable, ({ one, many }) => ({
 	}),
 	sessionAssignments: many(trainingSessionCoachTable),
 	eventAssignments: many(eventCoachTable),
+	sportsExperience: many(coachSportsExperienceTable),
+	achievements: many(coachAchievementTable),
+	education: many(coachEducationTable),
 }));
+
+// Coach sports experience relations
+export const coachSportsExperienceRelations = relations(
+	coachSportsExperienceTable,
+	({ one }) => ({
+		coach: one(coachTable, {
+			fields: [coachSportsExperienceTable.coachId],
+			references: [coachTable.id],
+		}),
+	}),
+);
+
+export const coachAchievementRelations = relations(
+	coachAchievementTable,
+	({ one }) => ({
+		coach: one(coachTable, {
+			fields: [coachAchievementTable.coachId],
+			references: [coachTable.id],
+		}),
+	}),
+);
+
+// Coach education relations
+export const coachEducationRelations = relations(
+	coachEducationTable,
+	({ one }) => ({
+		coach: one(coachTable, {
+			fields: [coachEducationTable.coachId],
+			references: [coachTable.id],
+		}),
+	}),
+);
 
 // Athlete relations
 export const athleteRelations = relations(athleteTable, ({ one, many }) => ({
@@ -1984,3 +2024,41 @@ export const matchRelations = relations(matchTable, ({ one }) => ({
 		references: [userTable.id],
 	}),
 }));
+
+// Session confirmation history relations
+export const sessionConfirmationHistoryRelations = relations(
+	sessionConfirmationHistoryTable,
+	({ one }) => ({
+		organization: one(organizationTable, {
+			fields: [sessionConfirmationHistoryTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		session: one(trainingSessionTable, {
+			fields: [sessionConfirmationHistoryTable.sessionId],
+			references: [trainingSessionTable.id],
+		}),
+		athlete: one(athleteTable, {
+			fields: [sessionConfirmationHistoryTable.athleteId],
+			references: [athleteTable.id],
+		}),
+		initiator: one(userTable, {
+			fields: [sessionConfirmationHistoryTable.initiatedBy],
+			references: [userTable.id],
+		}),
+	}),
+);
+
+// User notification settings relations
+export const userNotificationSettingsRelations = relations(
+	userNotificationSettingsTable,
+	({ one }) => ({
+		user: one(userTable, {
+			fields: [userNotificationSettingsTable.userId],
+			references: [userTable.id],
+		}),
+		organization: one(organizationTable, {
+			fields: [userNotificationSettingsTable.organizationId],
+			references: [organizationTable.id],
+		}),
+	}),
+);

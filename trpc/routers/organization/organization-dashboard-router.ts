@@ -383,6 +383,15 @@ export const organizationDashboardRouter = createTRPCRouter({
 					},
 				},
 			},
+			athletes: {
+				with: {
+					athlete: {
+						with: {
+							user: { columns: { id: true, name: true } },
+						},
+					},
+				},
+			},
 		} as const;
 
 		// Get all data in parallel

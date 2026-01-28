@@ -1,0 +1,69 @@
+{
+	"title": "Confirmations",
+	"description": "Manage session confirmations and notification history.",
+	"bulkSend": {
+		"title": "Send Confirmations",
+		"today": "Send for Today",
+		"week": "Send for This Week",
+		"channel": "Channel",
+		"sending": "Sending...",
+		"success": "Confirmations sent to {count} athletes.",
+		"error": "Failed to send confirmations.",
+		"noSessions": "No pending sessions found in the selected date range.",
+		"selectChannel": "Select channel",
+		"confirmTitle": "Send Confirmations?",
+		"confirmMessage": "This will send {count} {count, plural, one {confirmation} other {confirmations}} via {channel}.",
+		"confirmButton": "Send"
+	},
+	"history": {
+		"title": "Confirmation History",
+		"empty": "No confirmations sent yet.",
+		"session": "Session",
+		"athlete": "Athlete",
+		"channel": "Channel",
+		"status": "Status",
+		"sentAt": "Sent",
+		"confirmedAt": "Confirmed",
+		"resend": "Resend",
+		"resending": "Resending...",
+		"resendSuccess": "Confirmation resent successfully.",
+		"resendError": "Failed to resend confirmation."
+	},
+	"status": {
+		"sent": "Sent",
+		"delivered": "Delivered",
+		"failed": "Failed",
+		"confirmed": "Confirmed"
+	},
+	"stats": {
+		"totalSent": "Total Sent",
+		"confirmed": "Confirmed",
+		"pending": "Pending",
+		"failed": "Failed",
+		"confirmationRate": "Confirmation Rate"
+	},
+	"channels": {
+		"email": "Email",
+		"sms": "SMS",
+		"whatsapp": "WhatsApp"
+	},
+	"filters": {
+		"all": "All",
+		"dateRange": "Date Range",
+		"status": "Status",
+		"session": "Session",
+		"period": "Period",
+		"today": "Today",
+		"thisWeek": "This Week",
+		"thisMonth": "This Month",
+		"allTime": "All Time"
+	},
+	"table": {
+		"noResults": "No confirmations found.",
+		"loading": "Loading...",
+		"searchPlaceholder": "Filter..."
+	},
+	"actions": {
+		"sendConfirmations": "Send Confirmations"
+	}
+}

@@ -1,0 +1,69 @@
+{
+	"title": "Confirmaciones",
+	"description": "Gestiona las confirmaciones de sesiones y el historial de envios.",
+	"bulkSend": {
+		"title": "Enviar Confirmaciones",
+		"today": "Enviar para Hoy",
+		"week": "Enviar para Esta Semana",
+		"channel": "Canal",
+		"sending": "Enviando...",
+		"success": "Confirmaciones enviadas a {count} atletas.",
+		"error": "Error al enviar confirmaciones.",
+		"noSessions": "No hay sesiones pendientes en el rango de fechas seleccionado.",
+		"selectChannel": "Seleccionar canal",
+		"confirmTitle": "¿Enviar Confirmaciones?",
+		"confirmMessage": "Se {count, plural, one {enviará # confirmación} other {enviarán # confirmaciones}} por {channel}.",
+		"confirmButton": "Enviar"
+	},
+	"history": {
+		"title": "Historial de Confirmaciones",
+		"empty": "No se han enviado confirmaciones aun.",
+		"session": "Sesion",
+		"athlete": "Atleta",
+		"channel": "Canal",
+		"status": "Estado",
+		"sentAt": "Enviado",
+		"confirmedAt": "Confirmado",
+		"resend": "Reenviar",
+		"resending": "Reenviando...",
+		"resendSuccess": "Confirmacion reenviada correctamente.",
+		"resendError": "Error al reenviar la confirmacion."
+	},
+	"status": {
+		"sent": "Enviado",
+		"delivered": "Entregado",
+		"failed": "Fallido",
+		"confirmed": "Confirmado"
+	},
+	"stats": {
+		"totalSent": "Total Enviados",
+		"confirmed": "Confirmados",
+		"pending": "Pendientes",
+		"failed": "Fallidos",
+		"confirmationRate": "Tasa de confirmacion"
+	},
+	"channels": {
+		"email": "Email",
+		"sms": "SMS",
+		"whatsapp": "WhatsApp"
+	},
+	"filters": {
+		"all": "Todos",
+		"dateRange": "Rango de fechas",
+		"status": "Estado",
+		"session": "Sesion",
+		"period": "Período",
+		"today": "Hoy",
+		"thisWeek": "Esta Semana",
+		"thisMonth": "Este Mes",
+		"allTime": "Todo"
+	},
+	"table": {
+		"noResults": "No se encontraron confirmaciones.",
+		"loading": "Cargando...",
+		"searchPlaceholder": "Filtrar..."
+	},
+	"actions": {
+		"sendConfirmations": "Enviar Confirmaciones"
+	}
+}

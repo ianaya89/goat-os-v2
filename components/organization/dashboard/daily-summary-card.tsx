@@ -13,7 +13,7 @@ import {
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type * as React from "react";
-import { TrainingSessionStatusBadge } from "@/components/organization/training-session-status-badge";
+import { TrainingSessionStatusSelect } from "@/components/organization/training-session-status-select";
 import { Badge } from "@/components/ui/badge";
 import {
 	Card,
@@ -36,6 +36,11 @@ type SessionItem = {
 	athleteGroup: { id: string; name: string } | null;
 	coaches: Array<{
 		coach: {
+			user: { id: string; name: string } | null;
+		};
+	}>;
+	athletes: Array<{
+		athlete: {
 			user: { id: string; name: string } | null;
 		};
 	}>;
@@ -63,8 +68,14 @@ function SessionList({
 				const coaches = session.coaches
 					?.map((c) => c.coach.user)
 					.filter(Boolean);
+				const athletes = session.athletes
+					?.map((a) => a.athlete.user)
+					.filter(Boolean);
 				const hasMetadata =
-					session.location || coaches.length > 0 || session.athleteGroup;
+					session.location ||
+					coaches.length > 0 ||
+					session.athleteGroup ||
+					athletes.length > 0;
 
 				return (
 					<div key={session.id} className="rounded-md border p-2 space-y-1">
@@ -86,10 +97,14 @@ function SessionList({
 									</p>
 								</div>
 							</div>
-							<TrainingSessionStatusBadge status={session.status} />
+							<TrainingSessionStatusSelect
+								sessionId={session.id}
+								currentStatus={session.status}
+								size="sm"
+							/>
 						</div>
 						{hasMetadata && (
-							<div className="flex flex-wrap items-center gap-1 pl-9">
+							<div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 pl-9 text-[11px] text-muted-foreground">
 								{session.location && (
 									<Badge
 										variant="outline"
@@ -101,27 +116,50 @@ function SessionList({
 								)}
 								{coaches.length > 0 && (
 									<>
-										<span className="text-muted-foreground text-[11px]">·</span>
-										{coaches.map((user) => (
-											<Link
-												key={user!.id}
-												href="/dashboard/organization/coaches"
-												className="text-[11px] text-muted-foreground hover:text-foreground hover:underline"
-											>
-												{user!.name}
-											</Link>
+										{session.location && <span>·</span>}
+										{coaches.map((user, idx) => (
+											<span key={user!.id}>
+												<Link
+													href="/dashboard/organization/coaches"
+													className="hover:text-foreground hover:underline"
+												>
+													{user!.name}
+												</Link>
+												{idx < coaches.length - 1 && <span>, </span>}
+											</span>
 										))}
 									</>
 								)}
 								{session.athleteGroup && (
 									<>
-										<span className="text-muted-foreground text-[11px]">·</span>
+										{(session.location || coaches.length > 0) && <span>·</span>}
 										<Link
 											href={`/dashboard/organization/groups/${session.athleteGroup.id}`}
-											className="text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+											className="hover:text-foreground hover:underline"
 										>
 											{session.athleteGroup.name}
 										</Link>
+									</>
+								)}
+								{athletes.length > 0 && !session.athleteGroup && (
+									<>
+										{(session.location || coaches.length > 0) && <span>·</span>}
+										{athletes.slice(0, 2).map((user, idx) => (
+											<span key={user!.id}>
+												<Link
+													href="/dashboard/organization/athletes"
+													className="hover:text-foreground hover:underline"
+												>
+													{user!.name}
+												</Link>
+												{idx < Math.min(athletes.length, 2) - 1 && (
+													<span>, </span>
+												)}
+											</span>
+										))}
+										{athletes.length > 2 && (
+											<span> +{athletes.length - 2}</span>
+										)}
 									</>
 								)}
 							</div>

@@ -1,7 +1,7 @@
 {
 	"title": "Entrenadores",
-	"description": "Gestiona los entrenadores de tu organizaci\u00f3n.",
-	"yearsOld": "a\u00f1os",
+	"description": "Gestiona los entrenadores de tu organización.",
+	"yearsOld": "años",
 	"add": "Agregar entrenador",
 	"edit": "Editar entrenador",
 	"view": "Ver entrenador",
@@ -19,7 +19,7 @@
 	"table": {
 		"name": "Nombre",
 		"email": "Email",
-		"phone": "Tel\u00e9fono",
+		"phone": "Teléfono",
 		"specialty": "Especialidad",
 		"sport": "Deporte",
 		"status": "Estado",
@@ -27,40 +27,54 @@
 		"created": "Creado",
 		"noCoaches": "No se encontraron entrenadores.",
 		"viewProfile": "Ver Perfil",
-		"yearsOld": "a\u00f1os"
+		"yearsOld": "años",
+		"accountStatus": "Cuenta",
+		"noAccount": "Sin cuenta",
+		"noAccountTooltip": "Este entrenador no tiene una cuenta de usuario asociada",
+		"accountActive": "Activa",
+		"accountActiveTooltip": "El entrenador ha configurado su cuenta y puede acceder a la plataforma",
+		"accountPending": "Pendiente",
+		"accountPendingTooltip": "El entrenador aún no ha verificado su email o configurado su contraseña"
 	},
 	"modal": {
 		"createTitle": "Crear Entrenador",
 		"editTitle": "Editar Entrenador",
 		"createDescription": "Completa los datos para crear un nuevo entrenador.",
-		"editDescription": "Actualiza la informaci\u00f3n del entrenador.",
+		"editDescription": "Actualiza la información del entrenador.",
 		"createdSuccess": "Entrenador creado correctamente",
-		"createdWithPassword": "Entrenador creado correctamente. Guarda la contrase\u00f1a temporal.",
+		"createdWithPassword": "Entrenador creado correctamente. Guarda la contraseña temporal.",
 		"updatedSuccess": "Entrenador actualizado correctamente",
-		"temporaryPassword": "Contrase\u00f1a Temporal",
+		"temporaryPassword": "Contraseña Temporal",
 		"temporaryPasswordTitle": "Entrenador Creado Correctamente",
-		"temporaryPasswordDescription": "Guarda la contrase\u00f1a temporal que se muestra abajo. Solo se mostrar\u00e1 una vez.",
-		"temporaryPasswordNote": "Comparte esta contrase\u00f1a con el entrenador. Deber\u00e1 cambiarla despu\u00e9s del primer inicio de sesi\u00f3n.",
-		"copyPassword": "Copiar Contrase\u00f1a",
-		"passwordCopied": "Contrase\u00f1a copiada al portapapeles",
+		"temporaryPasswordDescription": "Guarda la contraseña temporal que se muestra abajo. Solo se mostrará una vez.",
+		"temporaryPasswordNote": "Comparte esta contraseña con el entrenador. Deberá cambiarla después del primer inicio de sesión.",
+		"copyPassword": "Copiar Contraseña",
+		"passwordCopied": "Contraseña copiada al portapapeles",
 		"done": "Listo",
 		"cancel": "Cancelar",
 		"create": "Crear Entrenador",
 		"update": "Guardar",
 		"selectStatus": "Seleccionar estado",
 		"specialtyPlaceholder": "Escribe una especialidad y presiona Enter o coma...",
-		"addSpecialty": "Agregar especialidad"
+		"addSpecialty": "Agregar especialidad",
+		"sendInvitation": "Enviar invitación por email",
+		"sendInvitationDescription": "El entrenador recibirá un email para establecer su propia contraseña",
+		"invitationSent": "Invitación enviada correctamente",
+		"invitationSentTitle": "Entrenador Creado",
+		"invitationSentDescription": "El entrenador ha sido creado y se le ha enviado una invitación.",
+		"invitationSentAlert": "Invitación Enviada",
+		"invitationSentNote": "El entrenador recibirá un email con instrucciones para establecer su contraseña y acceder a la plataforma."
 	},
 	"form": {
-		"personalInfo": "Informaci\u00f3n personal",
+		"personalInfo": "Información personal",
 		"name": "Nombre completo",
 		"email": "Email",
-		"phone": "Tel\u00e9fono",
+		"phone": "Teléfono",
 		"birthDate": "Fecha de nacimiento",
 		"sport": "Deporte",
-		"professionalInfo": "Informaci\u00f3n profesional",
+		"professionalInfo": "Información profesional",
 		"specialty": "Especialidades",
-		"bio": "Biograf\u00eda",
+		"bio": "Biografía",
 		"status": "Estado"
 	},
 	"statuses": {
@@ -74,13 +88,13 @@
 		"schedule": "Horario"
 	},
 	"delete": {
-		"title": "\u00bfEliminar entrenador?",
-		"message": "\u00bfEst\u00e1s seguro de que quieres eliminar este entrenador? Esta acci\u00f3n no se puede deshacer. La cuenta de usuario permanecer\u00e1 en la organizaci\u00f3n.",
+		"title": "¿Eliminar entrenador?",
+		"message": "¿Estás seguro de que quieres eliminar este entrenador? Esta acción no se puede deshacer. La cuenta de usuario permanecerá en la organización.",
 		"confirm": "Eliminar"
 	},
 	"bulkDelete": {
-		"title": "\u00bfEliminar entrenadores?",
-		"message": "\u00bfEst\u00e1s seguro de que quieres eliminar {count} entrenador(es)? Esta acci\u00f3n no se puede deshacer. Las cuentas de usuario permanecer\u00e1n en la organizaci\u00f3n.",
+		"title": "¿Eliminar entrenadores?",
+		"message": "¿Estás seguro de que quieres eliminar {count} entrenador(es)? Esta acción no se puede deshacer. Las cuentas de usuario permanecerán en la organización.",
 		"confirm": "Eliminar"
 	},
 	"bulkActions": {
@@ -112,16 +126,53 @@
 		"updateFailed": "No se pudo actualizar el entrenador.",
 		"deleteFailed": "No se pudo eliminar el entrenador."
 	},
+	"experience": {
+		"addEntry": "Agregar Experiencia",
+		"editEntry": "Editar Experiencia",
+		"subtitle": "Agrega tu experiencia laboral como entrenador",
+		"basicInfo": "Información Básica",
+		"basicInfoDesc": "Nombre de la institución y cargo",
+		"institutionName": "Club / Institución",
+		"institutionNamePlaceholder": "Ej: Club Atlético Boca Juniors",
+		"role": "Cargo / Rol",
+		"rolePlaceholder": "Ej: Entrenador Principal, Asistente Técnico",
+		"sport": "Deporte",
+		"sportPlaceholder": "Seleccionar deporte",
+		"level": "Nivel",
+		"levelPlaceholder": "Seleccionar nivel",
+		"levels": {
+			"amateur": "Amateur",
+			"professional": "Profesional",
+			"national_team": "Selección Nacional"
+		},
+		"period": "Período",
+		"periodDesc": "Deja la fecha de fin vacía si es tu trabajo actual",
+		"startDate": "Fecha de inicio",
+		"endDate": "Fecha de fin",
+		"selectDate": "Seleccionar fecha",
+		"present": "Actualidad",
+		"additionalDetails": "Detalles Adicionales",
+		"additionalDetailsDesc": "Logros y descripción del trabajo",
+		"achievements": "Logros / Títulos",
+		"achievementsPlaceholder": "Ej: Campeón Liga 2023, Subcampeón Copa Nacional",
+		"description": "Descripción",
+		"descriptionPlaceholder": "Describe tus responsabilidades y funciones...",
+		"createSuccess": "Experiencia agregada correctamente",
+		"updateSuccess": "Experiencia actualizada correctamente",
+		"deleteSuccess": "Experiencia eliminada correctamente",
+		"deleteConfirmTitle": "¿Eliminar experiencia?",
+		"deleteConfirmDesc": "¿Estás seguro de que quieres eliminar esta experiencia? Esta acción no se puede deshacer."
+	},
 	"profile": {
 		"notFound": "Entrenador no encontrado",
 		"backToCoaches": "Volver a Entrenadores",
 		"stats": {
 			"totalSessions": "Sesiones Totales",
-			"completedUpcoming": "{completed} completadas, {upcoming} pr\u00f3ximas",
+			"completedUpcoming": "{completed} completadas, {upcoming} próximas",
 			"primaryCoach": "Entrenador Principal",
 			"sessionsAsPrimary": "sesiones como entrenador principal",
 			"athletesCoached": "Atletas Entrenados",
-			"uniqueAthletes": "atletas \u00fanicos entrenados",
+			"uniqueAthletes": "atletas únicos entrenados",
 			"evaluationsGiven": "Evaluaciones Realizadas",
 			"avg": "prom {rating}",
 			"athleteEvaluations": "evaluaciones de atletas"
@@ -131,37 +182,38 @@
 			"sessions": "Sesiones ({count})",
 			"attendance": "Asistencia ({count})",
 			"athletes": "Atletas ({count})",
-			"evaluations": "Evaluaciones ({count})"
+			"evaluations": "Evaluaciones ({count})",
+			"experience": "Experiencia ({count})"
 		},
 		"info": {
 			"personalContact": "Personal y Contacto",
-			"phone": "Tel\u00e9fono",
+			"phone": "Teléfono",
 			"email": "Email",
 			"birthDate": "Fecha de nacimiento",
-			"noContactInfo": "Sin informaci\u00f3n de contacto",
+			"noContactInfo": "Sin información de contacto",
 			"editContact": "Editar Contacto",
-			"editContactSubtitle": "Actualizar tel\u00e9fono y fecha de nacimiento",
-			"professionalInfo": "Informaci\u00f3n Profesional",
+			"editContactSubtitle": "Actualizar teléfono y fecha de nacimiento",
+			"professionalInfo": "Información Profesional",
 			"sport": "Deporte",
 			"specialty": "Especialidades",
 			"status": "Estado",
-			"noProfessionalInfo": "Sin informaci\u00f3n profesional",
-			"editProfessional": "Editar Informaci\u00f3n Profesional",
+			"noProfessionalInfo": "Sin información profesional",
+			"editProfessional": "Editar Información Profesional",
 			"editProfessionalSubtitle": "Actualizar deporte, especialidades y estado",
-			"bioNotes": "Biograf\u00eda",
-			"noBio": "Sin biograf\u00eda",
-			"editBio": "Editar Biograf\u00eda",
-			"editBioSubtitle": "Escribe una biograf\u00eda para este entrenador",
-			"bioPlaceholder": "Escribe una biograf\u00eda..."
+			"bioNotes": "Biografía",
+			"noBio": "Sin biografía",
+			"editBio": "Editar Biografía",
+			"editBioSubtitle": "Escribe una biografía para este entrenador",
+			"bioPlaceholder": "Escribe una biografía..."
 		},
 		"sessions": {
 			"noSessions": "No se encontraron sesiones",
-			"newSession": "Nueva Sesi\u00f3n",
-			"deleteTitle": "\u00bfEliminar sesi\u00f3n?",
-			"deleteMessage": "\u00bfEst\u00e1s seguro de que quieres eliminar \"{name}\"? Esta acci\u00f3n no se puede deshacer.",
+			"newSession": "Nueva Sesión",
+			"deleteTitle": "¿Eliminar sesión?",
+			"deleteMessage": "¿Estás seguro de que quieres eliminar \"{name}\"? Esta acción no se puede deshacer.",
 			"deleteConfirm": "Eliminar",
-			"statusChanged": "Estado de sesi\u00f3n actualizado",
-			"deleted": "Sesi\u00f3n eliminada"
+			"statusChanged": "Estado de sesión actualizado",
+			"deleted": "Sesión eliminada"
 		},
 		"attendance": {
 			"title": "Resumen de Asistencia",
@@ -177,7 +229,7 @@
 		"athletes": {
 			"title": "Atletas Entrenados",
 			"empty": "No se encontraron atletas",
-			"session": "{count} sesi\u00f3n",
+			"session": "{count} sesión",
 			"sessions": "{count} sesiones",
 			"table": {
 				"name": "Nombre",
@@ -191,29 +243,120 @@
 		},
 		"evaluations": {
 			"title": "Evaluaciones Realizadas",
-			"addEvaluation": "Agregar Evaluaci\u00f3n",
-			"empty": "A\u00fan no hay evaluaciones",
+			"addEvaluation": "Agregar Evaluación",
+			"empty": "Aún no hay evaluaciones",
 			"performance": "Rendimiento",
 			"attitude": "Actitud",
-			"physicalFitness": "Condici\u00f3n F\u00edsica",
+			"physicalFitness": "Condición Física",
 			"notes": "Notas",
 			"table": {
 				"athlete": "Atleta",
-				"session": "Sesi\u00f3n",
+				"session": "Sesión",
 				"date": "Fecha",
 				"ratings": "Calificaciones",
 				"actions": "Acciones"
 			},
 			"actions": {
-				"edit": "Editar Evaluaci\u00f3n",
-				"delete": "Eliminar Evaluaci\u00f3n"
+				"edit": "Editar Evaluación",
+				"delete": "Eliminar Evaluación"
 			},
 			"deleteConfirm": {
-				"title": "\u00bfEliminar evaluaci\u00f3n?",
-				"message": "\u00bfEst\u00e1s seguro de que quieres eliminar esta evaluaci\u00f3n de \"{name}\"? Esta acci\u00f3n no se puede deshacer.",
+				"title": "¿Eliminar evaluación?",
+				"message": "¿Estás seguro de que quieres eliminar esta evaluación de \"{name}\"? Esta acción no se puede deshacer.",
 				"confirm": "Eliminar"
 			},
-			"deleted": "Evaluaci\u00f3n eliminada correctamente"
+			"deleted": "Evaluación eliminada correctamente"
+		},
+		"experience": {
+			"title": "Experiencia Deportiva",
+			"add": "Agregar Experiencia",
+			"empty": "No hay experiencia registrada",
+			"emptyDescription": "Agrega la experiencia laboral del entrenador",
+			"achievements": "Logros",
+			"description": "Descripcion",
+			"present": "Actualidad",
+			"unknown": "Fecha desconocida"
+		}
+	},
+	"achievements": {
+		"tab": "Logros ({count})",
+		"addEntry": "Agregar Logro",
+		"noAchievements": "Sin logros registrados",
+		"deleted": "Logro eliminado exitosamente",
+		"types": {
+			"championship": "Campeonato / Título",
+			"award": "Premio Individual",
+			"selection": "Selección",
+			"record": "Récord",
+			"recognition": "Reconocimiento",
+			"mvp": "MVP",
+			"top_scorer": "Goleador",
+			"best_player": "Mejor Jugador",
+			"all_star": "All-Star",
+			"scholarship": "Beca",
+			"other": "Otro"
+		},
+		"table": {
+			"title": "Titulo",
+			"type": "Tipo",
+			"year": "Ano",
+			"competition": "Competencia",
+			"position": "Posicion",
+			"actions": "Acciones"
+		},
+		"actions": {
+			"edit": "Editar Logro",
+			"delete": "Eliminar Logro"
+		},
+		"deleteConfirm": {
+			"title": "Eliminar logro?",
+			"message": "Estas seguro de que deseas eliminar \"{title}\"? Esta accion no se puede deshacer.",
+			"confirm": "Eliminar"
+		}
+	},
+	"education": {
+		"tab": "Educación ({count})",
+		"addEntry": "Agregar Educación",
+		"editEntry": "Editar Educación",
+		"subtitle": "Información académica del entrenador",
+		"noEducation": "Sin educación registrada",
+		"noEducationDescription": "Agrega la formación académica del entrenador",
+		"current": "Actual",
+		"present": "Actualidad",
+		"unknown": "Fecha desconocida",
+		"gpaLabel": "Promedio",
+		"notesLabel": "Notas",
+		"institutionSection": "Institución",
+		"institution": "Nombre de la Institución",
+		"institutionPlaceholder": "Universidad de Buenos Aires, Instituto Superior...",
+		"degree": "Título / Grado",
+		"degreePlaceholder": "Licenciatura, Profesor, Técnico...",
+		"fieldOfStudy": "Campo de Estudio",
+		"fieldOfStudyPlaceholder": "Educación Física, Ciencias del Deporte...",
+		"academicYear": "Año Académico",
+		"academicYearPlaceholder": "5to año, 2do semestre...",
+		"gpa": "Promedio (GPA)",
+		"gpaPlaceholder": "3.5, 8.5...",
+		"periodSection": "Período",
+		"isCurrent": "Actualmente estudiando aquí",
+		"isCurrentDescription": "Marca esta opción si aún está estudiando en esta institución",
+		"startDate": "Fecha de Inicio",
+		"endDate": "Fecha de Fin",
+		"expectedGraduation": "Graduación Estimada",
+		"expectedGraduationDescription": "Fecha estimada de graduación",
+		"selectDate": "Seleccionar",
+		"notesSection": "Notas",
+		"notes": "Notas Adicionales",
+		"notesPlaceholder": "Especializaciones, cursos destacados, actividades...",
+		"createSuccess": "Educación agregada correctamente",
+		"updateSuccess": "Educación actualizada correctamente",
+		"deleteSuccess": "Educación eliminada correctamente",
+		"deleteConfirmTitle": "¿Eliminar educación?",
+		"deleteConfirmDesc": "¿Estás seguro de que deseas eliminar esta educación? Esta acción no se puede deshacer.",
+		"deleteConfirm": "Eliminar",
+		"actions": {
+			"edit": "Editar Educación",
+			"delete": "Eliminar Educación"
 		}
 	}
 }

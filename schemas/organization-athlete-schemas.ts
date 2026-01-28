@@ -48,6 +48,9 @@ export const createAthleteSchema = z.object({
 		.trim()
 		.email("Invalid email address")
 		.max(255, "Email is too long"),
+	// When true, sends an invitation email for the user to set their own password
+	// When false (default), generates a temporary password shown to the admin
+	sendInvitation: z.boolean().default(false),
 	// Athlete specific data
 	sport: z.nativeEnum(AthleteSport),
 	birthDate: z.coerce.date().optional(),
@@ -144,6 +147,8 @@ export const updateAthleteSchema = z.object({
 	// Residence information
 	residenceCity: z.string().trim().max(100).optional().nullable(),
 	residenceCountry: z.string().trim().max(100).optional().nullable(),
+	// Public profile settings
+	isPublicProfile: z.boolean().optional(),
 });
 
 // Delete athlete

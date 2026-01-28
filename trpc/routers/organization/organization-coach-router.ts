@@ -13,14 +13,23 @@ import {
 	type SQL,
 } from "drizzle-orm";
 import { appConfig } from "@/config/app.config";
+import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { MemberRole, TrainingSessionStatus } from "@/lib/db/schema/enums";
+import {
+	type AchievementScope,
+	type AchievementType,
+	MemberRole,
+	TrainingSessionStatus,
+} from "@/lib/db/schema/enums";
 import {
 	accountTable,
 	athleteEvaluationTable,
 	athleteGroupMemberTable,
 	athleteGroupTable,
 	attendanceTable,
+	coachAchievementTable,
+	coachEducationTable,
+	coachSportsExperienceTable,
 	coachTable,
 	memberTable,
 	trainingSessionAthleteTable,
@@ -32,12 +41,26 @@ import { sendCoachWelcomeEmail } from "@/lib/email";
 import { logger } from "@/lib/logger";
 import { generateTemporaryPassword, getBaseUrl } from "@/lib/utils";
 import {
+	createCoachAchievementSchema,
+	deleteCoachAchievementSchema,
+	listCoachAchievementsSchema,
+	updateCoachAchievementSchema,
+} from "@/schemas/organization-coach-achievement-schemas";
+import {
 	bulkDeleteCoachesSchema,
 	bulkUpdateCoachesStatusSchema,
+	createCoachEducationSchema,
+	createCoachExperienceSchema,
 	createCoachSchema,
+	deleteCoachEducationSchema,
+	deleteCoachExperienceSchema,
 	deleteCoachSchema,
 	exportCoachesSchema,
+	listCoachEducationSchema,
+	listCoachExperienceSchema,
 	listCoachesSchema,
+	updateCoachEducationSchema,
+	updateCoachExperienceSchema,
 	updateCoachSchema,
 } from "@/schemas/organization-coach-schemas";
 import { createTRPCRouter, protectedOrganizationProcedure } from "@/trpc/init";
@@ -144,6 +167,7 @@ export const organizationCoachRouter = createTRPCRouter({
 								email: true,
 								image: true,
 								imageKey: true,
+								emailVerified: true,
 							},
 						},
 					},
@@ -500,75 +524,149 @@ export const organizationCoachRouter = createTRPCRouter({
 						.where(eq(memberTable.id, existingMember.id));
 				}
 			} else {
-				// Create new user with temporary password
-				temporaryPassword = generateTemporaryPassword();
+				// Create new user
 				const { hashPassword } = await import("better-auth/crypto");
-				const hashedPassword = await hashPassword(temporaryPassword);
 
-				// Create user
-				const [newUser] = await db
-					.insert(userTable)
-					.values({
-						name: input.name,
-						email: input.email.toLowerCase(),
-						emailVerified: false,
-					})
-					.returning();
+				if (input.sendInvitation) {
+					// Invitation mode: Create user without usable password
+					// User will set their own password via the reset password flow
+					const placeholderPassword = await hashPassword(
+						`INVITATION_PENDING_${Date.now()}_${Math.random()}`,
+					);
 
-				if (!newUser) {
-					throw new TRPCError({
-						code: "INTERNAL_SERVER_ERROR",
-						message: "Failed to create user",
-					});
-				}
+					// Create user
+					const [newUser] = await db
+						.insert(userTable)
+						.values({
+							name: input.name,
+							email: input.email.toLowerCase(),
+							emailVerified: false,
+						})
+						.returning();
 
-				userId = newUser.id;
+					if (!newUser) {
+						throw new TRPCError({
+							code: "INTERNAL_SERVER_ERROR",
+							message: "Failed to create user",
+						});
+					}
 
-				// Create account with password (Better Auth pattern)
-				await db.insert(accountTable).values({
-					userId: newUser.id,
-					accountId: newUser.id,
-					providerId: "credential",
-					password: hashedPassword,
-				});
+					userId = newUser.id;
 
-				// Add user as member of the organization with coach role
-				await db.insert(memberTable).values({
-					organizationId: ctx.organization.id,
-					userId: newUser.id,
-					role: MemberRole.staff,
-				});
-
-				logger.info(
-					{
+					// Create account with placeholder password (Better Auth pattern)
+					await db.insert(accountTable).values({
 						userId: newUser.id,
-						email: input.email,
-						organizationId: ctx.organization.id,
-					},
-					"Created new user for coach",
-				);
-
-				// Send welcome email to the new coach
-				const baseUrl = getBaseUrl();
-				try {
-					await sendCoachWelcomeEmail({
-						recipient: input.email.toLowerCase(),
-						appName: appConfig.appName,
-						coachName: input.name,
-						organizationName: ctx.organization.name,
-						loginUrl: `${baseUrl}/auth/sign-in`,
-						forgotPasswordUrl: `${baseUrl}/auth/forgot-password`,
+						accountId: newUser.id,
+						providerId: "credential",
+						password: placeholderPassword,
 					});
+
+					// Add user as member of the organization with coach role
+					await db.insert(memberTable).values({
+						organizationId: ctx.organization.id,
+						userId: newUser.id,
+						role: MemberRole.staff,
+					});
+
 					logger.info(
-						{ email: input.email, organizationId: ctx.organization.id },
-						"Sent welcome email to coach",
+						{
+							userId: newUser.id,
+							email: input.email,
+							organizationId: ctx.organization.id,
+							invitationMode: true,
+						},
+						"Created new user for coach (invitation mode)",
 					);
-				} catch (emailError) {
-					// Log the error but don't fail the operation
-					logger.error(
-						{ error: emailError, email: input.email },
-						"Failed to send welcome email to coach",
+
+					// Send password reset email so user can set their own password
+					try {
+						await auth.api.requestPasswordReset({
+							body: {
+								email: input.email.toLowerCase(),
+								redirectTo: "/auth/reset-password",
+							},
+						});
+						logger.info(
+							{ email: input.email, organizationId: ctx.organization.id },
+							"Sent password setup invitation to coach",
+						);
+					} catch (emailError) {
+						logger.error(
+							{ error: emailError, email: input.email },
+							"Failed to send invitation email to coach",
+						);
+					}
+				} else {
+					// Temporary password mode: Generate password and show to admin
+					temporaryPassword = generateTemporaryPassword();
+					const hashedPassword = await hashPassword(temporaryPassword);
+
+					// Create user
+					const [newUser] = await db
+						.insert(userTable)
+						.values({
+							name: input.name,
+							email: input.email.toLowerCase(),
+							emailVerified: false,
+						})
+						.returning();
+
+					if (!newUser) {
+						throw new TRPCError({
+							code: "INTERNAL_SERVER_ERROR",
+							message: "Failed to create user",
+						});
+					}
+
+					userId = newUser.id;
+
+					// Create account with password (Better Auth pattern)
+					await db.insert(accountTable).values({
+						userId: newUser.id,
+						accountId: newUser.id,
+						providerId: "credential",
+						password: hashedPassword,
+					});
+
+					// Add user as member of the organization with coach role
+					await db.insert(memberTable).values({
+						organizationId: ctx.organization.id,
+						userId: newUser.id,
+						role: MemberRole.staff,
+					});
+
+					logger.info(
+						{
+							userId: newUser.id,
+							email: input.email,
+							organizationId: ctx.organization.id,
+							invitationMode: false,
+						},
+						"Created new user for coach (temporary password mode)",
 					);
+
+					// Send welcome email to the new coach
+					const baseUrl = getBaseUrl();
+					try {
+						await sendCoachWelcomeEmail({
+							recipient: input.email.toLowerCase(),
+							appName: appConfig.appName,
+							coachName: input.name,
+							organizationName: ctx.organization.name,
+							loginUrl: `${baseUrl}/auth/sign-in`,
+							forgotPasswordUrl: `${baseUrl}/auth/forgot-password`,
+						});
+						logger.info(
+							{ email: input.email, organizationId: ctx.organization.id },
+							"Sent welcome email to coach",
+						);
+					} catch (emailError) {
+						// Log the error but don't fail the operation
+						logger.error(
+							{ error: emailError, email: input.email },
+							"Failed to send welcome email to coach",
+						);
+					}
 				}
 			}
 
@@ -591,6 +689,7 @@ export const organizationCoachRouter = createTRPCRouter({
 				coach,
 				temporaryPassword,
 				isNewUser: !existingUser,
+				invitationSent: !existingUser && input.sendInvitation,
 			};
 		}),
 
@@ -766,5 +865,490 @@ export const organizationCoachRouter = createTRPCRouter({
 			const buffer = await workbook.xlsx.writeBuffer();
 			const base64 = Buffer.from(buffer).toString("base64");
 			return base64;
+		}),
+
+	// ============================================================================
+	// COACH SPORTS EXPERIENCE PROCEDURES
+	// ============================================================================
+
+	// Create coach sports experience
+	createSportsExperience: protectedOrganizationProcedure
+		.input(createCoachExperienceSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify coach belongs to organization
+			const coach = await db.query.coachTable.findFirst({
+				where: and(
+					eq(coachTable.id, input.coachId),
+					eq(coachTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!coach) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Coach not found",
+				});
+			}
+
+			const result = await db
+				.insert(coachSportsExperienceTable)
+				.values({
+					coachId: input.coachId,
+					institutionName: input.institutionName,
+					role: input.role,
+					sport: input.sport ?? undefined,
+					level: input.level ?? undefined,
+					startDate: input.startDate ?? undefined,
+					endDate: input.endDate ?? undefined,
+					achievements: input.achievements ?? undefined,
+					description: input.description ?? undefined,
+				})
+				.returning();
+
+			const experience = result[0]!;
+
+			logger.info(
+				{ coachId: input.coachId, experienceId: experience.id },
+				"Coach sports experience created",
+			);
+
+			return experience;
+		}),
+
+	// Update coach sports experience
+	updateSportsExperience: protectedOrganizationProcedure
+		.input(updateCoachExperienceSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify experience exists and coach belongs to organization
+			const experience = await db.query.coachSportsExperienceTable.findFirst({
+				where: eq(coachSportsExperienceTable.id, input.id),
+				with: {
+					coach: true,
+				},
+			});
+
+			if (!experience) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Experience not found",
+				});
+			}
+
+			if (experience.coach.organizationId !== ctx.organization.id) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Not authorized to update this experience",
+				});
+			}
+
+			const [updated] = await db
+				.update(coachSportsExperienceTable)
+				.set({
+					institutionName: input.institutionName,
+					role: input.role,
+					sport: input.sport,
+					level: input.level,
+					startDate: input.startDate,
+					endDate: input.endDate,
+					achievements: input.achievements,
+					description: input.description,
+				})
+				.where(eq(coachSportsExperienceTable.id, input.id))
+				.returning();
+
+			logger.info(
+				{ experienceId: input.id },
+				"Coach sports experience updated",
+			);
+
+			return updated;
+		}),
+
+	// List coach sports experience
+	listSportsExperience: protectedOrganizationProcedure
+		.input(listCoachExperienceSchema)
+		.query(async ({ ctx, input }) => {
+			// Verify coach belongs to organization
+			const coach = await db.query.coachTable.findFirst({
+				where: and(
+					eq(coachTable.id, input.coachId),
+					eq(coachTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!coach) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Coach not found",
+				});
+			}
+
+			const experiences = await db.query.coachSportsExperienceTable.findMany({
+				where: eq(coachSportsExperienceTable.coachId, input.coachId),
+				orderBy: [desc(coachSportsExperienceTable.startDate)],
+			});
+
+			return experiences;
+		}),
+
+	// Delete coach sports experience
+	deleteSportsExperience: protectedOrganizationProcedure
+		.input(deleteCoachExperienceSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify experience exists and coach belongs to organization
+			const experience = await db.query.coachSportsExperienceTable.findFirst({
+				where: eq(coachSportsExperienceTable.id, input.id),
+				with: {
+					coach: true,
+				},
+			});
+
+			if (!experience) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Experience not found",
+				});
+			}
+
+			if (experience.coach.organizationId !== ctx.organization.id) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Not authorized to delete this experience",
+				});
+			}
+
+			await db
+				.delete(coachSportsExperienceTable)
+				.where(eq(coachSportsExperienceTable.id, input.id));
+
+			logger.info(
+				{ experienceId: input.id },
+				"Coach sports experience deleted",
+			);
+
+			return { success: true };
+		}),
+
+	// ============================================================================
+	// ACHIEVEMENT MANAGEMENT
+	// ============================================================================
+
+	listAchievements: protectedOrganizationProcedure
+		.input(listCoachAchievementsSchema)
+		.query(async ({ ctx, input }) => {
+			// Verify coach belongs to organization
+			const coach = await db.query.coachTable.findFirst({
+				where: and(
+					eq(coachTable.id, input.coachId),
+					eq(coachTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!coach) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Coach not found",
+				});
+			}
+
+			const whereConditions = [
+				eq(coachAchievementTable.coachId, input.coachId),
+			];
+
+			if (input.publicOnly) {
+				whereConditions.push(eq(coachAchievementTable.isPublic, true));
+			}
+
+			const achievements = await db.query.coachAchievementTable.findMany({
+				where: and(...whereConditions),
+				orderBy: [
+					desc(coachAchievementTable.year),
+					asc(coachAchievementTable.displayOrder),
+				],
+			});
+
+			return achievements;
+		}),
+
+	createAchievement: protectedOrganizationProcedure
+		.input(createCoachAchievementSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify coach belongs to organization
+			const coach = await db.query.coachTable.findFirst({
+				where: and(
+					eq(coachTable.id, input.coachId),
+					eq(coachTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!coach) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Coach not found",
+				});
+			}
+
+			const result = await db
+				.insert(coachAchievementTable)
+				.values({
+					coachId: input.coachId,
+					title: input.title,
+					type: input.type as AchievementType,
+					scope: input.scope as AchievementScope,
+					year: input.year,
+					organization: input.organization ?? null,
+					team: input.team ?? null,
+					competition: input.competition ?? null,
+					position: input.position ?? null,
+					description: input.description ?? null,
+					isPublic: input.isPublic ?? true,
+					displayOrder: input.displayOrder ?? 0,
+				})
+				.returning();
+
+			const achievement = result[0]!;
+
+			logger.info(
+				{ achievementId: achievement.id, coachId: input.coachId },
+				"Coach achievement created",
+			);
+
+			return achievement;
+		}),
+
+	updateAchievement: protectedOrganizationProcedure
+		.input(updateCoachAchievementSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify achievement exists and coach belongs to organization
+			const achievement = await db.query.coachAchievementTable.findFirst({
+				where: eq(coachAchievementTable.id, input.id),
+				with: {
+					coach: true,
+				},
+			});
+
+			if (!achievement) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Achievement not found",
+				});
+			}
+
+			if (achievement.coach.organizationId !== ctx.organization.id) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Not authorized to update this achievement",
+				});
+			}
+
+			const { id, type, scope, ...rest } = input;
+			const result = await db
+				.update(coachAchievementTable)
+				.set({
+					...rest,
+					type: type as AchievementType | undefined,
+					scope: scope as AchievementScope | undefined,
+				})
+				.where(eq(coachAchievementTable.id, id))
+				.returning();
+
+			const updatedAchievement = result[0]!;
+
+			logger.info({ achievementId: id }, "Coach achievement updated");
+
+			return updatedAchievement;
+		}),
+
+	deleteAchievement: protectedOrganizationProcedure
+		.input(deleteCoachAchievementSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify achievement exists and coach belongs to organization
+			const achievement = await db.query.coachAchievementTable.findFirst({
+				where: eq(coachAchievementTable.id, input.id),
+				with: {
+					coach: true,
+				},
+			});
+
+			if (!achievement) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Achievement not found",
+				});
+			}
+
+			if (achievement.coach.organizationId !== ctx.organization.id) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Not authorized to delete this achievement",
+				});
+			}
+
+			await db
+				.delete(coachAchievementTable)
+				.where(eq(coachAchievementTable.id, input.id));
+
+			logger.info({ achievementId: input.id }, "Coach achievement deleted");
+
+			return { success: true };
+		}),
+
+	// ============================================================================
+	// EDUCATION MANAGEMENT
+	// ============================================================================
+
+	listEducation: protectedOrganizationProcedure
+		.input(listCoachEducationSchema)
+		.query(async ({ ctx, input }) => {
+			// Verify coach belongs to organization
+			const coach = await db.query.coachTable.findFirst({
+				where: and(
+					eq(coachTable.id, input.coachId),
+					eq(coachTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!coach) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Coach not found",
+				});
+			}
+
+			const education = await db.query.coachEducationTable.findMany({
+				where: eq(coachEducationTable.coachId, input.coachId),
+				orderBy: [
+					desc(coachEducationTable.isCurrent),
+					desc(coachEducationTable.startDate),
+				],
+			});
+
+			return education;
+		}),
+
+	addEducation: protectedOrganizationProcedure
+		.input(createCoachEducationSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify coach belongs to organization
+			const coach = await db.query.coachTable.findFirst({
+				where: and(
+					eq(coachTable.id, input.coachId),
+					eq(coachTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!coach) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Coach not found",
+				});
+			}
+
+			const result = await db
+				.insert(coachEducationTable)
+				.values({
+					coachId: input.coachId,
+					institution: input.institution,
+					degree: input.degree ?? null,
+					fieldOfStudy: input.fieldOfStudy ?? null,
+					academicYear: input.academicYear ?? null,
+					startDate: input.startDate ?? null,
+					endDate: input.isCurrent ? null : (input.endDate ?? null),
+					expectedGraduationDate: input.expectedGraduationDate ?? null,
+					gpa: input.gpa ?? null,
+					isCurrent: input.isCurrent ?? false,
+					notes: input.notes ?? null,
+				})
+				.returning();
+
+			const education = result[0]!;
+
+			logger.info(
+				{ educationId: education.id, coachId: input.coachId },
+				"Coach education created",
+			);
+
+			return education;
+		}),
+
+	updateEducation: protectedOrganizationProcedure
+		.input(updateCoachEducationSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify education exists and coach belongs to organization
+			const education = await db.query.coachEducationTable.findFirst({
+				where: eq(coachEducationTable.id, input.id),
+				with: {
+					coach: true,
+				},
+			});
+
+			if (!education) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Education not found",
+				});
+			}
+
+			if (education.coach.organizationId !== ctx.organization.id) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Not authorized to update this education",
+				});
+			}
+
+			const [updated] = await db
+				.update(coachEducationTable)
+				.set({
+					institution: input.institution,
+					degree: input.degree ?? null,
+					fieldOfStudy: input.fieldOfStudy ?? null,
+					academicYear: input.academicYear ?? null,
+					startDate: input.startDate ?? null,
+					endDate: input.isCurrent ? null : (input.endDate ?? null),
+					expectedGraduationDate: input.expectedGraduationDate ?? null,
+					gpa: input.gpa ?? null,
+					isCurrent: input.isCurrent ?? false,
+					notes: input.notes ?? null,
+				})
+				.where(eq(coachEducationTable.id, input.id))
+				.returning();
+
+			logger.info({ educationId: input.id }, "Coach education updated");
+
+			return updated;
+		}),
+
+	deleteEducation: protectedOrganizationProcedure
+		.input(deleteCoachEducationSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify education exists and coach belongs to organization
+			const education = await db.query.coachEducationTable.findFirst({
+				where: eq(coachEducationTable.id, input.id),
+				with: {
+					coach: true,
+				},
+			});
+
+			if (!education) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Education not found",
+				});
+			}
+
+			if (education.coach.organizationId !== ctx.organization.id) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Not authorized to delete this education",
+				});
+			}
+
+			await db
+				.delete(coachEducationTable)
+				.where(eq(coachEducationTable.id, input.id));
+
+			logger.info({ educationId: input.id }, "Coach education deleted");
+
+			return { success: true };
 		}),
 });

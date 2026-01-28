@@ -120,6 +120,16 @@ export const CoachStatus = {
 export type CoachStatus = (typeof CoachStatus)[keyof typeof CoachStatus];
 export const CoachStatuses = Object.values(CoachStatus);
 
+// Coach experience level enum
+export const CoachExperienceLevel = {
+	amateur: "amateur",
+	professional: "professional",
+	nationalTeam: "national_team",
+} as const;
+export type CoachExperienceLevel =
+	(typeof CoachExperienceLevel)[keyof typeof CoachExperienceLevel];
+export const CoachExperienceLevels = Object.values(CoachExperienceLevel);
+
 // Athlete status enum
 export const AthleteStatus = {
 	active: "active",
@@ -1069,6 +1079,31 @@ export const AchievementScope = {
 export type AchievementScope =
 	(typeof AchievementScope)[keyof typeof AchievementScope];
 export const AchievementScopes = Object.values(AchievementScope);
+
+// ============================================================================
+// SESSION CONFIRMATION ENUMS
+// ============================================================================
+
+// Confirmation status for session reminders
+export const ConfirmationStatus = {
+	sent: "sent", // Notification sent
+	delivered: "delivered", // Delivered (optional, if provider supports)
+	failed: "failed", // Failed to send
+	confirmed: "confirmed", // Athlete confirmed attendance
+} as const;
+export type ConfirmationStatus =
+	(typeof ConfirmationStatus)[keyof typeof ConfirmationStatus];
+export const ConfirmationStatuses = Object.values(ConfirmationStatus);
+
+// Notification channel for confirmations
+export const NotificationChannel = {
+	email: "email",
+	sms: "sms",
+	whatsapp: "whatsapp",
+} as const;
+export type NotificationChannel =
+	(typeof NotificationChannel)[keyof typeof NotificationChannel];
+export const NotificationChannels = Object.values(NotificationChannel);
 
 export function enumToPgEnum<T extends Record<string, string>>(myEnum: T) {
 	return Object.values(myEnum).map((value) => value) as [

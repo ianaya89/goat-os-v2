@@ -27,7 +27,14 @@
 		"created": "Created",
 		"noCoaches": "No coaches found.",
 		"viewProfile": "View Profile",
-		"yearsOld": "years old"
+		"yearsOld": "years old",
+		"accountStatus": "Account",
+		"noAccount": "No account",
+		"noAccountTooltip": "This coach does not have an associated user account",
+		"accountActive": "Active",
+		"accountActiveTooltip": "The coach has set up their account and can access the platform",
+		"accountPending": "Pending",
+		"accountPendingTooltip": "The coach has not yet verified their email or set up their password"
 	},
 	"modal": {
 		"createTitle": "Create Coach",
@@ -49,7 +56,14 @@
 		"update": "Save",
 		"selectStatus": "Select status",
 		"specialtyPlaceholder": "Type a specialty and press Enter or comma...",
-		"addSpecialty": "Add specialty"
+		"addSpecialty": "Add specialty",
+		"sendInvitation": "Send email invitation",
+		"sendInvitationDescription": "The coach will receive an email to set their own password",
+		"invitationSent": "Invitation sent successfully",
+		"invitationSentTitle": "Coach Created",
+		"invitationSentDescription": "The coach has been created and an invitation has been sent.",
+		"invitationSentAlert": "Invitation Sent",
+		"invitationSentNote": "The coach will receive an email with instructions to set their password and access the platform."
 	},
 	"form": {
 		"personalInfo": "Personal information",
@@ -112,6 +126,43 @@
 		"updateFailed": "Failed to update coach.",
 		"deleteFailed": "Failed to delete coach."
 	},
+	"experience": {
+		"addEntry": "Add Experience",
+		"editEntry": "Edit Experience",
+		"subtitle": "Add your coaching work experience",
+		"basicInfo": "Basic Information",
+		"basicInfoDesc": "Institution name and role",
+		"institutionName": "Club / Institution",
+		"institutionNamePlaceholder": "E.g.: Manchester United FC",
+		"role": "Position / Role",
+		"rolePlaceholder": "E.g.: Head Coach, Assistant Coach",
+		"sport": "Sport",
+		"sportPlaceholder": "Select sport",
+		"level": "Level",
+		"levelPlaceholder": "Select level",
+		"levels": {
+			"amateur": "Amateur",
+			"professional": "Professional",
+			"national_team": "National Team"
+		},
+		"period": "Period",
+		"periodDesc": "Leave end date empty if this is your current job",
+		"startDate": "Start date",
+		"endDate": "End date",
+		"selectDate": "Select date",
+		"present": "Present",
+		"additionalDetails": "Additional Details",
+		"additionalDetailsDesc": "Achievements and job description",
+		"achievements": "Achievements / Titles",
+		"achievementsPlaceholder": "E.g.: League Champion 2023, National Cup Runner-up",
+		"description": "Description",
+		"descriptionPlaceholder": "Describe your responsibilities and duties...",
+		"createSuccess": "Experience added successfully",
+		"updateSuccess": "Experience updated successfully",
+		"deleteSuccess": "Experience deleted successfully",
+		"deleteConfirmTitle": "Delete experience?",
+		"deleteConfirmDesc": "Are you sure you want to delete this experience? This action cannot be undone."
+	},
 	"profile": {
 		"notFound": "Coach not found",
 		"backToCoaches": "Back to Coaches",
@@ -131,7 +182,8 @@
 			"sessions": "Sessions ({count})",
 			"attendance": "Attendance ({count})",
 			"athletes": "Athletes ({count})",
-			"evaluations": "Evaluations ({count})"
+			"evaluations": "Evaluations ({count})",
+			"experience": "Experience ({count})"
 		},
 		"info": {
 			"personalContact": "Personal & Contact",
@@ -214,6 +266,97 @@
 				"confirm": "Delete"
 			},
 			"deleted": "Evaluation deleted successfully"
+		},
+		"experience": {
+			"title": "Sports Experience",
+			"add": "Add Experience",
+			"empty": "No experience recorded",
+			"emptyDescription": "Add the coach's work experience",
+			"achievements": "Achievements",
+			"description": "Description",
+			"present": "Present",
+			"unknown": "Unknown date"
+		}
+	},
+	"achievements": {
+		"tab": "Achievements ({count})",
+		"addEntry": "Add Achievement",
+		"noAchievements": "No achievements registered",
+		"deleted": "Achievement deleted successfully",
+		"types": {
+			"championship": "Championship / Title",
+			"award": "Individual Award",
+			"selection": "Selection",
+			"record": "Record",
+			"recognition": "Recognition",
+			"mvp": "MVP",
+			"top_scorer": "Top Scorer",
+			"best_player": "Best Player",
+			"all_star": "All-Star",
+			"scholarship": "Scholarship",
+			"other": "Other"
+		},
+		"table": {
+			"title": "Title",
+			"type": "Type",
+			"year": "Year",
+			"competition": "Competition",
+			"position": "Position",
+			"actions": "Actions"
+		},
+		"actions": {
+			"edit": "Edit Achievement",
+			"delete": "Delete Achievement"
+		},
+		"deleteConfirm": {
+			"title": "Delete achievement?",
+			"message": "Are you sure you want to delete \"{title}\"? This action cannot be undone.",
+			"confirm": "Delete"
+		}
+	},
+	"education": {
+		"tab": "Education ({count})",
+		"addEntry": "Add Education",
+		"editEntry": "Edit Education",
+		"subtitle": "Coach academic information",
+		"noEducation": "No education registered",
+		"noEducationDescription": "Add the coach's academic background",
+		"current": "Current",
+		"present": "Present",
+		"unknown": "Unknown date",
+		"gpaLabel": "GPA",
+		"notesLabel": "Notes",
+		"institutionSection": "Institution",
+		"institution": "Institution Name",
+		"institutionPlaceholder": "University of..., Sports Institute...",
+		"degree": "Degree / Title",
+		"degreePlaceholder": "Bachelor's, Master's, Certificate...",
+		"fieldOfStudy": "Field of Study",
+		"fieldOfStudyPlaceholder": "Physical Education, Sports Science...",
+		"academicYear": "Academic Year",
+		"academicYearPlaceholder": "5th year, 2nd semester...",
+		"gpa": "GPA",
+		"gpaPlaceholder": "3.5, 8.5...",
+		"periodSection": "Period",
+		"isCurrent": "Currently studying here",
+		"isCurrentDescription": "Check this if still studying at this institution",
+		"startDate": "Start Date",
+		"endDate": "End Date",
+		"expectedGraduation": "Expected Graduation",
+		"expectedGraduationDescription": "Expected graduation date",
+		"selectDate": "Select",
+		"notesSection": "Notes",
+		"notes": "Additional Notes",
+		"notesPlaceholder": "Specializations, notable courses, activities...",
+		"createSuccess": "Education added successfully",
+		"updateSuccess": "Education updated successfully",
+		"deleteSuccess": "Education deleted successfully",
+		"deleteConfirmTitle": "Delete education?",
+		"deleteConfirmDesc": "Are you sure you want to delete this education? This action cannot be undone.",
+		"deleteConfirm": "Delete",
+		"actions": {
+			"edit": "Edit Education",
+			"delete": "Delete Education"
 		}
 	}
 }

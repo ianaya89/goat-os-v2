@@ -1,5 +1,9 @@
 import { z } from "zod/v4";
-import { AthleteSport, CoachStatus } from "@/lib/db/schema/enums";
+import {
+	AthleteSport,
+	CoachExperienceLevel,
+	CoachStatus,
+} from "@/lib/db/schema/enums";
 
 // Sortable fields for coaches
 export const CoachSortField = z.enum([
@@ -46,6 +50,9 @@ export const createCoachSchema = z.object({
 		.trim()
 		.min(1, "Phone is required")
 		.max(50, "Phone is too long"),
+	// When true, sends an invitation email for the user to set their own password
+	// When false (default), generates a temporary password shown to the admin
+	sendInvitation: z.boolean().default(false),
 	// Coach specific data
 	birthDate: z.coerce.date().optional(),
 	sport: z.nativeEnum(AthleteSport),
@@ -105,3 +112,151 @@ export type BulkUpdateCoachesStatusInput = z.infer<
 	typeof bulkUpdateCoachesStatusSchema
 >;
 export type ExportCoachesInput = z.infer<typeof exportCoachesSchema>;
+
+// ============================================================================
+// COACH SPORTS EXPERIENCE SCHEMAS
+// ============================================================================
+
+// Create coach sports experience
+export const createCoachExperienceSchema = z.object({
+	coachId: z.string().uuid(),
+	institutionName: z
+		.string()
+		.trim()
+		.min(1, "Institution name is required")
+		.max(200, "Institution name is too long"),
+	role: z
+		.string()
+		.trim()
+		.min(1, "Role is required")
+		.max(100, "Role is too long"),
+	sport: z.nativeEnum(AthleteSport).optional().nullable(),
+	level: z.nativeEnum(CoachExperienceLevel).optional().nullable(),
+	startDate: z.coerce.date().optional().nullable(),
+	endDate: z.coerce.date().optional().nullable(),
+	achievements: z
+		.string()
+		.trim()
+		.max(2000, "Achievements is too long")
+		.optional()
+		.nullable(),
+	description: z
+		.string()
+		.trim()
+		.max(2000, "Description is too long")
+		.optional()
+		.nullable(),
+});
+
+// Update coach sports experience
+export const updateCoachExperienceSchema = z.object({
+	id: z.string().uuid(),
+	institutionName: z
+		.string()
+		.trim()
+		.min(1, "Institution name is required")
+		.max(200, "Institution name is too long")
+		.optional(),
+	role: z
+		.string()
+		.trim()
+		.min(1, "Role is required")
+		.max(100, "Role is too long")
+		.optional(),
+	sport: z.nativeEnum(AthleteSport).optional().nullable(),
+	level: z.nativeEnum(CoachExperienceLevel).optional().nullable(),
+	startDate: z.coerce.date().optional().nullable(),
+	endDate: z.coerce.date().optional().nullable(),
+	achievements: z
+		.string()
+		.trim()
+		.max(2000, "Achievements is too long")
+		.optional()
+		.nullable(),
+	description: z
+		.string()
+		.trim()
+		.max(2000, "Description is too long")
+		.optional()
+		.nullable(),
+});
+
+// List coach sports experience
+export const listCoachExperienceSchema = z.object({
+	coachId: z.string().uuid(),
+});
+
+// Delete coach sports experience
+export const deleteCoachExperienceSchema = z.object({
+	id: z.string().uuid(),
+});
+
+// Type exports for coach experience
+export type CreateCoachExperienceInput = z.infer<
+	typeof createCoachExperienceSchema
+>;
+export type UpdateCoachExperienceInput = z.infer<
+	typeof updateCoachExperienceSchema
+>;
+export type ListCoachExperienceInput = z.infer<
+	typeof listCoachExperienceSchema
+>;
+export type DeleteCoachExperienceInput = z.infer<
+	typeof deleteCoachExperienceSchema
+>;
+
+// ============================================================================
+// COACH EDUCATION SCHEMAS
+// ============================================================================
+
+// Create coach education
+export const createCoachEducationSchema = z.object({
+	coachId: z.string().uuid(),
+	institution: z.string().trim().min(2, "Institution is required").max(200),
+	degree: z.string().trim().max(100).optional().nullable(),
+	fieldOfStudy: z.string().trim().max(100).optional().nullable(),
+	academicYear: z.string().trim().max(50).optional().nullable(),
+	startDate: z.coerce.date().optional().nullable(),
+	endDate: z.coerce.date().optional().nullable(),
+	expectedGraduationDate: z.coerce.date().optional().nullable(),
+	gpa: z.string().trim().max(10).optional().nullable(),
+	isCurrent: z.boolean().default(false),
+	notes: z.string().trim().max(500).optional().nullable(),
+});
+
+// Update coach education
+export const updateCoachEducationSchema = z.object({
+	id: z.string().uuid(),
+	institution: z.string().trim().min(2, "Institution is required").max(200),
+	degree: z.string().trim().max(100).optional().nullable(),
+	fieldOfStudy: z.string().trim().max(100).optional().nullable(),
+	academicYear: z.string().trim().max(50).optional().nullable(),
+	startDate: z.coerce.date().optional().nullable(),
+	endDate: z.coerce.date().optional().nullable(),
+	expectedGraduationDate: z.coerce.date().optional().nullable(),
+	gpa: z.string().trim().max(10).optional().nullable(),
+	isCurrent: z.boolean().default(false),
+	notes: z.string().trim().max(500).optional().nullable(),
+});
+
+// List coach education
+export const listCoachEducationSchema = z.object({
+	coachId: z.string().uuid(),
+});
+
+// Delete coach education
+export const deleteCoachEducationSchema = z.object({
+	id: z.string().uuid(),
+});
+
+// Type exports for coach education
+export type CreateCoachEducationInput = z.infer<
+	typeof createCoachEducationSchema
+>;
+export type UpdateCoachEducationInput = z.infer<
+	typeof updateCoachEducationSchema
+>;
+export type ListCoachEducationInput = z.infer<typeof listCoachEducationSchema>;
+export type DeleteCoachEducationInput = z.infer<
+	typeof deleteCoachEducationSchema
+>;

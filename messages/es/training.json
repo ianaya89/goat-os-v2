@@ -35,6 +35,7 @@
 		"actions": "Acciones",
 		"duplicate": "Duplicar",
 		"recurringSession": "Sesión recurrente",
+		"pendingConfirmation": "Confirmación pendiente",
 		"openMenu": "Abrir menú",
 		"empty": "No se encontraron sesiones de entrenamiento.",
 		"deleteConfirmTitle": "¿Eliminar sesión?",
@@ -43,6 +44,7 @@
 		"today": "Hoy",
 		"thisWeek": "Esta Semana",
 		"thisMonth": "Este Mes",
+		"lastMonth": "Mes Anterior",
 		"allTime": "Todo",
 		"athlete": "Atleta",
 		"athleteCount": "{count, plural, one {# atleta} other {# atletas}}"
@@ -102,6 +104,7 @@
 		"cancel": "Cancelar"
 	},
 	"detail": {
+		"sessionInfo": "Información",
 		"overview": "Resumen",
 		"attendance": "Asistencia",
 		"notes": "Notas",
@@ -153,6 +156,7 @@
 		"cancelled": "Sesión cancelada correctamente.",
 		"duplicated": "Sesión duplicada correctamente.",
 		"completed": "Sesión marcada como completada.",
+		"statusUpdated": "Estado actualizado correctamente.",
 		"reminderSent": "Recordatorio enviado a {count, plural, one {# atleta} other {# atletas}}.",
 		"dailySummarySent": "Resumen diario enviado a {sent} {sent, plural, one {entrenador} other {entrenadores}} para {date}."
 	},
@@ -164,6 +168,7 @@
 		"cancelFailed": "No se pudo cancelar la sesión.",
 		"duplicateFailed": "No se pudo duplicar la sesión.",
 		"completeFailed": "No se pudo completar la sesión.",
+		"statusUpdateFailed": "No se pudo actualizar el estado.",
 		"reminderFailed": "No se pudo enviar el recordatorio.",
 		"sendDailySummaryFailed": "No se pudo enviar el resumen diario.",
 		"updateCoachesFailed": "No se pudo actualizar los entrenadores.",
@@ -296,6 +301,12 @@
 	},
 	"bulk": {
 		"changeStatus": "Cambiar estado",
+		"sendConfirmations": "Enviar confirmaciones",
+		"viaEmail": "Por Email",
+		"viaWhatsApp": "Por WhatsApp",
+		"viaSms": "Por SMS",
+		"confirmationsSent": "Confirmaciones enviadas a {count, plural, one {# atleta} other {# atletas}}.",
+		"confirmationsFailed": "No se pudieron enviar las confirmaciones.",
 		"delete": "Eliminar",
 		"deleteTitle": "¿Eliminar sesiones?",
 		"deleteMessage": "¿Estás seguro de que deseas eliminar {count, plural, one {# sesión} other {# sesiones}}? Esta acción no se puede deshacer.",

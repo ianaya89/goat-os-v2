@@ -88,6 +88,7 @@ export interface FilterConfig {
 	title: string;
 	options: FilterOption[];
 	className?: DataTableFacetedFilterProps["className"];
+	singleSelect?: boolean;
 }
 
 export interface DataTableProps<TData> {
@@ -323,6 +324,7 @@ export function DataTable<TData>({
 									options={filter.options}
 									selected={getFilterValue(filter.key)}
 									title={filter.title}
+									singleSelect={filter.singleSelect}
 								/>
 							))}
 					</div>
@@ -524,6 +526,7 @@ export type DataTableFacetedFilterProps = {
 	selected: string[];
 	onChange: (values: string[]) => void;
 	className?: PopoverContentProps["className"];
+	singleSelect?: boolean;
 };
 
 export interface BulkActionItem {
@@ -626,9 +629,11 @@ function DataTableFacetedFilter({
 	selected,
 	onChange,
 	className,
+	singleSelect,
 }: DataTableFacetedFilterProps) {
 	const t = useTranslations("common.table");
 	const [mounted, setMounted] = React.useState(false);
+	const [open, setOpen] = React.useState(false);
 	const selectedValues = new Set(selected);
 
 	React.useEffect(() => {
@@ -650,7 +655,7 @@ function DataTableFacetedFilter({
 	}
 
 	return (
-		<Popover>
+		<Popover open={open} onOpenChange={setOpen}>
 			<PopoverTrigger asChild>
 				<Button
 					variant="outline"
@@ -709,18 +714,26 @@ function DataTableFacetedFilter({
 									<CommandItem
 										key={option.value}
 										onSelect={() => {
-											if (isSelected) {
-												selectedValues.delete(option.value);
+											if (singleSelect) {
+												// Single select: replace selection and close
+												onChange([option.value]);
+												setOpen(false);
 											} else {
-												selectedValues.add(option.value);
+												// Multi select: toggle selection
+												if (isSelected) {
+													selectedValues.delete(option.value);
+												} else {
+													selectedValues.add(option.value);
+												}
+												const filterValues = Array.from(selectedValues);
+												onChange(filterValues.length ? filterValues : []);
 											}
-											const filterValues = Array.from(selectedValues);
-											onChange(filterValues.length ? filterValues : []);
 										}}
 									>
 										<div
 											className={cn(
-												"flex size-4 items-center justify-center rounded-[4px] border",
+												"flex size-4 items-center justify-center border",
+												singleSelect ? "rounded-full" : "rounded-[4px]",
 												isSelected
 													? "border-primary bg-primary text-primary-foreground"
 													: "border-input [&_svg]:invisible",

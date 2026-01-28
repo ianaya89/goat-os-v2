@@ -23,6 +23,7 @@ import { organizationAttendanceRouter } from "@/trpc/routers/organization/organi
 import { organizationCashRegisterRouter } from "@/trpc/routers/organization/organization-cash-register-router";
 import { organizationCoachRouter } from "@/trpc/routers/organization/organization-coach-router";
 import { organizationCompetitionRouter } from "@/trpc/routers/organization/organization-competition-router";
+import { confirmationRouter } from "@/trpc/routers/organization/organization-confirmation-router";
 import { organizationCreditRouter } from "@/trpc/routers/organization/organization-credit-router";
 import { organizationDashboardRouter } from "@/trpc/routers/organization/organization-dashboard-router";
 import { organizationEquipmentAuditRouter } from "@/trpc/routers/organization/organization-equipment-audit-router";
@@ -193,4 +194,5 @@ export const organizationRouter = createTRPCRouter({
 	team: organizationTeamRouter,
 	competition: organizationCompetitionRouter,
 	match: organizationMatchRouter,
+	confirmation: confirmationRouter,
 });

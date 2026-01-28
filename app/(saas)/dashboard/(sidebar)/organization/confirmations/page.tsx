@@ -1,10 +1,9 @@
-import { PackageIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import type * as React from "react";
+import { ConfirmationsView } from "@/components/organization/confirmations-view";
 import { OrganizationBreadcrumbSwitcher } from "@/components/organization/organization-breadcrumb-switcher";
-import { ProductsTable } from "@/components/organization/products-table";
 import {
 	Page,
 	PageBody,
@@ -16,16 +15,17 @@ import {
 import { getSession } from "@/lib/auth/server";
 
 export const metadata: Metadata = {
-	title: "Products",
+	title: "Confirmations",
 };
 
-export default async function ProductsPage(): Promise<React.JSX.Element> {
+export default async function ConfirmationsPage(): Promise<React.JSX.Element> {
 	const session = await getSession();
 	if (!session?.session.activeOrganizationId) {
 		redirect("/dashboard");
 	}
 
-	const t = await getTranslations("organization.pages");
+	const t = await getTranslations("confirmations");
+	const tOrg = await getTranslations("organization.pages");
 
 	return (
 		<Page>
@@ -33,19 +33,16 @@ export default async function ProductsPage(): Promise<React.JSX.Element> {
 				<PagePrimaryBar>
 					<PageBreadcrumb
 						segments={[
-							{ label: t("home"), href: "/dashboard" },
+							{ label: tOrg("home"), href: "/dashboard" },
 							{ label: <OrganizationBreadcrumbSwitcher />, isCustom: true },
-							{ label: t("products.title") },
+							{ label: t("title") },
 						]}
 					/>
 				</PagePrimaryBar>
 			</PageHeader>
 			<PageBody>
-				<PageContent
-					title={t("products.title")}
-					leftAction={<PackageIcon className="size-5 text-muted-foreground" />}
-				>
-					<ProductsTable />
+				<PageContent title={t("title")}>
+					<ConfirmationsView />
 				</PageContent>
 			</PageBody>
 		</Page>

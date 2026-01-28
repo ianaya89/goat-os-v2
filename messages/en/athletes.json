@@ -36,7 +36,14 @@
 		"birthDate": "Birth Date",
 		"createdAt": "Joined",
 		"noAthletes": "No athletes found.",
-		"viewProfile": "View Profile"
+		"viewProfile": "View Profile",
+		"accountStatus": "Account",
+		"noAccount": "No account",
+		"noAccountTooltip": "This athlete does not have an associated user account",
+		"accountActive": "Active",
+		"accountActiveTooltip": "The athlete has set up their account and can access the platform",
+		"accountPending": "Pending",
+		"accountPendingTooltip": "The athlete has not yet verified their email or set up their password"
 	},
 	"modal": {
 		"createTitle": "Create Athlete",
@@ -60,7 +67,16 @@
 		"groups": "Groups",
 		"showGroups": "Show",
 		"hideGroups": "Hide",
-		"loadingGroups": "Loading groups..."
+		"loadingGroups": "Loading groups...",
+		"sendInvitation": "Send email invitation",
+		"sendInvitationDescription": "The athlete will receive an email to set their own password",
+		"invitationSent": "Invitation sent successfully",
+		"invitationSentTitle": "Athlete Created",
+		"invitationSentDescription": "The athlete has been created and an invitation has been sent.",
+		"invitationSentAlert": "Invitation Sent",
+		"invitationSentNote": "The athlete will receive an email with instructions to set their password and access the platform.",
+		"publicProfile": "Public profile",
+		"publicProfileDescription": "Allow this athlete's profile to be visible publicly"
 	},
 	"form": {
 		"personalInfo": "Personal information",
@@ -148,10 +164,12 @@
 		"physical": "Physical",
 		"fitness": "Fitness Tests",
 		"career": "Career",
+		"achievements": "Achievements",
 		"teams": "Teams",
 		"wellness": "Wellness",
 		"medical": "Medical",
-		"info": "Info"
+		"info": "Info",
+		"education": "Education"
 	},
 	"sessions": {
 		"title": "Training Sessions",
@@ -893,6 +911,7 @@
 			"addMembers": "Add Members",
 			"noMembers": "No members in this group yet",
 			"noSessions": "No sessions for this group yet",
+			"noSessionsInPeriod": "No sessions in the selected period",
 			"createFirstSession": "Create First Session",
 			"trainingSessions": "Training Sessions",
 			"newSession": "New Session",
@@ -964,9 +983,12 @@
 	"achievements": {
 		"title": "Achievements & Awards",
 		"add": "Add Achievement",
+		"addEntry": "Add Achievement",
 		"edit": "Edit Achievement",
 		"empty": "No achievements registered",
+		"noAchievements": "No achievements registered",
 		"emptyDescription": "Add your sports achievements, awards and recognitions to display them on your public profile.",
+		"deleted": "Achievement deleted successfully",
 		"form": {
 			"title": "Achievement Title",
 			"titlePlaceholder": "National League Champion, Tournament MVP...",
@@ -1006,10 +1028,43 @@
 			"individual": "Individual",
 			"collective": "Collective (Team)"
 		},
+		"table": {
+			"title": "Title",
+			"type": "Type",
+			"year": "Year",
+			"competition": "Competition",
+			"position": "Position",
+			"actions": "Actions"
+		},
+		"actions": {
+			"edit": "Edit Achievement",
+			"delete": "Delete Achievement"
+		},
+		"deleteConfirm": {
+			"title": "Delete achievement?",
+			"message": "Are you sure you want to delete \"{title}\"? This action cannot be undone.",
+			"confirm": "Delete"
+		},
 		"success": {
 			"created": "Achievement added",
 			"updated": "Achievement updated",
 			"deleted": "Achievement deleted"
 		}
+	},
+	"education": {
+		"addEducation": "Add Education",
+		"editEducation": "Edit Education",
+		"deleteEducation": "Delete Education",
+		"noEducation": "No education registered",
+		"noEducationDescription": "Add the athlete's academic background",
+		"current": "Current",
+		"present": "Present",
+		"unknown": "Unknown date",
+		"gpaLabel": "GPA",
+		"notesLabel": "Notes",
+		"deleteConfirmTitle": "Delete education?",
+		"deleteConfirmDesc": "Are you sure you want to delete this education? This action cannot be undone.",
+		"deleteConfirm": "Delete",
+		"deleted": "Education deleted successfully"
 	}
 }

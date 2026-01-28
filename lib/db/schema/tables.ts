@@ -26,10 +26,12 @@ import {
 	CashMovementReferenceType,
 	CashMovementType,
 	CashRegisterStatus,
+	CoachExperienceLevel,
 	CoachPaymentType,
 	CoachStatus,
 	CompetitionStatus,
 	CompetitionType,
+	ConfirmationStatus,
 	CreditTransactionType,
 	DayOfWeek,
 	DiscountMode,
@@ -69,6 +71,7 @@ import {
 	MatchResultType,
 	MatchStatus,
 	MemberRole,
+	NotificationChannel,
 	OrderStatus,
 	OrganizationFeature,
 	PayrollPeriodType,
@@ -828,6 +831,150 @@ export const coachTable = pgTable(
 		index("coach_org_status_idx").on(table.organizationId, table.status),
 		// Unique constraint: one coach per user per organization
 		uniqueIndex("coach_org_user_unique").on(table.organizationId, table.userId),
+	],
+);
+
+// ============================================================================
+// COACH SPORTS EXPERIENCE TABLE
+// ============================================================================
+
+/**
+ * Coach sports experience - tracks coaching history at different clubs/institutions
+ */
+export const coachSportsExperienceTable = pgTable(
+	"coach_sports_experience",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		coachId: uuid("coach_id")
+			.notNull()
+			.references(() => coachTable.id, { onDelete: "cascade" }),
+		institutionName: text("institution_name").notNull(), // Club/Institution name
+		role: text("role").notNull(), // Position/Role (e.g., "Head Coach", "Assistant")
+		sport: text("sport", {
+			enum: enumToPgEnum(AthleteSport),
+		}).$type<AthleteSport>(),
+		level: text("level", {
+			enum: enumToPgEnum(CoachExperienceLevel),
+		}).$type<CoachExperienceLevel>(),
+		startDate: timestamp("start_date", { withTimezone: true }),
+		endDate: timestamp("end_date", { withTimezone: true }),
+		achievements: text("achievements"), // Titles, awards, etc.
+		description: text("description"),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => [
+		index("coach_sports_experience_coach_id_idx").on(table.coachId),
+		index("coach_sports_experience_start_date_idx").on(table.startDate),
+		// Composite index for timeline queries
+		index("coach_sports_experience_coach_dates_idx").on(
+			table.coachId,
+			table.startDate,
+			table.endDate,
+		),
+	],
+);
+
+// ============================================================================
+// COACH ACHIEVEMENT TABLE
+// ============================================================================
+
+/**
+ * Stores achievements and honors for coaches
+ * e.g., championships won, awards, recognitions
+ */
+export const coachAchievementTable = pgTable(
+	"coach_achievement",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		coachId: uuid("coach_id")
+			.notNull()
+			.references(() => coachTable.id, { onDelete: "cascade" }),
+		// Achievement info
+		title: text("title").notNull(), // e.g., "Campeón Liga Nacional"
+		type: text("type", { enum: enumToPgEnum(AchievementType) })
+			.$type<AchievementType>()
+			.notNull(),
+		scope: text("scope", { enum: enumToPgEnum(AchievementScope) })
+			.$type<AchievementScope>()
+			.notNull(),
+		// Context
+		year: integer("year").notNull(), // Year of the achievement
+		organization: text("organization"), // e.g., "Liga Nacional de Fútbol"
+		team: text("team"), // Team/club if collective achievement
+		competition: text("competition"), // e.g., "Copa América Sub-20"
+		position: text("position"), // e.g., "1er lugar", "Medalla de Oro"
+		// Additional details
+		description: text("description"), // Longer description of the achievement
+		// Display settings
+		isPublic: boolean("is_public").notNull().default(true),
+		displayOrder: integer("display_order").notNull().default(0),
+		// Timestamps
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => [
+		index("coach_achievement_coach_id_idx").on(table.coachId),
+		index("coach_achievement_year_idx").on(table.year),
+		index("coach_achievement_type_idx").on(table.type),
+		index("coach_achievement_is_public_idx").on(table.isPublic),
+		// Composite index for timeline queries
+		index("coach_achievement_coach_year_idx").on(table.coachId, table.year),
+	],
+);
+
+// ============================================================================
+// COACH EDUCATION TABLE
+// ============================================================================
+
+/**
+ * Coach education table - stores educational background for coaches
+ * Similar to athleteEducationTable but for coaches
+ */
+export const coachEducationTable = pgTable(
+	"coach_education",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		coachId: uuid("coach_id")
+			.notNull()
+			.references(() => coachTable.id, { onDelete: "cascade" }),
+		institution: varchar("institution", { length: 200 }).notNull(),
+		degree: varchar("degree", { length: 100 }),
+		fieldOfStudy: varchar("field_of_study", { length: 100 }),
+		academicYear: varchar("academic_year", { length: 50 }),
+		startDate: timestamp("start_date", { withTimezone: true }),
+		endDate: timestamp("end_date", { withTimezone: true }),
+		expectedGraduationDate: timestamp("expected_graduation_date", {
+			withTimezone: true,
+		}),
+		gpa: numeric("gpa", { precision: 3, scale: 2 }),
+		isCurrent: boolean("is_current").notNull().default(false),
+		notes: text("notes"),
+		displayOrder: integer("display_order").notNull().default(0),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => [
+		index("coach_education_coach_id_idx").on(table.coachId),
+		index("coach_education_display_order_idx").on(
+			table.coachId,
+			table.displayOrder,
+		),
 	],
 );
 
@@ -5578,5 +5725,127 @@ export const matchTable = pgTable(
 		index("match_scheduled_at_idx").on(table.scheduledAt),
 		index("match_status_idx").on(table.status),
 		index("match_location_id_idx").on(table.locationId),
+	],
+);
+
+// ============================================================================
+// SESSION CONFIRMATION HISTORY
+// ============================================================================
+
+// Tracks every confirmation notification sent for training sessions
+export const sessionConfirmationHistoryTable = pgTable(
+	"session_confirmation_history",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizationTable.id, { onDelete: "cascade" }),
+		sessionId: uuid("session_id")
+			.notNull()
+			.references(() => trainingSessionTable.id, { onDelete: "cascade" }),
+		athleteId: uuid("athlete_id")
+			.notNull()
+			.references(() => athleteTable.id, { onDelete: "cascade" }),
+
+		// Notification details
+		channel: text("channel", {
+			enum: enumToPgEnum(NotificationChannel),
+		})
+			.$type<NotificationChannel>()
+			.notNull(),
+		status: text("status", {
+			enum: enumToPgEnum(ConfirmationStatus),
+		})
+			.$type<ConfirmationStatus>()
+			.notNull()
+			.default(ConfirmationStatus.sent),
+
+		// Timestamps
+		sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
+		confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+
+		// Error tracking
+		errorMessage: text("error_message"),
+
+		// Trigger.dev job ID for tracking
+		triggerJobId: text("trigger_job_id"),
+
+		// Batch ID to group bulk sends
+		batchId: uuid("batch_id"),
+
+		// Who initiated the send
+		initiatedBy: uuid("initiated_by").references(() => userTable.id, {
+			onDelete: "set null",
+		}),
+
+		// Audit
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => [
+		index("confirmation_history_org_idx").on(table.organizationId),
+		index("confirmation_history_session_idx").on(table.sessionId),
+		index("confirmation_history_athlete_idx").on(table.athleteId),
+		index("confirmation_history_batch_idx").on(table.batchId),
+		index("confirmation_history_status_idx").on(table.status),
+		index("confirmation_history_org_sent_idx").on(
+			table.organizationId,
+			table.sentAt,
+		),
+	],
+);
+
+// ============================================================================
+// USER NOTIFICATION SETTINGS
+// ============================================================================
+
+// User notification preferences per organization
+export const userNotificationSettingsTable = pgTable(
+	"user_notification_settings",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		userId: uuid("user_id")
+			.notNull()
+			.references(() => userTable.id, { onDelete: "cascade" }),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizationTable.id, { onDelete: "cascade" }),
+
+		// Channel preferences
+		preferredChannel: text("preferred_channel", {
+			enum: enumToPgEnum(NotificationChannel),
+		})
+			.$type<NotificationChannel>()
+			.notNull()
+			.default(NotificationChannel.email),
+
+		// Notification type toggles
+		trainingReminders: boolean("training_reminders").notNull().default(true),
+		paymentReminders: boolean("payment_reminders").notNull().default(true),
+		marketingNotifications: boolean("marketing_notifications")
+			.notNull()
+			.default(false),
+
+		// Audit
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => [
+		uniqueIndex("user_notification_settings_unique").on(
+			table.userId,
+			table.organizationId,
+		),
+		index("user_notification_settings_user_idx").on(table.userId),
+		index("user_notification_settings_org_idx").on(table.organizationId),
 	],
 );

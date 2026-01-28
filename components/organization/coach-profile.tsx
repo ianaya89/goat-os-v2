@@ -8,6 +8,7 @@ import {
 	CalendarIcon,
 	CheckCircleIcon,
 	ClipboardListIcon,
+	GraduationCapIcon,
 	MedalIcon,
 	MoreHorizontalIcon,
 	PencilIcon,
@@ -16,6 +17,7 @@ import {
 	StarIcon,
 	Trash2Icon,
 	TrendingUpIcon,
+	TrophyIcon,
 	UserIcon,
 	UsersIcon,
 } from "lucide-react";
@@ -28,7 +30,10 @@ import { AddEvaluationModal } from "@/components/organization/add-evaluation-mod
 import { AttendanceMatrix } from "@/components/organization/attendance-matrix";
 import { OrgCoachBioEditModal } from "@/components/organization/coach-info/org-coach-bio-edit-modal";
 import { OrgCoachContactEditModal } from "@/components/organization/coach-info/org-coach-contact-edit-modal";
+import { OrgCoachEducationEditModal } from "@/components/organization/coach-info/org-coach-education-edit-modal";
+import { CoachExperienceEditModal } from "@/components/organization/coach-info/org-coach-experience-edit-modal";
 import { OrgCoachProfessionalEditModal } from "@/components/organization/coach-info/org-coach-professional-edit-modal";
+import { OrgAchievementEditModal } from "@/components/organization/org-achievement-edit-modal";
 import { ProfileImageUpload } from "@/components/organization/profile-image-upload";
 import { SessionsListTable } from "@/components/organization/sessions-list-table";
 import { TrainingSessionsModal } from "@/components/organization/training-sessions-modal";
@@ -62,6 +67,15 @@ export function CoachProfile({ coachId }: CoachProfileProps) {
 	const utils = trpc.useUtils();
 	const { data, isLoading, error } =
 		trpc.organization.coach.getProfile.useQuery({ id: coachId });
+
+	const { data: experienceData } =
+		trpc.organization.coach.listSportsExperience.useQuery({ coachId });
+
+	const { data: achievementsData } =
+		trpc.organization.coach.listAchievements.useQuery({ coachId });
+
+	const { data: educationData } =
+		trpc.organization.coach.listEducation.useQuery({ coachId });
 
 	const updateSessionStatusMutation =
 		trpc.organization.trainingSession.bulkUpdateStatus.useMutation({
@@ -100,6 +114,28 @@ export function CoachProfile({ coachId }: CoachProfileProps) {
 			onSuccess: () => {
 				toast.success(t("profile.evaluations.deleted"));
 				utils.organization.coach.getProfile.invalidate({ id: coachId });
+			},
+			onError: (error) => {
+				toast.error(error.message);
+			},
+		});
+
+	const deleteAchievementMutation =
+		trpc.organization.coach.deleteAchievement.useMutation({
+			onSuccess: () => {
+				toast.success(t("achievements.deleted"));
+				utils.organization.coach.listAchievements.invalidate({ coachId });
+			},
+			onError: (error) => {
+				toast.error(error.message);
+			},
+		});
+
+	const deleteEducationMutation =
+		trpc.organization.coach.deleteEducation.useMutation({
+			onSuccess: () => {
+				toast.success(t("education.deleteSuccess"));
+				utils.organization.coach.listEducation.invalidate({ coachId });
 			},
 			onError: (error) => {
 				toast.error(error.message);
@@ -288,6 +324,23 @@ export function CoachProfile({ coachId }: CoachProfileProps) {
 					</TabsTrigger>
 					<TabsTrigger value="athletes">
 						{t("profile.tabs.athletes", { count: athletes.length })}
+					</TabsTrigger>
+					<TabsTrigger value="experience">
+						{t("profile.tabs.experience", {
+							count: experienceData?.length ?? 0,
+						})}
+					</TabsTrigger>
+					<TabsTrigger value="achievements">
+						<TrophyIcon className="mr-1 size-3.5" />
+						{t("achievements.tab", {
+							count: achievementsData?.length ?? 0,
+						})}
+					</TabsTrigger>
+					<TabsTrigger value="education">
+						<GraduationCapIcon className="mr-1 size-3.5" />
+						{t("education.tab", {
+							count: educationData?.length ?? 0,
+						})}
 					</TabsTrigger>
 				</TabsList>
 
@@ -895,6 +948,391 @@ export function CoachProfile({ coachId }: CoachProfileProps) {
 									})}
 								</tbody>
 							</table>
+						</div>
+					)}
+				</TabsContent>
+
+				<TabsContent value="experience" className="space-y-4">
+					<div className="flex items-center justify-end">
+						<Button
+							size="sm"
+							onClick={() =>
+								NiceModal.show(CoachExperienceEditModal, { coachId })
+							}
+						>
+							<PlusIcon className="mr-2 size-4" />
+							{t("profile.experience.add")}
+						</Button>
+					</div>
+
+					{!experienceData || experienceData.length === 0 ? (
+						<EmptyState
+							icon={BriefcaseIcon}
+							title={t("profile.experience.empty")}
+							description={t("profile.experience.emptyDescription")}
+						/>
+					) : (
+						<div className="space-y-4">
+							{experienceData.map((experience) => (
+								<Card key={experience.id} className="relative">
+									<CardContent className="pt-6">
+										<div className="flex items-start justify-between gap-4">
+											<div className="space-y-1">
+												<div className="flex items-center gap-2">
+													<h4 className="font-semibold">
+														{experience.institutionName}
+													</h4>
+													{experience.level && (
+														<Badge variant="secondary">
+															{t(`experience.levels.${experience.level}`)}
+														</Badge>
+													)}
+												</div>
+												<p className="text-muted-foreground text-sm">
+													{experience.role}
+													{experience.sport && (
+														<span>
+															{" "}
+															&bull; {getSportLabel(experience.sport)}
+														</span>
+													)}
+												</p>
+												<p className="text-muted-foreground text-xs">
+													{experience.startDate
+														? format(new Date(experience.startDate), "MMM yyyy")
+														: t("profile.experience.unknown")}
+													{" - "}
+													{experience.endDate
+														? format(new Date(experience.endDate), "MMM yyyy")
+														: t("profile.experience.present")}
+												</p>
+											</div>
+											<Button
+												size="sm"
+												variant="ghost"
+												onClick={() =>
+													NiceModal.show(CoachExperienceEditModal, {
+														coachId,
+														initialValues: {
+															id: experience.id,
+															institutionName: experience.institutionName,
+															role: experience.role,
+															sport: experience.sport,
+															level: experience.level,
+															startDate: experience.startDate,
+															endDate: experience.endDate,
+															achievements: experience.achievements,
+															description: experience.description,
+														},
+													})
+												}
+											>
+												<PencilIcon className="size-4" />
+											</Button>
+										</div>
+										{experience.achievements && (
+											<div className="mt-3">
+												<p className="text-xs font-medium text-muted-foreground">
+													{t("profile.experience.achievements")}
+												</p>
+												<p className="text-sm">{experience.achievements}</p>
+											</div>
+										)}
+										{experience.description && (
+											<div className="mt-2">
+												<p className="text-xs font-medium text-muted-foreground">
+													{t("profile.experience.description")}
+												</p>
+												<p className="text-sm">{experience.description}</p>
+											</div>
+										)}
+									</CardContent>
+								</Card>
+							))}
+						</div>
+					)}
+				</TabsContent>
+
+				{/* Achievements Tab */}
+				<TabsContent value="achievements" className="space-y-4">
+					<div className="flex items-center justify-end">
+						<Button
+							size="sm"
+							onClick={() => {
+								NiceModal.show(OrgAchievementEditModal, { coachId });
+							}}
+						>
+							<PlusIcon className="mr-1 size-4" />
+							{t("achievements.addEntry")}
+						</Button>
+					</div>
+
+					{!achievementsData || achievementsData.length === 0 ? (
+						<EmptyState
+							icon={TrophyIcon}
+							title={t("achievements.noAchievements")}
+						/>
+					) : (
+						<div className="overflow-hidden rounded-lg border">
+							<table className="w-full text-sm">
+								<thead>
+									<tr className="border-b bg-muted/50">
+										<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+											{t("achievements.table.title")}
+										</th>
+										<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
+											{t("achievements.table.type")}
+										</th>
+										<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground sm:table-cell">
+											{t("achievements.table.year")}
+										</th>
+										<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground md:table-cell">
+											{t("achievements.table.competition")}
+										</th>
+										<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground lg:table-cell">
+											{t("achievements.table.position")}
+										</th>
+										<th className="w-[50px] px-4 py-3 text-right text-xs font-medium text-muted-foreground">
+											{t("achievements.table.actions")}
+										</th>
+									</tr>
+								</thead>
+								<tbody className="divide-y">
+									{achievementsData.map((achievement) => (
+										<tr
+											key={achievement.id}
+											className="transition-colors hover:bg-muted/30"
+										>
+											<td className="px-4 py-3">
+												<div className="flex items-center gap-2">
+													<TrophyIcon className="size-4 text-amber-500" />
+													<span className="font-medium">
+														{achievement.title}
+													</span>
+												</div>
+											</td>
+											<td className="px-4 py-3">
+												<Badge variant="secondary">
+													{t(`achievements.types.${achievement.type}`)}
+												</Badge>
+											</td>
+											<td className="hidden px-4 py-3 text-muted-foreground sm:table-cell">
+												{achievement.year}
+											</td>
+											<td className="hidden max-w-[200px] truncate px-4 py-3 text-muted-foreground md:table-cell">
+												{achievement.competition || "-"}
+											</td>
+											<td className="hidden px-4 py-3 text-muted-foreground lg:table-cell">
+												{achievement.position || "-"}
+											</td>
+											<td className="px-4 py-3 text-right">
+												<DropdownMenu>
+													<DropdownMenuTrigger asChild>
+														<Button
+															variant="ghost"
+															size="icon"
+															className="size-8"
+														>
+															<MoreHorizontalIcon className="size-4" />
+														</Button>
+													</DropdownMenuTrigger>
+													<DropdownMenuContent align="end">
+														<DropdownMenuItem
+															onClick={() => {
+																NiceModal.show(OrgAchievementEditModal, {
+																	coachId,
+																	entry: {
+																		id: achievement.id,
+																		title: achievement.title,
+																		type: achievement.type,
+																		scope: achievement.scope,
+																		year: achievement.year,
+																		organization: achievement.organization,
+																		team: achievement.team,
+																		competition: achievement.competition,
+																		position: achievement.position,
+																		description: achievement.description,
+																		isPublic: achievement.isPublic,
+																	},
+																});
+															}}
+														>
+															<PencilIcon className="mr-2 size-4" />
+															{t("achievements.actions.edit")}
+														</DropdownMenuItem>
+														<DropdownMenuSeparator />
+														<DropdownMenuItem
+															className="text-destructive"
+															onClick={() => {
+																NiceModal.show(ConfirmationModal, {
+																	title: t("achievements.deleteConfirm.title"),
+																	message: t(
+																		"achievements.deleteConfirm.message",
+																		{
+																			title: achievement.title,
+																		},
+																	),
+																	confirmLabel: t(
+																		"achievements.deleteConfirm.confirm",
+																	),
+																	onConfirm: () => {
+																		deleteAchievementMutation.mutate({
+																			id: achievement.id,
+																		});
+																	},
+																});
+															}}
+														>
+															<Trash2Icon className="mr-2 size-4" />
+															{t("achievements.actions.delete")}
+														</DropdownMenuItem>
+													</DropdownMenuContent>
+												</DropdownMenu>
+											</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
+						</div>
+					)}
+				</TabsContent>
+
+				{/* Education Tab */}
+				<TabsContent value="education" className="space-y-4">
+					<div className="flex items-center justify-end">
+						<Button
+							size="sm"
+							onClick={() => {
+								NiceModal.show(OrgCoachEducationEditModal, { coachId });
+							}}
+						>
+							<PlusIcon className="mr-1 size-4" />
+							{t("education.addEntry")}
+						</Button>
+					</div>
+
+					{!educationData || educationData.length === 0 ? (
+						<EmptyState
+							icon={GraduationCapIcon}
+							title={t("education.noEducation")}
+							description={t("education.noEducationDescription")}
+						/>
+					) : (
+						<div className="space-y-4">
+							{educationData.map((education) => (
+								<Card key={education.id} className="relative">
+									<CardContent className="pt-6">
+										<div className="flex items-start justify-between gap-4">
+											<div className="space-y-1">
+												<div className="flex items-center gap-2">
+													<h4 className="font-semibold">
+														{education.institution}
+													</h4>
+													{education.isCurrent && (
+														<Badge variant="secondary">
+															{t("education.current")}
+														</Badge>
+													)}
+												</div>
+												<p className="text-muted-foreground text-sm">
+													{education.degree}
+													{education.fieldOfStudy && (
+														<span> &bull; {education.fieldOfStudy}</span>
+													)}
+												</p>
+												<p className="text-muted-foreground text-xs">
+													{education.startDate
+														? format(new Date(education.startDate), "MMM yyyy")
+														: t("education.unknown")}
+													{" - "}
+													{education.isCurrent
+														? t("education.present")
+														: education.endDate
+															? format(new Date(education.endDate), "MMM yyyy")
+															: t("education.unknown")}
+												</p>
+												{education.gpa && (
+													<p className="text-muted-foreground text-xs">
+														{t("education.gpaLabel")}: {education.gpa}
+													</p>
+												)}
+											</div>
+											<DropdownMenu>
+												<DropdownMenuTrigger asChild>
+													<Button
+														variant="ghost"
+														size="icon"
+														className="size-8"
+													>
+														<MoreHorizontalIcon className="size-4" />
+													</Button>
+												</DropdownMenuTrigger>
+												<DropdownMenuContent align="end">
+													<DropdownMenuItem
+														onClick={() => {
+															NiceModal.show(OrgCoachEducationEditModal, {
+																coachId,
+																entry: {
+																	id: education.id,
+																	institution: education.institution,
+																	degree: education.degree,
+																	fieldOfStudy: education.fieldOfStudy,
+																	academicYear: education.academicYear,
+																	startDate: education.startDate
+																		? new Date(education.startDate)
+																		: null,
+																	endDate: education.endDate
+																		? new Date(education.endDate)
+																		: null,
+																	expectedGraduationDate:
+																		education.expectedGraduationDate
+																			? new Date(
+																					education.expectedGraduationDate,
+																				)
+																			: null,
+																	gpa: education.gpa,
+																	isCurrent: education.isCurrent,
+																	notes: education.notes,
+																},
+															});
+														}}
+													>
+														<PencilIcon className="mr-2 size-4" />
+														{t("education.actions.edit")}
+													</DropdownMenuItem>
+													<DropdownMenuSeparator />
+													<DropdownMenuItem
+														className="text-destructive"
+														onClick={() => {
+															NiceModal.show(ConfirmationModal, {
+																title: t("education.deleteConfirmTitle"),
+																message: t("education.deleteConfirmDesc"),
+																confirmLabel: t("education.deleteConfirm"),
+																onConfirm: () => {
+																	deleteEducationMutation.mutate({
+																		id: education.id,
+																	});
+																},
+															});
+														}}
+													>
+														<Trash2Icon className="mr-2 size-4" />
+														{t("education.actions.delete")}
+													</DropdownMenuItem>
+												</DropdownMenuContent>
+											</DropdownMenu>
+										</div>
+										{education.notes && (
+											<div className="mt-3">
+												<p className="text-xs font-medium text-muted-foreground">
+													{t("education.notesLabel")}
+												</p>
+												<p className="text-sm">{education.notes}</p>
+											</div>
+										)}
+									</CardContent>
+								</Card>
+							))}
 						</div>
 					)}
 				</TabsContent>

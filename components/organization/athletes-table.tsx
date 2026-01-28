@@ -8,11 +8,14 @@ import type {
 } from "@tanstack/react-table";
 import { format } from "date-fns";
 import {
+	CheckCircle2Icon,
+	ClockIcon,
 	EyeIcon,
 	MoreHorizontalIcon,
 	PencilIcon,
 	PlusIcon,
 	Trash2Icon,
+	UserXIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -45,6 +48,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LevelBadge } from "@/components/ui/level-badge";
 import { StatusBadge } from "@/components/ui/status-badge";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { appConfig } from "@/config/app.config";
 import type {
@@ -76,6 +84,7 @@ interface Athlete {
 	level: string;
 	status: string;
 	phone: string | null;
+	isPublicProfile: boolean;
 	createdAt: Date;
 	updatedAt: Date;
 	user: {
@@ -84,6 +93,7 @@ interface Athlete {
 		email: string;
 		image: string | null;
 		imageKey: string | null;
+		emailVerified: boolean;
 	} | null;
 	groups?: AthleteGroup[];
 }
@@ -386,6 +396,56 @@ export function AthletesTable(): React.JSX.Element {
 			cell: ({ row }) => (
 				<StatusBadge status={row.original.status as AthleteStatus} />
 			),
+		},
+		{
+			id: "accountStatus",
+			header: t("table.accountStatus"),
+			cell: ({ row }) => {
+				const user = row.original.user;
+				if (!user) {
+					return (
+						<Tooltip>
+							<TooltipTrigger>
+								<div className="flex items-center gap-1.5 text-muted-foreground">
+									<UserXIcon className="size-4" />
+									<span className="text-xs">{t("table.noAccount")}</span>
+								</div>
+							</TooltipTrigger>
+							<TooltipContent>
+								<p>{t("table.noAccountTooltip")}</p>
+							</TooltipContent>
+						</Tooltip>
+					);
+				}
+				if (user.emailVerified) {
+					return (
+						<Tooltip>
+							<TooltipTrigger>
+								<div className="flex items-center gap-1.5 text-green-600">
+									<CheckCircle2Icon className="size-4" />
+									<span className="text-xs">{t("table.accountActive")}</span>
+								</div>
+							</TooltipTrigger>
+							<TooltipContent>
+								<p>{t("table.accountActiveTooltip")}</p>
+							</TooltipContent>
+						</Tooltip>
+					);
+				}
+				return (
+					<Tooltip>
+						<TooltipTrigger>
+							<div className="flex items-center gap-1.5 text-amber-600">
+								<ClockIcon className="size-4" />
+								<span className="text-xs">{t("table.accountPending")}</span>
+							</div>
+						</TooltipTrigger>
+						<TooltipContent>
+							<p>{t("table.accountPendingTooltip")}</p>
+						</TooltipContent>
+					</Tooltip>
+				);
+			},
 		},
 		{
 			id: "actions",

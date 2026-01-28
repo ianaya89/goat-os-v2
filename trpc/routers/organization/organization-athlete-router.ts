@@ -13,10 +13,17 @@ import {
 	type SQL,
 } from "drizzle-orm";
 import { appConfig } from "@/config/app.config";
+import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { AttendanceStatus, MemberRole } from "@/lib/db/schema/enums";
+import {
+	type AchievementScope,
+	type AchievementType,
+	AttendanceStatus,
+	MemberRole,
+} from "@/lib/db/schema/enums";
 import {
 	accountTable,
+	athleteAchievementTable,
 	athleteCareerHistoryTable,
 	athleteEducationTable,
 	athleteEvaluationTable,
@@ -34,6 +41,12 @@ import {
 import { sendAthleteWelcomeEmail } from "@/lib/email";
 import { logger } from "@/lib/logger";
 import { generateTemporaryPassword, getBaseUrl } from "@/lib/utils";
+import {
+	createAchievementSchema,
+	deleteAchievementSchema,
+	listAchievementsSchema,
+	updateAchievementSchema,
+} from "@/schemas/organization-athlete-achievement-schemas";
 import {
 	bulkDeleteAthletesSchema,
 	bulkUpdateAthletesStatusSchema,
@@ -148,6 +161,7 @@ export const organizationAthleteRouter = createTRPCRouter({
 								email: true,
 								image: true,
 								imageKey: true,
+								emailVerified: true,
 							},
 						},
 						groupMemberships: {
@@ -570,75 +584,149 @@ export const organizationAthleteRouter = createTRPCRouter({
 						.where(eq(memberTable.id, existingMember.id));
 				}
 			} else {
-				// Create new user with temporary password
-				temporaryPassword = generateTemporaryPassword();
+				// Create new user
 				const { hashPassword } = await import("better-auth/crypto");
-				const hashedPassword = await hashPassword(temporaryPassword);
 
-				// Create user
-				const [newUser] = await db
-					.insert(userTable)
-					.values({
-						name: input.name,
-						email: input.email.toLowerCase(),
-						emailVerified: false,
-					})
-					.returning();
+				if (input.sendInvitation) {
+					// Invitation mode: Create user without usable password
+					// User will set their own password via the reset password flow
+					const placeholderPassword = await hashPassword(
+						`INVITATION_PENDING_${Date.now()}_${Math.random()}`,
+					);
 
-				if (!newUser) {
-					throw new TRPCError({
-						code: "INTERNAL_SERVER_ERROR",
-						message: "Failed to create user",
-					});
-				}
+					// Create user
+					const [newUser] = await db
+						.insert(userTable)
+						.values({
+							name: input.name,
+							email: input.email.toLowerCase(),
+							emailVerified: false,
+						})
+						.returning();
 
-				userId = newUser.id;
+					if (!newUser) {
+						throw new TRPCError({
+							code: "INTERNAL_SERVER_ERROR",
+							message: "Failed to create user",
+						});
+					}
 
-				// Create account with password (Better Auth pattern)
-				await db.insert(accountTable).values({
-					userId: newUser.id,
-					accountId: newUser.id,
-					providerId: "credential",
-					password: hashedPassword,
-				});
+					userId = newUser.id;
 
-				// Add user as member of the organization with athlete role
-				await db.insert(memberTable).values({
-					organizationId: ctx.organization.id,
-					userId: newUser.id,
-					role: MemberRole.member,
-				});
-
-				logger.info(
-					{
+					// Create account with placeholder password (Better Auth pattern)
+					await db.insert(accountTable).values({
 						userId: newUser.id,
-						email: input.email,
-						organizationId: ctx.organization.id,
-					},
-					"Created new user for athlete",
-				);
-
-				// Send welcome email to the new athlete
-				const baseUrl = getBaseUrl();
-				try {
-					await sendAthleteWelcomeEmail({
-						recipient: input.email.toLowerCase(),
-						appName: appConfig.appName,
-						athleteName: input.name,
-						organizationName: ctx.organization.name,
-						loginUrl: `${baseUrl}/auth/sign-in`,
-						forgotPasswordUrl: `${baseUrl}/auth/forgot-password`,
+						accountId: newUser.id,
+						providerId: "credential",
+						password: placeholderPassword,
 					});
+
+					// Add user as member of the organization with athlete role
+					await db.insert(memberTable).values({
+						organizationId: ctx.organization.id,
+						userId: newUser.id,
+						role: MemberRole.member,
+					});
+
 					logger.info(
-						{ email: input.email, organizationId: ctx.organization.id },
-						"Sent welcome email to athlete",
+						{
+							userId: newUser.id,
+							email: input.email,
+							organizationId: ctx.organization.id,
+							invitationMode: true,
+						},
+						"Created new user for athlete (invitation mode)",
 					);
-				} catch (emailError) {
-					// Log the error but don't fail the operation
-					logger.error(
-						{ error: emailError, email: input.email },
-						"Failed to send welcome email to athlete",
+
+					// Send password reset email so user can set their own password
+					try {
+						await auth.api.requestPasswordReset({
+							body: {
+								email: input.email.toLowerCase(),
+								redirectTo: "/auth/reset-password",
+							},
+						});
+						logger.info(
+							{ email: input.email, organizationId: ctx.organization.id },
+							"Sent password setup invitation to athlete",
+						);
+					} catch (emailError) {
+						logger.error(
+							{ error: emailError, email: input.email },
+							"Failed to send invitation email to athlete",
+						);
+					}
+				} else {
+					// Temporary password mode: Generate password and show to admin
+					temporaryPassword = generateTemporaryPassword();
+					const hashedPassword = await hashPassword(temporaryPassword);
+
+					// Create user
+					const [newUser] = await db
+						.insert(userTable)
+						.values({
+							name: input.name,
+							email: input.email.toLowerCase(),
+							emailVerified: false,
+						})
+						.returning();
+
+					if (!newUser) {
+						throw new TRPCError({
+							code: "INTERNAL_SERVER_ERROR",
+							message: "Failed to create user",
+						});
+					}
+
+					userId = newUser.id;
+
+					// Create account with password (Better Auth pattern)
+					await db.insert(accountTable).values({
+						userId: newUser.id,
+						accountId: newUser.id,
+						providerId: "credential",
+						password: hashedPassword,
+					});
+
+					// Add user as member of the organization with athlete role
+					await db.insert(memberTable).values({
+						organizationId: ctx.organization.id,
+						userId: newUser.id,
+						role: MemberRole.member,
+					});
+
+					logger.info(
+						{
+							userId: newUser.id,
+							email: input.email,
+							organizationId: ctx.organization.id,
+							invitationMode: false,
+						},
+						"Created new user for athlete (temporary password mode)",
 					);
+
+					// Send welcome email to the new athlete
+					const baseUrl = getBaseUrl();
+					try {
+						await sendAthleteWelcomeEmail({
+							recipient: input.email.toLowerCase(),
+							appName: appConfig.appName,
+							athleteName: input.name,
+							organizationName: ctx.organization.name,
+							loginUrl: `${baseUrl}/auth/sign-in`,
+							forgotPasswordUrl: `${baseUrl}/auth/forgot-password`,
+						});
+						logger.info(
+							{ email: input.email, organizationId: ctx.organization.id },
+							"Sent welcome email to athlete",
+						);
+					} catch (emailError) {
+						// Log the error but don't fail the operation
+						logger.error(
+							{ error: emailError, email: input.email },
+							"Failed to send welcome email to athlete",
+						);
+					}
 				}
 			}
 
@@ -672,6 +760,7 @@ export const organizationAthleteRouter = createTRPCRouter({
 				athlete,
 				temporaryPassword,
 				isNewUser: !existingUser,
+				invitationSent: !existingUser && input.sendInvitation,
 			};
 		}),
 
@@ -1528,6 +1617,173 @@ export const organizationAthleteRouter = createTRPCRouter({
 			await db
 				.delete(athleteEducationTable)
 				.where(eq(athleteEducationTable.id, input.id));
+
+			return { success: true };
+		}),
+
+	// ============================================================================
+	// ATHLETE ACHIEVEMENTS PROCEDURES
+	// ============================================================================
+
+	listAchievements: protectedOrganizationProcedure
+		.input(listAchievementsSchema)
+		.query(async ({ ctx, input }) => {
+			// Verify athlete belongs to organization
+			const athlete = await db.query.athleteTable.findFirst({
+				where: and(
+					eq(athleteTable.id, input.athleteId),
+					eq(athleteTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!athlete) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Athlete not found",
+				});
+			}
+
+			const achievements = await db.query.athleteAchievementTable.findMany({
+				where: eq(athleteAchievementTable.athleteId, input.athleteId),
+				orderBy: [
+					desc(athleteAchievementTable.year),
+					asc(athleteAchievementTable.displayOrder),
+				],
+			});
+
+			return achievements;
+		}),
+
+	createAchievement: protectedOrganizationProcedure
+		.input(createAchievementSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify athlete belongs to organization
+			const athlete = await db.query.athleteTable.findFirst({
+				where: and(
+					eq(athleteTable.id, input.athleteId),
+					eq(athleteTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!athlete) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Athlete not found",
+				});
+			}
+
+			// Get max displayOrder for this athlete
+			const maxOrderResult = await db
+				.select({ maxOrder: athleteAchievementTable.displayOrder })
+				.from(athleteAchievementTable)
+				.where(eq(athleteAchievementTable.athleteId, input.athleteId))
+				.orderBy(desc(athleteAchievementTable.displayOrder))
+				.limit(1);
+
+			const nextOrder = (maxOrderResult[0]?.maxOrder ?? -1) + 1;
+
+			const result = await db
+				.insert(athleteAchievementTable)
+				.values({
+					athleteId: input.athleteId,
+					title: input.title,
+					type: input.type as AchievementType,
+					scope: input.scope as AchievementScope,
+					year: input.year,
+					organization: input.organization,
+					team: input.team,
+					competition: input.competition,
+					position: input.position,
+					description: input.description,
+					isPublic: input.isPublic,
+					displayOrder: nextOrder,
+				})
+				.returning();
+
+			const achievement = result[0]!;
+
+			logger.info(
+				{ athleteId: input.athleteId, achievementId: achievement.id },
+				"Athlete achievement created",
+			);
+
+			return achievement;
+		}),
+
+	updateAchievement: protectedOrganizationProcedure
+		.input(updateAchievementSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Get achievement and verify it belongs to an athlete in this organization
+			const achievement = await db.query.athleteAchievementTable.findFirst({
+				where: eq(athleteAchievementTable.id, input.id),
+				with: {
+					athlete: {
+						columns: { organizationId: true },
+					},
+				},
+			});
+
+			if (
+				!achievement ||
+				achievement.athlete.organizationId !== ctx.organization.id
+			) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Achievement not found",
+				});
+			}
+
+			const [updated] = await db
+				.update(athleteAchievementTable)
+				.set({
+					title: input.title,
+					type: input.type as AchievementType | undefined,
+					scope: input.scope as AchievementScope | undefined,
+					year: input.year,
+					organization: input.organization,
+					team: input.team,
+					competition: input.competition,
+					position: input.position,
+					description: input.description,
+					isPublic: input.isPublic,
+					displayOrder: input.displayOrder,
+				})
+				.where(eq(athleteAchievementTable.id, input.id))
+				.returning();
+
+			logger.info({ achievementId: input.id }, "Athlete achievement updated");
+
+			return updated;
+		}),
+
+	deleteAchievement: protectedOrganizationProcedure
+		.input(deleteAchievementSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Get achievement and verify it belongs to an athlete in this organization
+			const achievement = await db.query.athleteAchievementTable.findFirst({
+				where: eq(athleteAchievementTable.id, input.id),
+				with: {
+					athlete: {
+						columns: { organizationId: true },
+					},
+				},
+			});
+
+			if (
+				!achievement ||
+				achievement.athlete.organizationId !== ctx.organization.id
+			) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Achievement not found",
+				});
+			}
+
+			await db
+				.delete(athleteAchievementTable)
+				.where(eq(athleteAchievementTable.id, input.id));
+
+			logger.info({ achievementId: input.id }, "Athlete achievement deleted");
 
 			return { success: true };
 		}),

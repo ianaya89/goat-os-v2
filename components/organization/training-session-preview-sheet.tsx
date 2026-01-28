@@ -18,7 +18,7 @@ import {
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import * as React from "react";
-import { TrainingSessionStatusBadge } from "@/components/organization/training-session-status-badge";
+import { TrainingSessionStatusSelect } from "@/components/organization/training-session-status-select";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -111,15 +111,12 @@ export function TrainingSessionPreviewSheet({
 								<h2 className="font-semibold text-lg tracking-tight">
 									{session.title}
 								</h2>
-								<div className="mt-1 flex items-center gap-2 flex-wrap">
-									<TrainingSessionStatusBadge status={session.status} />
-									{session.isRecurring && (
-										<Badge variant="secondary" className="gap-1 text-xs">
-											<RepeatIcon className="size-3" />
-											{t("preview.recurring")}
-										</Badge>
-									)}
-								</div>
+								{session.isRecurring && (
+									<Badge variant="secondary" className="gap-1 text-xs mt-1">
+										<RepeatIcon className="size-3" />
+										{t("preview.recurring")}
+									</Badge>
+								)}
 							</div>
 						</div>
 						<button
@@ -178,6 +175,17 @@ export function TrainingSessionPreviewSheet({
 										<p className="mt-1">{session.location}</p>
 									</div>
 								)}
+								<div>
+									<span className="text-muted-foreground font-medium">
+										{t("form.status")}
+									</span>
+									<div className="mt-1">
+										<TrainingSessionStatusSelect
+											sessionId={session.id}
+											currentStatus={session.status}
+										/>
+									</div>
+								</div>
 							</div>
 						</div>
 

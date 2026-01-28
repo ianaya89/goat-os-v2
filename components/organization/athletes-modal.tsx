@@ -4,6 +4,8 @@ import NiceModal, { type NiceModalHocProps } from "@ebay/nice-modal-react";
 import {
 	CheckIcon,
 	ClipboardCopyIcon,
+	GlobeIcon,
+	MailIcon,
 	PlusIcon,
 	UserPlusIcon,
 	UsersIcon,
@@ -49,6 +51,7 @@ import {
 	SheetTitle,
 } from "@/components/ui/sheet";
 import { SportSelect } from "@/components/ui/sport-select";
+import { Switch } from "@/components/ui/switch";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 import { useZodForm } from "@/hooks/use-zod-form";
 import {
@@ -73,6 +76,7 @@ export type AthletesModalProps = NiceModalHocProps & {
 		level: string;
 		status: string;
 		phone?: string | null;
+		isPublicProfile?: boolean;
 		user?: {
 			id: string;
 			name: string;
@@ -110,6 +114,7 @@ export const AthletesModal = NiceModal.create<AthletesModalProps>(
 		const [temporaryPassword, setTemporaryPassword] = React.useState<
 			string | null
 		>(null);
+		const [invitationSent, setInvitationSent] = React.useState(false);
 		const [isGroupsOpen, setIsGroupsOpen] = React.useState(false);
 
 		// Groups management
@@ -167,6 +172,9 @@ export const AthletesModal = NiceModal.create<AthletesModalProps>(
 				if (data.temporaryPassword) {
 					setTemporaryPassword(data.temporaryPassword);
 					toast.success(t("modal.createdWithPassword"));
+				} else if (data.invitationSent) {
+					setInvitationSent(true);
+					toast.success(t("modal.invitationSent"));
 				} else {
 					toast.success(t("modal.createdSuccess"));
 					utils.organization.athlete.list.invalidate();
@@ -202,6 +210,7 @@ export const AthletesModal = NiceModal.create<AthletesModalProps>(
 						level: athlete.level as AthleteLevel,
 						status: athlete.status as AthleteStatus,
 						phone: athlete.phone ?? "",
+						isPublicProfile: athlete.isPublicProfile ?? false,
 					}
 				: {
 						name: prefillUser?.name ?? "",
@@ -211,6 +220,7 @@ export const AthletesModal = NiceModal.create<AthletesModalProps>(
 						birthDate: undefined,
 						level: AthleteLevel.beginner,
 						status: AthleteStatus.active,
+						sendInvitation: true,
 					},
 		});
 
@@ -276,12 +286,58 @@ export const AthletesModal = NiceModal.create<AthletesModalProps>(
 			modal.handleClose();
 		};
 
+		const handleCloseAfterInvitation = () => {
+			setInvitationSent(false);
+			utils.organization.athlete.list.invalidate();
+			utils.organization.athleteGroup.listActive.invalidate();
+			modal.handleClose();
+		};
+
 		const handleCopyPassword = async () => {
 			if (temporaryPassword) {
 				await navigator.clipboard.writeText(temporaryPassword);
 				toast.success("Password copied to clipboard");
 			}
 		};
+
+		// If invitation was sent, render the success message
+		if (invitationSent) {
+			return (
+				<Sheet
+					open={modal.visible}
+					onOpenChange={(open) => !open && handleCloseAfterInvitation()}
+				>
+					<SheetContent
+						className="sm:max-w-lg"
+						onAnimationEndCapture={modal.handleAnimationEndCapture}
+					>
+						<SheetHeader>
+							<SheetTitle>{t("modal.invitationSentTitle")}</SheetTitle>
+							<SheetDescription>
+								{t("modal.invitationSentDescription")}
+							</SheetDescription>
+						</SheetHeader>
+
+						<div className="flex flex-1 flex-col gap-4 px-6 py-4">
+							<Alert>
+								<MailIcon className="size-4" />
+								<AlertTitle>{t("modal.invitationSentAlert")}</AlertTitle>
+								<AlertDescription className="mt-2">
+									{t("modal.invitationSentNote")}
+								</AlertDescription>
+							</Alert>
+						</div>
+
+						<SheetFooter className="flex-row justify-end gap-2 border-t">
+							<Button type="button" onClick={handleCloseAfterInvitation}>
+								<CheckIcon className="size-4" />
+								{t("modal.done")}
+							</Button>
+						</SheetFooter>
+					</SheetContent>
+				</Sheet>
+			);
+		}
 
 		// If we have a temporary password to show, render the password display
 		if (temporaryPassword) {
@@ -463,6 +519,29 @@ export const AthletesModal = NiceModal.create<AthletesModalProps>(
 																	</FormControl>
 																	<FormMessage />
 																</Field>
+															</FormItem>
+														)}
+													/>
+
+													<FormField
+														control={form.control}
+														name="sendInvitation"
+														render={({ field }) => (
+															<FormItem className="flex items-center justify-between rounded-lg border p-3">
+																<div className="space-y-0.5">
+																	<FormLabel className="text-sm font-medium">
+																		{t("modal.sendInvitation")}
+																	</FormLabel>
+																	<p className="text-muted-foreground text-xs">
+																		{t("modal.sendInvitationDescription")}
+																	</p>
+																</div>
+																<FormControl>
+																	<Switch
+																		checked={field.value}
+																		onCheckedChange={field.onChange}
+																	/>
+																</FormControl>
 															</FormItem>
 														)}
 													/>
@@ -677,6 +756,34 @@ export const AthletesModal = NiceModal.create<AthletesModalProps>(
 														</Select>
 														<FormMessage />
 													</Field>
+												</FormItem>
+											)}
+										/>
+									)}
+
+									{isEditing && (
+										<FormField
+											control={form.control}
+											name="isPublicProfile"
+											render={({ field }) => (
+												<FormItem className="flex items-center justify-between rounded-lg border p-3">
+													<div className="flex items-center gap-2">
+														<GlobeIcon className="size-4 text-muted-foreground" />
+														<div className="space-y-0.5">
+															<FormLabel className="text-sm font-medium">
+																{t("modal.publicProfile")}
+															</FormLabel>
+															<p className="text-muted-foreground text-xs">
+																{t("modal.publicProfileDescription")}
+															</p>
+														</div>
+													</div>
+													<FormControl>
+														<Switch
+															checked={field.value}
+															onCheckedChange={field.onChange}
+														/>
+													</FormControl>
 												</FormItem>
 											)}
 										/>

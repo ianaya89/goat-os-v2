@@ -14,6 +14,7 @@ import {
 	startOfDay,
 	startOfMonth,
 	startOfWeek,
+	subMonths,
 } from "date-fns";
 import {
 	BanknoteIcon,
@@ -22,8 +23,11 @@ import {
 	CopyIcon,
 	EditIcon,
 	EyeIcon,
+	MailIcon,
+	MessageSquareIcon,
 	MoreHorizontalIcon,
 	RepeatIcon,
+	SendIcon,
 	Trash2Icon,
 	UsersIcon,
 } from "lucide-react";
@@ -40,7 +44,7 @@ import * as React from "react";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/confirmation-modal";
 import { LocationBadge } from "@/components/organization/location-badge";
-import { TrainingSessionStatusBadge } from "@/components/organization/training-session-status-badge";
+import { TrainingSessionStatusSelect } from "@/components/organization/training-session-status-select";
 import { TrainingSessionsBulkActions } from "@/components/organization/training-sessions-bulk-actions";
 import { TrainingSessionsModal } from "@/components/organization/training-sessions-modal";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +60,9 @@ import {
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
+	DropdownMenuSub,
+	DropdownMenuSubContent,
+	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -66,6 +73,7 @@ import {
 import { UserAvatar } from "@/components/user/user-avatar";
 import { appConfig } from "@/config/app.config";
 import {
+	type NotificationChannel,
 	type TrainingSessionStatus,
 	TrainingSessionStatuses,
 } from "@/lib/db/schema/enums";
@@ -198,10 +206,10 @@ export function TrainingSessionsTable({
 		}),
 	);
 
-	// Period filter - default to "week" (current week)
+	// Period filter - default to "day" (today)
 	const [periodFilter, setPeriodFilter] = useQueryState(
 		"period",
-		parseAsString.withDefault("week").withOptions({
+		parseAsString.withDefault("day").withOptions({
 			shallow: true,
 		}),
 	);
@@ -219,6 +227,10 @@ export function TrainingSessionsTable({
 				};
 			case "month":
 				return { from: startOfMonth(now), to: endOfMonth(now) };
+			case "lastMonth": {
+				const lastMonth = subMonths(now, 1);
+				return { from: startOfMonth(lastMonth), to: endOfMonth(lastMonth) };
+			}
 			default:
 				// "all" or any other value - no date filter
 				return undefined;
@@ -286,9 +298,9 @@ export function TrainingSessionsTable({
 			return Array.isArray(filter?.value) ? (filter.value as string[]) : [];
 		};
 
-		// Period is single-select, default to "week" if cleared
+		// Period is single-select, default to "day" if cleared
 		const periodValue = getFilterValue("period")[0];
-		setPeriodFilter(periodValue || "week");
+		setPeriodFilter(periodValue || "day");
 
 		setStatusFilter(getFilterValue("status"));
 		setLocationFilter(getFilterValue("locationId")[0] || "");
@@ -363,6 +375,46 @@ export function TrainingSessionsTable({
 				toast.error(error.message || t("error.deleteFailed"));
 			},
 		});
+
+	const sendConfirmationMutation =
+		trpc.organization.confirmation.sendForSessions.useMutation({
+			onSuccess: (data) => {
+				toast.success(t("success.reminderSent", { count: data.sent }));
+				utils.organization.confirmation.getStats.invalidate();
+				utils.organization.confirmation.getHistory.invalidate();
+			},
+			onError: () => {
+				toast.error(t("error.reminderFailed"));
+			},
+		});
+
+	const handleSendConfirmation = (
+		session: TrainingSession,
+		channel: NotificationChannel,
+	) => {
+		const athleteCount = session.athletes.length;
+		const channelLabel =
+			channel === "email"
+				? "Email"
+				: channel === "whatsapp"
+					? "WhatsApp"
+					: "SMS";
+
+		NiceModal.show(ConfirmationModal, {
+			title: t("detail.sendReminder"),
+			message: t("success.reminderSent", { count: athleteCount }).replace(
+				/\./,
+				` ${t("detail.sendViaEmail").includes("Email") ? "via" : "por"} ${channelLabel}.`,
+			),
+			confirmLabel: t("detail.sendReminder"),
+			onConfirm: () => {
+				sendConfirmationMutation.mutate({
+					sessionIds: [session.id],
+					channel,
+				});
+			},
+		});
+	};
 
 	// Duplicate a session - creates a copy with new date (tomorrow same time)
 	const handleDuplicateSession = (session: TrainingSession) => {
@@ -539,7 +591,10 @@ export function TrainingSessionsTable({
 				<SortableColumnHeader column={column} title={t("table.status")} />
 			),
 			cell: ({ row }) => (
-				<TrainingSessionStatusBadge status={row.original.status} />
+				<TrainingSessionStatusSelect
+					sessionId={row.original.id}
+					currentStatus={row.original.status}
+				/>
 			),
 		},
 		{
@@ -629,6 +684,39 @@ export function TrainingSessionsTable({
 								<CopyIcon className="mr-2 size-4" />
 								{t("table.duplicate")}
 							</DropdownMenuItem>
+							<DropdownMenuSub>
+								<DropdownMenuSubTrigger>
+									<SendIcon className="mr-2 size-4" />
+									{t("detail.sendReminder")}
+								</DropdownMenuSubTrigger>
+								<DropdownMenuSubContent>
+									<DropdownMenuItem
+										onClick={() =>
+											handleSendConfirmation(row.original, "email")
+										}
+										disabled={sendConfirmationMutation.isPending}
+									>
+										<MailIcon className="mr-2 size-4" />
+										{t("detail.sendViaEmail")}
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										onClick={() =>
+											handleSendConfirmation(row.original, "whatsapp")
+										}
+										disabled={sendConfirmationMutation.isPending}
+									>
+										<MessageSquareIcon className="mr-2 size-4" />
+										{t("detail.sendViaWhatsApp")}
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										onClick={() => handleSendConfirmation(row.original, "sms")}
+										disabled={sendConfirmationMutation.isPending}
+									>
+										<MessageSquareIcon className="mr-2 size-4" />
+										{t("detail.sendViaSms")}
+									</DropdownMenuItem>
+								</DropdownMenuSubContent>
+							</DropdownMenuSub>
 							<DropdownMenuSeparator />
 							<DropdownMenuItem
 								onClick={() => {
@@ -657,10 +745,12 @@ export function TrainingSessionsTable({
 		{
 			key: "period",
 			title: t("table.period"),
+			singleSelect: true,
 			options: [
 				{ value: "day", label: t("table.today") },
 				{ value: "week", label: t("table.thisWeek") },
 				{ value: "month", label: t("table.thisMonth") },
+				{ value: "lastMonth", label: t("table.lastMonth") },
 				{ value: "all", label: t("table.allTime") },
 			],
 		},

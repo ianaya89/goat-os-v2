@@ -1,6 +1,8 @@
 "use client";
 
 import NiceModal, { type NiceModalHocProps } from "@ebay/nice-modal-react";
+import { CheckIcon, PackageIcon, PlusIcon, XIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -22,14 +24,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import {
-	Sheet,
-	SheetContent,
-	SheetDescription,
-	SheetFooter,
-	SheetHeader,
-	SheetTitle,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetFooter } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
@@ -45,22 +40,6 @@ import {
 	updateProductSchema,
 } from "@/schemas/organization-stock-schemas";
 import { trpc } from "@/trpc/client";
-
-const categoryLabels: Record<ProductCategory, string> = {
-	beverage: "Bebida",
-	food: "Comida",
-	apparel: "Ropa",
-	equipment: "Equipamiento",
-	merchandise: "Mercaderia",
-	supplement: "Suplemento",
-	other: "Otro",
-};
-
-const statusLabels: Record<ProductStatus, string> = {
-	active: "Activo",
-	inactive: "Inactivo",
-	discontinued: "Descontinuado",
-};
 
 export type ProductsModalProps = NiceModalHocProps & {
 	product?: {
@@ -85,6 +64,7 @@ export type ProductsModalProps = NiceModalHocProps & {
 
 export const ProductsModal = NiceModal.create<ProductsModalProps>(
 	({ product }) => {
+		const t = useTranslations("finance.products");
 		const modal = useEnhancedModal();
 		const utils = trpc.useUtils();
 		const isEditing = !!product;
@@ -92,24 +72,24 @@ export const ProductsModal = NiceModal.create<ProductsModalProps>(
 		const createProductMutation =
 			trpc.organization.stock.createProduct.useMutation({
 				onSuccess: () => {
-					toast.success("Producto creado exitosamente");
+					toast.success(t("success.created"));
 					utils.organization.stock.listProducts.invalidate();
 					modal.handleClose();
 				},
 				onError: (error) => {
-					toast.error(error.message || "Error al crear el producto");
+					toast.error(error.message || t("error.createFailed"));
 				},
 			});
 
 		const updateProductMutation =
 			trpc.organization.stock.updateProduct.useMutation({
 				onSuccess: () => {
-					toast.success("Producto actualizado exitosamente");
+					toast.success(t("success.updated"));
 					utils.organization.stock.listProducts.invalidate();
 					modal.handleClose();
 				},
 				onError: (error) => {
-					toast.error(error.message || "Error al actualizar el producto");
+					toast.error(error.message || t("error.updateFailed"));
 				},
 			});
 
@@ -175,17 +155,44 @@ export const ProductsModal = NiceModal.create<ProductsModalProps>(
 				<SheetContent
 					className="sm:max-w-lg"
 					onAnimationEndCapture={modal.handleAnimationEndCapture}
+					hideDefaultHeader
 				>
-					<SheetHeader>
-						<SheetTitle>
-							{isEditing ? "Editar Producto" : "Crear Producto"}
-						</SheetTitle>
-						<SheetDescription className="sr-only">
-							{isEditing
-								? "Actualiza la informacion del producto."
-								: "Completa los detalles para crear un nuevo producto."}
-						</SheetDescription>
-					</SheetHeader>
+					{/* Custom Header with accent stripe */}
+					<div className="relative shrink-0">
+						{/* Accent stripe */}
+						<div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-slate-400 to-slate-500" />
+
+						{/* Header content */}
+						<div className="flex items-start justify-between gap-4 px-6 pt-6 pb-4">
+							<div className="flex items-start gap-3">
+								<div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-slate-400 to-slate-500 text-white shadow-sm">
+									<PackageIcon className="size-5" />
+								</div>
+								<div>
+									<h2 className="font-semibold text-lg tracking-tight">
+										{isEditing ? t("modal.editTitle") : t("modal.createTitle")}
+									</h2>
+									<p className="mt-0.5 text-muted-foreground text-sm">
+										{isEditing
+											? t("modal.editSubtitle")
+											: t("modal.createSubtitle")}
+									</p>
+								</div>
+							</div>
+							<button
+								type="button"
+								onClick={modal.handleClose}
+								disabled={isPending}
+								className="flex size-8 items-center justify-center rounded-lg transition-all duration-150 text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+							>
+								<XIcon className="size-4" />
+								<span className="sr-only">{t("modal.cancel")}</span>
+							</button>
+						</div>
+
+						{/* Separator */}
+						<div className="h-px bg-border" />
+					</div>
 
 					<Form {...form}>
 						<form
@@ -200,10 +207,10 @@ export const ProductsModal = NiceModal.create<ProductsModalProps>(
 										render={({ field }) => (
 											<FormItem asChild>
 												<Field>
-													<FormLabel>Nombre</FormLabel>
+													<FormLabel>{t("form.name")}</FormLabel>
 													<FormControl>
 														<Input
-															placeholder="ej. Gatorade 500ml"
+															placeholder={t("form.namePlaceholder")}
 															autoComplete="off"
 															{...field}
 															value={field.value ?? ""}
@@ -221,10 +228,10 @@ export const ProductsModal = NiceModal.create<ProductsModalProps>(
 										render={({ field }) => (
 											<FormItem asChild>
 												<Field>
-													<FormLabel>Descripcion</FormLabel>
+													<FormLabel>{t("form.description")}</FormLabel>
 													<FormControl>
 														<Textarea
-															placeholder="Descripcion del producto..."
+															placeholder={t("form.descriptionPlaceholder")}
 															className="resize-none"
 															rows={2}
 															{...field}
@@ -244,20 +251,20 @@ export const ProductsModal = NiceModal.create<ProductsModalProps>(
 											render={({ field }) => (
 												<FormItem asChild>
 													<Field>
-														<FormLabel>Categoria</FormLabel>
+														<FormLabel>{t("form.category")}</FormLabel>
 														<Select
 															onValueChange={field.onChange}
 															value={field.value}
 														>
 															<FormControl>
 																<SelectTrigger className="w-full">
-																	<SelectValue placeholder="Seleccionar" />
+																	<SelectValue />
 																</SelectTrigger>
 															</FormControl>
 															<SelectContent>
 																{ProductCategories.map((cat) => (
 																	<SelectItem key={cat} value={cat}>
-																		{categoryLabels[cat]}
+																		{t(`categories.${cat}`)}
 																	</SelectItem>
 																))}
 															</SelectContent>
@@ -274,20 +281,20 @@ export const ProductsModal = NiceModal.create<ProductsModalProps>(
 											render={({ field }) => (
 												<FormItem asChild>
 													<Field>
-														<FormLabel>Estado</FormLabel>
+														<FormLabel>{t("form.status")}</FormLabel>
 														<Select
 															onValueChange={field.onChange}
 															value={field.value}
 														>
 															<FormControl>
 																<SelectTrigger className="w-full">
-																	<SelectValue placeholder="Seleccionar" />
+																	<SelectValue />
 																</SelectTrigger>
 															</FormControl>
 															<SelectContent>
 																{ProductStatuses.map((status) => (
 																	<SelectItem key={status} value={status}>
-																		{statusLabels[status]}
+																		{t(`status.${status}`)}
 																	</SelectItem>
 																))}
 															</SelectContent>
@@ -306,10 +313,10 @@ export const ProductsModal = NiceModal.create<ProductsModalProps>(
 											render={({ field }) => (
 												<FormItem asChild>
 													<Field>
-														<FormLabel>SKU</FormLabel>
+														<FormLabel>{t("form.sku")}</FormLabel>
 														<FormControl>
 															<Input
-																placeholder="SKU-001"
+																placeholder={t("form.skuPlaceholder")}
 																autoComplete="off"
 																{...field}
 																value={field.value ?? ""}
@@ -327,10 +334,10 @@ export const ProductsModal = NiceModal.create<ProductsModalProps>(
 											render={({ field }) => (
 												<FormItem asChild>
 													<Field>
-														<FormLabel>Codigo de Barras</FormLabel>
+														<FormLabel>{t("form.barcode")}</FormLabel>
 														<FormControl>
 															<Input
-																placeholder="7790001234567"
+																placeholder={t("form.barcodePlaceholder")}
 																autoComplete="off"
 																{...field}
 																value={field.value ?? ""}
@@ -350,7 +357,7 @@ export const ProductsModal = NiceModal.create<ProductsModalProps>(
 											render={({ field }) => (
 												<FormItem asChild>
 													<Field>
-														<FormLabel>Precio de Costo (centavos)</FormLabel>
+														<FormLabel>{t("form.costPrice")}</FormLabel>
 														<FormControl>
 															<Input
 																type="number"
@@ -373,7 +380,7 @@ export const ProductsModal = NiceModal.create<ProductsModalProps>(
 											render={({ field }) => (
 												<FormItem asChild>
 													<Field>
-														<FormLabel>Precio de Venta (centavos)</FormLabel>
+														<FormLabel>{t("form.sellingPrice")}</FormLabel>
 														<FormControl>
 															<Input
 																type="number"
@@ -400,9 +407,9 @@ export const ProductsModal = NiceModal.create<ProductsModalProps>(
 													<Field>
 														<div className="flex items-center justify-between rounded-lg border p-3">
 															<div className="space-y-0.5">
-																<FormLabel>Control de Stock</FormLabel>
+																<FormLabel>{t("form.trackStock")}</FormLabel>
 																<p className="text-muted-foreground text-xs">
-																	Llevar control de inventario
+																	{t("form.trackStockDescription")}
 																</p>
 															</div>
 															<FormControl>
@@ -425,7 +432,7 @@ export const ProductsModal = NiceModal.create<ProductsModalProps>(
 												render={({ field }) => (
 													<FormItem asChild>
 														<Field>
-															<FormLabel>Stock Inicial</FormLabel>
+															<FormLabel>{t("form.initialStock")}</FormLabel>
 															<FormControl>
 																<Input
 																	type="number"
@@ -451,7 +458,7 @@ export const ProductsModal = NiceModal.create<ProductsModalProps>(
 											render={({ field }) => (
 												<FormItem asChild>
 													<Field>
-														<FormLabel>Alerta Stock Bajo</FormLabel>
+														<FormLabel>{t("form.lowStockThreshold")}</FormLabel>
 														<FormControl>
 															<Input
 																type="number"
@@ -479,7 +486,7 @@ export const ProductsModal = NiceModal.create<ProductsModalProps>(
 											render={({ field }) => (
 												<FormItem asChild>
 													<Field>
-														<FormLabel>IVA (%)</FormLabel>
+														<FormLabel>{t("form.taxRate")}</FormLabel>
 														<FormControl>
 															<Input
 																type="number"
@@ -508,10 +515,10 @@ export const ProductsModal = NiceModal.create<ProductsModalProps>(
 										render={({ field }) => (
 											<FormItem asChild>
 												<Field>
-													<FormLabel>Notas</FormLabel>
+													<FormLabel>{t("form.notes")}</FormLabel>
 													<FormControl>
 														<Textarea
-															placeholder="Notas adicionales..."
+															placeholder={t("form.notesPlaceholder")}
 															className="resize-none"
 															rows={2}
 															{...field}
@@ -526,17 +533,29 @@ export const ProductsModal = NiceModal.create<ProductsModalProps>(
 								</div>
 							</ScrollArea>
 
-							<SheetFooter className="flex-row justify-end gap-2 border-t">
+							<SheetFooter className="shrink-0 flex-row justify-end gap-3 border-t bg-muted/30 px-6 py-4 pb-6">
 								<Button
 									type="button"
-									variant="outline"
+									variant="ghost"
 									onClick={modal.handleClose}
 									disabled={isPending}
+									className="min-w-[100px]"
 								>
-									Cancelar
+									<XIcon className="size-4" />
+									{t("modal.cancel")}
 								</Button>
-								<Button type="submit" disabled={isPending} loading={isPending}>
-									{isEditing ? "Actualizar Producto" : "Crear Producto"}
+								<Button
+									type="submit"
+									disabled={isPending}
+									loading={isPending}
+									className="min-w-[100px]"
+								>
+									{isEditing ? (
+										<CheckIcon className="size-4" />
+									) : (
+										<PlusIcon className="size-4" />
+									)}
+									{isEditing ? t("modal.update") : t("modal.create")}
 								</Button>
 							</SheetFooter>
 						</form>

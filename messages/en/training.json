@@ -35,6 +35,7 @@
 		"actions": "Actions",
 		"duplicate": "Duplicate",
 		"recurringSession": "Recurring session",
+		"pendingConfirmation": "Pending confirmation",
 		"openMenu": "Open menu",
 		"empty": "No training sessions found.",
 		"deleteConfirmTitle": "Delete session?",
@@ -43,6 +44,7 @@
 		"today": "Today",
 		"thisWeek": "This Week",
 		"thisMonth": "This Month",
+		"lastMonth": "Last Month",
 		"allTime": "All Time",
 		"athlete": "Athlete",
 		"athleteCount": "{count, plural, one {# athlete} other {# athletes}}"
@@ -102,6 +104,7 @@
 		"cancel": "Cancel"
 	},
 	"detail": {
+		"sessionInfo": "Information",
 		"overview": "Overview",
 		"attendance": "Attendance",
 		"notes": "Notes",
@@ -153,6 +156,7 @@
 		"cancelled": "Session cancelled successfully.",
 		"duplicated": "Session duplicated successfully.",
 		"completed": "Session marked as completed.",
+		"statusUpdated": "Status updated successfully.",
 		"reminderSent": "Reminder sent to {count, plural, one {# athlete} other {# athletes}}.",
 		"dailySummarySent": "Daily summary sent to {sent} {sent, plural, one {coach} other {coaches}} for {date}."
 	},
@@ -164,6 +168,7 @@
 		"cancelFailed": "Failed to cancel session.",
 		"duplicateFailed": "Failed to duplicate session.",
 		"completeFailed": "Failed to complete session.",
+		"statusUpdateFailed": "Failed to update status.",
 		"reminderFailed": "Failed to send reminder.",
 		"sendDailySummaryFailed": "Failed to send daily summary.",
 		"updateCoachesFailed": "Failed to update coaches.",
@@ -296,6 +301,12 @@
 	},
 	"bulk": {
 		"changeStatus": "Change status",
+		"sendConfirmations": "Send confirmations",
+		"viaEmail": "Via Email",
+		"viaWhatsApp": "Via WhatsApp",
+		"viaSms": "Via SMS",
+		"confirmationsSent": "Confirmations sent to {count, plural, one {# athlete} other {# athletes}}.",
+		"confirmationsFailed": "Failed to send confirmations.",
 		"delete": "Delete",
 		"deleteTitle": "Delete sessions?",
 		"deleteMessage": "Are you sure you want to delete {count, plural, one {# session} other {# sessions}}? This action cannot be undone.",

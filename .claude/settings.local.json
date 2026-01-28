@@ -71,7 +71,8 @@
 			"Bash(ps:*)",
 			"Bash(set -a)",
 			"Bash(. /Users/ianaya89/Development/goat-os/.env)",
-			"Bash(set +a)"
+			"Bash(set +a)",
+			"Bash(awk:*)"
 		]
 	}
 }

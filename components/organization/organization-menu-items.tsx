@@ -3,6 +3,7 @@
 import {
 	BanknoteIcon,
 	BarChart3Icon,
+	BellIcon,
 	BotIcon,
 	CalendarDaysIcon,
 	CalendarIcon,
@@ -151,6 +152,12 @@ export function OrganizationMenuItems(): React.JSX.Element {
 			label: t("trainingSessions"),
 			href: `${basePath}/training-sessions`,
 			icon: CalendarIcon,
+			feature: OrganizationFeature.trainingSessions,
+		},
+		{
+			label: t("confirmations"),
+			href: `${basePath}/confirmations`,
+			icon: BellIcon,
 			feature: OrganizationFeature.trainingSessions,
 		},
 		{

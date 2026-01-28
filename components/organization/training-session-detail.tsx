@@ -304,20 +304,6 @@ export function TrainingSessionDetail({
 									))}
 								</DropdownMenuContent>
 							</DropdownMenu>
-							<Button
-								onClick={() =>
-									NiceModal.show(SessionBasicEditModal, {
-										sessionId,
-										title: session.title,
-										description: session.description,
-									})
-								}
-								variant="ghost"
-								size="icon"
-								className="size-8"
-							>
-								<EditIcon className="size-4" />
-							</Button>
 						</>
 					)}
 					{/* Athlete feedback button */}
@@ -663,6 +649,7 @@ function SessionInfoGrid({
 	isRestrictedMember,
 }: {
 	session: {
+		title: string;
 		description: string | null;
 		objectives: string | null;
 		planning: string | null;
@@ -707,6 +694,56 @@ function SessionInfoGrid({
 		<div className="grid gap-4 md:grid-cols-2">
 			{/* Left column: info cards stacked */}
 			<div className="flex flex-col gap-4">
+				{/* Session Info Card with Title and Description */}
+				<Card>
+					<CardHeader className="pb-2">
+						<div className="flex items-center justify-between">
+							<CardTitle className="flex items-center gap-2 text-base">
+								<InfoIcon className="size-4" />
+								{t("detail.sessionInfo")}
+							</CardTitle>
+							{!isRestrictedMember && (
+								<Button
+									variant="ghost"
+									size="icon"
+									className="size-7"
+									onClick={() =>
+										NiceModal.show(SessionBasicEditModal, {
+											sessionId,
+											title: session.title,
+											description: session.description,
+										})
+									}
+								>
+									<EditIcon className="size-3.5" />
+								</Button>
+							)}
+						</div>
+					</CardHeader>
+					<CardContent className="space-y-3">
+						<div>
+							<span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+								{t("form.title")}
+							</span>
+							<p className="mt-1 font-medium">{session.title}</p>
+						</div>
+						<div>
+							<span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+								{t("form.description")}
+							</span>
+							{session.description ? (
+								<p className="mt-1 whitespace-pre-wrap text-sm">
+									{session.description}
+								</p>
+							) : (
+								<p className="mt-1 text-muted-foreground text-sm">
+									{t("detail.noDescription")}
+								</p>
+							)}
+						</div>
+					</CardContent>
+				</Card>
+
 				<Card>
 					<CardHeader className="pb-2">
 						<div className="flex items-center justify-between">
@@ -780,26 +817,6 @@ function SessionInfoGrid({
 						) : (
 							<p className="text-muted-foreground text-sm">
 								{t("detail.noPostSessionNotes")}
-							</p>
-						)}
-					</CardContent>
-				</Card>
-
-				<Card>
-					<CardHeader className="pb-2">
-						<CardTitle className="flex items-center gap-2 text-base">
-							<FileTextIcon className="size-4" />
-							{t("form.description")}
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						{session.description ? (
-							<p className="whitespace-pre-wrap text-sm">
-								{session.description}
-							</p>
-						) : (
-							<p className="text-muted-foreground text-sm">
-								{t("detail.noDescription")}
 							</p>
 						)}
 					</CardContent>

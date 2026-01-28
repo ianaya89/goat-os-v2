@@ -645,13 +645,51 @@
 		},
 		"form": {
 			"name": "Name",
+			"namePlaceholder": "e.g. Gatorade 500ml",
 			"description": "Description",
+			"descriptionPlaceholder": "Product description...",
 			"sku": "SKU",
+			"skuPlaceholder": "SKU-001",
+			"barcode": "Barcode",
+			"barcodePlaceholder": "7790001234567",
 			"price": "Price",
 			"cost": "Cost",
+			"costPrice": "Cost Price (cents)",
+			"sellingPrice": "Selling Price (cents)",
 			"stock": "Stock",
+			"initialStock": "Initial Stock",
+			"trackStock": "Track Stock",
+			"trackStockDescription": "Track inventory levels",
+			"lowStockThreshold": "Low Stock Alert",
+			"taxRate": "Tax Rate (%)",
 			"category": "Category",
+			"status": "Status",
+			"notes": "Notes",
+			"notesPlaceholder": "Additional notes...",
 			"image": "Image"
+		},
+		"modal": {
+			"createTitle": "Add Product",
+			"createSubtitle": "Fill in the details to create a new product.",
+			"editTitle": "Edit Product",
+			"editSubtitle": "Update product information.",
+			"cancel": "Cancel",
+			"create": "Create Product",
+			"update": "Update Product"
+		},
+		"categories": {
+			"beverage": "Beverage",
+			"food": "Food",
+			"apparel": "Apparel",
+			"equipment": "Equipment",
+			"merchandise": "Merchandise",
+			"supplement": "Supplement",
+			"other": "Other"
+		},
+		"status": {
+			"active": "Active",
+			"inactive": "Inactive",
+			"discontinued": "Discontinued"
 		},
 		"success": {
 			"created": "Product created successfully.",

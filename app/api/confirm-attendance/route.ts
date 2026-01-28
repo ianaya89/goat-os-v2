@@ -1,10 +1,15 @@
 import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { AttendanceStatus, TrainingSessionStatus } from "@/lib/db/schema/enums";
+import {
+	AttendanceStatus,
+	ConfirmationStatus,
+	TrainingSessionStatus,
+} from "@/lib/db/schema/enums";
 import {
 	athleteTable,
 	attendanceTable,
+	sessionConfirmationHistoryTable,
 	trainingSessionTable,
 } from "@/lib/db/schema/tables";
 import { logger } from "@/lib/logger";
@@ -129,6 +134,39 @@ export async function GET(request: Request) {
 				"Attendance created via confirmation link",
 			);
 		}
+
+		// Update session status to "confirmed" if it's currently "pending"
+		// This confirms the session when at least one athlete responds
+		if (session.status === TrainingSessionStatus.pending) {
+			await db
+				.update(trainingSessionTable)
+				.set({
+					status: TrainingSessionStatus.confirmed,
+					updatedAt: new Date(),
+				})
+				.where(eq(trainingSessionTable.id, sessionId));
+
+			logger.info(
+				{ sessionId },
+				"Session status updated to confirmed via athlete confirmation",
+			);
+		}
+
+		// Update confirmation history if exists (mark as confirmed)
+		await db
+			.update(sessionConfirmationHistoryTable)
+			.set({
+				status: ConfirmationStatus.confirmed,
+				confirmedAt: new Date(),
+				updatedAt: new Date(),
+			})
+			.where(
+				and(
+					eq(sessionConfirmationHistoryTable.sessionId, sessionId),
+					eq(sessionConfirmationHistoryTable.athleteId, athleteId),
+					eq(sessionConfirmationHistoryTable.status, ConfirmationStatus.sent),
+				),
+			);
 
 		const athleteName = athlete.user?.name ?? "Athlete";
 		const sessionTitle = session.title;

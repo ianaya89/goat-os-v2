@@ -47,6 +47,11 @@ export default getRequestConfig(async () => {
 		admin: (await import(`./messages/${locale}/admin.json`)).default,
 		marketing: (await import(`./messages/${locale}/marketing.json`)).default,
 		users: (await import(`./messages/${locale}/users.json`)).default,
+		achievements: (await import(`./messages/${locale}/achievements.json`))
+			.default,
+		teams: (await import(`./messages/${locale}/teams.json`)).default,
+		confirmations: (await import(`./messages/${locale}/confirmations.json`))
+			.default,
 	};
 
 	return {
