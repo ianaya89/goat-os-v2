@@ -28,7 +28,9 @@
 		"removeFromOrg": "Eliminar de la Organización",
 		"editUser": "Editar Usuario",
 		"banUser": "Suspender Usuario",
-		"unbanUser": "Quitar Suspensión"
+		"unbanUser": "Quitar Suspensión",
+		"mfa": "MFA",
+		"resetMfa": "Restablecer MFA"
 	},
 	"profiles": {
 		"coach": "Entrenador",
@@ -72,6 +74,11 @@
 		"expires": "Expira",
 		"permanent": "Permanente",
 		"unbanUser": "Quitar Suspensión"
+	},
+	"resetMfaConfirm": {
+		"title": "¿Restablecer MFA?",
+		"message": "¿Estás seguro de que quieres restablecer el MFA de {name}? Deberá configurar la autenticación de dos factores nuevamente.",
+		"confirm": "Restablecer MFA"
 	},
 	"resetPasswordConfirm": {
 		"title": "¿Restablecer contraseña?",
@@ -131,7 +138,8 @@
 		"banned": "Usuario suspendido correctamente.",
 		"unbanned": "Suspensión removida correctamente.",
 		"created": "Usuario creado correctamente.",
-		"updated": "Usuario actualizado correctamente."
+		"updated": "Usuario actualizado correctamente.",
+		"mfaReset": "MFA restablecido correctamente."
 	},
 	"error": {
 		"roleUpdateFailed": "No se pudo actualizar el rol del usuario.",
@@ -141,6 +149,7 @@
 		"banFailed": "No se pudo suspender al usuario.",
 		"unbanFailed": "No se pudo quitar la suspensión del usuario.",
 		"createFailed": "No se pudo crear el usuario.",
-		"updateFailed": "No se pudo actualizar el usuario."
+		"updateFailed": "No se pudo actualizar el usuario.",
+		"mfaResetFailed": "No se pudo restablecer el MFA."
 	}
 }

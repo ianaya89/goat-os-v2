@@ -17,6 +17,7 @@ import {
 	PlusIcon,
 	ShieldBanIcon,
 	ShieldCheckIcon,
+	SmartphoneIcon,
 	UserXIcon,
 	XCircleIcon,
 } from "lucide-react";
@@ -71,6 +72,7 @@ interface OrganizationUser {
 	banned: boolean;
 	banReason: string | null;
 	banExpires: Date | null;
+	twoFactorEnabled: boolean;
 	coachProfile: {
 		id: string;
 		specialty: string;
@@ -276,6 +278,16 @@ export function OrganizationUsersTable(): React.JSX.Element {
 		},
 	});
 
+	const resetMfaMutation = trpc.organization.user.resetMfa.useMutation({
+		onSuccess: () => {
+			toast.success(t("success.mfaReset"));
+			utils.organization.user.list.invalidate();
+		},
+		onError: (error) => {
+			toast.error(error.message || t("error.mfaResetFailed"));
+		},
+	});
+
 	const handleSearchQueryChange = (value: string): void => {
 		if (value !== searchQuery) {
 			setSearchQuery(value);
@@ -326,6 +338,20 @@ export function OrganizationUsersTable(): React.JSX.Element {
 						<CheckCircleIcon className="size-4 text-green-500" />
 					) : (
 						<XCircleIcon className="size-4 text-muted-foreground" />
+					)}
+				</div>
+			),
+		},
+		{
+			accessorKey: "twoFactorEnabled",
+			header: () => <span className="text-xs">{t("table.mfa")}</span>,
+			enableSorting: false,
+			cell: ({ row }) => (
+				<div className="flex items-center justify-center">
+					{row.original.twoFactorEnabled ? (
+						<SmartphoneIcon className="size-4 text-green-500" />
+					) : (
+						<span className="text-muted-foreground">—</span>
 					)}
 				</div>
 			),
@@ -464,6 +490,27 @@ export function OrganizationUsersTable(): React.JSX.Element {
 								<KeyRoundIcon className="size-4" />
 								{t("table.resetPassword")}
 							</DropdownMenuItem>
+							{row.original.twoFactorEnabled && (
+								<DropdownMenuItem
+									onClick={() => {
+										NiceModal.show(ConfirmationModal, {
+											title: t("resetMfaConfirm.title"),
+											message: t("resetMfaConfirm.message", {
+												name: row.original.name,
+											}),
+											confirmLabel: t("resetMfaConfirm.confirm"),
+											onConfirm: () =>
+												resetMfaMutation.mutate({
+													userId: row.original.id,
+												}),
+										});
+									}}
+									disabled={resetMfaMutation.isPending}
+								>
+									<SmartphoneIcon className="size-4" />
+									{t("table.resetMfa")}
+								</DropdownMenuItem>
+							)}
 							{!row.original.emailVerified && (
 								<DropdownMenuItem
 									onClick={() => {

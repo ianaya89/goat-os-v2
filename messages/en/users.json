@@ -28,7 +28,9 @@
 		"removeFromOrg": "Remove from Organization",
 		"editUser": "Edit User",
 		"banUser": "Ban User",
-		"unbanUser": "Unban User"
+		"unbanUser": "Unban User",
+		"mfa": "MFA",
+		"resetMfa": "Reset MFA"
 	},
 	"profiles": {
 		"coach": "Coach",
@@ -72,6 +74,11 @@
 		"expires": "Expires",
 		"permanent": "Permanent",
 		"unbanUser": "Unban User"
+	},
+	"resetMfaConfirm": {
+		"title": "Reset MFA?",
+		"message": "Are you sure you want to reset MFA for {name}? They will need to set up two-factor authentication again.",
+		"confirm": "Reset MFA"
 	},
 	"resetPasswordConfirm": {
 		"title": "Reset password?",
@@ -131,7 +138,8 @@
 		"banned": "User has been banned.",
 		"unbanned": "User has been unbanned.",
 		"created": "User created successfully.",
-		"updated": "User updated successfully."
+		"updated": "User updated successfully.",
+		"mfaReset": "MFA has been reset successfully."
 	},
 	"error": {
 		"roleUpdateFailed": "Failed to update user role.",
@@ -141,6 +149,7 @@
 		"banFailed": "Failed to ban user.",
 		"unbanFailed": "Failed to unban user.",
 		"createFailed": "Failed to create user.",
-		"updateFailed": "Failed to update user."
+		"updateFailed": "Failed to update user.",
+		"mfaResetFailed": "Failed to reset MFA."
 	}
 }

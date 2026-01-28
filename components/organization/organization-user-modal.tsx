@@ -12,6 +12,7 @@ import {
 	MedalIcon,
 	ShieldBanIcon,
 	ShieldCheckIcon,
+	SmartphoneIcon,
 	UserCheckIcon,
 	UserIcon,
 	XCircleIcon,
@@ -68,6 +69,7 @@ export type OrganizationUserModalProps = NiceModalHocProps & {
 		banned: boolean;
 		banReason: string | null;
 		banExpires: Date | null;
+		twoFactorEnabled: boolean;
 		coachProfile: {
 			id: string;
 			specialty: string;
@@ -146,6 +148,16 @@ export const OrganizationUserModal =
 			},
 		});
 
+		const resetMfaMutation = trpc.organization.user.resetMfa.useMutation({
+			onSuccess: () => {
+				toast.success(t("success.mfaReset"));
+				utils.organization.user.list.invalidate();
+			},
+			onError: (error) => {
+				toast.error(error.message || t("error.mfaResetFailed"));
+			},
+		});
+
 		const form = useZodForm({
 			schema: updateOrganizationUserRoleSchema,
 			defaultValues: {
@@ -215,6 +227,15 @@ export const OrganizationUserModal =
 				message: t("unban.message", { name: user.name }),
 				confirmLabel: t("unban.confirm"),
 				onConfirm: () => unbanUserMutation.mutate({ userId: user.id }),
+			});
+		};
+
+		const handleResetMfa = () => {
+			NiceModal.show(ConfirmationModal, {
+				title: t("resetMfaConfirm.title"),
+				message: t("resetMfaConfirm.message", { name: user.name }),
+				confirmLabel: t("resetMfaConfirm.confirm"),
+				onConfirm: () => resetMfaMutation.mutate({ userId: user.id }),
 			});
 		};
 
@@ -570,6 +591,17 @@ export const OrganizationUserModal =
 										<KeyRoundIcon className="size-4" />
 										{t("modal.resetPassword")}
 									</Button>
+									{user.twoFactorEnabled && (
+										<Button
+											variant="ghost"
+											size="sm"
+											onClick={handleResetMfa}
+											disabled={resetMfaMutation.isPending}
+										>
+											<SmartphoneIcon className="size-4" />
+											{t("table.resetMfa")}
+										</Button>
+									)}
 									{user.banned ? (
 										<Button
 											variant="ghost"

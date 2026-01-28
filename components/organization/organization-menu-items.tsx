@@ -9,6 +9,7 @@ import {
 	ChartLineIcon,
 	ChevronRight,
 	ClipboardListIcon,
+	ContactRoundIcon,
 	DumbbellIcon,
 	FileTextIcon,
 	HandshakeIcon,
@@ -29,7 +30,6 @@ import {
 	UserCheckIcon,
 	UserIcon,
 	UsersIcon,
-	UsersRoundIcon,
 	WalletCardsIcon,
 	WalletIcon,
 } from "lucide-react";
@@ -340,7 +340,7 @@ export function OrganizationMenuItems(): React.JSX.Element {
 				{
 					label: t("users"),
 					href: `${basePath}/users`,
-					icon: UsersRoundIcon,
+					icon: ContactRoundIcon,
 					// No feature flag - users management is always available
 				},
 				{

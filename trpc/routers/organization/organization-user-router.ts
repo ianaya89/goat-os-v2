@@ -185,6 +185,7 @@ export const organizationUserRouter = createTRPCRouter({
 					banned: userTable.banned,
 					banReason: userTable.banReason,
 					banExpires: userTable.banExpires,
+					twoFactorEnabled: userTable.twoFactorEnabled,
 				})
 				.from(memberTable)
 				.innerJoin(userTable, eq(memberTable.userId, userTable.id))
@@ -302,6 +303,7 @@ export const organizationUserRouter = createTRPCRouter({
 				banned: member.banned ?? false,
 				banReason: member.banReason ?? null,
 				banExpires: member.banExpires ?? null,
+				twoFactorEnabled: member.twoFactorEnabled ?? false,
 				coachProfile: coachMap.get(member.userId) ?? null,
 				athleteProfile: athleteMap.get(member.userId) ?? null,
 			}));
@@ -1096,6 +1098,82 @@ export const organizationUserRouter = createTRPCRouter({
 					previousBanReason: targetUser.banReason,
 				},
 				"Organization admin unbanned user",
+			);
+
+			return { success: true };
+		}),
+
+	// ============================================================================
+	// MFA RESET
+	// ============================================================================
+
+	resetMfa: protectedOrganizationProcedure
+		.input(resetMfaOrganizationUserSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Check if user is owner/admin
+			if (
+				ctx.membership.role !== MemberRole.owner &&
+				ctx.membership.role !== MemberRole.admin
+			) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Only owners and admins can reset MFA for members",
+				});
+			}
+
+			// Verify user is a member of this organization
+			const targetMember = await db.query.memberTable.findFirst({
+				where: and(
+					eq(memberTable.organizationId, ctx.organization.id),
+					eq(memberTable.userId, input.userId),
+				),
+			});
+
+			if (!targetMember) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "User not found in this organization",
+				});
+			}
+
+			// Get user to check current MFA status
+			const targetUser = await db.query.userTable.findFirst({
+				where: eq(userTable.id, input.userId),
+			});
+
+			if (!targetUser) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "User not found",
+				});
+			}
+
+			if (!targetUser.twoFactorEnabled) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "User does not have MFA enabled",
+				});
+			}
+
+			// Delete the two-factor record and disable flag
+			await Promise.all([
+				db
+					.delete(twoFactorTable)
+					.where(eq(twoFactorTable.userId, input.userId)),
+				db
+					.update(userTable)
+					.set({ twoFactorEnabled: false })
+					.where(eq(userTable.id, input.userId)),
+			]);
+
+			logger.info(
+				{
+					organizationId: ctx.organization.id,
+					targetUserId: input.userId,
+					targetEmail: targetUser.email,
+					resetBy: ctx.user.id,
+				},
+				"Organization admin reset user MFA",
 			);
 
 			return { success: true };
