@@ -980,6 +980,19 @@ export type MatchResultType =
 export const MatchResultTypes = Object.values(MatchResultType);
 
 // ============================================================================
+// SERVICE ENUMS
+// ============================================================================
+
+// Service status (for training service catalog)
+export const ServiceStatus = {
+	active: "active",
+	inactive: "inactive",
+	archived: "archived",
+} as const;
+export type ServiceStatus = (typeof ServiceStatus)[keyof typeof ServiceStatus];
+export const ServiceStatuses = Object.values(ServiceStatus);
+
+// ============================================================================
 // ORGANIZATION FEATURE FLAGS
 // ============================================================================
 
@@ -1004,6 +1017,7 @@ export const OrganizationFeature = {
 	matches: "matches",
 
 	// Finance
+	services: "services",
 	payments: "payments",
 	expenses: "expenses",
 	cashRegister: "cash_register",

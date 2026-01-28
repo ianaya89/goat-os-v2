@@ -1,3 +1,4 @@
+import { BanknoteIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -47,7 +48,10 @@ export default async function FinancialReportsPage(): Promise<React.JSX.Element>
 				<div className="p-4 sm:px-6 sm:pt-6 sm:pb-24">
 					<div className="mx-auto w-full space-y-6">
 						<div>
-							<PageTitle>{t("reports.financial.title")}</PageTitle>
+							<div className="flex items-center gap-2">
+								<BanknoteIcon className="size-5 text-muted-foreground" />
+								<PageTitle>{t("reports.financial.title")}</PageTitle>
+							</div>
 							<p className="text-muted-foreground text-sm">
 								{t("reports.financial.description")}
 							</p>

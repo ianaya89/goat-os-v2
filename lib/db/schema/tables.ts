@@ -80,6 +80,7 @@ import {
 	ProductCategory,
 	ProductStatus,
 	SaleStatus,
+	ServiceStatus,
 	SponsorStatus,
 	StockTransactionType,
 	SubscriptionStatus,
@@ -1044,6 +1045,8 @@ export const athleteGroupTable = pgTable(
 		}).$type<AthleteSport>(),
 		ageCategoryId: uuid("age_category_id"),
 		maxCapacity: integer("max_capacity"),
+		// Default service for sessions in this group
+		serviceId: uuid("service_id"),
 		isActive: boolean("is_active").notNull().default(true),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.notNull()
@@ -1059,6 +1062,7 @@ export const athleteGroupTable = pgTable(
 		index("athlete_group_sport_idx").on(table.sport),
 		index("athlete_group_is_active_idx").on(table.isActive),
 		index("athlete_group_age_category_id_idx").on(table.ageCategoryId),
+		index("athlete_group_service_id_idx").on(table.serviceId),
 		uniqueIndex("athlete_group_org_name_unique").on(
 			table.organizationId,
 			table.name,
@@ -1089,6 +1093,94 @@ export const athleteGroupMemberTable = pgTable(
 		uniqueIndex("athlete_group_member_unique").on(
 			table.groupId,
 			table.athleteId,
+		),
+	],
+);
+
+// ============================================================================
+// SERVICE TABLES (Training Service Catalog)
+// ============================================================================
+
+/**
+ * Service table - reusable service catalog for organizations
+ * Each service has a name, description, and current price.
+ * Price history is tracked in servicePriceHistoryTable.
+ */
+export const serviceTable = pgTable(
+	"service",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizationTable.id, { onDelete: "cascade" }),
+		// Service details
+		name: text("name").notNull(),
+		description: text("description"),
+		// Current price (denormalized for quick access, in smallest currency unit - centavos)
+		currentPrice: integer("current_price").notNull(),
+		currency: text("currency").notNull().default("ARS"),
+		// Status
+		status: text("status", { enum: enumToPgEnum(ServiceStatus) })
+			.$type<ServiceStatus>()
+			.notNull()
+			.default(ServiceStatus.active),
+		// Sort order for display
+		sortOrder: integer("sort_order").notNull().default(0),
+		// Metadata
+		createdBy: uuid("created_by").references(() => userTable.id, {
+			onDelete: "set null",
+		}),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => [
+		index("service_organization_id_idx").on(table.organizationId),
+		index("service_status_idx").on(table.status),
+		index("service_org_status_idx").on(table.organizationId, table.status),
+		uniqueIndex("service_org_name_unique").on(table.organizationId, table.name),
+	],
+);
+
+/**
+ * Service price history table - tracks all price changes for audit trail
+ * When a service price changes, the old entry gets effectiveUntil set,
+ * and a new entry is created with the new price.
+ */
+export const servicePriceHistoryTable = pgTable(
+	"service_price_history",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		serviceId: uuid("service_id")
+			.notNull()
+			.references(() => serviceTable.id, { onDelete: "cascade" }),
+		// Price at this point (in smallest currency unit - centavos)
+		price: integer("price").notNull(),
+		currency: text("currency").notNull().default("ARS"),
+		// When this price became effective
+		effectiveFrom: timestamp("effective_from", {
+			withTimezone: true,
+		}).notNull(),
+		// When this price stopped being effective (null = currently active)
+		effectiveUntil: timestamp("effective_until", { withTimezone: true }),
+		// Who changed the price
+		createdBy: uuid("created_by").references(() => userTable.id, {
+			onDelete: "set null",
+		}),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+	},
+	(table) => [
+		index("service_price_history_service_id_idx").on(table.serviceId),
+		index("service_price_history_effective_from_idx").on(table.effectiveFrom),
+		index("service_price_history_service_effective_idx").on(
+			table.serviceId,
+			table.effectiveFrom,
 		),
 	],
 );
@@ -1129,6 +1221,12 @@ export const trainingSessionTable = pgTable(
 			() => athleteGroupTable.id,
 			{ onDelete: "set null" },
 		),
+		// Service assigned to this session (overrides group default if set)
+		serviceId: uuid("service_id").references(() => serviceTable.id, {
+			onDelete: "set null",
+		}),
+		// Price snapshot at time of session creation (for audit trail, in centavos)
+		servicePriceAtCreation: integer("service_price_at_creation"),
 		// Recurring session support
 		isRecurring: boolean("is_recurring").notNull().default(false),
 		rrule: text("rrule"), // iCal RRule string for recurrence pattern
@@ -1162,6 +1260,7 @@ export const trainingSessionTable = pgTable(
 		index("training_session_end_time_idx").on(table.endTime),
 		index("training_session_location_id_idx").on(table.locationId),
 		index("training_session_athlete_group_id_idx").on(table.athleteGroupId),
+		index("training_session_service_id_idx").on(table.serviceId),
 		index("training_session_recurring_id_idx").on(table.recurringSessionId),
 		index("training_session_is_recurring_idx").on(table.isRecurring),
 		// Composite indexes for common queries

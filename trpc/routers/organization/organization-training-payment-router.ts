@@ -14,6 +14,7 @@ import {
 	sql,
 	sum,
 } from "drizzle-orm";
+import { z } from "zod/v4";
 import { createCashMovementIfCash } from "@/lib/cash-register-helpers";
 import { db } from "@/lib/db";
 import {
@@ -859,4 +860,53 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 			},
 		};
 	}),
+
+	// Get service price for a session (used by payment form for auto-fill)
+	getServicePriceForSession: protectedOrganizationProcedure
+		.input(z.object({ sessionId: z.string().uuid() }))
+		.query(async ({ ctx, input }) => {
+			const session = await db.query.trainingSessionTable.findFirst({
+				where: and(
+					eq(trainingSessionTable.id, input.sessionId),
+					eq(trainingSessionTable.organizationId, ctx.organization.id),
+				),
+				columns: { id: true, serviceId: true },
+				with: {
+					service: {
+						columns: {
+							id: true,
+							name: true,
+							currentPrice: true,
+							currency: true,
+						},
+					},
+					athleteGroup: {
+						columns: { id: true, serviceId: true },
+						with: {
+							service: {
+								columns: {
+									id: true,
+									name: true,
+									currentPrice: true,
+									currency: true,
+								},
+							},
+						},
+					},
+				},
+			});
+
+			if (!session) return null;
+
+			// Session's own service takes priority, then group default
+			const service = session.service ?? session.athleteGroup?.service;
+			if (!service) return null;
+
+			return {
+				serviceId: service.id,
+				serviceName: service.name,
+				price: service.currentPrice,
+				currency: service.currency,
+			};
+		}),
 });

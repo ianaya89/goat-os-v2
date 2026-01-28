@@ -18,11 +18,13 @@ import { TrainingSessionStatus } from "@/lib/db/schema/enums";
 import {
 	athleteEvaluationTable,
 	athleteGroupMemberTable,
+	athleteGroupTable,
 	athleteSessionFeedbackTable,
 	athleteTable,
 	attendanceTable,
 	coachTable,
 	recurringSessionExceptionTable,
+	serviceTable,
 	trainingSessionAthleteTable,
 	trainingSessionCoachTable,
 	trainingSessionTable,
@@ -146,6 +148,14 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 						},
 						athleteGroup: {
 							columns: { id: true, name: true },
+						},
+						service: {
+							columns: {
+								id: true,
+								name: true,
+								currentPrice: true,
+								currency: true,
+							},
 						},
 						coaches: {
 							with: {
@@ -294,6 +304,14 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 					location: true,
 					athleteGroup: {
 						with: {
+							service: {
+								columns: {
+									id: true,
+									name: true,
+									currentPrice: true,
+									currency: true,
+								},
+							},
 							members: {
 								with: {
 									athlete: {
@@ -310,6 +328,14 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 									},
 								},
 							},
+						},
+					},
+					service: {
+						columns: {
+							id: true,
+							name: true,
+							currentPrice: true,
+							currency: true,
 						},
 					},
 					coaches: {
@@ -358,6 +384,7 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 				primaryCoachId,
 				athleteIds,
 				athleteGroupId,
+				serviceId: inputServiceId,
 				...sessionData
 			} = input;
 
@@ -408,6 +435,39 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 				validAthleteIds = athletes.map((a) => a.id);
 			}
 
+			// Resolve service: explicit serviceId > group default > none
+			let resolvedServiceId = inputServiceId ?? null;
+			let servicePriceAtCreation: number | null = null;
+
+			if (resolvedServiceId) {
+				// Verify service belongs to org and get price
+				const svc = await db.query.serviceTable.findFirst({
+					where: and(
+						eq(serviceTable.id, resolvedServiceId),
+						eq(serviceTable.organizationId, ctx.organization.id),
+					),
+					columns: { id: true, currentPrice: true },
+				});
+				if (svc) {
+					servicePriceAtCreation = svc.currentPrice;
+				} else {
+					resolvedServiceId = null;
+				}
+			} else if (athleteGroupId) {
+				// Inherit from group default
+				const group = await db.query.athleteGroupTable.findFirst({
+					where: eq(athleteGroupTable.id, athleteGroupId),
+					columns: { serviceId: true },
+					with: {
+						service: { columns: { id: true, currentPrice: true } },
+					},
+				});
+				if (group?.service) {
+					resolvedServiceId = group.service.id;
+					servicePriceAtCreation = group.service.currentPrice;
+				}
+			}
+
 			// Use transaction to ensure atomicity of session creation with coaches and athletes
 			const session = await db.transaction(async (tx) => {
 				// Create the session
@@ -417,6 +477,8 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 						organizationId: ctx.organization.id,
 						createdBy: ctx.user.id,
 						athleteGroupId: athleteGroupId ?? null,
+						serviceId: resolvedServiceId,
+						servicePriceAtCreation,
 						...sessionData,
 					})
 					.returning();

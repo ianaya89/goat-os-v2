@@ -46,6 +46,7 @@ export default getRequestConfig(async () => {
 		settings: (await import(`./messages/${locale}/settings.json`)).default,
 		admin: (await import(`./messages/${locale}/admin.json`)).default,
 		marketing: (await import(`./messages/${locale}/marketing.json`)).default,
+		users: (await import(`./messages/${locale}/users.json`)).default,
 	};
 
 	return {

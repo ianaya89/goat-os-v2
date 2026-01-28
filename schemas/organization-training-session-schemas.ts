@@ -66,6 +66,8 @@ export const createTrainingSessionSchema = z.object({
 	locationId: z.string().uuid().optional().nullable(),
 	// Assignment - either athleteGroupId OR athleteIds, not both
 	athleteGroupId: z.string().uuid().optional().nullable(),
+	// Service for this session (overrides group default)
+	serviceId: z.string().uuid().optional().nullable(),
 	athleteIds: z.array(z.string().uuid()).optional(),
 	// Coaches (optional)
 	coachIds: z.array(z.string().uuid()).optional(),
@@ -98,6 +100,7 @@ export const updateTrainingSessionSchema = z.object({
 	status: z.nativeEnum(TrainingSessionStatus).optional(),
 	locationId: z.string().uuid().optional().nullable(),
 	athleteGroupId: z.string().uuid().optional().nullable(),
+	serviceId: z.string().uuid().optional().nullable(),
 	objectives: z
 		.string()
 		.trim()

@@ -4,6 +4,7 @@ import {
 	addMonths,
 	endOfMonth,
 	endOfWeek,
+	format,
 	startOfMonth,
 	startOfWeek,
 } from "date-fns";
@@ -18,13 +19,11 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { AttendanceByAthleteChart } from "./attendance-by-athlete-chart";
-import { AttendanceByGroupChart } from "./attendance-by-group-chart";
-import { AttendanceDistributionChart } from "./attendance-distribution-chart";
 import { AttendanceTrendChart } from "./attendance-trend-chart";
-import { GroupPerformanceRadar } from "./group-performance-radar";
 import { SessionsByCoachChart } from "./sessions-by-coach-chart";
-import { SessionsTrendChart } from "./sessions-trend-chart";
+import { SessionsCompletionChart } from "./sessions-completion-chart";
+import { SessionsCumulativeChart } from "./sessions-cumulative-chart";
+import { SessionsGrowthChart } from "./sessions-growth-chart";
 import { TrainingSummaryCards } from "./training-summary-cards";
 
 type Period = "day" | "week" | "month" | "year";
@@ -78,6 +77,17 @@ export function TrainingDashboard(): React.JSX.Element {
 
 	const dateRange = getPresetDates(datePreset);
 
+	const handlePresetChange = (preset: DatePreset) => {
+		setDatePreset(preset);
+		if (preset === "thisWeek" || preset === "thisMonth") {
+			setPeriod("day");
+		} else if (preset === "last3Months" || preset === "last6Months") {
+			setPeriod("week");
+		} else if (preset === "lastYear") {
+			setPeriod("month");
+		}
+	};
+
 	return (
 		<div className="space-y-6">
 			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -85,74 +95,74 @@ export function TrainingDashboard(): React.JSX.Element {
 					<Button
 						variant={datePreset === "thisWeek" ? "default" : "outline"}
 						size="sm"
-						onClick={() => setDatePreset("thisWeek")}
+						onClick={() => handlePresetChange("thisWeek")}
 					>
 						Esta semana
 					</Button>
 					<Button
 						variant={datePreset === "thisMonth" ? "default" : "outline"}
 						size="sm"
-						onClick={() => setDatePreset("thisMonth")}
+						onClick={() => handlePresetChange("thisMonth")}
 					>
 						Este mes
 					</Button>
 					<Button
 						variant={datePreset === "last3Months" ? "default" : "outline"}
 						size="sm"
-						onClick={() => setDatePreset("last3Months")}
+						onClick={() => handlePresetChange("last3Months")}
 					>
 						3 meses
 					</Button>
 					<Button
 						variant={datePreset === "last6Months" ? "default" : "outline"}
 						size="sm"
-						onClick={() => setDatePreset("last6Months")}
+						onClick={() => handlePresetChange("last6Months")}
 					>
 						6 meses
 					</Button>
 					<Button
 						variant={datePreset === "lastYear" ? "default" : "outline"}
 						size="sm"
-						onClick={() => setDatePreset("lastYear")}
+						onClick={() => handlePresetChange("lastYear")}
 					>
 						1 año
 					</Button>
 				</div>
 
-				<Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
-					<SelectTrigger className="w-[140px]">
-						<SelectValue placeholder="Agrupar por" />
-					</SelectTrigger>
-					<SelectContent>
-						<SelectItem value="day">Por dia</SelectItem>
-						<SelectItem value="week">Por semana</SelectItem>
-						<SelectItem value="month">Por mes</SelectItem>
-						<SelectItem value="year">Por año</SelectItem>
-					</SelectContent>
-				</Select>
+				<div className="flex items-center gap-3">
+					<span className="text-sm text-muted-foreground">
+						{format(dateRange.from, "dd MMM yyyy", { locale: es })} -{" "}
+						{format(dateRange.to, "dd MMM yyyy", { locale: es })}
+					</span>
+					<Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
+						<SelectTrigger className="w-[140px]">
+							<SelectValue placeholder="Agrupar por" />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="day">Por dia</SelectItem>
+							<SelectItem value="week">Por semana</SelectItem>
+							<SelectItem value="month">Por mes</SelectItem>
+							<SelectItem value="year">Por año</SelectItem>
+						</SelectContent>
+					</Select>
+				</div>
 			</div>
 
-			{/* Summary Cards */}
+			{/* KPI Summary Cards */}
 			<TrainingSummaryCards dateRange={dateRange} />
 
-			{/* Main Charts - Sessions and Attendance Trends */}
-			<div className="grid gap-6 lg:grid-cols-2">
-				<SessionsTrendChart dateRange={dateRange} period={period} />
+			{/* Trend Charts Row */}
+			<div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+				<SessionsCompletionChart dateRange={dateRange} period={period} />
 				<AttendanceTrendChart dateRange={dateRange} period={period} />
 			</div>
 
-			{/* Distribution and Radar Charts */}
-			<div className="grid gap-6 lg:grid-cols-2">
-				<AttendanceDistributionChart dateRange={dateRange} />
-				<GroupPerformanceRadar dateRange={dateRange} />
-			</div>
+			{/* Cumulative Sessions */}
+			<SessionsCumulativeChart dateRange={dateRange} period={period} />
 
-			{/* Attendance by Athlete - Full Width */}
-			<AttendanceByAthleteChart dateRange={dateRange} />
-
-			{/* Group and Coach Charts */}
-			<div className="grid gap-6 lg:grid-cols-2">
-				<AttendanceByGroupChart dateRange={dateRange} />
+			{/* Growth & Coach Charts */}
+			<div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+				<SessionsGrowthChart dateRange={dateRange} period={period} />
 				<SessionsByCoachChart dateRange={dateRange} />
 			</div>
 		</div>

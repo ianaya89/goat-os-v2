@@ -97,11 +97,9 @@ export function AttendanceDistributionChart({
 
 	return (
 		<Card>
-			<CardHeader className="pb-2">
-				<CardTitle className="flex items-center gap-2 text-base">
-					<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-chart-5/10">
-						<PieChartIcon className="h-4 w-4 text-chart-5" />
-					</div>
+			<CardHeader>
+				<CardTitle className="flex items-center gap-2">
+					<PieChartIcon className="h-5 w-5 text-chart-5" />
 					Distribucion de Asistencia
 				</CardTitle>
 				<CardDescription>

@@ -15,6 +15,7 @@ import { useTranslations } from "next-intl";
 import * as React from "react";
 import { toast } from "sonner";
 import { RecurringSessionForm } from "@/components/organization/recurring-session-form";
+import { ServiceSelector } from "@/components/organization/service-selector";
 import { SessionAttachmentUpload } from "@/components/organization/session-attachment-upload";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -122,6 +123,7 @@ export type TrainingSessionsModalProps = NiceModalHocProps & {
 		isRecurring?: boolean;
 		rrule?: string | null;
 		attachmentKey?: string | null;
+		serviceId?: string | null;
 	};
 	/** Pre-select athletes when creating a new session */
 	initialAthleteIds?: string[];
@@ -295,6 +297,7 @@ export const TrainingSessionsModal =
 							objectives: session.objectives ?? "",
 							planning: session.planning ?? "",
 							postSessionNotes: session.postSessionNotes ?? "",
+							serviceId: session.serviceId ?? null,
 						}
 					: {
 							title: "",
@@ -310,6 +313,17 @@ export const TrainingSessionsModal =
 							planning: "",
 						},
 			});
+
+			// Auto-populate serviceId from selected group
+			const watchedGroupId = form.watch("athleteGroupId");
+			React.useEffect(() => {
+				if (watchedGroupId && groups.length > 0) {
+					const selectedGroup = groups.find((g) => g.id === watchedGroupId);
+					if (selectedGroup?.serviceId) {
+						form.setValue("serviceId", selectedGroup.serviceId);
+					}
+				}
+			}, [watchedGroupId, groups, form]);
 
 			const onSubmit = form.handleSubmit(async (data) => {
 				// Calculate endTime from startTime + duration
@@ -741,6 +755,25 @@ export const TrainingSessionsModal =
 																	))}
 																</SelectContent>
 															</Select>
+															<FormMessage />
+														</Field>
+													</FormItem>
+												)}
+											/>
+
+											<FormField
+												control={form.control}
+												name="serviceId"
+												render={({ field }) => (
+													<FormItem asChild>
+														<Field>
+															<FormLabel>{t("form.service")}</FormLabel>
+															<FormControl>
+																<ServiceSelector
+																	value={field.value ?? null}
+																	onValueChange={field.onChange}
+																/>
+															</FormControl>
 															<FormMessage />
 														</Field>
 													</FormItem>

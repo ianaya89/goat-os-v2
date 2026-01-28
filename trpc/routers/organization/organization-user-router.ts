@@ -10,16 +10,21 @@ import {
 	inArray,
 	isNotNull,
 	lte,
+	ne,
 	or,
 	type SQL,
 } from "drizzle-orm";
 import { auth } from "@/lib/auth";
+import { getOrganizationPlanLimits } from "@/lib/billing/guards";
+import { syncOrganizationSeats } from "@/lib/billing/seat-sync";
 import { db } from "@/lib/db";
-import { MemberRole } from "@/lib/db/schema/enums";
+import { InvitationStatus, MemberRole } from "@/lib/db/schema/enums";
 import {
 	athleteTable,
 	coachTable,
+	invitationTable,
 	memberTable,
+	twoFactorTable,
 	userTable,
 } from "@/lib/db/schema/tables";
 import { logger } from "@/lib/logger";
@@ -31,15 +36,20 @@ import {
 	getSignedUrl,
 } from "@/lib/storage/s3";
 import {
+	banOrganizationUserSchema,
+	createOrganizationUserSchema,
 	getOrganizationUserSchema,
 	getProfileImageUploadUrlSchema,
 	listOrganizationUsersSchema,
 	removeOrganizationUserSchema,
 	removeProfileImageSchema,
 	resendVerificationEmailSchema,
+	resetMfaOrganizationUserSchema,
 	saveProfileImageSchema,
 	sendPasswordResetSchema,
+	unbanOrganizationUserSchema,
 	updateOrganizationUserRoleSchema,
+	updateOrganizationUserSchema,
 } from "@/schemas/organization-user-schemas";
 import { createTRPCRouter, protectedOrganizationProcedure } from "@/trpc/init";
 
@@ -172,6 +182,9 @@ export const organizationUserRouter = createTRPCRouter({
 					userImage: userTable.image,
 					emailVerified: userTable.emailVerified,
 					userCreatedAt: userTable.createdAt,
+					banned: userTable.banned,
+					banReason: userTable.banReason,
+					banExpires: userTable.banExpires,
 				})
 				.from(memberTable)
 				.innerJoin(userTable, eq(memberTable.userId, userTable.id))
@@ -286,6 +299,9 @@ export const organizationUserRouter = createTRPCRouter({
 				role: member.memberRole,
 				joinedAt: member.joinedAt,
 				userCreatedAt: member.userCreatedAt,
+				banned: member.banned ?? false,
+				banReason: member.banReason ?? null,
+				banExpires: member.banExpires ?? null,
 				coachProfile: coachMap.get(member.userId) ?? null,
 				athleteProfile: athleteMap.get(member.userId) ?? null,
 			}));
@@ -359,6 +375,253 @@ export const organizationUserRouter = createTRPCRouter({
 				coachProfile: coachProfile ?? null,
 				athleteProfile: athleteProfile ?? null,
 			};
+		}),
+
+	create: protectedOrganizationProcedure
+		.input(createOrganizationUserSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Only owner/admin can create users
+			if (
+				ctx.membership.role !== MemberRole.owner &&
+				ctx.membership.role !== MemberRole.admin
+			) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Only owners and admins can create users",
+				});
+			}
+
+			// Check plan member limits
+			const [currentMembers, pendingInvitations, planLimits] =
+				await Promise.all([
+					db
+						.select({ id: memberTable.id })
+						.from(memberTable)
+						.where(eq(memberTable.organizationId, ctx.organization.id)),
+					db
+						.select({ id: invitationTable.id })
+						.from(invitationTable)
+						.where(
+							and(
+								eq(invitationTable.organizationId, ctx.organization.id),
+								eq(invitationTable.status, InvitationStatus.pending),
+							),
+						),
+					getOrganizationPlanLimits(ctx.organization.id),
+				]);
+
+			const totalPotentialMembers =
+				currentMembers.length + pendingInvitations.length;
+			if (
+				planLimits.maxMembers !== -1 &&
+				totalPotentialMembers >= planLimits.maxMembers
+			) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: `Maximum member limit (${planLimits.maxMembers}) reached for your plan.`,
+				});
+			}
+
+			// Check if email already exists
+			const existingUser = await db.query.userTable.findFirst({
+				where: eq(userTable.email, input.email),
+			});
+
+			if (existingUser) {
+				// Check if already a member of this org
+				const existingMember = await db.query.memberTable.findFirst({
+					where: and(
+						eq(memberTable.organizationId, ctx.organization.id),
+						eq(memberTable.userId, existingUser.id),
+					),
+				});
+				if (existingMember) {
+					throw new TRPCError({
+						code: "CONFLICT",
+						message: "User is already a member of this organization",
+					});
+				}
+
+				// Add existing user as member
+				await db.insert(memberTable).values({
+					organizationId: ctx.organization.id,
+					userId: existingUser.id,
+					role: input.role,
+				});
+				await syncOrganizationSeats(ctx.organization.id);
+
+				logger.info(
+					{
+						organizationId: ctx.organization.id,
+						userId: existingUser.id,
+						role: input.role,
+						addedBy: ctx.user.id,
+					},
+					"Existing user added to organization",
+				);
+
+				return { userId: existingUser.id, created: false };
+			}
+
+			// Create new user via Better Auth admin API
+			const tempPassword = crypto.randomUUID();
+			const newUser = await auth.api.createUser({
+				body: {
+					name: input.name,
+					email: input.email,
+					password: tempPassword,
+					role: "user",
+				},
+			});
+
+			if (!newUser) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Failed to create user",
+				});
+			}
+
+			// Add user to organization
+			await db.insert(memberTable).values({
+				organizationId: ctx.organization.id,
+				userId: newUser.user.id,
+				role: input.role,
+			});
+			await syncOrganizationSeats(ctx.organization.id);
+
+			// Send password reset email so user can set their own password
+			try {
+				await auth.api.requestPasswordReset({
+					body: {
+						email: input.email,
+						redirectTo: "/auth/reset-password",
+					},
+				});
+			} catch (error) {
+				logger.error(
+					{ error, email: input.email },
+					"Failed to send password setup email after user creation",
+				);
+			}
+
+			logger.info(
+				{
+					organizationId: ctx.organization.id,
+					userId: newUser.user.id,
+					role: input.role,
+					createdBy: ctx.user.id,
+				},
+				"New user created and added to organization",
+			);
+
+			return { userId: newUser.user.id, created: true };
+		}),
+
+	update: protectedOrganizationProcedure
+		.input(updateOrganizationUserSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Only owner/admin can update users
+			if (
+				ctx.membership.role !== MemberRole.owner &&
+				ctx.membership.role !== MemberRole.admin
+			) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Only owners and admins can update users",
+				});
+			}
+
+			// Verify target is a member of this org
+			const targetMember = await db.query.memberTable.findFirst({
+				where: and(
+					eq(memberTable.organizationId, ctx.organization.id),
+					eq(memberTable.userId, input.userId),
+				),
+			});
+
+			if (!targetMember) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "User not found in this organization",
+				});
+			}
+
+			// Update user fields (name, email) if provided
+			const userUpdates: Partial<{ name: string; email: string }> = {};
+			if (input.name !== undefined) userUpdates.name = input.name;
+			if (input.email !== undefined) {
+				// Check email uniqueness
+				const existingUser = await db.query.userTable.findFirst({
+					where: and(
+						eq(userTable.email, input.email),
+						ne(userTable.id, input.userId),
+					),
+				});
+				if (existingUser) {
+					throw new TRPCError({
+						code: "CONFLICT",
+						message: "Email is already in use",
+					});
+				}
+				userUpdates.email = input.email;
+			}
+
+			if (Object.keys(userUpdates).length > 0) {
+				await db
+					.update(userTable)
+					.set(userUpdates)
+					.where(eq(userTable.id, input.userId));
+			}
+
+			// Update role if provided
+			if (input.role !== undefined && input.role !== targetMember.role) {
+				if (input.userId === ctx.user.id) {
+					throw new TRPCError({
+						code: "BAD_REQUEST",
+						message: "You cannot change your own role",
+					});
+				}
+				if (
+					targetMember.role === MemberRole.owner &&
+					ctx.membership.role !== MemberRole.owner
+				) {
+					throw new TRPCError({
+						code: "FORBIDDEN",
+						message: "Only owners can change another owner's role",
+					});
+				}
+				if (
+					input.role === MemberRole.owner &&
+					ctx.membership.role !== MemberRole.owner
+				) {
+					throw new TRPCError({
+						code: "FORBIDDEN",
+						message: "Only owners can promote to owner",
+					});
+				}
+
+				await db
+					.update(memberTable)
+					.set({ role: input.role })
+					.where(
+						and(
+							eq(memberTable.organizationId, ctx.organization.id),
+							eq(memberTable.userId, input.userId),
+						),
+					);
+			}
+
+			logger.info(
+				{
+					organizationId: ctx.organization.id,
+					targetUserId: input.userId,
+					updates: { ...userUpdates, role: input.role },
+					updatedBy: ctx.user.id,
+				},
+				"Updated organization user",
+			);
+
+			return { success: true };
 		}),
 
 	updateRole: protectedOrganizationProcedure
@@ -668,6 +931,174 @@ export const organizationUserRouter = createTRPCRouter({
 					message: "Failed to resend verification email",
 				});
 			}
+		}),
+
+	// ============================================================================
+	// BAN / UNBAN
+	// ============================================================================
+
+	ban: protectedOrganizationProcedure
+		.input(banOrganizationUserSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Check if user is owner/admin
+			if (
+				ctx.membership.role !== MemberRole.owner &&
+				ctx.membership.role !== MemberRole.admin
+			) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Only owners and admins can ban members",
+				});
+			}
+
+			// Can't ban yourself
+			if (input.userId === ctx.user.id) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "You cannot ban yourself",
+				});
+			}
+
+			// Verify user is a member of this organization
+			const targetMember = await db.query.memberTable.findFirst({
+				where: and(
+					eq(memberTable.organizationId, ctx.organization.id),
+					eq(memberTable.userId, input.userId),
+				),
+			});
+
+			if (!targetMember) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "User not found in this organization",
+				});
+			}
+
+			// Can't ban owner unless you're the owner
+			if (
+				targetMember.role === MemberRole.owner &&
+				ctx.membership.role !== MemberRole.owner
+			) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Only owners can ban other owners",
+				});
+			}
+
+			// Get user to check current ban status
+			const targetUser = await db.query.userTable.findFirst({
+				where: eq(userTable.id, input.userId),
+			});
+
+			if (!targetUser) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "User not found",
+				});
+			}
+
+			if (targetUser.banned) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "User is already banned",
+				});
+			}
+
+			// Update user with ban information
+			await db
+				.update(userTable)
+				.set({
+					banned: true,
+					banReason: input.reason,
+					banExpires: input.expiresAt || null,
+				})
+				.where(eq(userTable.id, input.userId));
+
+			logger.info(
+				{
+					organizationId: ctx.organization.id,
+					targetUserId: input.userId,
+					targetEmail: targetUser.email,
+					bannedBy: ctx.user.id,
+					reason: input.reason,
+					expiresAt: input.expiresAt || null,
+				},
+				"Organization admin banned user",
+			);
+
+			return { success: true };
+		}),
+
+	unban: protectedOrganizationProcedure
+		.input(unbanOrganizationUserSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Check if user is owner/admin
+			if (
+				ctx.membership.role !== MemberRole.owner &&
+				ctx.membership.role !== MemberRole.admin
+			) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Only owners and admins can unban members",
+				});
+			}
+
+			// Verify user is a member of this organization
+			const targetMember = await db.query.memberTable.findFirst({
+				where: and(
+					eq(memberTable.organizationId, ctx.organization.id),
+					eq(memberTable.userId, input.userId),
+				),
+			});
+
+			if (!targetMember) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "User not found in this organization",
+				});
+			}
+
+			// Get user to check current ban status
+			const targetUser = await db.query.userTable.findFirst({
+				where: eq(userTable.id, input.userId),
+			});
+
+			if (!targetUser) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "User not found",
+				});
+			}
+
+			if (!targetUser.banned) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "User is not banned",
+				});
+			}
+
+			// Remove ban
+			await db
+				.update(userTable)
+				.set({
+					banned: false,
+					banReason: null,
+					banExpires: null,
+				})
+				.where(eq(userTable.id, input.userId));
+
+			logger.info(
+				{
+					organizationId: ctx.organization.id,
+					targetUserId: input.userId,
+					targetEmail: targetUser.email,
+					unbannedBy: ctx.user.id,
+					previousBanReason: targetUser.banReason,
+				},
+				"Organization admin unbanned user",
+			);
+
+			return { success: true };
 		}),
 
 	// ============================================================================

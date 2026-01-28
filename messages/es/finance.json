@@ -53,7 +53,8 @@
 			"noSessionsFound": "No se encontraron sesiones",
 			"searchAthlete": "Buscar atleta...",
 			"typeToSearchAthlete": "Escribe para buscar atletas",
-			"noAthletesFound": "No se encontraron atletas"
+			"noAthletesFound": "No se encontraron atletas",
+			"servicePriceHint": "Precio sugerido del servicio \"{name}\": {price}"
 		},
 		"methods": {
 			"cash": "Efectivo",
@@ -521,6 +522,109 @@
 			"deleted": "Comprobante eliminado",
 			"deleteFailed": "Error al eliminar el comprobante",
 			"loadFailed": "Error al cargar el comprobante"
+		}
+	},
+	"services": {
+		"title": "Servicios",
+		"description": "Gestiona el catálogo de servicios de tu organización.",
+		"add": "Agregar servicio",
+		"edit": "Editar servicio",
+		"delete": "Eliminar servicio",
+		"search": "Buscar servicios...",
+		"table": {
+			"name": "Nombre",
+			"description": "Descripción",
+			"currentPrice": "Precio Actual",
+			"status": "Estado",
+			"actions": "Acciones",
+			"noServices": "No se encontraron servicios.",
+			"openMenu": "Abrir menú",
+			"sortOrder": "Orden"
+		},
+		"form": {
+			"name": "Nombre",
+			"namePlaceholder": "ej., Entrenamiento Individual de Fútbol",
+			"description": "Descripción",
+			"descriptionPlaceholder": "Descripción del servicio...",
+			"currentPrice": "Precio (centavos)",
+			"currency": "Moneda",
+			"selectCurrency": "Seleccionar moneda",
+			"status": "Estado",
+			"selectStatus": "Seleccionar estado",
+			"sortOrder": "Orden de visualización"
+		},
+		"status": {
+			"active": "Activo",
+			"inactive": "Inactivo",
+			"archived": "Archivado"
+		},
+		"modal": {
+			"createTitle": "Agregar Servicio",
+			"createSubtitle": "Completa los datos para crear un nuevo servicio.",
+			"editTitle": "Editar Servicio",
+			"editSubtitle": "Actualiza la información del servicio.",
+			"cancel": "Cancelar",
+			"create": "Crear Servicio",
+			"update": "Actualizar Servicio"
+		},
+		"priceUpdate": {
+			"title": "Actualizar Precio",
+			"subtitle": "Cambia el precio del servicio. Se creará un registro en el historial.",
+			"currentPrice": "Precio actual",
+			"newPrice": "Nuevo precio (centavos)",
+			"effectiveFrom": "Vigente desde",
+			"cancel": "Cancelar",
+			"update": "Actualizar Precio"
+		},
+		"priceHistory": {
+			"title": "Historial de Precios",
+			"subtitle": "Historial de cambios de precio del servicio.",
+			"price": "Precio",
+			"effectiveFrom": "Desde",
+			"effectiveUntil": "Hasta",
+			"createdBy": "Registrado por",
+			"current": "Actual",
+			"noHistory": "Sin historial de precios."
+		},
+		"selector": {
+			"label": "Servicio",
+			"placeholder": "Seleccionar servicio",
+			"search": "Buscar servicio...",
+			"noResults": "Sin servicios",
+			"none": "Sin servicio",
+			"price": "Precio:"
+		},
+		"deleteConfirm": {
+			"title": "¿Eliminar servicio?",
+			"message": "¿Estás seguro de que deseas eliminar este servicio? Si tiene sesiones o grupos asociados, será archivado.",
+			"confirm": "Eliminar"
+		},
+		"bulk": {
+			"selected": "{count} seleccionado(s)",
+			"deleteTitle": "¿Eliminar servicios seleccionados?",
+			"deleteMessage": "Estás por eliminar {count, plural, one {# servicio} other {# servicios}}. Los que tengan referencias serán archivados.",
+			"deleted": "{count, plural, one {# servicio procesado} other {# servicios procesados}}.",
+			"deleteFailed": "No se pudieron eliminar los servicios."
+		},
+		"success": {
+			"created": "Servicio creado correctamente.",
+			"updated": "Servicio actualizado correctamente.",
+			"deleted": "Servicio eliminado correctamente.",
+			"priceUpdated": "Precio actualizado correctamente."
+		},
+		"error": {
+			"notFound": "Servicio no encontrado.",
+			"createFailed": "No se pudo crear el servicio.",
+			"updateFailed": "No se pudo actualizar el servicio.",
+			"deleteFailed": "No se pudo eliminar el servicio.",
+			"priceUpdateFailed": "No se pudo actualizar el precio."
+		},
+		"reports": {
+			"revenueByService": "Ingresos por Servicio",
+			"totalFromServices": "Total: {amount} de {count, plural, one {# servicio} other {# servicios}}",
+			"noData": "No hay datos de servicios para este periodo",
+			"payments": "{count, plural, one {# pago} other {# pagos}}",
+			"suggestedPrice": "Precio sugerido del servicio: {price}"
 		}
 	},
 	"products": {

@@ -1,15 +1,15 @@
 "use client";
 
 import {
+	ArrowDownIcon,
+	ArrowUpIcon,
 	CalendarCheckIcon,
 	CalendarXIcon,
 	ClockIcon,
-	TrendingUpIcon,
 	UsersIcon,
 } from "lucide-react";
 import type * as React from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
@@ -28,14 +28,15 @@ export function TrainingSummaryCards({
 
 	if (isLoading) {
 		return (
-			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-				{Array.from({ length: 4 }).map((_, i) => (
-					<Card key={i} className="overflow-hidden">
-						<CardContent className="p-4">
-							<Skeleton className="h-10 w-10 rounded-xl mb-3" />
-							<Skeleton className="h-4 w-24 mb-2" />
-							<Skeleton className="h-8 w-16 mb-2" />
-							<Skeleton className="h-2 w-full" />
+			<div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+				{[...Array(4)].map((_, i) => (
+					<Card key={i}>
+						<CardHeader className="pb-2">
+							<Skeleton className="h-4 w-24" />
+						</CardHeader>
+						<CardContent>
+							<Skeleton className="h-8 w-32" />
+							<Skeleton className="mt-2 h-3 w-20" />
 						</CardContent>
 					</Card>
 				))}
@@ -65,192 +66,97 @@ export function TrainingSummaryCards({
 		sessions.total > 0 ? (sessions.completed / sessions.total) * 100 : 0;
 	const cancellationRate =
 		sessions.total > 0 ? (sessions.cancelled / sessions.total) * 100 : 0;
-	const pendingRate =
-		sessions.total > 0
-			? ((sessions.pending + sessions.confirmed) / sessions.total) * 100
-			: 0;
-
-	const getRateColor = (rate: number, isInverse = false) => {
-		if (isInverse) {
-			if (rate <= 10) return "text-success";
-			if (rate <= 20) return "text-warning";
-			return "text-destructive";
-		}
-		if (rate >= 80) return "text-success";
-		if (rate >= 60) return "text-warning";
-		return "text-destructive";
-	};
-
-	const getProgressColor = (rate: number, isInverse = false) => {
-		if (isInverse) {
-			if (rate <= 10) return "bg-success";
-			if (rate <= 20) return "bg-warning";
-			return "bg-destructive";
-		}
-		if (rate >= 80) return "bg-success";
-		if (rate >= 60) return "bg-warning";
-		return "bg-destructive";
-	};
 
 	return (
-		<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+		<div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
 			{/* Total Sessions */}
-			<Card className="overflow-hidden border-l-4 border-l-primary">
-				<CardContent className="p-4">
-					<div className="flex items-start justify-between">
-						<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-							<ClockIcon className="h-5 w-5 text-primary" />
-						</div>
-						<div className="flex items-center gap-1 text-xs text-muted-foreground">
-							<TrendingUpIcon className="h-3 w-3" />
-							{pendingRate.toFixed(0)}% pendientes
-						</div>
+			<Card>
+				<CardHeader className="pb-2">
+					<CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+						<ClockIcon className="h-4 w-4" />
+						Sesiones Totales
+					</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<div className="font-heading text-2xl font-bold">
+						{sessions.total}
 					</div>
-					<div className="mt-3">
-						<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-							Sesiones Totales
-						</p>
-						<p className="text-2xl font-bold mt-1">{sessions.total}</p>
-					</div>
-					<div className="mt-3 space-y-1">
-						<div className="flex items-center justify-between text-xs">
-							<span className="text-muted-foreground">Distribucion</span>
-						</div>
-						<div className="flex h-2 w-full overflow-hidden rounded-full bg-muted">
-							<div
-								className="bg-success transition-all duration-500"
-								style={{
-									width: `${completionRate}%`,
-								}}
-							/>
-							<div
-								className="bg-destructive transition-all duration-500"
-								style={{
-									width: `${cancellationRate}%`,
-								}}
-							/>
-							<div
-								className="bg-warning transition-all duration-500"
-								style={{
-									width: `${pendingRate}%`,
-								}}
-							/>
-						</div>
-					</div>
+					<p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+						<span>
+							{sessions.completed} completadas, {sessions.cancelled} canceladas
+						</span>
+					</p>
 				</CardContent>
 			</Card>
 
 			{/* Completed */}
-			<Card className="overflow-hidden border-l-4 border-l-success">
-				<CardContent className="p-4">
-					<div className="flex items-start justify-between">
-						<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/10">
-							<CalendarCheckIcon className="h-5 w-5 text-success" />
-						</div>
-						<span
-							className={cn(
-								"text-xs font-medium",
-								getRateColor(completionRate),
-							)}
-						>
-							{completionRate.toFixed(0)}%
-						</span>
+			<Card>
+				<CardHeader className="pb-2">
+					<CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+						<CalendarCheckIcon className="h-4 w-4" />
+						Completadas
+					</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<div className="font-heading text-2xl font-bold text-green-600">
+						{sessions.completed}
 					</div>
-					<div className="mt-3">
-						<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-							Completadas
-						</p>
-						<p className="text-2xl font-bold text-success mt-1">
-							{sessions.completed}
-						</p>
-					</div>
-					<div className="mt-3 space-y-1">
-						<div className="flex items-center justify-between text-xs">
-							<span className="text-muted-foreground">Tasa de completitud</span>
-						</div>
-						<Progress
-							value={completionRate}
-							className="h-2"
-							indicatorClassName={getProgressColor(completionRate)}
-						/>
-					</div>
+					<p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+						{completionRate >= 80 ? (
+							<ArrowUpIcon className="h-3 w-3 text-green-600" />
+						) : (
+							<ArrowDownIcon className="h-3 w-3 text-red-600" />
+						)}
+						<span>{completionRate.toFixed(0)}% tasa de completitud</span>
+					</p>
 				</CardContent>
 			</Card>
 
 			{/* Cancelled */}
-			<Card className="overflow-hidden border-l-4 border-l-destructive">
-				<CardContent className="p-4">
-					<div className="flex items-start justify-between">
-						<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-destructive/10">
-							<CalendarXIcon className="h-5 w-5 text-destructive" />
-						</div>
-						<span
-							className={cn(
-								"text-xs font-medium",
-								getRateColor(cancellationRate, true),
-							)}
-						>
-							{cancellationRate.toFixed(0)}%
-						</span>
+			<Card>
+				<CardHeader className="pb-2">
+					<CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+						<CalendarXIcon className="h-4 w-4" />
+						Canceladas
+					</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<div className="font-heading text-2xl font-bold text-red-600">
+						{sessions.cancelled}
 					</div>
-					<div className="mt-3">
-						<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-							Canceladas
-						</p>
-						<p className="text-2xl font-bold text-destructive mt-1">
-							{sessions.cancelled}
-						</p>
-					</div>
-					<div className="mt-3 space-y-1">
-						<div className="flex items-center justify-between text-xs">
-							<span className="text-muted-foreground">Tasa de cancelacion</span>
-						</div>
-						<Progress
-							value={cancellationRate}
-							className="h-2"
-							indicatorClassName={getProgressColor(cancellationRate, true)}
-						/>
-					</div>
+					<p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+						<span>{cancellationRate.toFixed(0)}% tasa de cancelacion</span>
+					</p>
 				</CardContent>
 			</Card>
 
 			{/* Attendance */}
-			<Card className="overflow-hidden border-l-4 border-l-chart-5">
-				<CardContent className="p-4">
-					<div className="flex items-start justify-between">
-						<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-chart-5/10">
-							<UsersIcon className="h-5 w-5 text-chart-5" />
-						</div>
-						<span
-							className={cn(
-								"text-xs font-medium",
-								getRateColor(attendance.rate),
-							)}
-						>
-							{attendance.rate.toFixed(0)}%
+			<Card>
+				<CardHeader className="pb-2">
+					<CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+						<UsersIcon className="h-4 w-4" />
+						Asistencia
+					</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<div
+						className={cn(
+							"font-heading text-2xl font-bold",
+							attendance.rate >= 80
+								? "text-green-600"
+								: attendance.rate >= 60
+									? "text-yellow-600"
+									: "text-red-600",
+						)}
+					>
+						{attendance.rate.toFixed(0)}%
+					</div>
+					<p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+						<span>
+							{attendance.present + attendance.late} de {attendance.total}{" "}
+							asistencias
 						</span>
-					</div>
-					<div className="mt-3">
-						<p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-							Asistencia
-						</p>
-						<p className="text-2xl font-bold text-chart-5 mt-1">
-							{attendance.present + attendance.late}
-							<span className="text-sm font-normal text-muted-foreground">
-								/{attendance.total}
-							</span>
-						</p>
-					</div>
-					<div className="mt-3 space-y-1">
-						<div className="flex items-center justify-between text-xs">
-							<span className="text-muted-foreground">Tasa de asistencia</span>
-						</div>
-						<Progress
-							value={attendance.rate}
-							className="h-2"
-							indicatorClassName={getProgressColor(attendance.rate)}
-						/>
-					</div>
+					</p>
 				</CardContent>
 			</Card>
 		</div>

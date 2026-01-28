@@ -1,6 +1,5 @@
 "use client";
 
-import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { BarChart3Icon, LineChartIcon, TrendingUpIcon } from "lucide-react";
 import * as React from "react";
@@ -25,6 +24,11 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+	generatePeriodDates,
+	getPeriodKey,
+	getPeriodLabel,
+} from "@/lib/utils/chart-periods";
 import { trpc } from "@/trpc/client";
 
 type RevenueCumulativeChartProps = {
@@ -62,18 +66,29 @@ export function RevenueCumulativeChart({
 		}).format(value / 100);
 	};
 
-	const chartData =
-		data?.map((item) => ({
-			date: item.period,
-			label: format(
-				new Date(item.period),
-				period === "year" ? "yyyy" : "MMM yy",
-				{ locale: es },
-			),
-			total: item.total,
-			cumulative: item.cumulative,
-			count: item.count,
-		})) ?? [];
+	const chartData = React.useMemo(() => {
+		const allDates = generatePeriodDates(dateRange, period);
+		const dataMap = new Map(
+			(data ?? []).map((item) => [
+				getPeriodKey(new Date(item.period), period),
+				item,
+			]),
+		);
+
+		// Fill gaps and recalculate cumulative to account for zero-filled periods
+		let cumulative = 0;
+		return allDates.map((date) => {
+			const item = dataMap.get(getPeriodKey(date, period));
+			const total = item?.total ?? 0;
+			cumulative += total;
+			return {
+				label: getPeriodLabel(date, period, es),
+				total,
+				cumulative,
+				count: item?.count ?? 0,
+			};
+		});
+	}, [data, dateRange, period]);
 
 	const lastCumulative =
 		chartData.length > 0

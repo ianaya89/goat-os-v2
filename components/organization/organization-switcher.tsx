@@ -67,6 +67,7 @@ export function OrganizationSwitcher({
 		authClient.useActiveOrganization();
 	const { data: allOrganizations, isLoading: isOrgsLoading } =
 		trpc.organization.list.useQuery();
+	const { data: hasPersonalProfile } = trpc.user.hasPersonalProfile.useQuery();
 	// useSidebar is safe to call - SidebarProvider wraps the entire dashboard layout
 	const { state: sidebarState } = useSidebar();
 	const isAdminArea = pathname?.startsWith("/dashboard/admin");
@@ -243,6 +244,139 @@ export function OrganizationSwitcher({
 		return null;
 	}
 
+	// Shared popover dropdown content
+	const dropdownContent = (
+		<>
+			<Command
+				onValueChange={setSelectedValue}
+				value={selectedValue}
+				filter={(value, search) => {
+					// Custom filter: match by org name (stored in keywords) or value
+					if (!search) return 1;
+					const normalizedSearch = search.toLowerCase();
+					if (value.toLowerCase().includes(normalizedSearch)) return 1;
+					return 0;
+				}}
+			>
+				<CommandInput className="h-9" placeholder={t("searchPlaceholder")} />
+				<CommandList>
+					{hasPersonalProfile && (
+						<CommandGroup>
+							<CommandItem
+								className="cursor-pointer"
+								onSelect={handleSelectPersonalAccount}
+								value={user.id}
+								keywords={[user.name ?? t("personal")]}
+							>
+								<PersonalAccountAvatar className="size-5 shrink-0" />
+								<span className="mr-2">{t("personal")}</span>
+								<Icon type="personal" />
+							</CommandItem>
+						</CommandGroup>
+					)}
+					{hasPersonalProfile &&
+						Array.isArray(allOrganizations) &&
+						allOrganizations.length > 0 && <CommandSeparator />}
+					{Array.isArray(allOrganizations) && allOrganizations.length > 0 && (
+						<CommandGroup
+							heading={t("yourOrganizations", {
+								count: allOrganizations.length,
+							})}
+						>
+							{allOrganizations.map((organization) => (
+								<CommandItem
+									className={cn(
+										"group my-1 flex cursor-pointer justify-between transition-colors",
+										{
+											"bg-muted":
+												isOrganizationArea &&
+												activeOrganization?.id === organization.id,
+										},
+									)}
+									key={organization.id}
+									onSelect={() => handleSelectOrganization(organization.id)}
+									value={organization.id}
+									keywords={[organization.name]}
+								>
+									<div className="flex items-center">
+										<OrganizationLogo
+											className="mr-2 size-5 shrink-0"
+											name={organization.name}
+											src={organization.logo}
+										/>
+										<span className="mr-2 max-w-[165px] truncate">
+											{organization.name}
+										</span>
+									</div>
+									<Icon id={organization.id} type="organization" />
+								</CommandItem>
+							))}
+						</CommandGroup>
+					)}
+				</CommandList>
+			</Command>
+			<div className="space-y-1 p-1">
+				{isActiveOrgAdmin && activeOrganization && (
+					<>
+						<Separator />
+						<Button
+							asChild
+							className="h-8 w-full justify-start gap-1.5 font-normal text-sm"
+							size="sm"
+							variant="ghost"
+						>
+							<Link
+								href="/dashboard/organization/settings?tab=profile"
+								onClick={() => setOpen(false)}
+								className="flex items-center"
+							>
+								<SettingsIcon className="size-4 shrink-0" />
+								<span className="flex-1">{t("organizationSettings")}</span>
+							</Link>
+						</Button>
+					</>
+				)}
+				{user?.role === "admin" && (
+					<>
+						<Separator />
+						<Button
+							asChild
+							className="h-8 w-full justify-start gap-1.5 font-normal text-sm"
+							size="sm"
+							variant="ghost"
+						>
+							<Link
+								href="/dashboard/admin/users"
+								onClick={() => setOpen(false)}
+								className="flex items-center"
+							>
+								<ShieldIcon className="size-4 shrink-0" />
+								<span className="flex-1">{t("adminPanel")}</span>
+							</Link>
+						</Button>
+					</>
+				)}
+				{appConfig.organizations.allowUserCreation && (
+					<>
+						<Separator />
+						<Button
+							className="h-8 w-full justify-start gap-1.5 font-normal text-sm"
+							onClick={() => {
+								NiceModal.show(CreateOrganizationModal);
+								setOpen(false);
+							}}
+							size="sm"
+							variant="ghost"
+						>
+							<PlusIcon className="size-4 shrink-0" />
+							<span>{t("createOrganization")}</span>
+						</Button>
+					</>
+				)}
+			</div>
+		</>
+	);
+
 	// Topbar variant - compact button style
 	if (variant === "topbar") {
 		return (
@@ -262,140 +396,7 @@ export function OrganizationSwitcher({
 					</Button>
 				</PopoverTrigger>
 				<PopoverContent align="start" className="w-60 p-0" forceMount>
-					<Command onValueChange={setSelectedValue} value={selectedValue}>
-						<CommandInput
-							className="h-9"
-							placeholder={t("searchPlaceholder")}
-						/>
-						<CommandList>
-							<CommandGroup>
-								<CommandItem
-									className="cursor-pointer"
-									onSelect={handleSelectPersonalAccount}
-									value={user.id}
-								>
-									<PersonalAccountAvatar className="size-5 shrink-0" />
-									<span className="mr-2">{t("personal")}</span>
-									<Icon type="personal" />
-								</CommandItem>
-							</CommandGroup>
-							{Array.isArray(allOrganizations) &&
-								allOrganizations.length > 0 && (
-									<>
-										<CommandSeparator />
-										<CommandGroup
-											heading={t("yourOrganizations", {
-												count: allOrganizations.length,
-											})}
-										>
-											{allOrganizations.map((organization) => (
-												<CommandItem
-													className={cn(
-														"group my-1 flex cursor-pointer justify-between transition-colors",
-														{
-															"bg-muted":
-																isOrganizationArea &&
-																activeOrganization?.id === organization.id,
-														},
-													)}
-													key={organization.id}
-													onSelect={() =>
-														handleSelectOrganization(organization.id)
-													}
-													value={organization.id}
-												>
-													<div className="flex items-center">
-														<OrganizationLogo
-															className="mr-2 size-5 shrink-0"
-															name={organization.name}
-															src={organization.logo}
-														/>
-														<span className="mr-2 max-w-[165px] truncate">
-															{organization.name}
-														</span>
-													</div>
-													<Icon id={organization.id} type="organization" />
-												</CommandItem>
-											))}
-										</CommandGroup>
-									</>
-								)}
-						</CommandList>
-					</Command>
-					<div className="space-y-1 p-1">
-						{isActiveOrgAdmin && activeOrganization && (
-							<>
-								<Separator />
-								<Button
-									asChild
-									className="h-8 w-full justify-start gap-1.5 font-normal text-sm"
-									size="sm"
-									variant="ghost"
-								>
-									<Link
-										href="/dashboard/organization/settings?tab=profile"
-										onClick={() => setOpen(false)}
-										className="flex items-center"
-									>
-										<SettingsIcon className="size-4 shrink-0" />
-										<span className="flex-1">{t("organizationSettings")}</span>
-									</Link>
-								</Button>
-							</>
-						)}
-						{user?.role === "admin" && (
-							<>
-								<Separator />
-								<Button
-									asChild
-									className="h-8 w-full justify-start gap-1.5 font-normal text-sm"
-									size="sm"
-									variant="ghost"
-								>
-									<Link
-										href="/dashboard/admin/users"
-										onClick={() => setOpen(false)}
-										className="flex items-center"
-									>
-										<div className="mr-0.75 -ml-0.75 flex size-5 items-center justify-center rounded-md bg-foreground text-background">
-											<ShieldIcon className="size-3 shrink-0" />
-										</div>
-										<span className="flex-1">{t("adminPanel")}</span>
-										<div
-											className={cn(
-												"ml-auto flex size-4 items-center justify-center rounded-full text-primary-foreground",
-												isAdminArea ? "bg-blue-500" : "bg-transparent",
-											)}
-										>
-											<CheckIcon
-												className={cn(
-													"size-3 shrink-0 text-current",
-													isAdminArea ? "opacity-100" : "opacity-0",
-												)}
-											/>
-										</div>
-									</Link>
-								</Button>
-							</>
-						)}
-						{appConfig.organizations.allowUserCreation && (
-							<>
-								<Separator />
-								<Button
-									className="h-8 w-full justify-start gap-1.5 font-normal text-sm"
-									onClick={() => {
-										NiceModal.show(CreateOrganizationModal);
-										setOpen(false);
-									}}
-									size="sm"
-									variant="ghost"
-								>
-									<PlusIcon className="size-5 shrink-0" />
-									<span>{t("createOrganization")}</span>
-								</Button>
-							</>
-						)}
-					</div>
+					{dropdownContent}
 				</PopoverContent>
 			</Popover>
 		);
@@ -423,140 +424,7 @@ export function OrganizationSwitcher({
 					</button>
 				</PopoverTrigger>
 				<PopoverContent align="start" className="w-60 p-0" forceMount>
-					<Command onValueChange={setSelectedValue} value={selectedValue}>
-						<CommandInput
-							className="h-9"
-							placeholder={t("searchPlaceholder")}
-						/>
-						<CommandList>
-							<CommandGroup>
-								<CommandItem
-									className="cursor-pointer"
-									onSelect={handleSelectPersonalAccount}
-									value={user.id}
-								>
-									<PersonalAccountAvatar className="size-5 shrink-0" />
-									<span className="mr-2">{t("personal")}</span>
-									<Icon type="personal" />
-								</CommandItem>
-							</CommandGroup>
-							{Array.isArray(allOrganizations) &&
-								allOrganizations.length > 0 && (
-									<>
-										<CommandSeparator />
-										<CommandGroup
-											heading={t("yourOrganizations", {
-												count: allOrganizations.length,
-											})}
-										>
-											{allOrganizations.map((organization) => (
-												<CommandItem
-													className={cn(
-														"group my-1 flex cursor-pointer justify-between transition-colors",
-														{
-															"bg-muted":
-																isOrganizationArea &&
-																activeOrganization?.id === organization.id,
-														},
-													)}
-													key={organization.id}
-													onSelect={() =>
-														handleSelectOrganization(organization.id)
-													}
-													value={organization.id}
-												>
-													<div className="flex items-center">
-														<OrganizationLogo
-															className="mr-2 size-5 shrink-0"
-															name={organization.name}
-															src={organization.logo}
-														/>
-														<span className="mr-2 max-w-[165px] truncate">
-															{organization.name}
-														</span>
-													</div>
-													<Icon id={organization.id} type="organization" />
-												</CommandItem>
-											))}
-										</CommandGroup>
-									</>
-								)}
-						</CommandList>
-					</Command>
-					<div className="space-y-1 p-1">
-						{isActiveOrgAdmin && activeOrganization && (
-							<>
-								<Separator />
-								<Button
-									asChild
-									className="h-8 w-full justify-start gap-1.5 font-normal text-sm"
-									size="sm"
-									variant="ghost"
-								>
-									<Link
-										href="/dashboard/organization/settings?tab=profile"
-										onClick={() => setOpen(false)}
-										className="flex items-center"
-									>
-										<SettingsIcon className="size-4 shrink-0" />
-										<span className="flex-1">{t("organizationSettings")}</span>
-									</Link>
-								</Button>
-							</>
-						)}
-						{user?.role === "admin" && (
-							<>
-								<Separator />
-								<Button
-									asChild
-									className="h-8 w-full justify-start gap-1.5 font-normal text-sm"
-									size="sm"
-									variant="ghost"
-								>
-									<Link
-										href="/dashboard/admin/users"
-										onClick={() => setOpen(false)}
-										className="flex items-center"
-									>
-										<div className="mr-0.75 -ml-0.75 flex size-5 items-center justify-center rounded-md bg-foreground text-background">
-											<ShieldIcon className="size-3 shrink-0" />
-										</div>
-										<span className="flex-1">{t("adminPanel")}</span>
-										<div
-											className={cn(
-												"ml-auto flex size-4 items-center justify-center rounded-full text-primary-foreground",
-												isAdminArea ? "bg-blue-500" : "bg-transparent",
-											)}
-										>
-											<CheckIcon
-												className={cn(
-													"size-3 shrink-0 text-current",
-													isAdminArea ? "opacity-100" : "opacity-0",
-												)}
-											/>
-										</div>
-									</Link>
-								</Button>
-							</>
-						)}
-						{appConfig.organizations.allowUserCreation && (
-							<>
-								<Separator />
-								<Button
-									className="h-8 w-full justify-start gap-1.5 font-normal text-sm"
-									onClick={() => {
-										NiceModal.show(CreateOrganizationModal);
-										setOpen(false);
-									}}
-									size="sm"
-									variant="ghost"
-								>
-									<PlusIcon className="size-5 shrink-0" />
-									<span>{t("createOrganization")}</span>
-								</Button>
-							</>
-						)}
-					</div>
+					{dropdownContent}
 				</PopoverContent>
 			</Popover>
 		);
@@ -585,142 +453,7 @@ export function OrganizationSwitcher({
 						</SidebarMenuButton>
 					</PopoverTrigger>
 					<PopoverContent align="start" className="w-60 p-0" forceMount>
-						<Command onValueChange={setSelectedValue} value={selectedValue}>
-							<CommandInput
-								className="h-9"
-								placeholder={t("searchPlaceholder")}
-							/>
-							<CommandList>
-								<CommandGroup>
-									<CommandItem
-										className="cursor-pointer"
-										onSelect={handleSelectPersonalAccount}
-										value={user.id}
-									>
-										<PersonalAccountAvatar className="size-5 shrink-0" />
-										<span className="mr-2">{t("personal")}</span>
-										<Icon type="personal" />
-									</CommandItem>
-								</CommandGroup>
-								{Array.isArray(allOrganizations) &&
-									allOrganizations.length > 0 && (
-										<>
-											<CommandSeparator />
-											<CommandGroup
-												heading={t("yourOrganizations", {
-													count: allOrganizations.length,
-												})}
-											>
-												{allOrganizations.map((organization) => (
-													<CommandItem
-														className={cn(
-															"group my-1 flex cursor-pointer justify-between transition-colors",
-															{
-																"bg-muted":
-																	isOrganizationArea &&
-																	activeOrganization?.id === organization.id,
-															},
-														)}
-														key={organization.id}
-														onSelect={() =>
-															handleSelectOrganization(organization.id)
-														}
-														value={organization.id}
-													>
-														<div className="flex items-center">
-															<OrganizationLogo
-																className="mr-2 size-5 shrink-0"
-																name={organization.name}
-																src={organization.logo}
-															/>
-															<span className="mr-2 max-w-[165px] truncate">
-																{organization.name}
-															</span>
-														</div>
-														<Icon id={organization.id} type="organization" />
-													</CommandItem>
-												))}
-											</CommandGroup>
-										</>
-									)}
-							</CommandList>
-						</Command>
-						<div className="space-y-1 p-1">
-							{isActiveOrgAdmin && activeOrganization && (
-								<>
-									<Separator />
-									<Button
-										asChild
-										className="h-8 w-full justify-start gap-1.5 font-normal text-sm"
-										size="sm"
-										variant="ghost"
-									>
-										<Link
-											href="/dashboard/organization/settings?tab=profile"
-											onClick={() => setOpen(false)}
-											className="flex items-center"
-										>
-											<SettingsIcon className="size-4 shrink-0" />
-											<span className="flex-1">
-												{t("organizationSettings")}
-											</span>
-										</Link>
-									</Button>
-								</>
-							)}
-							{user?.role === "admin" && (
-								<>
-									<Separator />
-									<Button
-										asChild
-										className="h-8 w-full justify-start gap-1.5 font-normal text-sm"
-										size="sm"
-										variant="ghost"
-									>
-										<Link
-											href="/dashboard/admin/users"
-											onClick={() => setOpen(false)}
-											className="flex items-center"
-										>
-											<div className="mr-0.75 -ml-0.75 flex size-5 items-center justify-center rounded-md bg-foreground text-background">
-												<ShieldIcon className="size-3 shrink-0" />
-											</div>
-											<span className="flex-1">{t("adminPanel")}</span>
-											<div
-												className={cn(
-													"ml-auto flex size-4 items-center justify-center rounded-full text-primary-foreground",
-													isAdminArea ? "bg-blue-500" : "bg-transparent",
-												)}
-											>
-												<CheckIcon
-													className={cn(
-														"size-3 shrink-0 text-current",
-														isAdminArea ? "opacity-100" : "opacity-0",
-													)}
-												/>
-											</div>
-										</Link>
-									</Button>
-								</>
-							)}
-							{appConfig.organizations.allowUserCreation && (
-								<>
-									<Separator />
-									<Button
-										className="h-8 w-full justify-start gap-1.5 font-normal text-sm"
-										onClick={() => {
-											NiceModal.show(CreateOrganizationModal);
-											setOpen(false);
-										}}
-										size="sm"
-										variant="ghost"
-									>
-										<PlusIcon className="size-5 shrink-0" />
-										<span>{t("createOrganization")}</span>
-									</Button>
-								</>
-							)}
-						</div>
+						{dropdownContent}
 					</PopoverContent>
 				</Popover>
 			</SidebarMenuItem>

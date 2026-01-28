@@ -79,6 +79,8 @@ import {
 	saleItemTable,
 	saleTable,
 	seasonTable,
+	servicePriceHistoryTable,
+	serviceTable,
 	sessionTable,
 	sponsorTable,
 	sportsEventTable,
@@ -145,6 +147,7 @@ export const organizationRelations = relations(
 		// Training-related relations
 		locations: many(locationTable),
 		athleteGroups: many(athleteGroupTable),
+		services: many(serviceTable),
 		trainingSessions: many(trainingSessionTable),
 		trainingPayments: many(trainingPaymentTable),
 		waitlistEntries: many(waitlistEntryTable),
@@ -377,6 +380,10 @@ export const athleteGroupRelations = relations(
 			fields: [athleteGroupTable.ageCategoryId],
 			references: [ageCategoryTable.id],
 		}),
+		service: one(serviceTable, {
+			fields: [athleteGroupTable.serviceId],
+			references: [serviceTable.id],
+		}),
 		members: many(athleteGroupMemberTable),
 		trainingSessions: many(trainingSessionTable),
 		waitlistEntries: many(waitlistEntryTable),
@@ -413,6 +420,10 @@ export const trainingSessionRelations = relations(
 		athleteGroup: one(athleteGroupTable, {
 			fields: [trainingSessionTable.athleteGroupId],
 			references: [athleteGroupTable.id],
+		}),
+		service: one(serviceTable, {
+			fields: [trainingSessionTable.serviceId],
+			references: [serviceTable.id],
 		}),
 		recurringSession: one(trainingSessionTable, {
 			fields: [trainingSessionTable.recurringSessionId],
@@ -515,6 +526,36 @@ export const trainingPaymentRelations = relations(
 		}),
 		recordedByUser: one(userTable, {
 			fields: [trainingPaymentTable.recordedBy],
+			references: [userTable.id],
+		}),
+	}),
+);
+
+// Service relations
+export const serviceRelations = relations(serviceTable, ({ one, many }) => ({
+	organization: one(organizationTable, {
+		fields: [serviceTable.organizationId],
+		references: [organizationTable.id],
+	}),
+	createdByUser: one(userTable, {
+		fields: [serviceTable.createdBy],
+		references: [userTable.id],
+	}),
+	priceHistory: many(servicePriceHistoryTable),
+	athleteGroups: many(athleteGroupTable),
+	trainingSessions: many(trainingSessionTable),
+}));
+
+// Service Price History relations
+export const servicePriceHistoryRelations = relations(
+	servicePriceHistoryTable,
+	({ one }) => ({
+		service: one(serviceTable, {
+			fields: [servicePriceHistoryTable.serviceId],
+			references: [serviceTable.id],
+		}),
+		createdByUser: one(userTable, {
+			fields: [servicePriceHistoryTable.createdBy],
 			references: [userTable.id],
 		}),
 	}),

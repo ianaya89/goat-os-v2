@@ -36,6 +36,7 @@
 		"users": "Users",
 		"vendors": "Vendors",
 		"sponsors": "Sponsors",
+		"services": "Services",
 		"chatbot": "AI Chatbot",
 		"settingsGeneral": "General",
 		"settingsMembers": "Members",
@@ -136,6 +137,10 @@
 		"products": {
 			"title": "Products",
 			"description": "Manage products"
+		},
+		"services": {
+			"title": "Services",
+			"description": "Manage service catalog"
 		},
 		"payroll": {
 			"title": "Payroll",

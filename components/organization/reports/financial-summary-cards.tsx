@@ -59,7 +59,7 @@ export function FinancialSummaryCards({
 			<Card>
 				<CardHeader className="pb-2">
 					<CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-						<BanknoteIcon className="h-4 w-4 text-green-600" />
+						<BanknoteIcon className="h-4 w-4" />
 						Ingresos
 					</CardTitle>
 				</CardHeader>
@@ -77,7 +77,7 @@ export function FinancialSummaryCards({
 			<Card>
 				<CardHeader className="pb-2">
 					<CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-						<ReceiptIcon className="h-4 w-4 text-red-600" />
+						<ReceiptIcon className="h-4 w-4" />
 						Gastos
 					</CardTitle>
 				</CardHeader>
@@ -123,7 +123,7 @@ export function FinancialSummaryCards({
 			<Card>
 				<CardHeader className="pb-2">
 					<CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-						<ClockIcon className="h-4 w-4 text-yellow-600" />
+						<ClockIcon className="h-4 w-4" />
 						Por Cobrar
 					</CardTitle>
 				</CardHeader>

@@ -42,7 +42,7 @@ export function SessionsByCoachChart({
 					<Skeleton className="h-4 w-48" />
 				</CardHeader>
 				<CardContent>
-					<Skeleton className="h-[250px] w-full" />
+					<Skeleton className="h-[300px] w-full" />
 				</CardContent>
 			</Card>
 		);
@@ -73,11 +73,11 @@ export function SessionsByCoachChart({
 			</CardHeader>
 			<CardContent>
 				{chartData.length === 0 ? (
-					<div className="flex h-[250px] items-center justify-center text-muted-foreground">
+					<div className="flex h-[300px] items-center justify-center text-muted-foreground">
 						No hay datos de entrenadores para este periodo
 					</div>
 				) : (
-					<div className="h-[250px] w-full">
+					<div className="h-[300px] w-full">
 						<ResponsiveContainer width="100%" height="100%">
 							<BarChart data={chartData} layout="vertical">
 								<CartesianGrid strokeDasharray="3 3" className="stroke-muted" />

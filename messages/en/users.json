@@ -1,0 +1,146 @@
+{
+	"search": "Search users...",
+	"add": "Add User",
+	"filters": {
+		"today": "Today",
+		"thisWeek": "This week",
+		"thisMonth": "This month",
+		"older": "Older"
+	},
+	"roles": {
+		"owner": "Owner",
+		"admin": "Admin",
+		"staff": "Staff",
+		"member": "Member",
+		"coach": "Coach",
+		"athlete": "Athlete"
+	},
+	"table": {
+		"name": "Name",
+		"email": "Email",
+		"role": "Role",
+		"profiles": "Profiles",
+		"joined": "Joined",
+		"noUsers": "No users found.",
+		"viewDetails": "View Details",
+		"resetPassword": "Reset Password",
+		"resendVerification": "Resend Verification",
+		"removeFromOrg": "Remove from Organization",
+		"editUser": "Edit User",
+		"banUser": "Ban User",
+		"unbanUser": "Unban User"
+	},
+	"profiles": {
+		"coach": "Coach",
+		"athlete": "Athlete"
+	},
+	"statuses": {
+		"active": "Active",
+		"inactive": "Inactive"
+	},
+	"emailStatus": {
+		"verified": "Verified",
+		"pending": "Pending verification"
+	},
+	"remove": {
+		"title": "Remove user?",
+		"message": "Are you sure you want to remove this user from the organization? Their coach and athlete profiles will also be removed.",
+		"confirm": "Remove"
+	},
+	"ban": {
+		"title": "Ban User",
+		"subtitle": "Ban this user from the platform",
+		"description": "Ban {name} from the platform. They will not be able to sign in while banned.",
+		"reason": "Reason for ban",
+		"reasonPlaceholder": "Enter the reason for banning this user...",
+		"reasonDescription": "This will be shown to the user when they try to sign in.",
+		"expiresAt": "Ban expiration (optional)",
+		"pickDate": "Pick a date",
+		"expiresDescription": "Leave empty for a permanent ban.",
+		"confirm": "Ban User",
+		"banning": "Banning...",
+		"cancel": "Cancel"
+	},
+	"unban": {
+		"title": "Unban user?",
+		"message": "Are you sure you want to unban {name}? They will be able to sign in again.",
+		"confirm": "Unban"
+	},
+	"banStatus": {
+		"banned": "Banned",
+		"reason": "Reason",
+		"expires": "Expires",
+		"permanent": "Permanent",
+		"unbanUser": "Unban User"
+	},
+	"resetPasswordConfirm": {
+		"title": "Reset password?",
+		"message": "A password reset email will be sent to {email}. The user will need to create a new password.",
+		"confirm": "Send email"
+	},
+	"resendVerificationConfirm": {
+		"title": "Resend verification?",
+		"message": "The verification email will be resent to {email}.",
+		"confirm": "Resend"
+	},
+	"modal": {
+		"title": "User Details",
+		"description": "View and manage user details",
+		"actions": "Actions",
+		"resetPassword": "Reset Password",
+		"resendVerification": "Resend Verification",
+		"sending": "Sending...",
+		"membership": "Membership",
+		"currentRole": "Current Role",
+		"joined": "Joined",
+		"profilesTitle": "Profiles",
+		"specialty": "Specialty",
+		"sport": "Sport",
+		"level": "Level",
+		"noProfiles": "This user has no coach or athlete profile.",
+		"createCoachProfile": "Create Coach Profile",
+		"createAthleteProfile": "Create Athlete Profile",
+		"changeRole": "Change Role",
+		"roleAutoAssigned": "Users with coach or athlete profiles cannot have their role manually changed. The role is automatically assigned based on their profile.",
+		"newRole": "New Role",
+		"selectRole": "Select role",
+		"close": "Close",
+		"cancel": "Cancel",
+		"updateRole": "Update Role"
+	},
+	"formModal": {
+		"createTitle": "Create User",
+		"createSubtitle": "Add a new member to the organization",
+		"editTitle": "Edit User",
+		"editSubtitle": "Update user information and role",
+		"name": "Name",
+		"namePlaceholder": "Enter full name",
+		"email": "Email",
+		"emailPlaceholder": "Enter email address",
+		"role": "Role",
+		"selectRole": "Select role",
+		"cancel": "Cancel",
+		"create": "Create",
+		"update": "Update"
+	},
+	"success": {
+		"roleUpdated": "User role updated successfully.",
+		"passwordResetSent": "Password reset email sent successfully.",
+		"verificationSent": "Verification email sent successfully.",
+		"removed": "User removed from organization.",
+		"banned": "User has been banned.",
+		"unbanned": "User has been unbanned.",
+		"created": "User created successfully.",
+		"updated": "User updated successfully."
+	},
+	"error": {
+		"roleUpdateFailed": "Failed to update user role.",
+		"passwordResetFailed": "Failed to send password reset email.",
+		"verificationFailed": "Failed to send verification email.",
+		"removeFailed": "Failed to remove user.",
+		"banFailed": "Failed to ban user.",
+		"unbanFailed": "Failed to unban user.",
+		"createFailed": "Failed to create user.",
+		"updateFailed": "Failed to update user."
+	}
+}

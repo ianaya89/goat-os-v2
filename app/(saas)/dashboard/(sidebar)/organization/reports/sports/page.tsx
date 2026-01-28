@@ -1,3 +1,4 @@
+import { DumbbellIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -47,7 +48,10 @@ export default async function SportsReportsPage(): Promise<React.JSX.Element> {
 				<div className="p-4 sm:px-6 sm:pt-6 sm:pb-24">
 					<div className="mx-auto w-full space-y-6">
 						<div>
-							<PageTitle>{t("reports.sports.title")}</PageTitle>
+							<div className="flex items-center gap-2">
+								<DumbbellIcon className="size-5 text-muted-foreground" />
+								<PageTitle>{t("reports.sports.title")}</PageTitle>
+							</div>
 							<p className="text-muted-foreground text-sm">
 								{t("reports.sports.description")}
 							</p>

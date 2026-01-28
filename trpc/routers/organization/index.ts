@@ -38,6 +38,7 @@ import { organizationNotificationRouter } from "@/trpc/routers/organization/orga
 import { organizationPayrollRouter } from "@/trpc/routers/organization/organization-payroll-router";
 import { organizationReportsRouter } from "@/trpc/routers/organization/organization-reports-router";
 import { organizationSeasonRouter } from "@/trpc/routers/organization/organization-season-router";
+import { organizationServiceRouter } from "@/trpc/routers/organization/organization-service-router";
 import { organizationSessionFeedbackRouter } from "@/trpc/routers/organization/organization-session-feedback-router";
 import { organizationSponsorRouter } from "@/trpc/routers/organization/organization-sponsor-router";
 import { organizationSportsEventRouter } from "@/trpc/routers/organization/organization-sports-event-router";
@@ -188,6 +189,7 @@ export const organizationRouter = createTRPCRouter({
 	eventRotation: organizationEventRotationRouter,
 	features: organizationFeaturesRouter,
 	season: organizationSeasonRouter,
+	service: organizationServiceRouter,
 	team: organizationTeamRouter,
 	competition: organizationCompetitionRouter,
 	match: organizationMatchRouter,

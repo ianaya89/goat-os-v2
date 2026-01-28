@@ -119,6 +119,28 @@ export const getRevenueByLocationSchema = z.object({
 		.optional(),
 });
 
+// Revenue by service
+export const getRevenueByServiceSchema = z.object({
+	limit: z.number().min(1).max(50).default(10),
+	dateRange: z
+		.object({
+			from: z.coerce.date(),
+			to: z.coerce.date(),
+		})
+		.optional(),
+});
+
+// Revenue composition (training vs events)
+export const getRevenueCompositionSchema = z.object({
+	period: ReportPeriod.default("month"),
+	dateRange: z
+		.object({
+			from: z.coerce.date(),
+			to: z.coerce.date(),
+		})
+		.optional(),
+});
+
 // ============================================================================
 // PENDING PAYMENTS REPORTS SCHEMAS
 // ============================================================================
@@ -243,5 +265,11 @@ export type GetSessionsByCoachInput = z.infer<typeof getSessionsByCoachSchema>;
 export type GetAttendanceTrendInput = z.infer<typeof getAttendanceTrendSchema>;
 export type GetPendingEventRegistrationsInput = z.infer<
 	typeof getPendingEventRegistrationsSchema
+>;
+export type GetRevenueByServiceInput = z.infer<
+	typeof getRevenueByServiceSchema
+>;
+export type GetRevenueCompositionInput = z.infer<
+	typeof getRevenueCompositionSchema
 >;
 export type GetPendingSummaryInput = z.infer<typeof getPendingSummarySchema>;

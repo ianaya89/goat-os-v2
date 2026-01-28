@@ -4,9 +4,9 @@ import { redirect } from "next/navigation";
 import type * as React from "react";
 import { AthleteHomeDashboard } from "@/components/athlete/athlete-home-dashboard";
 import { UserHomeDashboard } from "@/components/user/user-home-dashboard";
-import { getSession } from "@/lib/auth/server";
+import { getOrganizationList, getSession } from "@/lib/auth/server";
 import { db } from "@/lib/db";
-import { athleteTable, coachTable } from "@/lib/db/schema/tables";
+import { athleteTable, coachTable, sessionTable } from "@/lib/db/schema/tables";
 
 export const metadata: Metadata = {
 	title: "Home",
@@ -15,8 +15,8 @@ export const metadata: Metadata = {
 /**
  * Dashboard home page.
  * - For athletes/coaches: Show their personal home dashboard
- * - For admin users with active org: Redirect to organization dashboard
- * - For admin users without active org: Show user home dashboard to select one
+ * - For other users: Redirect to organization dashboard (auto-selecting first org if needed)
+ * - Fallback: Show user home dashboard only if user has no organizations
  */
 export default async function AccountPage(): Promise<React.JSX.Element> {
 	const session = await getSession();
@@ -47,11 +47,24 @@ export default async function AccountPage(): Promise<React.JSX.Element> {
 		return <AthleteHomeDashboard isAthlete={isAthlete} isCoach={isCoach} />;
 	}
 
-	// Admin users with an active organization go straight to the organization dashboard
+	// Users with an active organization go straight to the organization dashboard
 	if (session.session.activeOrganizationId) {
 		redirect("/dashboard/organization");
 	}
 
-	// Users without an active organization see the home dashboard to select one
+	// Non-athlete/non-coach users without active org: auto-select first organization
+	const organizations = await getOrganizationList();
+
+	const firstOrg = organizations?.[0];
+	if (firstOrg) {
+		await db
+			.update(sessionTable)
+			.set({ activeOrganizationId: firstOrg.id })
+			.where(eq(sessionTable.id, session.session.id));
+
+		redirect("/dashboard/organization");
+	}
+
+	// Fallback: user has no organizations — show home dashboard so they can create/join one
 	return <UserHomeDashboard />;
 }

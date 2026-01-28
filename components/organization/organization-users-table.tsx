@@ -7,7 +7,21 @@ import type {
 	SortingState,
 } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { CheckCircleIcon, MoreHorizontalIcon, XCircleIcon } from "lucide-react";
+import {
+	CheckCircleIcon,
+	EyeIcon,
+	KeyRoundIcon,
+	MailIcon,
+	MoreHorizontalIcon,
+	PencilIcon,
+	PlusIcon,
+	ShieldBanIcon,
+	ShieldCheckIcon,
+	UserXIcon,
+	XCircleIcon,
+} from "lucide-react";
+import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
 	parseAsArrayOf,
 	parseAsInteger,
@@ -18,6 +32,8 @@ import {
 import * as React from "react";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/confirmation-modal";
+import { OrganizationBanUserModal } from "@/components/organization/organization-ban-user-modal";
+import { OrganizationUserFormModal } from "@/components/organization/organization-user-form-modal";
 import { OrganizationUserModal } from "@/components/organization/organization-user-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,7 +52,7 @@ import {
 import { UserAvatar } from "@/components/user/user-avatar";
 import { appConfig } from "@/config/app.config";
 import { MemberRoles } from "@/lib/db/schema/enums";
-import { capitalize, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { OrganizationUserSortField } from "@/schemas/organization-user-schemas";
 import { trpc } from "@/trpc/client";
 
@@ -52,6 +68,9 @@ interface OrganizationUser {
 	role: string;
 	joinedAt: Date;
 	userCreatedAt: Date;
+	banned: boolean;
+	banReason: string | null;
+	banExpires: Date | null;
 	coachProfile: {
 		id: string;
 		specialty: string;
@@ -68,10 +87,15 @@ interface OrganizationUser {
 const roleColors: Record<string, string> = {
 	owner: "bg-purple-100 dark:bg-purple-900",
 	admin: "bg-blue-100 dark:bg-blue-900",
+	staff: "bg-orange-100 dark:bg-orange-900",
 	member: "bg-gray-100 dark:bg-gray-800",
+	coach: "bg-emerald-100 dark:bg-emerald-900",
+	athlete: "bg-amber-100 dark:bg-amber-900",
 };
 
 export function OrganizationUsersTable(): React.JSX.Element {
+	const t = useTranslations("users");
+
 	const [searchQuery, setSearchQuery] = useQueryState(
 		"query",
 		parseAsString.withDefault("").withOptions({
@@ -100,8 +124,8 @@ export function OrganizationUsersTable(): React.JSX.Element {
 		}),
 	);
 
-	const [joinedAtFilter, setJoinedAtFilter] = useQueryState(
-		"joinedAt",
+	const [emailStatusFilter, setEmailStatusFilter] = useQueryState(
+		"emailStatus",
 		parseAsArrayOf(parseAsString).withDefault([]).withOptions({
 			shallow: true,
 		}),
@@ -131,11 +155,11 @@ export function OrganizationUsersTable(): React.JSX.Element {
 		if (roleFilter && roleFilter.length > 0) {
 			filters.push({ id: "role", value: roleFilter });
 		}
-		if (joinedAtFilter && joinedAtFilter.length > 0) {
-			filters.push({ id: "joinedAt", value: joinedAtFilter });
+		if (emailStatusFilter && emailStatusFilter.length > 0) {
+			filters.push({ id: "emailStatus", value: emailStatusFilter });
 		}
 		return filters;
-	}, [roleFilter, joinedAtFilter]);
+	}, [roleFilter, emailStatusFilter]);
 
 	const handleFiltersChange = (filters: ColumnFiltersState): void => {
 		const getFilterValue = (id: string): string[] => {
@@ -144,7 +168,7 @@ export function OrganizationUsersTable(): React.JSX.Element {
 		};
 
 		setRoleFilter(getFilterValue("role"));
-		setJoinedAtFilter(getFilterValue("joinedAt"));
+		setEmailStatusFilter(getFilterValue("emailStatus"));
 
 		if (pageIndex !== 0) {
 			setPageIndex(0);
@@ -171,6 +195,24 @@ export function OrganizationUsersTable(): React.JSX.Element {
 		return { sortBy, sortOrder };
 	}, [sorting]);
 
+	// Separate role filter values into actual member roles vs profile types
+	const parsedRoleFilter = React.useMemo(() => {
+		const values = roleFilter || [];
+		const memberRoles = values.filter(
+			(v) => v !== "coach" && v !== "athlete",
+		) as ("owner" | "admin" | "staff" | "member")[];
+		const hasCoach = values.includes("coach");
+		const hasAthlete = values.includes("athlete");
+		return { memberRoles, hasCoach, hasAthlete };
+	}, [roleFilter]);
+
+	// Parse email status filter into a boolean or undefined
+	const parsedEmailVerified = React.useMemo(() => {
+		const values = emailStatusFilter || [];
+		if (values.length === 0 || values.length === 2) return undefined;
+		return values.includes("verified") ? true : false;
+	}, [emailStatusFilter]);
+
 	const { data, isPending } = trpc.organization.user.list.useQuery(
 		{
 			limit: pageSize || appConfig.pagination.defaultLimit,
@@ -180,13 +222,13 @@ export function OrganizationUsersTable(): React.JSX.Element {
 			sortBy: sortParams.sortBy,
 			sortOrder: sortParams.sortOrder,
 			filters: {
-				role: (roleFilter || []) as ("owner" | "admin" | "member")[],
-				joinedAt: (joinedAtFilter || []) as (
-					| "today"
-					| "this-week"
-					| "this-month"
-					| "older"
-				)[],
+				role:
+					parsedRoleFilter.memberRoles.length > 0
+						? parsedRoleFilter.memberRoles
+						: undefined,
+				hasCoachProfile: parsedRoleFilter.hasCoach ? true : undefined,
+				hasAthleteProfile: parsedRoleFilter.hasAthlete ? true : undefined,
+				emailVerified: parsedEmailVerified,
 			},
 		},
 		{
@@ -196,33 +238,43 @@ export function OrganizationUsersTable(): React.JSX.Element {
 
 	const removeUserMutation = trpc.organization.user.remove.useMutation({
 		onSuccess: () => {
-			toast.success("User removed from organization");
+			toast.success(t("success.removed"));
 			utils.organization.user.list.invalidate();
 		},
 		onError: (error) => {
-			toast.error(error.message || "Failed to remove user");
+			toast.error(error.message || t("error.removeFailed"));
 		},
 	});
 
 	const sendPasswordResetMutation =
 		trpc.organization.user.sendPasswordReset.useMutation({
 			onSuccess: () => {
-				toast.success("Password reset email sent successfully");
+				toast.success(t("success.passwordResetSent"));
 			},
 			onError: (error) => {
-				toast.error(error.message || "Failed to send password reset email");
+				toast.error(error.message || t("error.passwordResetFailed"));
 			},
 		});
 
 	const resendVerificationMutation =
 		trpc.organization.user.resendVerificationEmail.useMutation({
 			onSuccess: () => {
-				toast.success("Verification email sent successfully");
+				toast.success(t("success.verificationSent"));
 			},
 			onError: (error) => {
-				toast.error(error.message || "Failed to send verification email");
+				toast.error(error.message || t("error.verificationFailed"));
 			},
 		});
+
+	const unbanUserMutation = trpc.organization.user.unban.useMutation({
+		onSuccess: () => {
+			toast.success(t("success.unbanned"));
+			utils.organization.user.list.invalidate();
+		},
+		onError: (error) => {
+			toast.error(error.message || t("error.unbanFailed"));
+		},
+	});
 
 	const handleSearchQueryChange = (value: string): void => {
 		if (value !== searchQuery) {
@@ -237,7 +289,7 @@ export function OrganizationUsersTable(): React.JSX.Element {
 		{
 			accessorKey: "name",
 			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Name" />
+				<SortableColumnHeader column={column} title={t("table.name")} />
 			),
 			cell: ({ row }) => {
 				return (
@@ -260,7 +312,7 @@ export function OrganizationUsersTable(): React.JSX.Element {
 		{
 			accessorKey: "email",
 			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Email" />
+				<SortableColumnHeader column={column} title={t("table.email")} />
 			),
 			cell: ({ row }) => (
 				<div className="flex items-center gap-2">
@@ -281,51 +333,65 @@ export function OrganizationUsersTable(): React.JSX.Element {
 		{
 			accessorKey: "role",
 			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Role" />
+				<SortableColumnHeader column={column} title={t("table.role")} />
 			),
-			cell: ({ row }) => (
-				<Badge
-					className={cn(
-						"border-none px-2 py-0.5 font-medium text-foreground text-xs shadow-none",
-						roleColors[row.original.role] || "bg-gray-100 dark:bg-gray-800",
-					)}
-					variant="outline"
-				>
-					{capitalize(row.original.role)}
-				</Badge>
-			),
-		},
-		{
-			id: "profiles",
-			header: "Profiles",
-			cell: ({ row }) => (
-				<div className="flex gap-1">
-					{row.original.coachProfile && (
-						<Badge
-							className="border-none bg-amber-100 px-2 py-0.5 font-medium text-foreground text-xs shadow-none dark:bg-amber-900"
-							variant="outline"
-						>
-							Coach
-						</Badge>
-					)}
-					{row.original.athleteProfile && (
-						<Badge
-							className="border-none bg-teal-100 px-2 py-0.5 font-medium text-foreground text-xs shadow-none dark:bg-teal-900"
-							variant="outline"
-						>
-							Athlete
-						</Badge>
-					)}
-					{!row.original.coachProfile && !row.original.athleteProfile && (
-						<span className="text-muted-foreground text-sm">-</span>
-					)}
-				</div>
-			),
+			cell: ({ row }) => {
+				const hasCoach = !!row.original.coachProfile;
+				const hasAthlete = !!row.original.athleteProfile;
+				const hasProfiles = hasCoach || hasAthlete;
+
+				return (
+					<div className="flex flex-wrap items-center gap-1.5">
+						{hasCoach && (
+							<Link
+								href={`/dashboard/organization/coaches/${row.original.coachProfile!.id}`}
+							>
+								<Badge
+									className={cn(
+										"border-none px-2 py-0.5 font-medium text-foreground text-xs shadow-none hover:opacity-80",
+										roleColors.coach,
+									)}
+									variant="outline"
+								>
+									{t("roles.coach")}
+								</Badge>
+							</Link>
+						)}
+						{hasAthlete && (
+							<Link
+								href={`/dashboard/organization/athletes/${row.original.athleteProfile!.id}`}
+							>
+								<Badge
+									className={cn(
+										"border-none px-2 py-0.5 font-medium text-foreground text-xs shadow-none hover:opacity-80",
+										roleColors.athlete,
+									)}
+									variant="outline"
+								>
+									{t("roles.athlete")}
+								</Badge>
+							</Link>
+						)}
+						{!hasProfiles && (
+							<Badge
+								className={cn(
+									"border-none px-2 py-0.5 font-medium text-foreground text-xs shadow-none",
+									roleColors[row.original.role] ||
+										"bg-gray-100 dark:bg-gray-800",
+								)}
+								variant="outline"
+							>
+								{t(`roles.${row.original.role}` as Parameters<typeof t>[0])}
+							</Badge>
+						)}
+					</div>
+				);
+			},
 		},
 		{
 			accessorKey: "joinedAt",
 			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Joined" />
+				<SortableColumnHeader column={column} title={t("table.joined")} />
 			),
 			cell: ({ row }) => (
 				<span className="text-foreground/80">
@@ -352,44 +418,114 @@ export function OrganizationUsersTable(): React.JSX.Element {
 						<DropdownMenuContent align="end">
 							<DropdownMenuItem
 								onClick={() => {
+									NiceModal.show(OrganizationUserFormModal, {
+										user: {
+											id: row.original.id,
+											name: row.original.name,
+											email: row.original.email,
+											role: row.original.role,
+											hasProfiles:
+												!!row.original.coachProfile ||
+												!!row.original.athleteProfile,
+										},
+									});
+								}}
+							>
+								<PencilIcon className="size-4" />
+								{t("table.editUser")}
+							</DropdownMenuItem>
+							<DropdownMenuItem
+								onClick={() => {
 									NiceModal.show(OrganizationUserModal, {
 										user: row.original,
 									});
 								}}
 							>
-								View Details
+								<EyeIcon className="size-4" />
+								{t("table.viewDetails")}
 							</DropdownMenuItem>
-							<DropdownMenuSeparator />
-							<DropdownMenuItem
-								onClick={() => {
-									sendPasswordResetMutation.mutate({
-										userId: row.original.id,
-									});
-								}}
-								disabled={sendPasswordResetMutation.isPending}
-							>
-								Reset Password
-							</DropdownMenuItem>
-							{!row.original.emailVerified && (
-								<DropdownMenuItem
-									onClick={() => {
-										resendVerificationMutation.mutate({
-											userId: row.original.id,
-										});
-									}}
-									disabled={resendVerificationMutation.isPending}
-								>
-									Resend Verification
-								</DropdownMenuItem>
-							)}
 							<DropdownMenuSeparator />
 							<DropdownMenuItem
 								onClick={() => {
 									NiceModal.show(ConfirmationModal, {
-										title: "Remove user?",
-										message:
-											"Are you sure you want to remove this user from the organization? Their coach and athlete profiles will also be removed.",
-										confirmLabel: "Remove",
+										title: t("resetPasswordConfirm.title"),
+										message: t("resetPasswordConfirm.message", {
+											email: row.original.email,
+										}),
+										confirmLabel: t("resetPasswordConfirm.confirm"),
+										onConfirm: () =>
+											sendPasswordResetMutation.mutate({
+												userId: row.original.id,
+											}),
+									});
+								}}
+								disabled={sendPasswordResetMutation.isPending}
+							>
+								<KeyRoundIcon className="size-4" />
+								{t("table.resetPassword")}
+							</DropdownMenuItem>
+							{!row.original.emailVerified && (
+								<DropdownMenuItem
+									onClick={() => {
+										NiceModal.show(ConfirmationModal, {
+											title: t("resendVerificationConfirm.title"),
+											message: t("resendVerificationConfirm.message", {
+												email: row.original.email,
+											}),
+											confirmLabel: t("resendVerificationConfirm.confirm"),
+											onConfirm: () =>
+												resendVerificationMutation.mutate({
+													userId: row.original.id,
+												}),
+										});
+									}}
+									disabled={resendVerificationMutation.isPending}
+								>
+									<MailIcon className="size-4" />
+									{t("table.resendVerification")}
+								</DropdownMenuItem>
+							)}
+							<DropdownMenuSeparator />
+							{row.original.banned ? (
+								<DropdownMenuItem
+									onClick={() => {
+										NiceModal.show(ConfirmationModal, {
+											title: t("unban.title"),
+											message: t("unban.message", {
+												name: row.original.name,
+											}),
+											confirmLabel: t("unban.confirm"),
+											onConfirm: () =>
+												unbanUserMutation.mutate({
+													userId: row.original.id,
+												}),
+										});
+									}}
+									disabled={unbanUserMutation.isPending}
+								>
+									<ShieldCheckIcon className="size-4" />
+									{t("table.unbanUser")}
+								</DropdownMenuItem>
+							) : (
+								<DropdownMenuItem
+									onClick={() => {
+										NiceModal.show(OrganizationBanUserModal, {
+											userId: row.original.id,
+											userName: row.original.name,
+										});
+									}}
+									variant="destructive"
+								>
+									<ShieldBanIcon className="size-4" />
+									{t("table.banUser")}
+								</DropdownMenuItem>
+							)}
+							<DropdownMenuItem
+								onClick={() => {
+									NiceModal.show(ConfirmationModal, {
+										title: t("remove.title"),
+										message: t("remove.message"),
+										confirmLabel: t("remove.confirm"),
 										destructive: true,
 										onConfirm: () =>
 											removeUserMutation.mutate({ userId: row.original.id }),
@@ -397,7 +533,8 @@ export function OrganizationUsersTable(): React.JSX.Element {
 								}}
 								variant="destructive"
 							>
-								Remove from Organization
+								<UserXIcon className="size-4" />
+								{t("table.removeFromOrg")}
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
@@ -409,20 +546,34 @@ export function OrganizationUsersTable(): React.JSX.Element {
 	const userFilters: FilterConfig[] = [
 		{
 			key: "role",
-			title: "Role",
-			options: MemberRoles.map((role) => ({
-				value: role,
-				label: capitalize(role),
-			})),
+			title: t("table.role"),
+			options: [
+				...MemberRoles.map((role) => ({
+					value: role,
+					label: t(`roles.${role}` as Parameters<typeof t>[0]),
+				})),
+				{
+					value: "coach",
+					label: t("roles.coach"),
+				},
+				{
+					value: "athlete",
+					label: t("roles.athlete"),
+				},
+			],
 		},
 		{
-			key: "joinedAt",
-			title: "Joined",
+			key: "emailStatus",
+			title: t("table.email"),
 			options: [
-				{ value: "today", label: "Today" },
-				{ value: "this-week", label: "This week" },
-				{ value: "this-month", label: "This month" },
-				{ value: "older", label: "Older" },
+				{
+					value: "verified",
+					label: t("emailStatus.verified"),
+				},
+				{
+					value: "pending",
+					label: t("emailStatus.pending"),
+				},
 			],
 		},
 	];
@@ -432,7 +583,7 @@ export function OrganizationUsersTable(): React.JSX.Element {
 			columnFilters={columnFilters}
 			columns={columns}
 			data={(data?.users as OrganizationUser[]) || []}
-			emptyMessage="No users found."
+			emptyMessage={t("table.noUsers")}
 			enableFilters
 			enablePagination
 			enableSearch
@@ -445,11 +596,20 @@ export function OrganizationUsersTable(): React.JSX.Element {
 			onSortingChange={handleSortingChange}
 			pageIndex={pageIndex || 0}
 			pageSize={pageSize || appConfig.pagination.defaultLimit}
-			searchPlaceholder="Search users..."
+			searchPlaceholder={t("search")}
 			searchQuery={searchQuery || ""}
 			defaultSorting={DEFAULT_SORTING}
 			sorting={sorting}
 			totalCount={data?.total ?? 0}
+			toolbarActions={
+				<Button
+					size="sm"
+					onClick={() => NiceModal.show(OrganizationUserFormModal)}
+				>
+					<PlusIcon className="mr-1.5 h-4 w-4" />
+					{t("add")}
+				</Button>
+			}
 		/>
 	);
 }

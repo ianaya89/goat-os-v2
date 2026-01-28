@@ -104,6 +104,14 @@ export const organizationAthleteGroupRouter = createTRPCRouter({
 					orderBy: orderByColumn,
 					with: {
 						ageCategory: true,
+						service: {
+							columns: {
+								id: true,
+								name: true,
+								currentPrice: true,
+								currency: true,
+							},
+						},
 						members: {
 							with: {
 								athlete: {
@@ -147,6 +155,14 @@ export const organizationAthleteGroupRouter = createTRPCRouter({
 				),
 				with: {
 					ageCategory: true,
+					service: {
+						columns: {
+							id: true,
+							name: true,
+							currentPrice: true,
+							currency: true,
+						},
+					},
 					members: {
 						with: {
 							athlete: {
@@ -200,6 +216,7 @@ export const organizationAthleteGroupRouter = createTRPCRouter({
 				sport: true,
 				ageCategoryId: true,
 				maxCapacity: true,
+				serviceId: true,
 			},
 			with: {
 				ageCategory: true,

@@ -17,12 +17,14 @@ import {
 	expenseCategoryTable,
 	expenseTable,
 	locationTable,
+	serviceTable,
 	sportsEventTable,
 	trainingPaymentTable,
 	trainingSessionCoachTable,
 	trainingSessionTable,
 	userTable,
 } from "@/lib/db/schema/tables";
+import { logger } from "@/lib/logger";
 import {
 	getAttendanceByAthleteSchema,
 	getAttendanceByGroupSchema,
@@ -39,6 +41,8 @@ import {
 	getRevenueByLocationSchema,
 	getRevenueByPaymentMethodSchema,
 	getRevenueByPeriodSchema,
+	getRevenueByServiceSchema,
+	getRevenueCompositionSchema,
 	getRevenueWithCumulativeSchema,
 	getSessionsByCoachSchema,
 	getSessionsByPeriodSchema,
@@ -333,92 +337,103 @@ export const organizationReportsRouter = createTRPCRouter({
 	getCashFlowReport: protectedOrganizationProcedure
 		.input(getCashFlowReportSchema)
 		.query(async ({ ctx, input }) => {
-			const { from, to } = input.dateRange ?? getDefaultDateRange();
+			try {
+				const { from, to } = input.dateRange ?? getDefaultDateRange();
 
-			// Get revenue by period
-			let revenueDateTrunc: ReturnType<typeof sql>;
-			let expenseDateTrunc: ReturnType<typeof sql>;
-			switch (input.period) {
-				case "day":
-					revenueDateTrunc = sql`DATE_TRUNC('day', ${trainingPaymentTable.paymentDate})`;
-					expenseDateTrunc = sql`DATE_TRUNC('day', ${expenseTable.expenseDate})`;
-					break;
-				case "week":
-					revenueDateTrunc = sql`DATE_TRUNC('week', ${trainingPaymentTable.paymentDate})`;
-					expenseDateTrunc = sql`DATE_TRUNC('week', ${expenseTable.expenseDate})`;
-					break;
-				case "year":
-					revenueDateTrunc = sql`DATE_TRUNC('year', ${trainingPaymentTable.paymentDate})`;
-					expenseDateTrunc = sql`DATE_TRUNC('year', ${expenseTable.expenseDate})`;
-					break;
-				default:
-					revenueDateTrunc = sql`DATE_TRUNC('month', ${trainingPaymentTable.paymentDate})`;
-					expenseDateTrunc = sql`DATE_TRUNC('month', ${expenseTable.expenseDate})`;
+				// Get revenue by period
+				let revenueDateTrunc: ReturnType<typeof sql>;
+				let expenseDateTrunc: ReturnType<typeof sql>;
+				switch (input.period) {
+					case "day":
+						revenueDateTrunc = sql`DATE_TRUNC('day', ${trainingPaymentTable.paymentDate})`;
+						expenseDateTrunc = sql`DATE_TRUNC('day', ${expenseTable.expenseDate})`;
+						break;
+					case "week":
+						revenueDateTrunc = sql`DATE_TRUNC('week', ${trainingPaymentTable.paymentDate})`;
+						expenseDateTrunc = sql`DATE_TRUNC('week', ${expenseTable.expenseDate})`;
+						break;
+					case "year":
+						revenueDateTrunc = sql`DATE_TRUNC('year', ${trainingPaymentTable.paymentDate})`;
+						expenseDateTrunc = sql`DATE_TRUNC('year', ${expenseTable.expenseDate})`;
+						break;
+					default:
+						revenueDateTrunc = sql`DATE_TRUNC('month', ${trainingPaymentTable.paymentDate})`;
+						expenseDateTrunc = sql`DATE_TRUNC('month', ${expenseTable.expenseDate})`;
+				}
+
+				const [revenueByPeriod, expensesByPeriod] = await Promise.all([
+					db
+						.select({
+							period: revenueDateTrunc,
+							total: sum(trainingPaymentTable.paidAmount),
+						})
+						.from(trainingPaymentTable)
+						.where(
+							and(
+								eq(trainingPaymentTable.organizationId, ctx.organization.id),
+								eq(trainingPaymentTable.status, TrainingPaymentStatus.paid),
+								gte(trainingPaymentTable.paymentDate, from),
+								lte(trainingPaymentTable.paymentDate, to),
+							),
+						)
+						.groupBy(revenueDateTrunc),
+					db
+						.select({
+							period: expenseDateTrunc,
+							total: sum(expenseTable.amount),
+						})
+						.from(expenseTable)
+						.where(
+							and(
+								eq(expenseTable.organizationId, ctx.organization.id),
+								gte(expenseTable.expenseDate, from),
+								lte(expenseTable.expenseDate, to),
+							),
+						)
+						.groupBy(expenseDateTrunc),
+				]);
+
+				// Safely convert period value (Date or string from pg) to an ISO key
+				const toKey = (period: unknown): string => {
+					if (period instanceof Date) return period.toISOString();
+					return new Date(String(period)).toISOString();
+				};
+
+				// Combine periods
+				const periodMap = new Map<
+					string,
+					{ revenue: number; expenses: number }
+				>();
+
+				for (const r of revenueByPeriod) {
+					const key = toKey(r.period);
+					const existing = periodMap.get(key) ?? { revenue: 0, expenses: 0 };
+					existing.revenue = Number(r.total ?? 0);
+					periodMap.set(key, existing);
+				}
+
+				for (const e of expensesByPeriod) {
+					const key = toKey(e.period);
+					const existing = periodMap.get(key) ?? { revenue: 0, expenses: 0 };
+					existing.expenses = Number(e.total ?? 0);
+					periodMap.set(key, existing);
+				}
+
+				// Sort by period and calculate net
+				const result = Array.from(periodMap.entries())
+					.map(([periodKey, data]) => ({
+						period: new Date(periodKey),
+						revenue: data.revenue,
+						expenses: data.expenses,
+						net: data.revenue - data.expenses,
+					}))
+					.sort((a, b) => a.period.getTime() - b.period.getTime());
+
+				return result;
+			} catch (error) {
+				logger.error({ error }, "getCashFlowReport failed");
+				throw error;
 			}
-
-			const [revenueByPeriod, expensesByPeriod] = await Promise.all([
-				db
-					.select({
-						period: revenueDateTrunc,
-						total: sum(trainingPaymentTable.paidAmount),
-					})
-					.from(trainingPaymentTable)
-					.where(
-						and(
-							eq(trainingPaymentTable.organizationId, ctx.organization.id),
-							eq(trainingPaymentTable.status, TrainingPaymentStatus.paid),
-							gte(trainingPaymentTable.paymentDate, from),
-							lte(trainingPaymentTable.paymentDate, to),
-						),
-					)
-					.groupBy(revenueDateTrunc),
-				db
-					.select({
-						period: expenseDateTrunc,
-						total: sum(expenseTable.amount),
-					})
-					.from(expenseTable)
-					.where(
-						and(
-							eq(expenseTable.organizationId, ctx.organization.id),
-							gte(expenseTable.expenseDate, from),
-							lte(expenseTable.expenseDate, to),
-						),
-					)
-					.groupBy(expenseDateTrunc),
-			]);
-
-			// Combine periods
-			const periodMap = new Map<
-				string,
-				{ revenue: number; expenses: number }
-			>();
-
-			for (const r of revenueByPeriod) {
-				const key = (r.period as Date).toISOString();
-				const existing = periodMap.get(key) ?? { revenue: 0, expenses: 0 };
-				existing.revenue = Number(r.total ?? 0);
-				periodMap.set(key, existing);
-			}
-
-			for (const e of expensesByPeriod) {
-				const key = (e.period as Date).toISOString();
-				const existing = periodMap.get(key) ?? { revenue: 0, expenses: 0 };
-				existing.expenses = Number(e.total ?? 0);
-				periodMap.set(key, existing);
-			}
-
-			// Sort by period and calculate net
-			const result = Array.from(periodMap.entries())
-				.map(([periodKey, data]) => ({
-					period: new Date(periodKey),
-					revenue: data.revenue,
-					expenses: data.expenses,
-					net: data.revenue - data.expenses,
-				}))
-				.sort((a, b) => a.period.getTime() - b.period.getTime());
-
-			return result;
 		}),
 
 	// Outstanding (pending) payments
@@ -653,6 +668,139 @@ export const organizationReportsRouter = createTRPCRouter({
 				total: Number(r.total ?? 0),
 				count: Number(r.count ?? 0),
 			}));
+		}),
+
+	// Revenue by service
+	getRevenueByService: protectedOrganizationProcedure
+		.input(getRevenueByServiceSchema)
+		.query(async ({ ctx, input }) => {
+			const { from, to } = input.dateRange ?? getDefaultDateRange();
+
+			const result = await db
+				.select({
+					serviceId: serviceTable.id,
+					serviceName: serviceTable.name,
+					total: sum(trainingPaymentTable.paidAmount),
+					count: count(),
+				})
+				.from(trainingPaymentTable)
+				.innerJoin(
+					trainingSessionTable,
+					eq(trainingPaymentTable.sessionId, trainingSessionTable.id),
+				)
+				.innerJoin(
+					serviceTable,
+					eq(trainingSessionTable.serviceId, serviceTable.id),
+				)
+				.where(
+					and(
+						eq(trainingPaymentTable.organizationId, ctx.organization.id),
+						eq(trainingPaymentTable.status, TrainingPaymentStatus.paid),
+						gte(trainingPaymentTable.paymentDate, from),
+						lte(trainingPaymentTable.paymentDate, to),
+					),
+				)
+				.groupBy(serviceTable.id, serviceTable.name)
+				.orderBy(desc(sum(trainingPaymentTable.paidAmount)))
+				.limit(input.limit);
+
+			return result.map((r) => ({
+				serviceId: r.serviceId,
+				serviceName: r.serviceName,
+				total: Number(r.total ?? 0),
+				count: Number(r.count ?? 0),
+			}));
+		}),
+
+	// Revenue composition (training vs events by period)
+	getRevenueComposition: protectedOrganizationProcedure
+		.input(getRevenueCompositionSchema)
+		.query(async ({ ctx, input }) => {
+			const { from, to } = input.dateRange ?? getDefaultDateRange();
+
+			let trainingDateTrunc: ReturnType<typeof sql>;
+			let eventDateTrunc: ReturnType<typeof sql>;
+			switch (input.period) {
+				case "day":
+					trainingDateTrunc = sql`DATE_TRUNC('day', ${trainingPaymentTable.paymentDate})`;
+					eventDateTrunc = sql`DATE_TRUNC('day', ${eventPaymentTable.paymentDate})`;
+					break;
+				case "week":
+					trainingDateTrunc = sql`DATE_TRUNC('week', ${trainingPaymentTable.paymentDate})`;
+					eventDateTrunc = sql`DATE_TRUNC('week', ${eventPaymentTable.paymentDate})`;
+					break;
+				case "year":
+					trainingDateTrunc = sql`DATE_TRUNC('year', ${trainingPaymentTable.paymentDate})`;
+					eventDateTrunc = sql`DATE_TRUNC('year', ${eventPaymentTable.paymentDate})`;
+					break;
+				default:
+					trainingDateTrunc = sql`DATE_TRUNC('month', ${trainingPaymentTable.paymentDate})`;
+					eventDateTrunc = sql`DATE_TRUNC('month', ${eventPaymentTable.paymentDate})`;
+			}
+
+			const [trainingRevenue, eventRevenue] = await Promise.all([
+				db
+					.select({
+						period: trainingDateTrunc,
+						total: sum(trainingPaymentTable.paidAmount),
+					})
+					.from(trainingPaymentTable)
+					.where(
+						and(
+							eq(trainingPaymentTable.organizationId, ctx.organization.id),
+							eq(trainingPaymentTable.status, TrainingPaymentStatus.paid),
+							gte(trainingPaymentTable.paymentDate, from),
+							lte(trainingPaymentTable.paymentDate, to),
+						),
+					)
+					.groupBy(trainingDateTrunc),
+				db
+					.select({
+						period: eventDateTrunc,
+						total: sum(eventPaymentTable.amount),
+					})
+					.from(eventPaymentTable)
+					.where(
+						and(
+							eq(eventPaymentTable.organizationId, ctx.organization.id),
+							eq(eventPaymentTable.status, EventPaymentStatus.paid),
+							gte(eventPaymentTable.paymentDate, from),
+							lte(eventPaymentTable.paymentDate, to),
+						),
+					)
+					.groupBy(eventDateTrunc),
+			]);
+
+			const periodMap = new Map<string, { training: number; events: number }>();
+
+			for (const r of trainingRevenue) {
+				const key = (r.period as Date).toISOString();
+				const existing = periodMap.get(key) ?? {
+					training: 0,
+					events: 0,
+				};
+				existing.training = Number(r.total ?? 0);
+				periodMap.set(key, existing);
+			}
+
+			for (const e of eventRevenue) {
+				const key = (e.period as Date).toISOString();
+				const existing = periodMap.get(key) ?? {
+					training: 0,
+					events: 0,
+				};
+				existing.events = Number(e.total ?? 0);
+				periodMap.set(key, existing);
+			}
+
+			return Array.from(periodMap.entries())
+				.map(([periodKey, data]) => ({
+					period: new Date(periodKey),
+					training: data.training,
+					events: data.events,
+					total: data.training + data.events,
+				}))
+				.sort((a, b) => a.period.getTime() - b.period.getTime());
 		}),
 
 	// ============================================================================

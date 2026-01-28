@@ -64,7 +64,8 @@
 		"recurringPattern": "Recurrence pattern",
 		"athletes": "Athletes",
 		"selectAthletes": "Select athletes",
-		"status": "Status"
+		"status": "Status",
+		"service": "Service"
 	},
 	"status": {
 		"scheduled": "Scheduled",

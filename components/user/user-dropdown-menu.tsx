@@ -1,10 +1,8 @@
 "use client";
 
-import NiceModal from "@ebay/nice-modal-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
 	ExternalLinkIcon,
-	GlobeIcon,
 	LaptopIcon,
 	MedalIcon,
 	MoonIcon,
@@ -36,7 +34,6 @@ import {
 	useSidebar,
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CommandMenu } from "@/components/user/command-menu";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { appConfig } from "@/config/app.config";
 import { authConfig } from "@/config/auth.config";
@@ -162,10 +159,6 @@ export function UserDropDownMenu(
 		router.push("/dashboard/my-profile");
 	};
 
-	const handleShowCommandMenu = (): void => {
-		NiceModal.show(CommandMenu);
-	};
-
 	const handleLocaleChange = (newLocale: Locale) => {
 		document.cookie = `${LOCALE_COOKIE_NAME}=${newLocale}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
 		// Full page reload to apply new locale (router.refresh doesn't re-read cookies)
@@ -203,7 +196,6 @@ export function UserDropDownMenu(
 		const mac = isMac();
 		const hotkeys: Record<string, { action: () => void; shift: boolean }> = {
 			p: { action: handleNavigateToProfile, shift: true },
-			k: { action: handleShowCommandMenu, shift: false },
 			s: { action: handleSignOut, shift: true },
 		};
 
@@ -314,13 +306,6 @@ export function UserDropDownMenu(
 									{t("profile.title")}
 									<DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
 								</DropdownMenuItem>
-								<DropdownMenuItem
-									className="cursor-pointer"
-									onClick={handleShowCommandMenu}
-								>
-									Command Menu
-									<DropdownMenuShortcut>⌘K</DropdownMenuShortcut>
-								</DropdownMenuItem>
 								<DropdownMenuSeparator />
 								{appConfig.theme.available.length > 1 && (
 									<>
@@ -341,7 +326,6 @@ export function UserDropDownMenu(
 								)}
 								<DropdownMenuSub>
 									<DropdownMenuSubTrigger className="hidden w-full items-center justify-between gap-x-3 lg:flex">
-										<GlobeIcon className="mr-2 size-4" />
 										<p>{t("preferences.language")}</p>
 									</DropdownMenuSubTrigger>
 									<DropdownMenuSubContent>

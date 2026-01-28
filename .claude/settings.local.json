@@ -66,7 +66,12 @@
 			"Bash(npx sharp --help:*)",
 			"Bash(magick:*)",
 			"Bash(stat:*)",
-			"Bash(rsvg-convert:*)"
+			"Bash(rsvg-convert:*)",
+			"Bash(git stash:*)",
+			"Bash(ps:*)",
+			"Bash(set -a)",
+			"Bash(. /Users/ianaya89/Development/goat-os/.env)",
+			"Bash(set +a)"
 		]
 	}
 }

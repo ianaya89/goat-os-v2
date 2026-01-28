@@ -64,7 +64,8 @@
 		"recurringPattern": "Patrón de recurrencia",
 		"athletes": "Atletas",
 		"selectAthletes": "Seleccionar atletas",
-		"status": "Estado"
+		"status": "Estado",
+		"service": "Servicio"
 	},
 	"status": {
 		"scheduled": "Programada",

@@ -76,6 +76,38 @@ export const removeProfileImageSchema = z.object({
 	userId: z.string().uuid(),
 });
 
+// Ban user from organization
+export const banOrganizationUserSchema = z.object({
+	userId: z.string().uuid(),
+	reason: z.string().min(1, "Ban reason is required").max(1000),
+	expiresAt: z.date().optional(),
+});
+
+// Unban user from organization
+export const unbanOrganizationUserSchema = z.object({
+	userId: z.string().uuid(),
+});
+
+// Reset MFA for a user
+export const resetMfaOrganizationUserSchema = z.object({
+	userId: z.string().uuid(),
+});
+
+// Create organization user
+export const createOrganizationUserSchema = z.object({
+	name: z.string().trim().min(1).max(200),
+	email: z.string().email(),
+	role: z.nativeEnum(MemberRole).default(MemberRole.member),
+});
+
+// Update organization user
+export const updateOrganizationUserSchema = z.object({
+	userId: z.string().uuid(),
+	name: z.string().trim().min(1).max(200).optional(),
+	email: z.string().email().optional(),
+	role: z.nativeEnum(MemberRole).optional(),
+});
+
 // Type exports
 export type ListOrganizationUsersInput = z.infer<
 	typeof listOrganizationUsersSchema
@@ -98,3 +130,18 @@ export type GetProfileImageUploadUrlInput = z.infer<
 >;
 export type SaveProfileImageInput = z.infer<typeof saveProfileImageSchema>;
 export type RemoveProfileImageInput = z.infer<typeof removeProfileImageSchema>;
+export type BanOrganizationUserInput = z.infer<
+	typeof banOrganizationUserSchema
+>;
+export type UnbanOrganizationUserInput = z.infer<
+	typeof unbanOrganizationUserSchema
+>;
+export type ResetMfaOrganizationUserInput = z.infer<
+	typeof resetMfaOrganizationUserSchema
+>;
+export type CreateOrganizationUserInput = z.infer<
+	typeof createOrganizationUserSchema
+>;
+export type UpdateOrganizationUserInput = z.infer<
+	typeof updateOrganizationUserSchema
+>;

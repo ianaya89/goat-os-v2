@@ -1,9 +1,8 @@
 "use client";
 
-import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { WalletIcon } from "lucide-react";
-import type * as React from "react";
+import * as React from "react";
 import {
 	Bar,
 	BarChart,
@@ -22,6 +21,11 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+	generatePeriodDates,
+	getPeriodKey,
+	getPeriodLabel,
+} from "@/lib/utils/chart-periods";
 import { trpc } from "@/trpc/client";
 
 type CashFlowChartProps = {
@@ -33,7 +37,7 @@ export function CashFlowChart({
 	dateRange,
 	period,
 }: CashFlowChartProps): React.JSX.Element {
-	const { data, isLoading } =
+	const { data, isLoading, isError, error } =
 		trpc.organization.reports.getCashFlowReport.useQuery({
 			dateRange,
 			period,
@@ -48,20 +52,25 @@ export function CashFlowChart({
 		}).format(amount / 100);
 	};
 
-	const chartData =
-		data?.map((item) => ({
-			date: item.period,
-			revenue: item.revenue,
-			expenses: item.expenses,
-			net: item.net,
-			label: format(
-				new Date(item.period),
-				period === "year" ? "yyyy" : "MMM yy",
-				{
-					locale: es,
-				},
-			),
-		})) ?? [];
+	const chartData = React.useMemo(() => {
+		const allDates = generatePeriodDates(dateRange, period);
+		const dataMap = new Map(
+			(data ?? []).map((item) => [
+				getPeriodKey(new Date(item.period), period),
+				item,
+			]),
+		);
+
+		return allDates.map((date) => {
+			const item = dataMap.get(getPeriodKey(date, period));
+			return {
+				revenue: item?.revenue ?? 0,
+				expenses: item?.expenses ?? 0,
+				net: item?.net ?? 0,
+				label: getPeriodLabel(date, period, es),
+			};
+		});
+	}, [data, dateRange, period]);
 
 	const totalNet = chartData.reduce((acc, item) => acc + item.net, 0);
 
@@ -74,6 +83,27 @@ export function CashFlowChart({
 				</CardHeader>
 				<CardContent>
 					<Skeleton className="h-[300px] w-full" />
+				</CardContent>
+			</Card>
+		);
+	}
+
+	if (isError) {
+		return (
+			<Card>
+				<CardHeader>
+					<CardTitle className="flex items-center gap-2">
+						<WalletIcon className="h-5 w-5 text-primary" />
+						Flujo de Caja
+					</CardTitle>
+				</CardHeader>
+				<CardContent>
+					<div className="flex h-[300px] flex-col items-center justify-center gap-2 text-muted-foreground">
+						<p>Error al cargar los datos de flujo de caja</p>
+						<p className="text-xs text-destructive max-w-md text-center break-all">
+							{error?.message}
+						</p>
+					</div>
 				</CardContent>
 			</Card>
 		);

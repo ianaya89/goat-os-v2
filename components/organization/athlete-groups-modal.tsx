@@ -13,6 +13,7 @@ import {
 import { useTranslations } from "next-intl";
 import * as React from "react";
 import { toast } from "sonner";
+import { ServiceSelector } from "@/components/organization/service-selector";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -99,6 +100,7 @@ export type AthleteGroupsModalProps = NiceModalHocProps & {
 		sport?: AthleteSport | null;
 		ageCategoryId?: string | null;
 		maxCapacity?: number | null;
+		serviceId?: string | null;
 		isActive: boolean;
 		members: GroupMember[];
 	};
@@ -217,6 +219,7 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 						sport: group.sport ?? null,
 						ageCategoryId: group.ageCategoryId ?? null,
 						maxCapacity: group.maxCapacity ?? null,
+						serviceId: group.serviceId ?? null,
 						isActive: group.isActive,
 					}
 				: {
@@ -225,6 +228,7 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 						sport: null,
 						ageCategoryId: null,
 						maxCapacity: null,
+						serviceId: null,
 						isActive: true,
 						memberIds: [],
 					},
@@ -456,6 +460,25 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 																		: null,
 																)
 															}
+														/>
+													</FormControl>
+													<FormMessage />
+												</Field>
+											</FormItem>
+										)}
+									/>
+
+									<FormField
+										control={form.control}
+										name="serviceId"
+										render={({ field }) => (
+											<FormItem asChild>
+												<Field>
+													<FormLabel>{t("modal.service")}</FormLabel>
+													<FormControl>
+														<ServiceSelector
+															value={field.value ?? null}
+															onValueChange={field.onChange}
 														/>
 													</FormControl>
 													<FormMessage />

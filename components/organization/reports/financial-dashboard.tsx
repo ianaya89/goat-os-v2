@@ -26,16 +26,16 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
 import { CashFlowChart } from "./cash-flow-chart";
 import { ExpenseTrendChart } from "./expense-trend-chart";
 import { ExpensesByCategoryChart } from "./expenses-by-category-chart";
 import { FinancialSummaryCards } from "./financial-summary-cards";
-import { OutstandingPaymentsTable } from "./outstanding-payments-table";
-import { RevenueByAthleteChart } from "./revenue-by-athlete-chart";
+import { PeriodGrowthChart } from "./period-growth-chart";
+import { ProfitMarginTrendChart } from "./profit-margin-trend-chart";
 import { RevenueByEventChart } from "./revenue-by-event-chart";
 import { RevenueByLocationChart } from "./revenue-by-location-chart";
-import { RevenueByPaymentMethodChart } from "./revenue-by-payment-method-chart";
+import { RevenueByServiceChart } from "./revenue-by-service-chart";
+import { RevenueCompositionChart } from "./revenue-composition-chart";
 import { RevenueCumulativeChart } from "./revenue-cumulative-chart";
 import { RevenueTrendChart } from "./revenue-trend-chart";
 
@@ -88,6 +88,14 @@ export function FinancialDashboard(): React.JSX.Element {
 		if (value !== "custom") {
 			setDateRange(getPresetDateRange(value));
 			setIsCustomRange(false);
+			// Auto-adjust period granularity based on the selected range
+			if (value === "thisMonth" || value === "lastMonth") {
+				setPeriod("day");
+			} else if (value === "last3Months" || value === "last6Months") {
+				setPeriod("week");
+			} else if (value === "thisYear" || value === "lastYear") {
+				setPeriod("month");
+			}
 		} else {
 			setIsCustomRange(true);
 		}
@@ -102,60 +110,62 @@ export function FinancialDashboard(): React.JSX.Element {
 	return (
 		<div className="space-y-6">
 			{/* Filters */}
-			<div className="flex flex-wrap items-center gap-4">
-				{/* Period Selector */}
-				<Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
-					<SelectTrigger className="w-[140px]">
-						<SelectValue placeholder="Periodo" />
-					</SelectTrigger>
-					<SelectContent>
-						<SelectItem value="day">Diario</SelectItem>
-						<SelectItem value="week">Semanal</SelectItem>
-						<SelectItem value="month">Mensual</SelectItem>
-						<SelectItem value="year">Anual</SelectItem>
-					</SelectContent>
-				</Select>
-
-				{/* Preset Range Selector */}
-				<Select value={presetRange} onValueChange={handlePresetChange}>
-					<SelectTrigger className="w-[180px]">
-						<SelectValue placeholder="Rango" />
-					</SelectTrigger>
-					<SelectContent>
-						<SelectItem value="thisMonth">Este mes</SelectItem>
-						<SelectItem value="lastMonth">Mes anterior</SelectItem>
-						<SelectItem value="last3Months">Ultimos 3 meses</SelectItem>
-						<SelectItem value="last6Months">Ultimos 6 meses</SelectItem>
-						<SelectItem value="thisYear">Este ano</SelectItem>
-						<SelectItem value="lastYear">Ano anterior</SelectItem>
-						<SelectItem value="custom">Personalizado</SelectItem>
-					</SelectContent>
-				</Select>
-
-				{/* Custom Date Range Picker */}
-				{isCustomRange && (
+			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+				<div className="flex flex-wrap gap-2">
+					<Button
+						variant={presetRange === "thisMonth" ? "default" : "outline"}
+						size="sm"
+						onClick={() => handlePresetChange("thisMonth")}
+					>
+						Este mes
+					</Button>
+					<Button
+						variant={presetRange === "lastMonth" ? "default" : "outline"}
+						size="sm"
+						onClick={() => handlePresetChange("lastMonth")}
+					>
+						Mes anterior
+					</Button>
+					<Button
+						variant={presetRange === "last3Months" ? "default" : "outline"}
+						size="sm"
+						onClick={() => handlePresetChange("last3Months")}
+					>
+						3 meses
+					</Button>
+					<Button
+						variant={presetRange === "last6Months" ? "default" : "outline"}
+						size="sm"
+						onClick={() => handlePresetChange("last6Months")}
+					>
+						6 meses
+					</Button>
+					<Button
+						variant={presetRange === "thisYear" ? "default" : "outline"}
+						size="sm"
+						onClick={() => handlePresetChange("thisYear")}
+					>
+						Este año
+					</Button>
+					<Button
+						variant={presetRange === "lastYear" ? "default" : "outline"}
+						size="sm"
+						onClick={() => handlePresetChange("lastYear")}
+					>
+						Año anterior
+					</Button>
 					<Popover>
 						<PopoverTrigger asChild>
 							<Button
-								variant="outline"
-								className={cn(
-									"w-[280px] justify-start text-left font-normal",
-									!dateRange && "text-muted-foreground",
-								)}
+								variant={presetRange === "custom" ? "default" : "outline"}
+								size="sm"
+								onClick={() => {
+									setPresetRange("custom");
+									setIsCustomRange(true);
+								}}
 							>
-								<CalendarIcon className="mr-2 h-4 w-4" />
-								{dateRange?.from ? (
-									dateRange.to ? (
-										<>
-											{format(dateRange.from, "dd MMM yyyy", { locale: es })} -{" "}
-											{format(dateRange.to, "dd MMM yyyy", { locale: es })}
-										</>
-									) : (
-										format(dateRange.from, "dd MMM yyyy", { locale: es })
-									)
-								) : (
-									<span>Seleccionar fechas</span>
-								)}
+								<CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
+								Personalizado
 							</Button>
 						</PopoverTrigger>
 						<PopoverContent className="w-auto p-0" align="start">
@@ -169,12 +179,24 @@ export function FinancialDashboard(): React.JSX.Element {
 							/>
 						</PopoverContent>
 					</Popover>
-				)}
+				</div>
 
-				{/* Display Current Range */}
-				<div className="text-sm text-muted-foreground">
-					{format(dateRange.from, "dd MMM yyyy", { locale: es })} -{" "}
-					{format(dateRange.to, "dd MMM yyyy", { locale: es })}
+				<div className="flex items-center gap-3">
+					<span className="text-sm text-muted-foreground">
+						{format(dateRange.from, "dd MMM yyyy", { locale: es })} -{" "}
+						{format(dateRange.to, "dd MMM yyyy", { locale: es })}
+					</span>
+					<Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
+						<SelectTrigger className="w-[140px]">
+							<SelectValue placeholder="Agrupar por" />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="day">Por dia</SelectItem>
+							<SelectItem value="week">Por semana</SelectItem>
+							<SelectItem value="month">Por mes</SelectItem>
+							<SelectItem value="year">Por año</SelectItem>
+						</SelectContent>
+					</Select>
 				</div>
 			</div>
 
@@ -187,29 +209,30 @@ export function FinancialDashboard(): React.JSX.Element {
 				<ExpenseTrendChart dateRange={dateRange} period={period} />
 			</div>
 
-			{/* Cash Flow Chart */}
-			<CashFlowChart dateRange={dateRange} period={period} />
+			{/* Cash Flow & Profit Margin Row */}
+			<div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+				<CashFlowChart dateRange={dateRange} period={period} />
+				<ProfitMarginTrendChart dateRange={dateRange} period={period} />
+			</div>
 
 			{/* Revenue Cumulative Chart */}
 			<RevenueCumulativeChart dateRange={dateRange} period={period} />
 
-			{/* Revenue by Event and Location */}
+			{/* Revenue Composition & Period Growth Row */}
+			<div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+				<RevenueCompositionChart dateRange={dateRange} period={period} />
+				<PeriodGrowthChart dateRange={dateRange} period={period} />
+			</div>
+
+			{/* Revenue by Event, Location, and Service */}
 			<div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
 				<RevenueByEventChart dateRange={dateRange} />
 				<RevenueByLocationChart dateRange={dateRange} />
 			</div>
+			<RevenueByServiceChart dateRange={dateRange} />
 
 			{/* Distribution Charts Row */}
-			<div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-				<RevenueByAthleteChart dateRange={dateRange} />
-				<ExpensesByCategoryChart dateRange={dateRange} />
-			</div>
-
-			{/* Payment Method Chart */}
-			<RevenueByPaymentMethodChart dateRange={dateRange} />
-
-			{/* Outstanding Payments */}
-			<OutstandingPaymentsTable />
+			<ExpensesByCategoryChart dateRange={dateRange} />
 		</div>
 	);
 }

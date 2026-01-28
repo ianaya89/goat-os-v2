@@ -1,0 +1,146 @@
+{
+	"search": "Buscar usuarios...",
+	"add": "Agregar Usuario",
+	"filters": {
+		"today": "Hoy",
+		"thisWeek": "Esta semana",
+		"thisMonth": "Este mes",
+		"older": "Anterior"
+	},
+	"roles": {
+		"owner": "Propietario",
+		"admin": "Administrador",
+		"staff": "Staff",
+		"member": "Miembro",
+		"coach": "Entrenador",
+		"athlete": "Atleta"
+	},
+	"table": {
+		"name": "Nombre",
+		"email": "Email",
+		"role": "Rol",
+		"profiles": "Perfiles",
+		"joined": "Ingreso",
+		"noUsers": "No se encontraron usuarios.",
+		"viewDetails": "Ver Detalles",
+		"resetPassword": "Restablecer Contraseña",
+		"resendVerification": "Reenviar Verificación",
+		"removeFromOrg": "Eliminar de la Organización",
+		"editUser": "Editar Usuario",
+		"banUser": "Suspender Usuario",
+		"unbanUser": "Quitar Suspensión"
+	},
+	"profiles": {
+		"coach": "Entrenador",
+		"athlete": "Atleta"
+	},
+	"statuses": {
+		"active": "Activo",
+		"inactive": "Inactivo"
+	},
+	"emailStatus": {
+		"verified": "Verificado",
+		"pending": "Pendiente de verificación"
+	},
+	"remove": {
+		"title": "¿Eliminar usuario?",
+		"message": "¿Estás seguro de que quieres eliminar este usuario de la organización? Sus perfiles de entrenador y atleta también serán eliminados.",
+		"confirm": "Eliminar"
+	},
+	"ban": {
+		"title": "Suspender Usuario",
+		"subtitle": "Suspender a este usuario de la plataforma",
+		"description": "Suspender a {name} de la plataforma. No podrá iniciar sesión mientras esté suspendido.",
+		"reason": "Motivo de la suspensión",
+		"reasonPlaceholder": "Ingrese el motivo de la suspensión...",
+		"reasonDescription": "Esto se mostrará al usuario cuando intente iniciar sesión.",
+		"expiresAt": "Expiración de la suspensión (opcional)",
+		"pickDate": "Seleccionar fecha",
+		"expiresDescription": "Dejar vacío para una suspensión permanente.",
+		"confirm": "Suspender Usuario",
+		"banning": "Suspendiendo...",
+		"cancel": "Cancelar"
+	},
+	"unban": {
+		"title": "¿Quitar suspensión?",
+		"message": "¿Estás seguro de que quieres quitar la suspensión de {name}? Podrá volver a iniciar sesión.",
+		"confirm": "Quitar Suspensión"
+	},
+	"banStatus": {
+		"banned": "Suspendido",
+		"reason": "Motivo",
+		"expires": "Expira",
+		"permanent": "Permanente",
+		"unbanUser": "Quitar Suspensión"
+	},
+	"resetPasswordConfirm": {
+		"title": "¿Restablecer contraseña?",
+		"message": "Se enviará un email de restablecimiento de contraseña a {email}. El usuario deberá crear una nueva contraseña.",
+		"confirm": "Enviar email"
+	},
+	"resendVerificationConfirm": {
+		"title": "¿Reenviar verificación?",
+		"message": "Se reenviará el email de verificación a {email}.",
+		"confirm": "Reenviar"
+	},
+	"modal": {
+		"title": "Detalles del Usuario",
+		"description": "Ver y gestionar los detalles del usuario",
+		"actions": "Acciones",
+		"resetPassword": "Restablecer Contraseña",
+		"resendVerification": "Reenviar Verificación",
+		"sending": "Enviando...",
+		"membership": "Membresía",
+		"currentRole": "Rol Actual",
+		"joined": "Ingreso",
+		"profilesTitle": "Perfiles",
+		"specialty": "Especialidad",
+		"sport": "Deporte",
+		"level": "Nivel",
+		"noProfiles": "Este usuario no tiene perfil de entrenador ni de atleta.",
+		"createCoachProfile": "Crear Perfil de Entrenador",
+		"createAthleteProfile": "Crear Perfil de Atleta",
+		"changeRole": "Cambiar Rol",
+		"roleAutoAssigned": "Los usuarios con perfiles de entrenador o atleta no pueden cambiar su rol manualmente. El rol se asigna automáticamente según su perfil.",
+		"newRole": "Nuevo Rol",
+		"selectRole": "Seleccionar rol",
+		"close": "Cerrar",
+		"cancel": "Cancelar",
+		"updateRole": "Actualizar Rol"
+	},
+	"formModal": {
+		"createTitle": "Crear Usuario",
+		"createSubtitle": "Agregar un nuevo miembro a la organización",
+		"editTitle": "Editar Usuario",
+		"editSubtitle": "Actualizar información y rol del usuario",
+		"name": "Nombre",
+		"namePlaceholder": "Ingrese nombre completo",
+		"email": "Email",
+		"emailPlaceholder": "Ingrese dirección de email",
+		"role": "Rol",
+		"selectRole": "Seleccionar rol",
+		"cancel": "Cancelar",
+		"create": "Crear",
+		"update": "Actualizar"
+	},
+	"success": {
+		"roleUpdated": "Rol de usuario actualizado correctamente.",
+		"passwordResetSent": "Email de restablecimiento de contraseña enviado correctamente.",
+		"verificationSent": "Email de verificación enviado correctamente.",
+		"removed": "Usuario eliminado de la organización.",
+		"banned": "Usuario suspendido correctamente.",
+		"unbanned": "Suspensión removida correctamente.",
+		"created": "Usuario creado correctamente.",
+		"updated": "Usuario actualizado correctamente."
+	},
+	"error": {
+		"roleUpdateFailed": "No se pudo actualizar el rol del usuario.",
+		"passwordResetFailed": "No se pudo enviar el email de restablecimiento.",
+		"verificationFailed": "No se pudo enviar el email de verificación.",
+		"removeFailed": "No se pudo eliminar el usuario.",
+		"banFailed": "No se pudo suspender al usuario.",
+		"unbanFailed": "No se pudo quitar la suspensión del usuario.",
+		"createFailed": "No se pudo crear el usuario.",
+		"updateFailed": "No se pudo actualizar el usuario."
+	}
+}

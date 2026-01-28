@@ -101,7 +101,7 @@ export function CashRegisterStatusCard({
 	if (showEmptyState) {
 		const wasClosed = !isHistorical && isClosed;
 		return (
-			<div className="flex flex-col items-center gap-4 rounded-lg border border-dashed p-8">
+			<div className="flex flex-col items-center gap-4 rounded-lg p-8">
 				<div className="rounded-full bg-muted p-3">
 					{wasClosed ? (
 						<LockIcon className="size-6 text-muted-foreground" />

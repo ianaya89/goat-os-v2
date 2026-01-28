@@ -29,6 +29,7 @@ import {
 import { Field } from "@/components/ui/field";
 import {
 	FormControl,
+	FormDescription,
 	FormField,
 	FormItem,
 	FormLabel,
@@ -226,6 +227,25 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 						notes: "",
 					},
 		});
+
+		// Fetch service price for selected session
+		const watchedSessionId = form.watch("sessionId");
+		const { data: servicePriceData } =
+			trpc.organization.trainingPayment.getServicePriceForSession.useQuery(
+				{ sessionId: watchedSessionId! },
+				{ enabled: !!watchedSessionId && !isEditing },
+			);
+
+		// Auto-fill amount from service price
+		React.useEffect(() => {
+			if (servicePriceData?.price && !isEditing) {
+				const currentAmount = form.getValues("amount");
+				if (currentAmount === 0) {
+					form.setValue("amount", servicePriceData.price);
+					form.setValue("paidAmount", servicePriceData.price);
+				}
+			}
+		}, [servicePriceData, isEditing, form]);
 
 		const onSubmit = form.handleSubmit((data) => {
 			if (isEditing) {
@@ -570,6 +590,18 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 												/>
 											</FormControl>
 											<FormMessage />
+											{servicePriceData && (
+												<FormDescription className="text-xs text-blue-600">
+													{t("form.servicePriceHint", {
+														name: servicePriceData.serviceName,
+														price: new Intl.NumberFormat("es-AR", {
+															style: "currency",
+															currency: servicePriceData.currency,
+															minimumFractionDigits: 0,
+														}).format(servicePriceData.price / 100),
+													})}
+												</FormDescription>
+											)}
 										</Field>
 									</FormItem>
 								)}

@@ -36,6 +36,7 @@
 		"users": "Usuarios",
 		"vendors": "Proveedores",
 		"sponsors": "Patrocinadores",
+		"services": "Servicios",
 		"chatbot": "Chatbot IA",
 		"settingsGeneral": "General",
 		"settingsMembers": "Miembros",
@@ -128,7 +129,7 @@
 			"categories": "Categorías de Gastos"
 		},
 		"cashRegister": {
-			"title": "Caja",
+			"title": "Caja del Día",
 			"description": "Gestiona la caja",
 			"history": "Historial de Caja",
 			"detail": "Detalle"
@@ -136,6 +137,10 @@
 		"products": {
 			"title": "Productos",
 			"description": "Gestiona los productos"
+		},
+		"services": {
+			"title": "Servicios",
+			"description": "Gestiona el catálogo de servicios"
 		},
 		"payroll": {
 			"title": "Liquidaciones",

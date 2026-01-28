@@ -1,9 +1,8 @@
 "use client";
 
-import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { TrendingUpIcon } from "lucide-react";
-import type * as React from "react";
+import * as React from "react";
 import {
 	Area,
 	AreaChart,
@@ -21,6 +20,11 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+	generatePeriodDates,
+	getPeriodKey,
+	getPeriodLabel,
+} from "@/lib/utils/chart-periods";
 import { trpc } from "@/trpc/client";
 
 type RevenueTrendChartProps = {
@@ -47,18 +51,23 @@ export function RevenueTrendChart({
 		}).format(amount / 100);
 	};
 
-	const chartData =
-		data?.map((item) => ({
-			date: item.period,
-			revenue: item.total,
-			label: format(
-				new Date(item.period),
-				period === "year" ? "yyyy" : "MMM yy",
-				{
-					locale: es,
-				},
-			),
-		})) ?? [];
+	const chartData = React.useMemo(() => {
+		const allDates = generatePeriodDates(dateRange, period);
+		const dataMap = new Map(
+			(data ?? []).map((item) => [
+				getPeriodKey(new Date(item.period), period),
+				item,
+			]),
+		);
+
+		return allDates.map((date) => {
+			const item = dataMap.get(getPeriodKey(date, period));
+			return {
+				revenue: item?.total ?? 0,
+				label: getPeriodLabel(date, period, es),
+			};
+		});
+	}, [data, dateRange, period]);
 
 	const totalRevenue = chartData.reduce((acc, item) => acc + item.revenue, 0);
 

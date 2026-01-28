@@ -53,7 +53,8 @@
 			"noSessionsFound": "No sessions found",
 			"searchAthlete": "Search athlete...",
 			"typeToSearchAthlete": "Type to search athletes",
-			"noAthletesFound": "No athletes found"
+			"noAthletesFound": "No athletes found",
+			"servicePriceHint": "Suggested price from service \"{name}\": {price}"
 		},
 		"methods": {
 			"cash": "Cash",
@@ -521,6 +522,109 @@
 			"deleted": "Receipt deleted",
 			"deleteFailed": "Error deleting receipt",
 			"loadFailed": "Error loading receipt"
+		}
+	},
+	"services": {
+		"title": "Services",
+		"description": "Manage your organization's service catalog.",
+		"add": "Add service",
+		"edit": "Edit service",
+		"delete": "Delete service",
+		"search": "Search services...",
+		"table": {
+			"name": "Name",
+			"description": "Description",
+			"currentPrice": "Current Price",
+			"status": "Status",
+			"actions": "Actions",
+			"noServices": "No services found.",
+			"openMenu": "Open menu",
+			"sortOrder": "Order"
+		},
+		"form": {
+			"name": "Name",
+			"namePlaceholder": "e.g., Individual Soccer Training",
+			"description": "Description",
+			"descriptionPlaceholder": "Service description...",
+			"currentPrice": "Price (cents)",
+			"currency": "Currency",
+			"selectCurrency": "Select currency",
+			"status": "Status",
+			"selectStatus": "Select status",
+			"sortOrder": "Display order"
+		},
+		"status": {
+			"active": "Active",
+			"inactive": "Inactive",
+			"archived": "Archived"
+		},
+		"modal": {
+			"createTitle": "Add Service",
+			"createSubtitle": "Fill in the details to create a new service.",
+			"editTitle": "Edit Service",
+			"editSubtitle": "Update the service information.",
+			"cancel": "Cancel",
+			"create": "Create Service",
+			"update": "Update Service"
+		},
+		"priceUpdate": {
+			"title": "Update Price",
+			"subtitle": "Change the service price. A price history entry will be created.",
+			"currentPrice": "Current price",
+			"newPrice": "New price (cents)",
+			"effectiveFrom": "Effective from",
+			"cancel": "Cancel",
+			"update": "Update Price"
+		},
+		"priceHistory": {
+			"title": "Price History",
+			"subtitle": "Service price change history.",
+			"price": "Price",
+			"effectiveFrom": "From",
+			"effectiveUntil": "Until",
+			"createdBy": "Created by",
+			"current": "Current",
+			"noHistory": "No price history."
+		},
+		"selector": {
+			"label": "Service",
+			"placeholder": "Select service",
+			"search": "Search service...",
+			"noResults": "No services",
+			"none": "No service",
+			"price": "Price:"
+		},
+		"deleteConfirm": {
+			"title": "Delete service?",
+			"message": "Are you sure you want to delete this service? If it has associated sessions or groups, it will be archived.",
+			"confirm": "Delete"
+		},
+		"bulk": {
+			"selected": "{count} selected",
+			"deleteTitle": "Delete selected services?",
+			"deleteMessage": "You are about to delete {count, plural, one {# service} other {# services}}. Those with references will be archived.",
+			"deleted": "{count, plural, one {# service processed} other {# services processed}}.",
+			"deleteFailed": "Failed to delete services."
+		},
+		"success": {
+			"created": "Service created successfully.",
+			"updated": "Service updated successfully.",
+			"deleted": "Service deleted successfully.",
+			"priceUpdated": "Price updated successfully."
+		},
+		"error": {
+			"notFound": "Service not found.",
+			"createFailed": "Failed to create service.",
+			"updateFailed": "Failed to update service.",
+			"deleteFailed": "Failed to delete service.",
+			"priceUpdateFailed": "Failed to update price."
+		},
+		"reports": {
+			"revenueByService": "Revenue by Service",
+			"totalFromServices": "Total: {amount} from {count, plural, one {# service} other {# services}}",
+			"noData": "No service data for this period",
+			"payments": "{count, plural, one {# payment} other {# payments}}",
+			"suggestedPrice": "Suggested service price: {price}"
 		}
 	},
 	"products": {

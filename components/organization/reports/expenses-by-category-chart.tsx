@@ -3,12 +3,13 @@
 import { TagsIcon } from "lucide-react";
 import type * as React from "react";
 import {
-	Cell,
-	Legend,
-	Pie,
-	PieChart,
+	Bar,
+	BarChart,
+	CartesianGrid,
 	ResponsiveContainer,
 	Tooltip,
+	XAxis,
+	YAxis,
 } from "recharts";
 import {
 	Card,
@@ -23,17 +24,6 @@ import { trpc } from "@/trpc/client";
 type ExpensesByCategoryChartProps = {
 	dateRange: { from: Date; to: Date };
 };
-
-const COLORS = [
-	"#0088FE",
-	"#00C49F",
-	"#FFBB28",
-	"#FF8042",
-	"#8884D8",
-	"#82CA9D",
-	"#FFC658",
-	"#8DD1E1",
-];
 
 export function ExpensesByCategoryChart({
 	dateRange,
@@ -53,11 +43,14 @@ export function ExpensesByCategoryChart({
 	};
 
 	const chartData =
-		data?.map((item, index) => ({
-			name: item.categoryName,
+		data?.map((item) => ({
+			name:
+				item.categoryName.length > 18
+					? `${item.categoryName.slice(0, 18)}...`
+					: item.categoryName,
+			fullName: item.categoryName,
 			value: item.total,
 			count: item.count,
-			fill: COLORS[index % COLORS.length],
 		})) ?? [];
 
 	const totalExpenses = chartData.reduce((acc, item) => acc + item.value, 0);
@@ -95,37 +88,42 @@ export function ExpensesByCategoryChart({
 				) : (
 					<div className="h-[300px] w-full">
 						<ResponsiveContainer width="100%" height="100%">
-							<PieChart>
-								<Pie
-									data={chartData}
-									cx="50%"
-									cy="50%"
-									labelLine={false}
-									outerRadius={100}
-									fill="#8884d8"
-									dataKey="value"
-									label={({ name, percent }) =>
-										`${name} (${(percent * 100).toFixed(0)}%)`
+							<BarChart data={chartData} layout="vertical">
+								<CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+								<XAxis
+									type="number"
+									tick={{ fontSize: 12 }}
+									tickLine={false}
+									axisLine={false}
+									tickFormatter={(value) =>
+										new Intl.NumberFormat("es-AR", {
+											notation: "compact",
+											compactDisplay: "short",
+										}).format(value / 100)
 									}
-								>
-									{chartData.map((entry, index) => (
-										<Cell key={`cell-${index}`} fill={entry.fill} />
-									))}
-								</Pie>
+								/>
+								<YAxis
+									type="category"
+									dataKey="name"
+									tick={{ fontSize: 11 }}
+									tickLine={false}
+									axisLine={false}
+									width={110}
+								/>
 								<Tooltip
 									content={({ active, payload }) => {
 										if (active && payload && payload.length > 0 && payload[0]) {
 											const item = payload[0].payload as {
-												name: string;
+												fullName: string;
 												value: number;
 												count: number;
 											};
 											return (
 												<div className="rounded-lg border bg-background p-3 shadow-sm">
 													<p className="mb-1 text-sm font-medium">
-														{item.name}
+														{item.fullName}
 													</p>
-													<p className="text-red-600 text-sm">
+													<p className="text-red-600 font-medium">
 														{formatAmount(item.value)}
 													</p>
 													<p className="text-muted-foreground text-xs">
@@ -137,8 +135,8 @@ export function ExpensesByCategoryChart({
 										return null;
 									}}
 								/>
-								<Legend />
-							</PieChart>
+								<Bar dataKey="value" fill="#ef4444" radius={[0, 4, 4, 0]} />
+							</BarChart>
 						</ResponsiveContainer>
 					</div>
 				)}

@@ -43,6 +43,7 @@ export const createAthleteGroupSchema = z.object({
 	sport: z.nativeEnum(AthleteSport).optional().nullable(),
 	ageCategoryId: z.string().uuid().optional().nullable(),
 	maxCapacity: z.number().int().positive().optional().nullable(),
+	serviceId: z.string().uuid().optional().nullable(),
 	isActive: z.boolean().default(true),
 	// Initial member IDs (optional)
 	memberIds: z.array(z.string().uuid()).optional(),
@@ -66,6 +67,7 @@ export const updateAthleteGroupSchema = z.object({
 	sport: z.nativeEnum(AthleteSport).optional().nullable(),
 	ageCategoryId: z.string().uuid().optional().nullable(),
 	maxCapacity: z.number().int().positive().optional().nullable(),
+	serviceId: z.string().uuid().optional().nullable(),
 	isActive: z.boolean().optional(),
 });
 
