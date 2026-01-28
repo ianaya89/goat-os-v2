@@ -8,6 +8,8 @@ import {
 	CalendarDaysIcon,
 	CalendarPlusIcon,
 	CreditCardIcon,
+	LayoutDashboardIcon,
+	MoreHorizontalIcon,
 	UserPlusIcon,
 	UsersIcon,
 } from "lucide-react";
@@ -15,6 +17,12 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type * as React from "react";
 import { Button } from "@/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useSession } from "@/hooks/use-session";
 
 type WelcomeSectionProps = {
@@ -80,27 +88,30 @@ export function WelcomeSection({
 	return (
 		<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 			<div className="space-y-1">
-				<h1 className="font-bold text-xl sm:text-2xl">
+				<h1 className="flex items-center gap-2 font-bold text-xl sm:text-2xl">
+					<LayoutDashboardIcon className="size-5 text-muted-foreground" />
 					{t("greeting", { name: firstName })}
 				</h1>
 				<p className="text-muted-foreground text-sm capitalize">{today}</p>
 			</div>
-			<div className="flex flex-wrap gap-2">
-				{actions.map((action) => (
-					<Button
-						key={action.href}
-						variant="outline"
-						size="sm"
-						asChild
-						className="gap-1.5"
-					>
-						<Link href={action.href}>
-							<action.icon className="size-3.5" />
-							{action.label}
-						</Link>
+			<DropdownMenu>
+				<DropdownMenuTrigger asChild>
+					<Button variant="default" size="sm" className="gap-1.5">
+						<MoreHorizontalIcon className="size-4" />
+						{t("quickActions")}
 					</Button>
-				))}
-			</div>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent align="end" className="w-48">
+					{actions.map((action) => (
+						<DropdownMenuItem key={action.href} asChild>
+							<Link href={action.href} className="flex items-center gap-2">
+								<action.icon className="size-4" />
+								{action.label}
+							</Link>
+						</DropdownMenuItem>
+					))}
+				</DropdownMenuContent>
+			</DropdownMenu>
 		</div>
 	);
 }

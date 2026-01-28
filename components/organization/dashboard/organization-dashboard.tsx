@@ -1,36 +1,13 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useOrganizationUserProfile } from "@/app/(saas)/dashboard/(sidebar)/organization/providers";
 import { AthleteDashboard } from "@/components/organization/dashboard/athlete-dashboard";
 import { DailySummaryCard } from "@/components/organization/dashboard/daily-summary-card";
-import { IncomeExpensesChart } from "@/components/organization/dashboard/income-expenses-chart";
-import { LowStockCard } from "@/components/organization/dashboard/low-stock-card";
 import { PendingPaymentsCard } from "@/components/organization/dashboard/pending-payments-card";
 import { RetentionCard } from "@/components/organization/dashboard/retention-card";
 import { SessionOccupancyCard } from "@/components/organization/dashboard/session-occupancy-card";
-import { UpcomingEventsCard } from "@/components/organization/dashboard/upcoming-events-card";
-import { WaitlistCard } from "@/components/organization/dashboard/waitlist-card";
-import { WeeklyAttendanceChart } from "@/components/organization/dashboard/weekly-attendance-chart";
 import { WeeklySummaryCard } from "@/components/organization/dashboard/weekly-summary-card";
 import { WelcomeSection } from "@/components/organization/dashboard/welcome-section";
-import { CenteredSpinner } from "@/components/ui/custom/centered-spinner";
-
-// Dynamically import cash register to avoid SSR issues
-const CashRegisterStatus = dynamic(
-	() =>
-		import("@/components/organization/cash-register-status").then(
-			(mod) => mod.CashRegisterStatusCard,
-		),
-	{
-		ssr: false,
-		loading: () => (
-			<div className="flex h-64 items-center justify-center">
-				<CenteredSpinner />
-			</div>
-		),
-	},
-);
 
 export function OrganizationDashboard() {
 	// Get user profile from context (set by server-side layout)
@@ -50,37 +27,17 @@ export function OrganizationDashboard() {
 			{/* Row 0: Welcome Section */}
 			<WelcomeSection variant="admin" />
 
-			{/* Row 1: Daily Summary + Cash Register */}
-			<div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-3">
-				<div className="lg:col-span-2">
-					<DailySummaryCard />
-				</div>
-				<div className="h-full">
-					<CashRegisterStatus />
-				</div>
-			</div>
+			{/* Row 1: Daily Summary */}
+			<DailySummaryCard />
 
-			{/* Row 2: Charts - Attendance + Income/Expenses */}
-			<div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-2">
-				<WeeklyAttendanceChart />
-				<IncomeExpensesChart />
-			</div>
-
-			{/* Row 3: Actionable Metrics - Pending Payments + Session Occupancy + Retention */}
+			{/* Row 2: Actionable Metrics - Pending Payments + Session Occupancy + Retention */}
 			<div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 lg:grid-cols-3">
 				<PendingPaymentsCard />
 				<SessionOccupancyCard />
 				<RetentionCard />
 			</div>
 
-			{/* Row 4: Secondary Operational - Upcoming Events + Waitlist + Low Stock */}
-			<div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 lg:grid-cols-3">
-				<UpcomingEventsCard />
-				<WaitlistCard />
-				<LowStockCard />
-			</div>
-
-			{/* Row 5: Weekly Summary */}
+			{/* Row 3: Weekly Summary */}
 			<WeeklySummaryCard />
 		</div>
 	);

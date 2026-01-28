@@ -3,6 +3,7 @@
 import { format } from "date-fns";
 import { enUS, es } from "date-fns/locale";
 import {
+	ArrowRightIcon,
 	BanknoteIcon,
 	CalendarIcon,
 	CheckCircleIcon,
@@ -86,9 +87,10 @@ export function WeeklySummaryCard(): React.JSX.Element {
 							{format(data.period.to, "d MMM yyyy", { locale: dateLocale })}
 						</CardDescription>
 					</div>
-					<Button variant="outline" size="sm" asChild>
+					<Button variant="ghost" size="sm" asChild className="gap-1.5">
 						<Link href="/dashboard/organization/reports">
 							{t("viewReports")}
+							<ArrowRightIcon className="size-3.5" />
 						</Link>
 					</Button>
 				</div>
@@ -221,54 +223,26 @@ export function WeeklySummaryCard(): React.JSX.Element {
 							{t("attendanceBreakdown")}
 						</h4>
 						<div className="grid grid-cols-4 gap-2">
-							<div
-								className={cn(
-									"rounded-lg p-2 text-center",
-									"bg-green-50 dark:bg-green-950",
-								)}
-							>
-								<p className="font-bold text-green-600">
-									{data.attendance.present}
-								</p>
+							<div className="rounded-lg bg-muted/50 p-2 text-center">
+								<p className="font-bold">{data.attendance.present}</p>
 								<p className="text-muted-foreground text-xs">
 									{t("presentLabel")}
 								</p>
 							</div>
-							<div
-								className={cn(
-									"rounded-lg p-2 text-center",
-									"bg-yellow-50 dark:bg-yellow-950",
-								)}
-							>
-								<p className="font-bold text-yellow-600">
-									{data.attendance.late}
-								</p>
+							<div className="rounded-lg bg-muted/50 p-2 text-center">
+								<p className="font-bold">{data.attendance.late}</p>
 								<p className="text-muted-foreground text-xs">
 									{t("lateLabel")}
 								</p>
 							</div>
-							<div
-								className={cn(
-									"rounded-lg p-2 text-center",
-									"bg-red-50 dark:bg-red-950",
-								)}
-							>
-								<p className="font-bold text-red-600">
-									{data.attendance.absent}
-								</p>
+							<div className="rounded-lg bg-muted/50 p-2 text-center">
+								<p className="font-bold">{data.attendance.absent}</p>
 								<p className="text-muted-foreground text-xs">
 									{t("absentLabel")}
 								</p>
 							</div>
-							<div
-								className={cn(
-									"rounded-lg p-2 text-center",
-									"bg-blue-50 dark:bg-blue-950",
-								)}
-							>
-								<p className="font-bold text-blue-600">
-									{data.attendance.excused}
-								</p>
+							<div className="rounded-lg bg-muted/50 p-2 text-center">
+								<p className="font-bold">{data.attendance.excused}</p>
 								<p className="text-muted-foreground text-xs">
 									{t("excusedLabel")}
 								</p>

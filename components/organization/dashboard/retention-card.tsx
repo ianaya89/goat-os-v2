@@ -1,6 +1,7 @@
 "use client";
 
 import {
+	ArrowRightIcon,
 	TrendingUpIcon,
 	UserCheckIcon,
 	UserMinusIcon,
@@ -56,31 +57,29 @@ export function RetentionCard(): React.JSX.Element {
 	const getRetentionColor = (rate: number) => {
 		if (rate >= 80) return "text-green-600";
 		if (rate >= 60) return "text-amber-600";
-		return "text-red-600";
+		return "text-muted-foreground";
 	};
 
-	const getRetentionBg = (rate: number) => {
-		if (rate >= 80) return "bg-green-50 dark:bg-green-950";
-		if (rate >= 60) return "bg-amber-50 dark:bg-amber-950";
-		return "bg-red-50 dark:bg-red-950";
+	const getRetentionBg = (_rate: number) => {
+		return "bg-muted/50";
 	};
 
 	return (
-		<Card>
+		<Card className="flex flex-col">
 			<CardHeader>
 				<div className="flex items-center justify-between">
 					<div>
 						<CardTitle className="flex items-center gap-2">
-							<TrendingUpIcon className="size-5 text-cyan-500" />
+							<TrendingUpIcon className="size-5 text-muted-foreground" />
 							{t("title")}
 						</CardTitle>
 						<CardDescription>{t("description")}</CardDescription>
 					</div>
 				</div>
 			</CardHeader>
-			<CardContent>
+			<CardContent className="flex flex-1 flex-col">
 				{data.total > 0 ? (
-					<div className="space-y-4">
+					<div className="flex flex-1 flex-col space-y-4">
 						{/* Retention Rate */}
 						<div
 							className={cn(
@@ -133,7 +132,7 @@ export function RetentionCard(): React.JSX.Element {
 								{t("last30Days")}
 							</h4>
 							<div className="flex gap-2">
-								<div className="flex-1 flex items-center gap-2 rounded-lg bg-green-50 p-2 dark:bg-green-950">
+								<div className="flex-1 flex items-center gap-2 rounded-lg bg-muted/50 p-2">
 									<UserPlusIcon className="size-4 text-green-600" />
 									<div>
 										<p className="text-sm font-medium text-green-600">
@@ -142,7 +141,7 @@ export function RetentionCard(): React.JSX.Element {
 										<p className="text-xs text-muted-foreground">{t("new")}</p>
 									</div>
 								</div>
-								<div className="flex-1 flex items-center gap-2 rounded-lg bg-red-50 p-2 dark:bg-red-950">
+								<div className="flex-1 flex items-center gap-2 rounded-lg bg-muted/50 p-2">
 									<UserMinusIcon className="size-4 text-red-600" />
 									<div>
 										<p className="text-sm font-medium text-red-600">
@@ -156,9 +155,15 @@ export function RetentionCard(): React.JSX.Element {
 							</div>
 						</div>
 
-						<Button variant="outline" size="sm" asChild className="w-full">
+						<Button
+							variant="ghost"
+							size="sm"
+							asChild
+							className="mt-auto w-full gap-1.5"
+						>
 							<Link href="/dashboard/organization/athletes">
 								{t("viewAthletes")}
+								<ArrowRightIcon className="size-3.5" />
 							</Link>
 						</Button>
 					</div>

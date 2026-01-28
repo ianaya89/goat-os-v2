@@ -35,7 +35,7 @@
 		}
 	},
 	"daily": {
-		"title": "Actividad de Hoy",
+		"title": "Actividad",
 		"noData": "No hay datos disponibles",
 		"sessions": "Sesiones",
 		"completed": "completadas",
@@ -43,12 +43,18 @@
 		"present": "presentes",
 		"income": "Ingresos",
 		"payments": "pagos",
+		"today": "Hoy",
+		"tomorrow": "Mañana",
 		"todaySessions": "Sesiones de hoy",
+		"tomorrowSessions": "Sesiones de mañana",
 		"statusCompleted": "Completada",
 		"statusConfirmed": "Confirmada",
 		"statusPending": "Pendiente",
 		"viewAll": "Ver todas ({count} sesiones)",
-		"noSessions": "No hay sesiones programadas para hoy",
+		"week": "Semana",
+		"noSessions": "No hay sesiones programadas",
+		"noSessionsTomorrow": "No hay sesiones programadas para mañana",
+		"noSessionsWeek": "No hay sesiones programadas esta semana",
 		"viewCalendar": "Ver calendario de sesiones"
 	},
 	"weekly": {
@@ -117,6 +123,7 @@
 	"welcomeSection": {
 		"greeting": "Hola, {name}",
 		"todayIs": "Hoy es {date}",
+		"quickActions": "Acciones rápidas",
 		"addAthlete": "Agregar atleta",
 		"createSession": "Crear sesion",
 		"recordPayment": "Registrar pago",

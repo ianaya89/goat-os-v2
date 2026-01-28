@@ -2,7 +2,7 @@
 
 import { format } from "date-fns";
 import { enUS, es } from "date-fns/locale";
-import { CalendarCheckIcon, UsersIcon } from "lucide-react";
+import { ArrowRightIcon, CalendarCheckIcon, UsersIcon } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type * as React from "react";
@@ -55,22 +55,20 @@ export function SessionOccupancyCard(): React.JSX.Element {
 	const getOccupancyColor = (rate: number) => {
 		if (rate >= 80) return "text-green-600";
 		if (rate >= 50) return "text-amber-600";
-		return "text-red-600";
+		return "text-muted-foreground";
 	};
 
-	const getOccupancyBg = (rate: number) => {
-		if (rate >= 80) return "bg-green-100 dark:bg-green-900";
-		if (rate >= 50) return "bg-amber-100 dark:bg-amber-900";
-		return "bg-red-100 dark:bg-red-900";
+	const getOccupancyBg = (_rate: number) => {
+		return "bg-muted/50";
 	};
 
 	return (
-		<Card>
+		<Card className="flex flex-col">
 			<CardHeader>
 				<div className="flex items-center justify-between">
 					<div>
 						<CardTitle className="flex items-center gap-2">
-							<CalendarCheckIcon className="size-5 text-indigo-500" />
+							<CalendarCheckIcon className="size-5 text-muted-foreground" />
 							{t("title")}
 						</CardTitle>
 						<CardDescription>{t("thisWeek")}</CardDescription>
@@ -95,9 +93,9 @@ export function SessionOccupancyCard(): React.JSX.Element {
 					</div>
 				</div>
 			</CardHeader>
-			<CardContent>
+			<CardContent className="flex flex-1 flex-col">
 				{data.totalSessions > 0 ? (
-					<div className="space-y-4">
+					<div className="flex flex-1 flex-col space-y-4">
 						{/* Summary Stats */}
 						<div className="grid grid-cols-3 gap-2 text-center">
 							<div className="rounded-lg bg-muted/50 p-2">
@@ -166,9 +164,15 @@ export function SessionOccupancyCard(): React.JSX.Element {
 							</div>
 						)}
 
-						<Button variant="outline" size="sm" asChild className="w-full">
+						<Button
+							variant="ghost"
+							size="sm"
+							asChild
+							className="mt-auto w-full gap-1.5"
+						>
 							<Link href="/dashboard/organization/training-sessions">
 								{t("viewAllSessions")}
+								<ArrowRightIcon className="size-3.5" />
 							</Link>
 						</Button>
 					</div>

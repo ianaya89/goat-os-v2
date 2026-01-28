@@ -1,10 +1,12 @@
 import { and, count, eq, gte, lte, sql, sum } from "drizzle-orm";
 import {
+	athleteGroupMemberTable,
 	athleteGroupTable,
 	athleteTable,
 	attendanceTable,
 	coachTable,
 	db,
+	locationTable,
 	trainingSessionTable,
 } from "@/lib/db";
 import {
@@ -361,9 +363,33 @@ export const organizationDashboardRouter = createTRPCRouter({
 		const dayStart = getStartOfDay(today);
 		const dayEnd = getEndOfDay(today);
 
+		const tomorrow = new Date(today);
+		tomorrow.setDate(tomorrow.getDate() + 1);
+		const tomorrowStart = getStartOfDay(tomorrow);
+		const tomorrowEnd = getEndOfDay(tomorrow);
+
+		const weekStart = getStartOfWeek(today);
+		const weekEnd = getEndOfWeek(today);
+
+		const sessionWith = {
+			location: { columns: { id: true, name: true } },
+			athleteGroup: { columns: { id: true, name: true } },
+			coaches: {
+				with: {
+					coach: {
+						with: {
+							user: { columns: { id: true, name: true } },
+						},
+					},
+				},
+			},
+		} as const;
+
 		// Get all data in parallel
 		const [
 			todaySessions,
+			tomorrowSessions,
+			weekSessions,
 			todayAttendance,
 			todayPayments,
 			totalSessionsToday,
@@ -377,18 +403,31 @@ export const organizationDashboardRouter = createTRPCRouter({
 					lte(trainingSessionTable.startTime, dayEnd),
 					eq(trainingSessionTable.isRecurring, false),
 				),
-				with: {
-					location: { columns: { id: true, name: true } },
-					coaches: {
-						with: {
-							coach: {
-								with: {
-									user: { columns: { id: true, name: true } },
-								},
-							},
-						},
-					},
-				},
+				with: sessionWith,
+				orderBy: trainingSessionTable.startTime,
+			}),
+
+			// Tomorrow's sessions with details
+			db.query.trainingSessionTable.findMany({
+				where: and(
+					eq(trainingSessionTable.organizationId, organizationId),
+					gte(trainingSessionTable.startTime, tomorrowStart),
+					lte(trainingSessionTable.startTime, tomorrowEnd),
+					eq(trainingSessionTable.isRecurring, false),
+				),
+				with: sessionWith,
+				orderBy: trainingSessionTable.startTime,
+			}),
+
+			// Week's sessions with details
+			db.query.trainingSessionTable.findMany({
+				where: and(
+					eq(trainingSessionTable.organizationId, organizationId),
+					gte(trainingSessionTable.startTime, weekStart),
+					lte(trainingSessionTable.startTime, weekEnd),
+					eq(trainingSessionTable.isRecurring, false),
+				),
+				with: sessionWith,
 				orderBy: trainingSessionTable.startTime,
 			}),
 
@@ -501,6 +540,21 @@ export const organizationDashboardRouter = createTRPCRouter({
 				completed: completedSessionsToday,
 				pending: totalSessionsToday - completedSessionsToday,
 				list: todaySessions,
+			},
+			tomorrow: {
+				date: tomorrow,
+				sessions: {
+					total: tomorrowSessions.length,
+					list: tomorrowSessions,
+				},
+			},
+			week: {
+				from: weekStart,
+				to: weekEnd,
+				sessions: {
+					total: weekSessions.length,
+					list: weekSessions,
+				},
 			},
 			attendance: {
 				...attendanceStats,
