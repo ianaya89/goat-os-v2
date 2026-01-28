@@ -109,7 +109,10 @@
 		"movementButton": "Movimiento",
 		"closeButton": "Cerrar Caja",
 		"openedBy": "Abierta por {name}",
-		"closedBy": "Cerrada por {name}"
+		"closedBy": "Cerrada por {name}",
+		"closedTitle": "La caja del día ya fue cerrada",
+		"closedDescription": "Podrás abrir una nueva caja mañana",
+		"closedViewLink": "Ver caja del día"
 	},
 	"welcomeSection": {
 		"greeting": "Hola, {name}",

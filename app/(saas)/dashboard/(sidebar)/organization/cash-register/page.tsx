@@ -1,3 +1,4 @@
+import { LandmarkIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -42,17 +43,13 @@ export default async function CashRegisterPage(): Promise<React.JSX.Element> {
 			</PageHeader>
 			<PageBody>
 				<div className="p-4 sm:px-6 sm:pt-6 sm:pb-24">
-					<div className="mx-auto w-full space-y-6">
-						<div>
+					<div className="mx-auto w-full space-y-4">
+						<div className="flex items-center gap-2">
+							<LandmarkIcon className="size-5 text-muted-foreground" />
 							<PageTitle>{t("cashRegister.title")}</PageTitle>
-							<p className="text-muted-foreground text-sm">
-								{t("cashRegister.description")}
-							</p>
 						</div>
-						<div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-							<CashRegisterStatusCard />
-							<CashRegisterMovementsWrapper />
-						</div>
+						<CashRegisterStatusCard />
+						<CashRegisterMovementsWrapper />
 					</div>
 				</div>
 			</PageBody>

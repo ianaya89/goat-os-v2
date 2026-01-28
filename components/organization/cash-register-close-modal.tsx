@@ -1,32 +1,31 @@
 "use client";
 
 import NiceModal, { type NiceModalHocProps } from "@ebay/nice-modal-react";
-import * as React from "react";
+import { LockIcon } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { z } from "zod/v4";
 import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
+	ProfileEditSection,
+	ProfileEditSheet,
+} from "@/components/athlete/profile-edit-sheet";
 import { Field } from "@/components/ui/field";
 import {
-	Form,
 	FormControl,
 	FormField,
 	FormItem,
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 import { useZodForm } from "@/hooks/use-zod-form";
-import { closeCashRegisterSchema } from "@/schemas/organization-cash-register-schemas";
+import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
+
+const closeNotesSchema = z.object({
+	notes: z.string().trim().max(1000).optional(),
+});
 
 export type CashRegisterCloseModalProps = NiceModalHocProps & {
 	cashRegister: {
@@ -39,130 +38,125 @@ export const CashRegisterCloseModal =
 	NiceModal.create<CashRegisterCloseModalProps>(({ cashRegister }) => {
 		const modal = useEnhancedModal();
 		const utils = trpc.useUtils();
+		const t = useTranslations("finance.cashRegister");
+		const locale = useLocale();
+
+		const { data: dailySummary } =
+			trpc.organization.cashRegister.getDailySummary.useQuery({});
+
+		const netFlow = dailySummary?.netCashFlow ?? 0;
+		const calculatedClosingBalance = cashRegister.openingBalance + netFlow;
 
 		const closeMutation = trpc.organization.cashRegister.close.useMutation({
 			onSuccess: () => {
-				toast.success("Caja cerrada exitosamente");
+				toast.success(t("success.closed"));
 				utils.organization.cashRegister.getCurrent.invalidate();
 				utils.organization.cashRegister.getDailySummary.invalidate();
 				utils.organization.cashRegister.getHistory.invalidate();
 				modal.handleClose();
 			},
 			onError: (error) => {
-				toast.error(error.message || "Error al cerrar la caja");
+				toast.error(error.message || t("error.closeFailed"));
 			},
 		});
 
 		const form = useZodForm({
-			schema: closeCashRegisterSchema,
+			schema: closeNotesSchema,
 			defaultValues: {
-				id: cashRegister.id,
-				closingBalance: 0,
 				notes: "",
 			},
 		});
 
 		const onSubmit = form.handleSubmit((data) => {
-			closeMutation.mutate(data);
+			closeMutation.mutate({
+				id: cashRegister.id,
+				closingBalance: calculatedClosingBalance,
+				notes: data.notes,
+			});
 		});
 
 		const formatAmount = (amount: number) => {
-			return new Intl.NumberFormat("es-AR", {
+			return new Intl.NumberFormat(locale === "es" ? "es-AR" : "en-US", {
 				style: "currency",
 				currency: "ARS",
 			}).format(amount / 100);
 		};
 
 		return (
-			<Dialog
+			<ProfileEditSheet
 				open={modal.visible}
-				onOpenChange={(open) => !open && modal.handleClose()}
+				onClose={modal.handleClose}
+				title={t("modal.closeTitle")}
+				subtitle={t("modal.closeDescription")}
+				icon={<LockIcon className="size-5" />}
+				accentColor="slate"
+				form={form}
+				onSubmit={onSubmit}
+				isPending={closeMutation.isPending}
+				submitLabel={t("modal.close")}
+				cancelLabel={t("modal.cancel")}
+				onAnimationEndCapture={modal.handleAnimationEndCapture}
 			>
-				<DialogContent
-					className="sm:max-w-md"
-					onAnimationEndCapture={modal.handleAnimationEndCapture}
-				>
-					<DialogHeader>
-						<DialogTitle>Cerrar Caja</DialogTitle>
-						<DialogDescription>
-							Ingresa el saldo final para cerrar la caja del dia.
-						</DialogDescription>
-					</DialogHeader>
-
-					<div className="rounded-lg bg-muted/50 p-3 mb-4">
-						<p className="text-muted-foreground text-sm">Saldo Inicial:</p>
-						<p className="font-semibold">
-							{formatAmount(cashRegister.openingBalance)}
-						</p>
-					</div>
-
-					<Form {...form}>
-						<form onSubmit={onSubmit} className="space-y-4">
-							<FormField
-								control={form.control}
-								name="closingBalance"
-								render={({ field }) => (
-									<FormItem asChild>
-										<Field>
-											<FormLabel>Saldo Final (centavos)</FormLabel>
-											<FormControl>
-												<Input
-													type="number"
-													placeholder="0"
-													{...field}
-													onChange={(e) =>
-														field.onChange(Number(e.target.value))
-													}
-												/>
-											</FormControl>
-											<FormMessage />
-										</Field>
-									</FormItem>
-								)}
-							/>
-
-							<FormField
-								control={form.control}
-								name="notes"
-								render={({ field }) => (
-									<FormItem asChild>
-										<Field>
-											<FormLabel>Notas (opcional)</FormLabel>
-											<FormControl>
-												<Textarea
-													placeholder="Observaciones al cerrar la caja..."
-													className="resize-none"
-													rows={2}
-													{...field}
-													value={field.value ?? ""}
-												/>
-											</FormControl>
-											<FormMessage />
-										</Field>
-									</FormItem>
-								)}
-							/>
-
-							<DialogFooter>
-								<Button
-									type="button"
-									variant="outline"
-									onClick={modal.handleClose}
-									disabled={closeMutation.isPending}
+				<div className="space-y-6">
+					<ProfileEditSection>
+						<div className="grid grid-cols-3 gap-3">
+							<div className="rounded-lg bg-muted/50 p-3">
+								<p className="text-muted-foreground text-xs mb-1">
+									{t("modal.closeOpeningBalance")}
+								</p>
+								<p className="font-semibold text-sm">
+									{formatAmount(cashRegister.openingBalance)}
+								</p>
+							</div>
+							<div className="rounded-lg bg-muted/50 p-3">
+								<p className="text-muted-foreground text-xs mb-1">
+									{t("modal.closeNetFlow")}
+								</p>
+								<p
+									className={cn(
+										"font-semibold text-sm",
+										netFlow >= 0 ? "text-green-600" : "text-red-600",
+									)}
 								>
-									Cancelar
-								</Button>
-								<Button
-									type="submit"
-									disabled={closeMutation.isPending}
-									loading={closeMutation.isPending}
-								>
-									Cerrar Caja
-								</Button>
-							</DialogFooter>
-						</form>
-					</Form>
-				</DialogContent>
-			</Dialog>
+									{netFlow >= 0 ? "+" : ""}
+									{formatAmount(netFlow)}
+								</p>
+							</div>
+							<div className="rounded-lg bg-muted/50 p-3">
+								<p className="text-muted-foreground text-xs mb-1">
+									{t("modal.closeClosingBalance")}
+								</p>
+								<p className="font-semibold text-sm">
+									{formatAmount(calculatedClosingBalance)}
+								</p>
+							</div>
+						</div>
+					</ProfileEditSection>
+
+					<ProfileEditSection>
+						<FormField
+							control={form.control}
+							name="notes"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel>{t("modal.notes")}</FormLabel>
+										<FormControl>
+											<Textarea
+												placeholder={t("modal.notesClosePlaceholder")}
+												className="resize-none"
+												rows={3}
+												{...field}
+												value={field.value ?? ""}
+											/>
+										</FormControl>
+										<FormMessage />
+									</Field>
+								</FormItem>
+							)}
+						/>
+					</ProfileEditSection>
+				</div>
+			</ProfileEditSheet>
 		);
 	});

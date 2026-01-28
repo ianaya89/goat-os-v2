@@ -48,7 +48,7 @@ export function PaymentsBulkActions<T extends { id: string }>({
 					await bulkDelete.mutateAsync({ ids });
 					toast.success(t("bulk.deleted", { count: selectedRows.length }));
 					table.resetRowSelection();
-					utils.organization.trainingPayment.list.invalidate();
+					utils.organization.trainingPayment.invalidate();
 				} catch (_err) {
 					toast.error(t("bulk.deleteFailed"));
 				}
@@ -73,7 +73,7 @@ export function PaymentsBulkActions<T extends { id: string }>({
 				}),
 			);
 			table.resetRowSelection();
-			utils.organization.trainingPayment.list.invalidate();
+			utils.organization.trainingPayment.invalidate();
 		} catch (_err) {
 			toast.error(t("bulk.updateFailed"));
 		}

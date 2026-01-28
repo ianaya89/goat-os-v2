@@ -2,6 +2,14 @@
 	"payments": {
 		"title": "Payments",
 		"description": "Manage your organization's payments.",
+		"summary": {
+			"today": "Collected today",
+			"thisWeek": "This week",
+			"thisMonth": "This month",
+			"pending": "Pending collection",
+			"totalCollected": "Total collected",
+			"paymentsCount": "{count, plural, one {# payment} other {# payments}}"
+		},
 		"add": "Record payment",
 		"edit": "Edit payment",
 		"view": "View payment",
@@ -171,6 +179,15 @@
 	"expenses": {
 		"title": "Expenses",
 		"description": "Manage your organization's expenses.",
+		"summary": {
+			"today": "Spent today",
+			"thisWeek": "This week",
+			"thisMonth": "This month",
+			"totalSpent": "Total spent",
+			"topCategory": "Top category",
+			"expensesCount": "{count, plural, one {# expense} other {# expenses}}",
+			"noCategory": "No category"
+		},
 		"add": "Record expense",
 		"edit": "Edit expense",
 		"view": "View expense",
@@ -187,26 +204,106 @@
 			"amount": "Amount",
 			"date": "Date",
 			"vendor": "Vendor",
+			"method": "Method",
 			"status": "Status",
-			"actions": "Actions"
+			"actions": "Actions",
+			"noExpenses": "No expenses found.",
+			"openMenu": "Open menu",
+			"noCategory": "No category",
+			"receiptNumber": "Receipt #{number}"
 		},
 		"form": {
 			"description": "Description",
+			"descriptionPlaceholder": "e.g., Equipment purchase",
 			"category": "Category",
-			"amount": "Amount",
+			"selectCategory": "Select category",
+			"noCategory": "No category",
+			"amountCents": "Amount (cents)",
 			"date": "Date",
+			"method": "Payment method",
+			"selectMethod": "Select method",
+			"notSpecified": "Not specified",
 			"vendor": "Vendor",
-			"receipt": "Receipt",
-			"notes": "Notes"
+			"vendorPlaceholder": "Vendor name",
+			"receiptNumber": "Receipt Number",
+			"receiptPlaceholder": "Invoice/Receipt #",
+			"receiptUpload": "Receipt / Invoice",
+			"notes": "Notes",
+			"notesPlaceholder": "Additional notes..."
+		},
+		"modal": {
+			"createTitle": "Record Expense",
+			"createSubtitle": "Fill in the details to record a new expense.",
+			"editTitle": "Edit Expense",
+			"editSubtitle": "Update the expense information below.",
+			"cancel": "Cancel",
+			"create": "Record Expense",
+			"update": "Update Expense",
+			"createdSuccess": "Expense recorded successfully",
+			"attachReceipt": "Would you like to attach a receipt or invoice?",
+			"done": "Done"
+		},
+		"methods": {
+			"cash": "Cash",
+			"bankTransfer": "Bank Transfer",
+			"mercadoPago": "Mercado Pago",
+			"card": "Card",
+			"other": "Other"
 		},
 		"categories": {
+			"field_rental": "Field Rental",
 			"equipment": "Equipment",
-			"facilities": "Facilities",
+			"sports_materials": "Sports Materials",
+			"transport": "Transport",
 			"salaries": "Salaries",
-			"travel": "Travel",
-			"marketing": "Marketing",
+			"commissions": "Commissions",
 			"utilities": "Utilities",
+			"marketing": "Marketing",
+			"insurance": "Insurance",
+			"maintenance": "Maintenance",
+			"facilities": "Facilities",
+			"medical": "Medical",
+			"technology": "Technology",
 			"other": "Other"
+		},
+		"categoryTypes": {
+			"operational": "Operational",
+			"personnel": "Personnel",
+			"other": "Other"
+		},
+		"deleteConfirm": {
+			"title": "Delete expense?",
+			"message": "Are you sure you want to delete this expense? This action cannot be undone.",
+			"confirm": "Delete"
+		},
+		"bulk": {
+			"selected": "{count} selected",
+			"deleteTitle": "Delete selected expenses?",
+			"deleteMessage": "You are about to delete {count, plural, one {# expense} other {# expenses}}. This action cannot be undone.",
+			"deleted": "{count, plural, one {# expense} other {# expenses}} deleted.",
+			"deleteFailed": "Failed to delete expenses."
+		},
+		"receipt": {
+			"view": "View",
+			"manage": "Receipt",
+			"dialogTitle": "Expense Receipt",
+			"dialogDescription": "Manage the receipt for this expense.",
+			"pdfTitle": "Receipt PDF",
+			"imageAlt": "Expense receipt",
+			"uploading": "Uploading...",
+			"upload": "Upload receipt",
+			"invalidType": "File type not allowed. Use JPG, PNG or PDF.",
+			"fileTooLarge": "File is too large. Maximum 10MB.",
+			"uploadError": "Error uploading file",
+			"uploadFailed": "Error uploading receipt",
+			"uploadSuccess": "Receipt uploaded successfully",
+			"deleted": "Receipt deleted",
+			"deleteFailed": "Error deleting receipt",
+			"loadFailed": "Error loading receipt",
+			"hasReceipt": "Receipt attached",
+			"noReceipt": "No receipt attached",
+			"close": "Close",
+			"deleteConfirm": "Are you sure you want to delete this receipt?"
 		},
 		"success": {
 			"created": "Expense recorded successfully.",
@@ -236,7 +333,9 @@
 			"amount": "Amount",
 			"balance": "Balance",
 			"user": "User",
-			"actions": "Actions"
+			"actions": "Actions",
+			"time": "Time",
+			"recordedBy": "Recorded by"
 		},
 		"form": {
 			"type": "Movement type",
@@ -246,7 +345,96 @@
 		},
 		"types": {
 			"income": "Income",
-			"expense": "Expense"
+			"expense": "Expense",
+			"adjustment": "Adjustment"
+		},
+		"referenceTypes": {
+			"payment": "Payment",
+			"event_payment": "Event Payment",
+			"expense": "Expense",
+			"manual": "Manual",
+			"product_sale": "Product Sale"
+		},
+		"referenceTypeBadge": {
+			"payment": "Payment",
+			"event_payment": "Payment",
+			"expense": "Expense",
+			"manual": "Manual",
+			"product_sale": "Sale"
+		},
+		"search": "Search movement...",
+		"filterType": "Type",
+		"filterOrigin": "Origin",
+		"movements": {
+			"title": "Daily Movements",
+			"description": "All movements recorded today",
+			"empty": "No movements recorded.",
+			"noRegister": "Open the register to record movements",
+			"noRegisterEmpty": "No open register for today"
+		},
+		"history": {
+			"title": "Cash Register History",
+			"empty": "No cash register history.",
+			"date": "Date",
+			"status": "Status",
+			"openingBalance": "Opening Balance",
+			"closingBalance": "Closing Balance",
+			"difference": "Difference",
+			"openedBy": "Opened by",
+			"closedBy": "Closed by",
+			"statusOpen": "Open",
+			"statusClosed": "Closed",
+			"search": "Search history...",
+			"filterStatus": "Status",
+			"today": "Today",
+			"todayRegister": "Today's register",
+			"viewMovements": "View movements",
+			"actions": "",
+			"detail": {
+				"title": "Register Detail",
+				"subtitle": "Summary and movements for the day",
+				"openingBalance": "Opening Balance",
+				"closingBalance": "Closing Balance",
+				"netFlow": "Net Flow",
+				"totalMovements": "Movements",
+				"opened": "Opened",
+				"closed": "Closed",
+				"notClosed": "Not closed"
+			},
+			"historicalIndicator": "Past register"
+		},
+		"modal": {
+			"openTitle": "Open Cash Register",
+			"openDescription": "Enter the opening balance for today's cash register.",
+			"closeTitle": "Close Cash Register",
+			"closeDescription": "Review today's summary and confirm the register closing.",
+			"closeOpeningBalance": "Opening Balance",
+			"closeNetFlow": "Net Flow",
+			"closeClosingBalance": "Closing Balance",
+			"movementTitle": "Add Movement",
+			"movementDescription": "Record a manual cash register movement. Optionally select products to automatically deduct stock.",
+			"openingBalanceCents": "Opening Balance (cents)",
+			"closingBalanceCents": "Closing Balance (cents)",
+			"currentOpeningBalance": "Opening Balance:",
+			"notes": "Notes (optional)",
+			"notesOpenPlaceholder": "Notes for opening the register...",
+			"notesClosePlaceholder": "Notes for closing the register...",
+			"cancel": "Cancel",
+			"open": "Open Register",
+			"close": "Close Register",
+			"add": "Add",
+			"movementType": "Movement Type",
+			"selectType": "Select type",
+			"products": "Products (optional)",
+			"clearProducts": "Clear",
+			"searchProduct": "Search product...",
+			"selectedProducts": "Selected products:",
+			"total": "Total:",
+			"amountCents": "Amount (cents)",
+			"amountAutoCalculated": "Amount is auto-calculated from products",
+			"descriptionField": "Description",
+			"descriptionPlaceholder": "Movement description",
+			"salePrefix": "Sale:"
 		},
 		"success": {
 			"created": "Movement recorded successfully.",
@@ -257,6 +445,82 @@
 			"createFailed": "Failed to record movement.",
 			"openFailed": "Failed to open register.",
 			"closeFailed": "Failed to close register."
+		}
+	},
+	"eventPayments": {
+		"title": "Event Payments",
+		"add": "Record Payment",
+		"noPayments": "No payments recorded.",
+		"table": {
+			"registration": "Registration",
+			"amount": "Amount",
+			"method": "Method",
+			"status": "Status",
+			"date": "Date",
+			"openMenu": "Open menu"
+		},
+		"refund": {
+			"success": "Refund processed",
+			"error": "Error processing refund",
+			"confirmTitle": "Process refund?",
+			"confirmMessage": "The total amount of {amount} will be refunded",
+			"confirmLabel": "Refund",
+			"action": "Process Refund"
+		},
+		"modal": {
+			"title": "Record Payment",
+			"descriptionWithName": "Record payment for {name}",
+			"descriptionGeneric": "Select a registration and record the payment",
+			"registration": "Registration",
+			"selectRegistration": "Select registration",
+			"owes": "Owes:",
+			"summaryTotal": "Total:",
+			"summaryPaid": "Paid:",
+			"summaryPending": "Pending:",
+			"amount": "Amount",
+			"amountDescription": "Amount in {currency}",
+			"paymentMethod": "Payment Method",
+			"selectMethod": "Select method",
+			"paymentDate": "Payment Date",
+			"selectDate": "Select date",
+			"receiptNumber": "Receipt Number (optional)",
+			"receiptPlaceholder": "e.g.: 0001-00012345",
+			"notes": "Notes (optional)",
+			"notesPlaceholder": "Additional notes about the payment...",
+			"cancel": "Cancel",
+			"submit": "Record Payment"
+		},
+		"methods": {
+			"cash": "Cash",
+			"bankTransfer": "Transfer",
+			"mercadoPago": "MercadoPago",
+			"stripe": "Stripe",
+			"card": "Card",
+			"other": "Other"
+		},
+		"success": {
+			"created": "Payment recorded successfully"
+		},
+		"error": {
+			"createFailed": "Error recording payment"
+		},
+		"receipt": {
+			"view": "View",
+			"manage": "Receipt",
+			"dialogTitle": "Payment Receipt",
+			"dialogDescription": "Manage the receipt for this payment.",
+			"pdfTitle": "Receipt PDF",
+			"imageAlt": "Payment receipt",
+			"uploading": "Uploading...",
+			"upload": "Upload receipt",
+			"invalidType": "File type not allowed. Use JPG, PNG or PDF.",
+			"fileTooLarge": "File is too large. Maximum 10MB.",
+			"uploadError": "Error uploading file",
+			"uploadFailed": "Error uploading receipt",
+			"uploadSuccess": "Receipt uploaded successfully",
+			"deleted": "Receipt deleted",
+			"deleteFailed": "Error deleting receipt",
+			"loadFailed": "Error loading receipt"
 		}
 	},
 	"products": {

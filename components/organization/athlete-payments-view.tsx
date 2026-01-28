@@ -23,6 +23,14 @@ import {
 import { formatCurrency } from "@/lib/billing/utils";
 import { trpc } from "@/trpc/client";
 
+const methodKeys: Record<string, string> = {
+	cash: "cash",
+	bank_transfer: "bankTransfer",
+	mercado_pago: "mercadoPago",
+	card: "card",
+	other: "other",
+};
+
 export function AthletePaymentsView() {
 	const t = useTranslations("finance.payments");
 	const { data, isLoading } =
@@ -182,8 +190,12 @@ export function AthletePaymentsView() {
 												{t(`status.${payment.status}`)}
 											</Badge>
 										</TableCell>
-										<TableCell className="capitalize">
-											{payment.paymentMethod?.replace("_", " ") || "-"}
+										<TableCell>
+											{payment.paymentMethod
+												? t(
+														`methods.${methodKeys[payment.paymentMethod] ?? payment.paymentMethod}`,
+													)
+												: "-"}
 										</TableCell>
 									</TableRow>
 								))}

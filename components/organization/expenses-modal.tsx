@@ -2,12 +2,19 @@
 
 import NiceModal, { type NiceModalHocProps } from "@ebay/nice-modal-react";
 import { format } from "date-fns";
+import { FileTextIcon, ReceiptIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { toast } from "sonner";
+import {
+	ProfileEditGrid,
+	ProfileEditSection,
+	ProfileEditSheet,
+} from "@/components/athlete/profile-edit-sheet";
+import { ExpenseReceiptModal } from "@/components/organization/receipt-modal";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import {
-	Form,
 	FormControl,
 	FormField,
 	FormItem,
@@ -15,7 +22,6 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
 	Select,
 	SelectContent,
@@ -23,18 +29,12 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import {
-	Sheet,
-	SheetContent,
-	SheetDescription,
-	SheetFooter,
-	SheetHeader,
-	SheetTitle,
-} from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 import { useZodForm } from "@/hooks/use-zod-form";
 import {
+	ExpenseCategories,
+	type ExpenseCategory,
 	type TrainingPaymentMethod,
 	TrainingPaymentMethods,
 } from "@/lib/db/schema/enums";
@@ -44,18 +44,19 @@ import {
 } from "@/schemas/organization-expense-schemas";
 import { trpc } from "@/trpc/client";
 
-const methodLabels: Record<string, string> = {
-	cash: "Efectivo",
-	bank_transfer: "Transferencia Bancaria",
-	mercado_pago: "Mercado Pago",
-	card: "Tarjeta",
-	other: "Otro",
+const methodKeys: Record<string, string> = {
+	cash: "cash",
+	bank_transfer: "bankTransfer",
+	mercado_pago: "mercadoPago",
+	card: "card",
+	other: "other",
 };
 
 export type ExpensesModalProps = NiceModalHocProps & {
 	expense?: {
 		id: string;
 		categoryId?: string | null;
+		category?: string | null;
 		amount: number;
 		currency: string;
 		description: string;
@@ -64,41 +65,42 @@ export type ExpensesModalProps = NiceModalHocProps & {
 		receiptNumber?: string | null;
 		vendor?: string | null;
 		notes?: string | null;
+		receiptImageKey?: string | null;
 	};
 };
 
 export const ExpensesModal = NiceModal.create<ExpensesModalProps>(
 	({ expense }) => {
+		const t = useTranslations("finance.expenses");
 		const modal = useEnhancedModal();
 		const utils = trpc.useUtils();
 		const isEditing = !!expense;
 
-		// Fetch categories for dropdown
-		const { data: categoriesData } =
-			trpc.organization.expense.listCategories.useQuery({
-				includeInactive: false,
-			});
-		const categories = categoriesData ?? [];
-
 		const createExpenseMutation = trpc.organization.expense.create.useMutation({
-			onSuccess: () => {
-				toast.success("Gasto creado exitosamente");
-				utils.organization.expense.list.invalidate();
+			onSuccess: (data) => {
+				toast.success(t("success.created"));
+				utils.organization.expense.invalidate();
 				modal.handleClose();
+				if (data?.id) {
+					NiceModal.show(ExpenseReceiptModal, {
+						expenseId: data.id,
+						hasReceipt: false,
+					});
+				}
 			},
 			onError: (error) => {
-				toast.error(error.message || "Error al crear el gasto");
+				toast.error(error.message || t("error.createFailed"));
 			},
 		});
 
 		const updateExpenseMutation = trpc.organization.expense.update.useMutation({
 			onSuccess: () => {
-				toast.success("Gasto actualizado exitosamente");
-				utils.organization.expense.list.invalidate();
+				toast.success(t("success.updated"));
+				utils.organization.expense.invalidate();
 				modal.handleClose();
 			},
 			onError: (error) => {
-				toast.error(error.message || "Error al actualizar el gasto");
+				toast.error(error.message || t("error.updateFailed"));
 			},
 		});
 
@@ -107,7 +109,7 @@ export const ExpensesModal = NiceModal.create<ExpensesModalProps>(
 			defaultValues: isEditing
 				? {
 						id: expense.id,
-						categoryId: expense.categoryId ?? undefined,
+						category: (expense.category as ExpenseCategory) ?? undefined,
 						amount: expense.amount,
 						description: expense.description,
 						expenseDate: expense.expenseDate,
@@ -118,7 +120,7 @@ export const ExpensesModal = NiceModal.create<ExpensesModalProps>(
 						notes: expense.notes ?? "",
 					}
 				: {
-						categoryId: undefined,
+						category: undefined,
 						amount: 0,
 						currency: "ARS",
 						description: "",
@@ -146,276 +148,269 @@ export const ExpensesModal = NiceModal.create<ExpensesModalProps>(
 			createExpenseMutation.isPending || updateExpenseMutation.isPending;
 
 		return (
-			<Sheet
+			<ProfileEditSheet
 				open={modal.visible}
-				onOpenChange={(open) => !open && modal.handleClose()}
+				onClose={modal.handleClose}
+				title={isEditing ? t("modal.editTitle") : t("modal.createTitle")}
+				subtitle={
+					isEditing ? t("modal.editSubtitle") : t("modal.createSubtitle")
+				}
+				icon={<ReceiptIcon className="size-5" />}
+				accentColor="slate"
+				form={form}
+				onSubmit={onSubmit}
+				isPending={isPending}
+				submitLabel={isEditing ? t("modal.update") : t("modal.create")}
+				cancelLabel={t("modal.cancel")}
+				maxWidth="lg"
+				onAnimationEndCapture={modal.handleAnimationEndCapture}
 			>
-				<SheetContent
-					className="sm:max-w-lg"
-					onAnimationEndCapture={modal.handleAnimationEndCapture}
-				>
-					<SheetHeader>
-						<SheetTitle>
-							{isEditing ? "Editar Gasto" : "Crear Gasto"}
-						</SheetTitle>
-						<SheetDescription className="sr-only">
-							{isEditing
-								? "Actualiza la informacion del gasto."
-								: "Completa los detalles para crear un nuevo gasto."}
-						</SheetDescription>
-					</SheetHeader>
+				<div className="space-y-6">
+					<ProfileEditSection>
+						<FormField
+							control={form.control}
+							name="description"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel>{t("form.description")}</FormLabel>
+										<FormControl>
+											<Input
+												placeholder={t("form.descriptionPlaceholder")}
+												autoComplete="off"
+												{...field}
+												value={field.value ?? ""}
+											/>
+										</FormControl>
+										<FormMessage />
+									</Field>
+								</FormItem>
+							)}
+						/>
 
-					<Form {...form}>
-						<form
-							onSubmit={onSubmit}
-							className="flex flex-1 flex-col overflow-hidden"
-						>
-							<ScrollArea className="flex-1">
-								<div className="space-y-4 px-6 py-4">
-									<FormField
-										control={form.control}
-										name="description"
-										render={({ field }) => (
-											<FormItem asChild>
-												<Field>
-													<FormLabel>Descripcion</FormLabel>
-													<FormControl>
-														<Input
-															placeholder="ej. Compra de equipamiento"
-															autoComplete="off"
-															{...field}
-															value={field.value ?? ""}
-														/>
-													</FormControl>
-													<FormMessage />
-												</Field>
-											</FormItem>
-										)}
-									/>
+						<FormField
+							control={form.control}
+							name="category"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel>{t("form.category")}</FormLabel>
+										<Select
+											onValueChange={(value) =>
+												field.onChange(value === "none" ? undefined : value)
+											}
+											value={field.value ?? "none"}
+										>
+											<FormControl>
+												<SelectTrigger className="w-full">
+													<SelectValue placeholder={t("form.selectCategory")} />
+												</SelectTrigger>
+											</FormControl>
+											<SelectContent>
+												<SelectItem value="none">
+													{t("form.noCategory")}
+												</SelectItem>
+												{ExpenseCategories.map((cat) => (
+													<SelectItem key={cat} value={cat}>
+														{t(`categories.${cat}`)}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+										<FormMessage />
+									</Field>
+								</FormItem>
+							)}
+						/>
+					</ProfileEditSection>
 
-									<FormField
-										control={form.control}
-										name="categoryId"
-										render={({ field }) => (
-											<FormItem asChild>
-												<Field>
-													<FormLabel>Categoria</FormLabel>
-													<Select
-														onValueChange={(value) =>
-															field.onChange(
-																value === "none" ? undefined : value,
-															)
-														}
-														value={field.value ?? "none"}
-													>
-														<FormControl>
-															<SelectTrigger className="w-full">
-																<SelectValue placeholder="Seleccionar categoria" />
-															</SelectTrigger>
-														</FormControl>
-														<SelectContent>
-															<SelectItem value="none">
-																Sin categoria
-															</SelectItem>
-															{categories.map((category) => (
-																<SelectItem
-																	key={category.id}
-																	value={category.id}
-																>
-																	{category.name}
-																</SelectItem>
-															))}
-														</SelectContent>
-													</Select>
-													<FormMessage />
-												</Field>
-											</FormItem>
-										)}
-									/>
+					<ProfileEditSection>
+						<ProfileEditGrid cols={2}>
+							<FormField
+								control={form.control}
+								name="amount"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("form.amountCents")}</FormLabel>
+											<FormControl>
+												<Input
+													type="number"
+													placeholder="10000"
+													{...field}
+													onChange={(e) =>
+														field.onChange(Number(e.target.value))
+													}
+												/>
+											</FormControl>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
 
-									<div className="grid grid-cols-2 gap-4">
-										<FormField
-											control={form.control}
-											name="amount"
-											render={({ field }) => (
-												<FormItem asChild>
-													<Field>
-														<FormLabel>Monto (centavos)</FormLabel>
-														<FormControl>
-															<Input
-																type="number"
-																placeholder="10000"
-																{...field}
-																onChange={(e) =>
-																	field.onChange(Number(e.target.value))
-																}
-															/>
-														</FormControl>
-														<FormMessage />
-													</Field>
-												</FormItem>
-											)}
-										/>
-
-										<FormField
-											control={form.control}
-											name="expenseDate"
-											render={({ field }) => (
-												<FormItem asChild>
-													<Field>
-														<FormLabel>Fecha</FormLabel>
-														<FormControl>
-															<Input
-																type="date"
-																{...field}
-																value={
-																	field.value
-																		? format(
-																				new Date(
-																					field.value as string | number | Date,
-																				),
-																				"yyyy-MM-dd",
-																			)
-																		: ""
-																}
-																onChange={(e) =>
-																	field.onChange(
-																		e.target.value
-																			? new Date(e.target.value)
-																			: undefined,
-																	)
-																}
-															/>
-														</FormControl>
-														<FormMessage />
-													</Field>
-												</FormItem>
-											)}
-										/>
-									</div>
-
-									<div className="grid grid-cols-2 gap-4">
-										<FormField
-											control={form.control}
-											name="paymentMethod"
-											render={({ field }) => (
-												<FormItem asChild>
-													<Field>
-														<FormLabel>Metodo de Pago</FormLabel>
-														<Select
-															onValueChange={(value) =>
-																field.onChange(
-																	value === "none" ? undefined : value,
+							<FormField
+								control={form.control}
+								name="expenseDate"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("form.date")}</FormLabel>
+											<FormControl>
+												<Input
+													type="date"
+													{...field}
+													value={
+														field.value
+															? format(
+																	new Date(
+																		field.value as string | number | Date,
+																	),
+																	"yyyy-MM-dd",
 																)
-															}
-															value={field.value ?? "none"}
-														>
-															<FormControl>
-																<SelectTrigger className="w-full">
-																	<SelectValue placeholder="Seleccionar metodo" />
-																</SelectTrigger>
-															</FormControl>
-															<SelectContent>
-																<SelectItem value="none">
-																	No especificado
-																</SelectItem>
-																{TrainingPaymentMethods.map((method) => (
-																	<SelectItem key={method} value={method}>
-																		{methodLabels[method] ?? method}
-																	</SelectItem>
-																))}
-															</SelectContent>
-														</Select>
-														<FormMessage />
-													</Field>
-												</FormItem>
-											)}
-										/>
+															: ""
+													}
+													onChange={(e) =>
+														field.onChange(
+															e.target.value
+																? new Date(e.target.value)
+																: undefined,
+														)
+													}
+												/>
+											</FormControl>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
+						</ProfileEditGrid>
 
-										<FormField
-											control={form.control}
-											name="vendor"
-											render={({ field }) => (
-												<FormItem asChild>
-													<Field>
-														<FormLabel>Proveedor</FormLabel>
-														<FormControl>
-															<Input
-																placeholder="Nombre del proveedor"
-																autoComplete="off"
-																{...field}
-																value={field.value ?? ""}
-															/>
-														</FormControl>
-														<FormMessage />
-													</Field>
-												</FormItem>
-											)}
-										/>
-									</div>
+						<ProfileEditGrid cols={2}>
+							<FormField
+								control={form.control}
+								name="paymentMethod"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("form.method")}</FormLabel>
+											<Select
+												onValueChange={(value) =>
+													field.onChange(value === "none" ? undefined : value)
+												}
+												value={field.value ?? "none"}
+											>
+												<FormControl>
+													<SelectTrigger className="w-full">
+														<SelectValue placeholder={t("form.selectMethod")} />
+													</SelectTrigger>
+												</FormControl>
+												<SelectContent>
+													<SelectItem value="none">
+														{t("form.notSpecified")}
+													</SelectItem>
+													{TrainingPaymentMethods.map((method) => (
+														<SelectItem key={method} value={method}>
+															{t(`methods.${methodKeys[method] ?? method}`)}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
 
-									<FormField
-										control={form.control}
-										name="receiptNumber"
-										render={({ field }) => (
-											<FormItem asChild>
-												<Field>
-													<FormLabel>Numero de Comprobante</FormLabel>
-													<FormControl>
-														<Input
-															placeholder="Factura/Recibo #"
-															autoComplete="off"
-															{...field}
-															value={field.value ?? ""}
-														/>
-													</FormControl>
-													<FormMessage />
-												</Field>
-											</FormItem>
-										)}
-									/>
+							<FormField
+								control={form.control}
+								name="vendor"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("form.vendor")}</FormLabel>
+											<FormControl>
+												<Input
+													placeholder={t("form.vendorPlaceholder")}
+													autoComplete="off"
+													{...field}
+													value={field.value ?? ""}
+												/>
+											</FormControl>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
+						</ProfileEditGrid>
 
-									<FormField
-										control={form.control}
-										name="notes"
-										render={({ field }) => (
-											<FormItem asChild>
-												<Field>
-													<FormLabel>Notas</FormLabel>
-													<FormControl>
-														<Textarea
-															placeholder="Notas adicionales..."
-															className="resize-none"
-															rows={3}
-															{...field}
-															value={field.value ?? ""}
-														/>
-													</FormControl>
-													<FormMessage />
-												</Field>
-											</FormItem>
-										)}
-									/>
-								</div>
-							</ScrollArea>
+						<FormField
+							control={form.control}
+							name="receiptNumber"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel>{t("form.receiptNumber")}</FormLabel>
+										<FormControl>
+											<Input
+												placeholder={t("form.receiptPlaceholder")}
+												autoComplete="off"
+												{...field}
+												value={field.value ?? ""}
+											/>
+										</FormControl>
+										<FormMessage />
+									</Field>
+								</FormItem>
+							)}
+						/>
+					</ProfileEditSection>
 
-							<SheetFooter className="flex-row justify-end gap-2 border-t">
+					<ProfileEditSection>
+						<FormField
+							control={form.control}
+							name="notes"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel>{t("form.notes")}</FormLabel>
+										<FormControl>
+											<Textarea
+												placeholder={t("form.notesPlaceholder")}
+												className="min-h-[80px] resize-none"
+												{...field}
+												value={field.value ?? ""}
+											/>
+										</FormControl>
+										<FormMessage />
+									</Field>
+								</FormItem>
+							)}
+						/>
+
+						{/* Receipt - Only show when editing */}
+						{isEditing && expense && (
+							<Field>
+								<FormLabel>{t("form.receiptUpload")}</FormLabel>
 								<Button
 									type="button"
 									variant="outline"
-									onClick={modal.handleClose}
-									disabled={isPending}
+									className="w-full justify-start"
+									onClick={() => {
+										NiceModal.show(ExpenseReceiptModal, {
+											expenseId: expense.id,
+											hasReceipt: !!expense.receiptImageKey,
+										});
+									}}
 								>
-									Cancelar
+									<FileTextIcon className="mr-2 size-4" />
+									{t("receipt.manage")}
 								</Button>
-								<Button type="submit" disabled={isPending} loading={isPending}>
-									{isEditing ? "Actualizar Gasto" : "Crear Gasto"}
-								</Button>
-							</SheetFooter>
-						</form>
-					</Form>
-				</SheetContent>
-			</Sheet>
+							</Field>
+						)}
+					</ProfileEditSection>
+				</div>
+			</ProfileEditSheet>
 		);
 	},
 );

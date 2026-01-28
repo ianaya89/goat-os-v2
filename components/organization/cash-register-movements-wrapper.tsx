@@ -1,46 +1,34 @@
 "use client";
 
 import { CashMovementsTable } from "@/components/organization/cash-movements-table";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
+import { CashRegisterStatus } from "@/lib/db/schema/enums";
 import { trpc } from "@/trpc/client";
 
-export function CashRegisterMovementsWrapper() {
-	const { data: currentRegister } =
-		trpc.organization.cashRegister.getCurrent.useQuery();
+interface CashRegisterMovementsWrapperProps {
+	cashRegisterId?: string;
+}
 
-	if (!currentRegister) {
-		return (
-			<Card className="h-full">
-				<CardHeader>
-					<CardTitle>Movimientos del Dia</CardTitle>
-					<CardDescription>
-						Abre la caja para registrar movimientos
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<div className="flex h-32 items-center justify-center text-muted-foreground">
-						No hay caja abierta para hoy
-					</div>
-				</CardContent>
-			</Card>
-		);
+export function CashRegisterMovementsWrapper({
+	cashRegisterId,
+}: CashRegisterMovementsWrapperProps = {}) {
+	const { data: currentRegister } =
+		trpc.organization.cashRegister.getCurrent.useQuery(undefined, {
+			enabled: !cashRegisterId,
+		});
+
+	// Don't show movements for today's closed register
+	if (
+		!cashRegisterId &&
+		currentRegister?.status === CashRegisterStatus.closed
+	) {
+		return null;
 	}
 
-	return (
-		<Card className="h-full">
-			<CardHeader>
-				<CardTitle>Movimientos del Dia</CardTitle>
-				<CardDescription>Todos los movimientos registrados hoy</CardDescription>
-			</CardHeader>
-			<CardContent>
-				<CashMovementsTable cashRegisterId={currentRegister.id} />
-			</CardContent>
-		</Card>
-	);
+	const resolvedId = cashRegisterId ?? currentRegister?.id;
+
+	if (!resolvedId) {
+		return null;
+	}
+
+	return <CashMovementsTable cashRegisterId={resolvedId} />;
 }

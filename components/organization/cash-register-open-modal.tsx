@@ -1,6 +1,7 @@
 "use client";
 
 import NiceModal, { type NiceModalHocProps } from "@ebay/nice-modal-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -34,16 +35,17 @@ export const CashRegisterOpenModal =
 	NiceModal.create<CashRegisterOpenModalProps>(() => {
 		const modal = useEnhancedModal();
 		const utils = trpc.useUtils();
+		const t = useTranslations("finance.cashRegister");
 
 		const openMutation = trpc.organization.cashRegister.open.useMutation({
 			onSuccess: () => {
-				toast.success("Caja abierta exitosamente");
+				toast.success(t("success.opened"));
 				utils.organization.cashRegister.getCurrent.invalidate();
 				utils.organization.cashRegister.getDailySummary.invalidate();
 				modal.handleClose();
 			},
 			onError: (error) => {
-				toast.error(error.message || "Error al abrir la caja");
+				toast.error(error.message || t("error.openFailed"));
 			},
 		});
 
@@ -69,10 +71,8 @@ export const CashRegisterOpenModal =
 					onAnimationEndCapture={modal.handleAnimationEndCapture}
 				>
 					<DialogHeader>
-						<DialogTitle>Abrir Caja</DialogTitle>
-						<DialogDescription>
-							Ingresa el saldo inicial para abrir la caja del dia.
-						</DialogDescription>
+						<DialogTitle>{t("modal.openTitle")}</DialogTitle>
+						<DialogDescription>{t("modal.openDescription")}</DialogDescription>
 					</DialogHeader>
 
 					<Form {...form}>
@@ -83,7 +83,7 @@ export const CashRegisterOpenModal =
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Saldo Inicial (centavos)</FormLabel>
+											<FormLabel>{t("modal.openingBalanceCents")}</FormLabel>
 											<FormControl>
 												<Input
 													type="number"
@@ -106,10 +106,10 @@ export const CashRegisterOpenModal =
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Notas (opcional)</FormLabel>
+											<FormLabel>{t("modal.notes")}</FormLabel>
 											<FormControl>
 												<Textarea
-													placeholder="Observaciones al abrir la caja..."
+													placeholder={t("modal.notesOpenPlaceholder")}
 													className="resize-none"
 													rows={2}
 													{...field}
@@ -129,14 +129,14 @@ export const CashRegisterOpenModal =
 									onClick={modal.handleClose}
 									disabled={openMutation.isPending}
 								>
-									Cancelar
+									{t("modal.cancel")}
 								</Button>
 								<Button
 									type="submit"
 									disabled={openMutation.isPending}
 									loading={openMutation.isPending}
 								>
-									Abrir Caja
+									{t("modal.open")}
 								</Button>
 							</DialogFooter>
 						</form>

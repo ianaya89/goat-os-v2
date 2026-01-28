@@ -1,7 +1,9 @@
+import { ReceiptTextIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import type * as React from "react";
+import { ExpensesSummaryCards } from "@/components/organization/expenses-summary-cards";
 import { ExpensesTable } from "@/components/organization/expenses-table";
 import { OrganizationBreadcrumbSwitcher } from "@/components/organization/organization-breadcrumb-switcher";
 import {
@@ -42,12 +44,11 @@ export default async function ExpensesPage(): Promise<React.JSX.Element> {
 			<PageBody>
 				<div className="p-4 sm:px-6 sm:pt-6 sm:pb-24">
 					<div className="mx-auto w-full space-y-4">
-						<div>
+						<div className="flex items-center gap-2">
+							<ReceiptTextIcon className="size-5 text-muted-foreground" />
 							<PageTitle>{t("expenses.title")}</PageTitle>
-							<p className="text-muted-foreground text-sm">
-								{t("expenses.description")}
-							</p>
 						</div>
+						<ExpensesSummaryCards />
 						<ExpensesTable />
 					</div>
 				</div>

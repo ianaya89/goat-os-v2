@@ -127,7 +127,7 @@ export async function seedCashRegister(
 				description,
 				referenceType:
 					type === "income"
-						? "training_payment"
+						? "payment"
 						: type === "expense"
 							? "expense"
 							: "manual",

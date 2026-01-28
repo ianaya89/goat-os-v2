@@ -17,6 +17,11 @@ export const getCashRegisterByDateSchema = z.object({
 	date: z.coerce.date(),
 });
 
+// Get cash register by ID
+export const getCashRegisterByIdSchema = z.object({
+	id: z.string().uuid(),
+});
+
 // Open cash register
 export const openCashRegisterSchema = z.object({
 	openingBalance: z
@@ -40,7 +45,7 @@ export const closeCashRegisterSchema = z.object({
 export const getCashRegisterHistorySchema = z.object({
 	limit: z.number().min(1).max(100).default(30),
 	offset: z.number().min(0).default(0),
-	status: z.nativeEnum(CashRegisterStatus).optional(),
+	status: z.array(z.nativeEnum(CashRegisterStatus)).optional(),
 	dateRange: z
 		.object({
 			from: z.coerce.date(),
@@ -58,7 +63,8 @@ export const getCashMovementsSchema = z.object({
 	cashRegisterId: z.string().uuid(),
 	limit: z.number().min(1).max(200).default(100),
 	offset: z.number().min(0).default(0),
-	type: z.nativeEnum(CashMovementType).optional(),
+	type: z.array(z.nativeEnum(CashMovementType)).optional(),
+	referenceType: z.array(z.nativeEnum(CashMovementReferenceType)).optional(),
 });
 
 // Product item for cash movement
@@ -89,6 +95,9 @@ export type GetCurrentCashRegisterInput = z.infer<
 >;
 export type GetCashRegisterByDateInput = z.infer<
 	typeof getCashRegisterByDateSchema
+>;
+export type GetCashRegisterByIdInput = z.infer<
+	typeof getCashRegisterByIdSchema
 >;
 export type OpenCashRegisterInput = z.infer<typeof openCashRegisterSchema>;
 export type CloseCashRegisterInput = z.infer<typeof closeCashRegisterSchema>;

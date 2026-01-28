@@ -4,11 +4,13 @@ import NiceModal from "@ebay/nice-modal-react";
 import type { ColumnDef, ColumnFiltersState } from "@tanstack/react-table";
 import { format } from "date-fns";
 import {
+	FileTextIcon,
 	MoreHorizontalIcon,
 	Plus,
 	ReceiptText,
 	RotateCcwIcon,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
 	parseAsArrayOf,
 	parseAsInteger,
@@ -19,7 +21,7 @@ import * as React from "react";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/confirmation-modal";
 import { EventPaymentModal } from "@/components/organization/event-payment-modal";
-import { PaymentReceiptUpload } from "@/components/organization/payment-receipt-upload";
+import { EventPaymentReceiptModal } from "@/components/organization/receipt-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -47,18 +49,14 @@ import {
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
-// Helper to get payment method label
-function getPaymentMethodLabel(method: string): string {
-	const labels: Record<string, string> = {
-		cash: "Efectivo",
-		bank_transfer: "Transferencia",
-		mercado_pago: "MercadoPago",
-		stripe: "Stripe",
-		card: "Tarjeta",
-		other: "Otro",
-	};
-	return labels[method] || method;
-}
+const methodKeys: Record<string, string> = {
+	cash: "cash",
+	bank_transfer: "bankTransfer",
+	mercado_pago: "mercadoPago",
+	stripe: "stripe",
+	card: "card",
+	other: "other",
+};
 
 interface Payment {
 	id: string;
@@ -91,6 +89,8 @@ interface EventPaymentsTableProps {
 export function EventPaymentsTable({
 	eventId,
 }: EventPaymentsTableProps): React.JSX.Element {
+	const t = useTranslations("finance.eventPayments");
+
 	const [pageIndex, setPageIndex] = useQueryState(
 		"payPageIndex",
 		parseAsInteger.withDefault(0).withOptions({ shallow: true }),
@@ -145,12 +145,12 @@ export function EventPaymentsTable({
 	const processRefundMutation =
 		trpc.organization.sportsEvent.processRefund.useMutation({
 			onSuccess: () => {
-				toast.success("Reembolso procesado");
+				toast.success(t("refund.success"));
 				utils.organization.sportsEvent.listPayments.invalidate();
 				utils.organization.sportsEvent.listRegistrations.invalidate();
 			},
 			onError: (error: { message?: string }) => {
-				toast.error(error.message || "Error al procesar el reembolso");
+				toast.error(error.message || t("refund.error"));
 			},
 		});
 
@@ -186,7 +186,7 @@ export function EventPaymentsTable({
 	const columns: ColumnDef<Payment>[] = [
 		{
 			accessorKey: "registration",
-			header: "Inscripción",
+			header: t("table.registration"),
 			cell: ({ row }) => (
 				<div className="max-w-[180px]">
 					<p className="font-medium text-foreground truncate">
@@ -201,7 +201,7 @@ export function EventPaymentsTable({
 		{
 			accessorKey: "amount",
 			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Monto" />
+				<SortableColumnHeader column={column} title={t("table.amount")} />
 			),
 			cell: ({ row }) => (
 				<span className="font-medium">
@@ -211,16 +211,18 @@ export function EventPaymentsTable({
 		},
 		{
 			accessorKey: "paymentMethod",
-			header: "Método",
+			header: t("table.method"),
 			cell: ({ row }) => (
 				<span className="text-foreground/80">
-					{getPaymentMethodLabel(row.original.paymentMethod)}
+					{t(
+						`methods.${methodKeys[row.original.paymentMethod] ?? row.original.paymentMethod}`,
+					)}
 				</span>
 			),
 		},
 		{
 			accessorKey: "status",
-			header: "Estado",
+			header: t("table.status"),
 			cell: ({ row }) => (
 				<Badge
 					className={cn(
@@ -235,23 +237,13 @@ export function EventPaymentsTable({
 		},
 		{
 			accessorKey: "paymentDate",
-			header: "Fecha",
+			header: t("table.date"),
 			cell: ({ row }) => (
 				<span className="text-foreground/80">
 					{row.original.paymentDate
 						? format(row.original.paymentDate, "dd MMM yyyy")
 						: "-"}
 				</span>
-			),
-		},
-		{
-			id: "receipt",
-			header: "Comprobante",
-			cell: ({ row }) => (
-				<PaymentReceiptUpload
-					paymentId={row.original.id}
-					hasReceipt={!!row.original.receiptImageKey}
-				/>
 			),
 		},
 		{
@@ -267,7 +259,7 @@ export function EventPaymentsTable({
 								variant="ghost"
 							>
 								<MoreHorizontalIcon className="shrink-0" />
-								<span className="sr-only">Abrir menú</span>
+								<span className="sr-only">{t("table.openMenu")}</span>
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
@@ -277,6 +269,17 @@ export function EventPaymentsTable({
 									{row.original.receiptNumber}
 								</DropdownMenuItem>
 							)}
+							<DropdownMenuItem
+								onClick={() => {
+									NiceModal.show(EventPaymentReceiptModal, {
+										paymentId: row.original.id,
+										hasReceipt: !!row.original.receiptImageKey,
+									});
+								}}
+							>
+								<FileTextIcon className="mr-2 size-4" />
+								{t("receipt.manage")}
+							</DropdownMenuItem>
 							{row.original.status === "paid" &&
 								(row.original.refundedAmount ?? 0) < row.original.amount && (
 									<>
@@ -284,9 +287,15 @@ export function EventPaymentsTable({
 										<DropdownMenuItem
 											onClick={() => {
 												NiceModal.show(ConfirmationModal, {
-													title: "¿Procesar reembolso?",
-													message: `Se reembolsará el monto total de ${formatEventPrice(row.original.amount - (row.original.refundedAmount ?? 0), row.original.currency)}`,
-													confirmLabel: "Reembolsar",
+													title: t("refund.confirmTitle"),
+													message: t("refund.confirmMessage", {
+														amount: formatEventPrice(
+															row.original.amount -
+																(row.original.refundedAmount ?? 0),
+															row.original.currency,
+														),
+													}),
+													confirmLabel: t("refund.confirmLabel"),
 													destructive: true,
 													onConfirm: () =>
 														processRefundMutation.mutate({
@@ -300,7 +309,7 @@ export function EventPaymentsTable({
 											variant="destructive"
 										>
 											<RotateCcwIcon className="mr-2 size-4" />
-											Procesar Reembolso
+											{t("refund.action")}
 										</DropdownMenuItem>
 									</>
 								)}
@@ -314,7 +323,7 @@ export function EventPaymentsTable({
 	const paymentFilters: FilterConfig[] = [
 		{
 			key: "status",
-			title: "Estado",
+			title: t("table.status"),
 			options: EventPaymentStatuses.map((status) => ({
 				value: status,
 				label: getPaymentStatusLabel(status),
@@ -322,10 +331,10 @@ export function EventPaymentsTable({
 		},
 		{
 			key: "paymentMethod",
-			title: "Método",
+			title: t("table.method"),
 			options: EventPaymentMethods.map((method) => ({
 				value: method,
-				label: getPaymentMethodLabel(method),
+				label: t(`methods.${methodKeys[method] ?? method}`),
 			})),
 		},
 	];
@@ -335,7 +344,7 @@ export function EventPaymentsTable({
 			<div className="flex justify-end">
 				<Button onClick={handleCreatePayment}>
 					<Plus className="size-4 mr-2" />
-					Registrar Pago
+					{t("add")}
 				</Button>
 			</div>
 
@@ -343,7 +352,7 @@ export function EventPaymentsTable({
 				columnFilters={columnFilters}
 				columns={columns}
 				data={(data?.payments as Payment[]) || []}
-				emptyMessage="No hay pagos registrados."
+				emptyMessage={t("noPayments")}
 				enableFilters
 				enablePagination
 				filters={paymentFilters}

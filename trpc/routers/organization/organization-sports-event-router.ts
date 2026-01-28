@@ -1588,7 +1588,7 @@ export const organizationSportsEventRouter = createTRPCRouter({
 					organizationId: ctx.organization.id,
 					paymentMethod: input.paymentMethod,
 					amount: input.amount,
-					description: `Pago de evento "${eventTitle}" - ${registrantName}`,
+					description: `${eventTitle} - ${registrantName}`,
 					referenceType: CashMovementReferenceType.eventPayment,
 					referenceId: payment.id,
 					recordedBy: ctx.user.id,

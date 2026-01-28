@@ -26,7 +26,8 @@
 		"profile": "Profile",
 		"payments": "Payments",
 		"expenses": "Expenses",
-		"cashRegister": "Cash Register",
+		"cashRegister": "Today's Register",
+		"cashRegisterHistory": "Register History",
 		"products": "Products",
 		"payroll": "Payroll",
 		"financialReports": "Financial",
@@ -129,7 +130,8 @@
 		"cashRegister": {
 			"title": "Cash Register",
 			"description": "Manage cash register",
-			"history": "Cash Register History"
+			"history": "Cash Register History",
+			"detail": "Detail"
 		},
 		"products": {
 			"title": "Products",

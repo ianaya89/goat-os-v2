@@ -1,22 +1,26 @@
 "use client";
 
 import NiceModal, { type NiceModalHocProps } from "@ebay/nice-modal-react";
-import { Minus, Plus, ShoppingCart, Trash2, X } from "lucide-react";
+import {
+	ArrowDownUpIcon,
+	Minus,
+	Plus,
+	ShoppingCart,
+	Trash2,
+	X,
+} from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import * as React from "react";
 import { toast } from "sonner";
+import {
+	ProfileEditGrid,
+	ProfileEditSection,
+	ProfileEditSheet,
+} from "@/components/athlete/profile-edit-sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
 import { Field } from "@/components/ui/field";
 import {
-	Form,
 	FormControl,
 	FormField,
 	FormItem,
@@ -37,12 +41,6 @@ import { CashMovementType, CashMovementTypes } from "@/lib/db/schema/enums";
 import { addManualMovementSchema } from "@/schemas/organization-cash-register-schemas";
 import { trpc } from "@/trpc/client";
 
-const movementTypeLabels: Record<string, string> = {
-	income: "Ingreso",
-	expense: "Egreso",
-	adjustment: "Ajuste",
-};
-
 type SelectedProduct = {
 	productId: string;
 	name: string;
@@ -60,13 +58,14 @@ export const CashMovementModal = NiceModal.create<CashMovementModalProps>(
 	({ cashRegisterId: _cashRegisterId }) => {
 		const modal = useEnhancedModal();
 		const utils = trpc.useUtils();
+		const t = useTranslations("finance.cashRegister");
+		const locale = useLocale();
 
 		const [selectedProducts, setSelectedProducts] = React.useState<
 			SelectedProduct[]
 		>([]);
 		const [searchQuery, setSearchQuery] = React.useState("");
 
-		// Query products
 		const { data: productsData } =
 			trpc.organization.stock.listProducts.useQuery({
 				search: searchQuery || undefined,
@@ -75,7 +74,7 @@ export const CashMovementModal = NiceModal.create<CashMovementModalProps>(
 		const addMovementMutation =
 			trpc.organization.cashRegister.addManualMovement.useMutation({
 				onSuccess: () => {
-					toast.success("Movimiento agregado exitosamente");
+					toast.success(t("success.created"));
 					utils.organization.cashRegister.getCurrent.invalidate();
 					utils.organization.cashRegister.getDailySummary.invalidate();
 					utils.organization.cashRegister.getMovements.invalidate();
@@ -83,7 +82,7 @@ export const CashMovementModal = NiceModal.create<CashMovementModalProps>(
 					modal.handleClose();
 				},
 				onError: (error) => {
-					toast.error(error.message || "Error al agregar el movimiento");
+					toast.error(error.message || t("error.createFailed"));
 				},
 			});
 
@@ -97,7 +96,6 @@ export const CashMovementModal = NiceModal.create<CashMovementModalProps>(
 			},
 		});
 
-		// Calculate total from selected products
 		const productsTotal = React.useMemo(() => {
 			return selectedProducts.reduce(
 				(sum, p) => sum + p.sellingPrice * p.quantity,
@@ -105,23 +103,22 @@ export const CashMovementModal = NiceModal.create<CashMovementModalProps>(
 			);
 		}, [selectedProducts]);
 
-		// Update form amount when products change
 		React.useEffect(() => {
 			if (selectedProducts.length > 0) {
 				form.setValue("amount", productsTotal);
-				// Auto-generate description from products
 				const productNames = selectedProducts
 					.map((p) => `${p.name} x${p.quantity}`)
 					.join(", ");
-				form.setValue("description", `Venta: ${productNames}`);
+				form.setValue(
+					"description",
+					`${t("modal.salePrefix")} ${productNames}`,
+				);
 			}
-		}, [productsTotal, selectedProducts, form]);
+		}, [productsTotal, selectedProducts, form, t]);
 
 		const addProduct = (product: NonNullable<typeof productsData>[number]) => {
 			const existing = selectedProducts.find((p) => p.productId === product.id);
-
 			if (existing) {
-				// Increment quantity
 				setSelectedProducts((prev) =>
 					prev.map((p) =>
 						p.productId === product.id ? { ...p, quantity: p.quantity + 1 } : p,
@@ -186,13 +183,12 @@ export const CashMovementModal = NiceModal.create<CashMovementModalProps>(
 		});
 
 		const formatCurrency = (amount: number) => {
-			return new Intl.NumberFormat("es-AR", {
+			return new Intl.NumberFormat(locale === "es" ? "es-AR" : "en-US", {
 				style: "currency",
 				currency: "ARS",
 			}).format(amount / 100);
 		};
 
-		// Filter available products (not already selected at max stock)
 		const availableProducts = React.useMemo(() => {
 			if (!productsData) return [];
 			return productsData.filter((product) => {
@@ -206,186 +202,60 @@ export const CashMovementModal = NiceModal.create<CashMovementModalProps>(
 		}, [productsData, selectedProducts]);
 
 		return (
-			<Dialog
+			<ProfileEditSheet
 				open={modal.visible}
-				onOpenChange={(open) => !open && modal.handleClose()}
+				onClose={modal.handleClose}
+				title={t("modal.movementTitle")}
+				subtitle={t("modal.movementDescription")}
+				icon={<ArrowDownUpIcon className="size-5" />}
+				accentColor="slate"
+				form={form}
+				onSubmit={onSubmit}
+				isPending={addMovementMutation.isPending}
+				submitLabel={t("modal.add")}
+				cancelLabel={t("modal.cancel")}
+				maxWidth="lg"
+				onAnimationEndCapture={modal.handleAnimationEndCapture}
 			>
-				<DialogContent
-					className="sm:max-w-lg"
-					onAnimationEndCapture={modal.handleAnimationEndCapture}
-				>
-					<DialogHeader>
-						<DialogTitle>Agregar Movimiento</DialogTitle>
-						<DialogDescription>
-							Registra un movimiento manual en la caja. Opcionalmente selecciona
-							productos para descontar stock automáticamente.
-						</DialogDescription>
-					</DialogHeader>
+				<div className="space-y-6">
+					<ProfileEditSection>
+						<FormField
+							control={form.control}
+							name="type"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel>{t("modal.movementType")}</FormLabel>
+										<Select onValueChange={field.onChange} value={field.value}>
+											<FormControl>
+												<SelectTrigger className="w-full">
+													<SelectValue placeholder={t("modal.selectType")} />
+												</SelectTrigger>
+											</FormControl>
+											<SelectContent>
+												{CashMovementTypes.map((type) => (
+													<SelectItem key={type} value={type}>
+														{t.has(`types.${type}`)
+															? t(`types.${type}` as "types.income")
+															: type}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+										<FormMessage />
+									</Field>
+								</FormItem>
+							)}
+						/>
 
-					<Form {...form}>
-						<form onSubmit={onSubmit} className="space-y-4">
-							<FormField
-								control={form.control}
-								name="type"
-								render={({ field }) => (
-									<FormItem asChild>
-										<Field>
-											<FormLabel>Tipo de Movimiento</FormLabel>
-											<Select
-												onValueChange={field.onChange}
-												value={field.value}
-											>
-												<FormControl>
-													<SelectTrigger className="w-full">
-														<SelectValue placeholder="Seleccionar tipo" />
-													</SelectTrigger>
-												</FormControl>
-												<SelectContent>
-													{CashMovementTypes.map((type) => (
-														<SelectItem key={type} value={type}>
-															{movementTypeLabels[type] ?? type}
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
-											<FormMessage />
-										</Field>
-									</FormItem>
-								)}
-							/>
-
-							{/* Products Section */}
-							<div className="space-y-3">
-								<div className="flex items-center justify-between">
-									<FormLabel className="flex items-center gap-2">
-										<ShoppingCart className="h-4 w-4" />
-										Productos (opcional)
-									</FormLabel>
-									{selectedProducts.length > 0 && (
-										<Button
-											type="button"
-											variant="ghost"
-											size="sm"
-											onClick={clearProducts}
-											className="h-7 text-xs"
-										>
-											<X className="mr-1 h-3 w-3" />
-											Limpiar
-										</Button>
-									)}
-								</div>
-
-								{/* Product Search */}
-								<Input
-									type="search"
-									placeholder="Buscar producto..."
-									value={searchQuery}
-									onChange={(e) => setSearchQuery(e.target.value)}
-									className="h-9"
-								/>
-
-								{/* Available Products List */}
-								{availableProducts.length > 0 && (
-									<div className="max-h-32 space-y-1 overflow-y-auto rounded-md border p-2">
-										{availableProducts.slice(0, 5).map((product) => (
-											<button
-												key={product.id}
-												type="button"
-												onClick={() => addProduct(product)}
-												className="flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm hover:bg-muted"
-											>
-												<span className="flex-1 truncate">{product.name}</span>
-												<span className="ml-2 flex items-center gap-2">
-													{product.trackStock && (
-														<Badge variant="outline" className="text-xs">
-															Stock: {product.currentStock}
-														</Badge>
-													)}
-													<span className="text-muted-foreground">
-														{formatCurrency(product.sellingPrice)}
-													</span>
-													<Plus className="h-4 w-4 text-green-600" />
-												</span>
-											</button>
-										))}
-									</div>
-								)}
-
-								{/* Selected Products */}
-								{selectedProducts.length > 0 && (
-									<div className="space-y-2 rounded-md border bg-muted/50 p-3">
-										<span className="text-xs font-medium text-muted-foreground">
-											Productos seleccionados:
-										</span>
-										{selectedProducts.map((product) => (
-											<div
-												key={product.productId}
-												className="flex items-center justify-between gap-2 rounded bg-background p-2 text-sm"
-											>
-												<span className="flex-1 truncate font-medium">
-													{product.name}
-												</span>
-												<div className="flex items-center gap-1">
-													<Button
-														type="button"
-														variant="outline"
-														size="icon"
-														className="h-6 w-6"
-														onClick={() =>
-															updateQuantity(product.productId, -1)
-														}
-													>
-														<Minus className="h-3 w-3" />
-													</Button>
-													<span className="w-8 text-center font-medium">
-														{product.quantity}
-													</span>
-													<Button
-														type="button"
-														variant="outline"
-														size="icon"
-														className="h-6 w-6"
-														onClick={() => updateQuantity(product.productId, 1)}
-														disabled={
-															product.trackStock &&
-															product.quantity >= product.currentStock
-														}
-													>
-														<Plus className="h-3 w-3" />
-													</Button>
-													<span className="ml-2 w-20 text-right text-muted-foreground">
-														{formatCurrency(
-															product.sellingPrice * product.quantity,
-														)}
-													</span>
-													<Button
-														type="button"
-														variant="ghost"
-														size="icon"
-														className="h-6 w-6 text-destructive"
-														onClick={() => removeProduct(product.productId)}
-													>
-														<Trash2 className="h-3 w-3" />
-													</Button>
-												</div>
-											</div>
-										))}
-										<div className="flex justify-end border-t pt-2">
-											<span className="font-semibold">
-												Total: {formatCurrency(productsTotal)}
-											</span>
-										</div>
-									</div>
-								)}
-							</div>
-
+						<ProfileEditGrid cols={2}>
 							<FormField
 								control={form.control}
 								name="amount"
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Monto (centavos)</FormLabel>
+											<FormLabel>{t("modal.amountCents")}</FormLabel>
 											<FormControl>
 												<Input
 													type="number"
@@ -399,7 +269,7 @@ export const CashMovementModal = NiceModal.create<CashMovementModalProps>(
 											</FormControl>
 											{selectedProducts.length > 0 && (
 												<p className="text-xs text-muted-foreground">
-													El monto se calcula automáticamente de los productos
+													{t("modal.amountAutoCalculated")}
 												</p>
 											)}
 											<FormMessage />
@@ -414,10 +284,10 @@ export const CashMovementModal = NiceModal.create<CashMovementModalProps>(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Descripcion</FormLabel>
+											<FormLabel>{t("modal.descriptionField")}</FormLabel>
 											<FormControl>
 												<Input
-													placeholder="Descripcion del movimiento"
+													placeholder={t("modal.descriptionPlaceholder")}
 													autoComplete="off"
 													{...field}
 												/>
@@ -427,28 +297,132 @@ export const CashMovementModal = NiceModal.create<CashMovementModalProps>(
 									</FormItem>
 								)}
 							/>
+						</ProfileEditGrid>
+					</ProfileEditSection>
 
-							<DialogFooter>
-								<Button
-									type="button"
-									variant="outline"
-									onClick={modal.handleClose}
-									disabled={addMovementMutation.isPending}
-								>
-									Cancelar
-								</Button>
-								<Button
-									type="submit"
-									disabled={addMovementMutation.isPending}
-									loading={addMovementMutation.isPending}
-								>
-									Agregar
-								</Button>
-							</DialogFooter>
-						</form>
-					</Form>
-				</DialogContent>
-			</Dialog>
+					{/* Products Section */}
+					<ProfileEditSection>
+						<div className="space-y-3">
+							<div className="flex items-center justify-between">
+								<FormLabel className="flex items-center gap-2">
+									<ShoppingCart className="h-4 w-4" />
+									{t("modal.products")}
+								</FormLabel>
+								{selectedProducts.length > 0 && (
+									<Button
+										type="button"
+										variant="ghost"
+										size="sm"
+										onClick={clearProducts}
+										className="h-7 text-xs"
+									>
+										<X className="mr-1 h-3 w-3" />
+										{t("modal.clearProducts")}
+									</Button>
+								)}
+							</div>
+
+							<Input
+								type="search"
+								placeholder={t("modal.searchProduct")}
+								value={searchQuery}
+								onChange={(e) => setSearchQuery(e.target.value)}
+								className="h-9"
+							/>
+
+							{availableProducts.length > 0 && (
+								<div className="max-h-32 space-y-1 overflow-y-auto rounded-md border p-2">
+									{availableProducts.slice(0, 5).map((product) => (
+										<button
+											key={product.id}
+											type="button"
+											onClick={() => addProduct(product)}
+											className="flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm hover:bg-muted"
+										>
+											<span className="flex-1 truncate">{product.name}</span>
+											<span className="ml-2 flex items-center gap-2">
+												{product.trackStock && (
+													<Badge variant="outline" className="text-xs">
+														Stock: {product.currentStock}
+													</Badge>
+												)}
+												<span className="text-muted-foreground">
+													{formatCurrency(product.sellingPrice)}
+												</span>
+												<Plus className="h-4 w-4 text-green-600" />
+											</span>
+										</button>
+									))}
+								</div>
+							)}
+
+							{selectedProducts.length > 0 && (
+								<div className="space-y-2 rounded-md border bg-muted/50 p-3">
+									<span className="text-xs font-medium text-muted-foreground">
+										{t("modal.selectedProducts")}
+									</span>
+									{selectedProducts.map((product) => (
+										<div
+											key={product.productId}
+											className="flex items-center justify-between gap-2 rounded bg-background p-2 text-sm"
+										>
+											<span className="flex-1 truncate font-medium">
+												{product.name}
+											</span>
+											<div className="flex items-center gap-1">
+												<Button
+													type="button"
+													variant="outline"
+													size="icon"
+													className="h-6 w-6"
+													onClick={() => updateQuantity(product.productId, -1)}
+												>
+													<Minus className="h-3 w-3" />
+												</Button>
+												<span className="w-8 text-center font-medium">
+													{product.quantity}
+												</span>
+												<Button
+													type="button"
+													variant="outline"
+													size="icon"
+													className="h-6 w-6"
+													onClick={() => updateQuantity(product.productId, 1)}
+													disabled={
+														product.trackStock &&
+														product.quantity >= product.currentStock
+													}
+												>
+													<Plus className="h-3 w-3" />
+												</Button>
+												<span className="ml-2 w-20 text-right text-muted-foreground">
+													{formatCurrency(
+														product.sellingPrice * product.quantity,
+													)}
+												</span>
+												<Button
+													type="button"
+													variant="ghost"
+													size="icon"
+													className="h-6 w-6 text-destructive"
+													onClick={() => removeProduct(product.productId)}
+												>
+													<Trash2 className="h-3 w-3" />
+												</Button>
+											</div>
+										</div>
+									))}
+									<div className="flex justify-end border-t pt-2">
+										<span className="font-semibold">
+											{t("modal.total")} {formatCurrency(productsTotal)}
+										</span>
+									</div>
+								</div>
+							)}
+						</div>
+					</ProfileEditSection>
+				</div>
+			</ProfileEditSheet>
 		);
 	},
 );

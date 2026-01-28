@@ -1,8 +1,10 @@
+import { BanknoteIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import type * as React from "react";
 import { OrganizationBreadcrumbSwitcher } from "@/components/organization/organization-breadcrumb-switcher";
+import { PaymentsSummaryCards } from "@/components/organization/payments-summary-cards";
 import { PaymentsTable } from "@/components/organization/payments-table";
 import {
 	Page,
@@ -40,7 +42,11 @@ export default async function PaymentsPage(): Promise<React.JSX.Element> {
 				</PagePrimaryBar>
 			</PageHeader>
 			<PageBody>
-				<PageContent title={t("payments.title")}>
+				<PageContent
+					title={t("payments.title")}
+					leftAction={<BanknoteIcon className="size-5 text-muted-foreground" />}
+				>
+					<PaymentsSummaryCards />
 					<PaymentsTable />
 				</PageContent>
 			</PageBody>

@@ -3,6 +3,7 @@
 import NiceModal from "@ebay/nice-modal-react";
 import type { Table } from "@tanstack/react-table";
 import { Trash2Icon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type * as React from "react";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/confirmation-modal";
@@ -13,20 +14,17 @@ interface Expense {
 	id: string;
 	organizationId: string;
 	categoryId: string | null;
+	category: string | null;
 	amount: number;
 	currency: string;
 	description: string;
 	expenseDate: Date;
 	paymentMethod: string | null;
 	receiptNumber: string | null;
+	receiptImageKey: string | null;
 	vendor: string | null;
 	notes: string | null;
 	createdAt: Date;
-	category: {
-		id: string;
-		name: string;
-		type: string;
-	} | null;
 	recordedByUser: {
 		id: string;
 		name: string;
@@ -38,16 +36,17 @@ export function ExpensesBulkActions({
 }: {
 	table: Table<Expense>;
 }): React.JSX.Element | null {
+	const t = useTranslations("finance.expenses");
 	const utils = trpc.useUtils();
 
 	const bulkDeleteMutation = trpc.organization.expense.bulkDelete.useMutation({
 		onSuccess: (data) => {
-			toast.success(`${data.deletedCount} gastos eliminados`);
-			utils.organization.expense.list.invalidate();
+			toast.success(t("bulk.deleted", { count: data.deletedCount }));
+			utils.organization.expense.invalidate();
 			table.resetRowSelection();
 		},
 		onError: (error) => {
-			toast.error(error.message || "Error al eliminar los gastos");
+			toast.error(error.message || t("bulk.deleteFailed"));
 		},
 	});
 
@@ -59,9 +58,9 @@ export function ExpensesBulkActions({
 
 	const handleBulkDelete = (): void => {
 		NiceModal.show(ConfirmationModal, {
-			title: "Eliminar gastos seleccionados?",
-			message: `Estas por eliminar ${selectedRows.length} gasto(s). Esta accion no se puede deshacer.`,
-			confirmLabel: "Eliminar",
+			title: t("bulk.deleteTitle"),
+			message: t("bulk.deleteMessage", { count: selectedRows.length }),
+			confirmLabel: t("deleteConfirm.confirm"),
 			destructive: true,
 			onConfirm: () => {
 				bulkDeleteMutation.mutate({
@@ -74,7 +73,7 @@ export function ExpensesBulkActions({
 	return (
 		<div className="flex items-center gap-2">
 			<span className="text-muted-foreground text-sm">
-				{selectedRows.length} seleccionado(s)
+				{t("bulk.selected", { count: selectedRows.length })}
 			</span>
 			<Button
 				variant="destructive"
@@ -83,7 +82,7 @@ export function ExpensesBulkActions({
 				disabled={bulkDeleteMutation.isPending}
 			>
 				<Trash2Icon className="mr-1 size-4" />
-				Eliminar
+				{t("deleteConfirm.confirm")}
 			</Button>
 		</div>
 	);

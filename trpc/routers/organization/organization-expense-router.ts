@@ -11,6 +11,8 @@ import {
 	lte,
 	or,
 	type SQL,
+	sql,
+	sum,
 } from "drizzle-orm";
 import { createCashMovementIfCash } from "@/lib/cash-register-helpers";
 import { db } from "@/lib/db";
@@ -19,17 +21,28 @@ import {
 	CashMovementType,
 } from "@/lib/db/schema/enums";
 import { expenseCategoryTable, expenseTable } from "@/lib/db/schema/tables";
+import { env } from "@/lib/env";
+import {
+	deleteObject,
+	generateStorageKey,
+	getSignedUploadUrl,
+	getSignedUrl,
+} from "@/lib/storage";
 import {
 	bulkDeleteExpensesSchema,
 	createExpenseCategorySchema,
 	createExpenseSchema,
 	deleteExpenseCategorySchema,
+	deleteExpenseReceiptSchema,
 	deleteExpenseSchema,
 	exportExpensesSchema,
+	getExpenseReceiptDownloadUrlSchema,
+	getExpenseReceiptUploadUrlSchema,
 	getExpenseSchema,
 	listExpenseCategoriesSchema,
 	listExpensesSchema,
 	updateExpenseCategorySchema,
+	updateExpenseReceiptSchema,
 	updateExpenseSchema,
 } from "@/schemas/organization-expense-schemas";
 import { createTRPCRouter, protectedOrganizationProcedure } from "@/trpc/init";
@@ -184,7 +197,12 @@ export const organizationExpenseRouter = createTRPCRouter({
 				);
 			}
 
-			// Category filter
+			// Category filter (fixed enum)
+			if (input.filters?.category && input.filters.category.length > 0) {
+				conditions.push(inArray(expenseTable.category, input.filters.category));
+			}
+
+			// Category filter (legacy FK)
 			if (input.filters?.categoryId) {
 				conditions.push(eq(expenseTable.categoryId, input.filters.categoryId));
 			}
@@ -247,7 +265,7 @@ export const organizationExpenseRouter = createTRPCRouter({
 					offset: input.offset,
 					orderBy: orderByColumn,
 					with: {
-						category: { columns: { id: true, name: true, type: true } },
+						categoryRef: { columns: { id: true, name: true, type: true } },
 						recordedByUser: { columns: { id: true, name: true } },
 					},
 				}),
@@ -266,7 +284,7 @@ export const organizationExpenseRouter = createTRPCRouter({
 					eq(expenseTable.organizationId, ctx.organization.id),
 				),
 				with: {
-					category: true,
+					categoryRef: true,
 					recordedByUser: { columns: { id: true, name: true } },
 				},
 			});
@@ -306,6 +324,7 @@ export const organizationExpenseRouter = createTRPCRouter({
 				.values({
 					organizationId: ctx.organization.id,
 					categoryId: input.categoryId,
+					category: input.category,
 					amount: input.amount,
 					currency: input.currency,
 					description: input.description,
@@ -324,7 +343,7 @@ export const organizationExpenseRouter = createTRPCRouter({
 					organizationId: ctx.organization.id,
 					paymentMethod: input.paymentMethod,
 					amount: input.amount,
-					description: `Gasto: ${input.description}`,
+					description: input.description,
 					referenceType: CashMovementReferenceType.expense,
 					referenceId: expense.id,
 					recordedBy: ctx.user.id,
@@ -376,6 +395,8 @@ export const organizationExpenseRouter = createTRPCRouter({
 						input.categoryId !== undefined
 							? input.categoryId
 							: existing.categoryId,
+					category:
+						input.category !== undefined ? input.category : existing.category,
 					amount: input.amount ?? existing.amount,
 					description: input.description ?? existing.description,
 					expenseDate: input.expenseDate ?? existing.expenseDate,
@@ -439,7 +460,7 @@ export const organizationExpenseRouter = createTRPCRouter({
 					inArray(expenseTable.id, input.expenseIds),
 				),
 				with: {
-					category: { columns: { name: true } },
+					categoryRef: { columns: { name: true } },
 				},
 				orderBy: desc(expenseTable.expenseDate),
 			});
@@ -459,7 +480,7 @@ export const organizationExpenseRouter = createTRPCRouter({
 			const rows = expenses.map((e) => [
 				e.expenseDate.toISOString().split("T")[0],
 				e.description,
-				e.category?.name ?? "",
+				e.category ?? "",
 				(e.amount / 100).toFixed(2),
 				e.paymentMethod ?? "",
 				e.vendor ?? "",
@@ -476,4 +497,297 @@ export const organizationExpenseRouter = createTRPCRouter({
 
 			return csv;
 		}),
+
+	// ============================================================================
+	// EXPENSE RECEIPTS
+	// ============================================================================
+
+	getReceiptUploadUrl: protectedOrganizationProcedure
+		.input(getExpenseReceiptUploadUrlSchema)
+		.mutation(async ({ ctx, input }) => {
+			const expense = await db.query.expenseTable.findFirst({
+				where: and(
+					eq(expenseTable.id, input.expenseId),
+					eq(expenseTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!expense) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Expense not found",
+				});
+			}
+
+			const key = generateStorageKey(
+				"expense-receipts",
+				ctx.organization.id,
+				input.filename,
+			);
+
+			const bucket = env.S3_BUCKET;
+			if (!bucket) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Storage not configured",
+				});
+			}
+
+			const uploadUrl = await getSignedUploadUrl(key, bucket, {
+				contentType: input.contentType,
+				expiresIn: 300,
+			});
+
+			return { uploadUrl, key };
+		}),
+
+	updateExpenseReceipt: protectedOrganizationProcedure
+		.input(updateExpenseReceiptSchema)
+		.mutation(async ({ ctx, input }) => {
+			const expense = await db.query.expenseTable.findFirst({
+				where: and(
+					eq(expenseTable.id, input.expenseId),
+					eq(expenseTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!expense) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Expense not found",
+				});
+			}
+
+			if (expense.receiptImageKey) {
+				const bucket = env.S3_BUCKET;
+				if (bucket) {
+					try {
+						await deleteObject(expense.receiptImageKey, bucket);
+					} catch {
+						// Ignore deletion errors
+					}
+				}
+			}
+
+			const [updated] = await db
+				.update(expenseTable)
+				.set({ receiptImageKey: input.receiptImageKey })
+				.where(eq(expenseTable.id, input.expenseId))
+				.returning();
+
+			return updated;
+		}),
+
+	deleteExpenseReceipt: protectedOrganizationProcedure
+		.input(deleteExpenseReceiptSchema)
+		.mutation(async ({ ctx, input }) => {
+			const expense = await db.query.expenseTable.findFirst({
+				where: and(
+					eq(expenseTable.id, input.expenseId),
+					eq(expenseTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!expense) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Expense not found",
+				});
+			}
+
+			if (!expense.receiptImageKey) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Expense has no receipt image",
+				});
+			}
+
+			const bucket = env.S3_BUCKET;
+			if (bucket) {
+				try {
+					await deleteObject(expense.receiptImageKey, bucket);
+				} catch {
+					// Ignore deletion errors
+				}
+			}
+
+			const [updated] = await db
+				.update(expenseTable)
+				.set({ receiptImageKey: null })
+				.where(eq(expenseTable.id, input.expenseId))
+				.returning();
+
+			return updated;
+		}),
+
+	getReceiptDownloadUrl: protectedOrganizationProcedure
+		.input(getExpenseReceiptDownloadUrlSchema)
+		.query(async ({ ctx, input }) => {
+			const expense = await db.query.expenseTable.findFirst({
+				where: and(
+					eq(expenseTable.id, input.expenseId),
+					eq(expenseTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!expense) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Expense not found",
+				});
+			}
+
+			if (!expense.receiptImageKey) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Expense has no receipt image",
+				});
+			}
+
+			const bucket = env.S3_BUCKET;
+			if (!bucket) {
+				throw new TRPCError({
+					code: "INTERNAL_SERVER_ERROR",
+					message: "Storage not configured",
+				});
+			}
+
+			const downloadUrl = await getSignedUrl(expense.receiptImageKey, bucket, {
+				expiresIn: 3600,
+			});
+
+			return { downloadUrl };
+		}),
+
+	// Get expenses summary (today, week, month, top category, total)
+	getExpensesSummary: protectedOrganizationProcedure.query(async ({ ctx }) => {
+		const now = new Date();
+
+		const todayStart = new Date(now);
+		todayStart.setHours(0, 0, 0, 0);
+
+		const todayEnd = new Date(now);
+		todayEnd.setHours(23, 59, 59, 999);
+
+		// Monday-based week start
+		const weekStart = new Date(now);
+		const day = weekStart.getDay();
+		const diff = day === 0 ? 6 : day - 1;
+		weekStart.setDate(weekStart.getDate() - diff);
+		weekStart.setHours(0, 0, 0, 0);
+
+		const monthStart = new Date(now);
+		monthStart.setDate(1);
+		monthStart.setHours(0, 0, 0, 0);
+
+		const orgFilter = eq(expenseTable.organizationId, ctx.organization.id);
+
+		const [
+			todayResult,
+			weekResult,
+			monthResult,
+			totalResult,
+			topCategoryResult,
+		] = await Promise.all([
+			// Spent today
+			db
+				.select({
+					total: sum(expenseTable.amount),
+					count: count(),
+				})
+				.from(expenseTable)
+				.where(
+					and(
+						orgFilter,
+						gte(expenseTable.expenseDate, todayStart),
+						lte(expenseTable.expenseDate, todayEnd),
+					),
+				),
+
+			// Spent this week (Mon-Sun)
+			db
+				.select({
+					total: sum(expenseTable.amount),
+					count: count(),
+				})
+				.from(expenseTable)
+				.where(
+					and(
+						orgFilter,
+						gte(expenseTable.expenseDate, weekStart),
+						lte(expenseTable.expenseDate, todayEnd),
+					),
+				),
+
+			// Spent this month
+			db
+				.select({
+					total: sum(expenseTable.amount),
+					count: count(),
+				})
+				.from(expenseTable)
+				.where(
+					and(
+						orgFilter,
+						gte(expenseTable.expenseDate, monthStart),
+						lte(expenseTable.expenseDate, todayEnd),
+					),
+				),
+
+			// Total spent (all time)
+			db
+				.select({
+					total: sum(expenseTable.amount),
+					count: count(),
+				})
+				.from(expenseTable)
+				.where(orgFilter),
+
+			// Top category this month
+			db
+				.select({
+					category: expenseTable.category,
+					total: sum(expenseTable.amount),
+					count: count(),
+				})
+				.from(expenseTable)
+				.where(
+					and(
+						orgFilter,
+						gte(expenseTable.expenseDate, monthStart),
+						lte(expenseTable.expenseDate, todayEnd),
+						sql`${expenseTable.category} IS NOT NULL`,
+					),
+				)
+				.groupBy(expenseTable.category)
+				.orderBy(desc(sql`sum(${expenseTable.amount})`))
+				.limit(1),
+		]);
+
+		return {
+			today: {
+				total: Number(todayResult[0]?.total ?? 0),
+				count: Number(todayResult[0]?.count ?? 0),
+			},
+			week: {
+				total: Number(weekResult[0]?.total ?? 0),
+				count: Number(weekResult[0]?.count ?? 0),
+			},
+			month: {
+				total: Number(monthResult[0]?.total ?? 0),
+				count: Number(monthResult[0]?.count ?? 0),
+			},
+			total: {
+				total: Number(totalResult[0]?.total ?? 0),
+				count: Number(totalResult[0]?.count ?? 0),
+			},
+			topCategory: topCategoryResult[0]
+				? {
+						category: topCategoryResult[0].category,
+						total: Number(topCategoryResult[0].total ?? 0),
+						count: Number(topCategoryResult[0].count ?? 0),
+					}
+				: null,
+		};
+	}),
 });

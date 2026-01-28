@@ -109,7 +109,10 @@
 		"movementButton": "Movement",
 		"closeButton": "Close Cash Register",
 		"openedBy": "Opened by {name}",
-		"closedBy": "Closed by {name}"
+		"closedBy": "Closed by {name}",
+		"closedTitle": "Today's register has been closed",
+		"closedDescription": "You can open a new register tomorrow",
+		"closedViewLink": "View today's register"
 	},
 	"welcomeSection": {
 		"greeting": "Hello, {name}",

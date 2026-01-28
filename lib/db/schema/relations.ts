@@ -895,7 +895,7 @@ export const expenseRelations = relations(expenseTable, ({ one }) => ({
 		fields: [expenseTable.organizationId],
 		references: [organizationTable.id],
 	}),
-	category: one(expenseCategoryTable, {
+	categoryRef: one(expenseCategoryTable, {
 		fields: [expenseTable.categoryId],
 		references: [expenseCategoryTable.id],
 	}),

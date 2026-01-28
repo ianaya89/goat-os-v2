@@ -11,11 +11,14 @@ import {
 	lte,
 	or,
 	type SQL,
+	sql,
+	sum,
 } from "drizzle-orm";
 import { createCashMovementIfCash } from "@/lib/cash-register-helpers";
 import { db } from "@/lib/db";
 import {
 	CashMovementReferenceType,
+	CashMovementType,
 	TrainingPaymentStatus,
 } from "@/lib/db/schema/enums";
 import {
@@ -313,6 +316,19 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 				})
 				.returning();
 
+			if (payment) {
+				await createCashMovementIfCash({
+					organizationId: ctx.organization.id,
+					paymentMethod: input.paymentMethod,
+					amount: input.paidAmount,
+					description: input.description ?? "Entrenamiento",
+					referenceType: CashMovementReferenceType.payment,
+					referenceId: payment.id,
+					recordedBy: ctx.user.id,
+					type: CashMovementType.income,
+				});
+			}
+
 			return payment;
 		}),
 
@@ -417,8 +433,8 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 				organizationId: ctx.organization.id,
 				paymentMethod: data.paymentMethod,
 				amount: data.paidAmount,
-				description: `Pago de entrenamiento - ${athleteName}`,
-				referenceType: CashMovementReferenceType.trainingPayment,
+				description: athleteName,
+				referenceType: CashMovementReferenceType.payment,
 				referenceId: id,
 				recordedBy: ctx.user.id,
 			});
@@ -709,5 +725,138 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 		);
 
 		return { payments, athlete, summary };
+	}),
+
+	// Get payments summary (today, week, month, pending, total)
+	getPaymentsSummary: protectedOrganizationProcedure.query(async ({ ctx }) => {
+		const now = new Date();
+
+		const todayStart = new Date(now);
+		todayStart.setHours(0, 0, 0, 0);
+
+		const todayEnd = new Date(now);
+		todayEnd.setHours(23, 59, 59, 999);
+
+		// Monday-based week start
+		const weekStart = new Date(now);
+		const day = weekStart.getDay();
+		const diff = day === 0 ? 6 : day - 1;
+		weekStart.setDate(weekStart.getDate() - diff);
+		weekStart.setHours(0, 0, 0, 0);
+
+		const monthStart = new Date(now);
+		monthStart.setDate(1);
+		monthStart.setHours(0, 0, 0, 0);
+
+		const orgFilter = eq(
+			trainingPaymentTable.organizationId,
+			ctx.organization.id,
+		);
+		const paidStatus = eq(
+			trainingPaymentTable.status,
+			TrainingPaymentStatus.paid,
+		);
+
+		const [todayResult, weekResult, monthResult, pendingResult, totalResult] =
+			await Promise.all([
+				// Collected today
+				db
+					.select({
+						total: sum(trainingPaymentTable.paidAmount),
+						count: count(),
+					})
+					.from(trainingPaymentTable)
+					.where(
+						and(
+							orgFilter,
+							paidStatus,
+							gte(trainingPaymentTable.paymentDate, todayStart),
+							lte(trainingPaymentTable.paymentDate, todayEnd),
+						),
+					),
+
+				// Collected this week (Mon-Sun)
+				db
+					.select({
+						total: sum(trainingPaymentTable.paidAmount),
+						count: count(),
+					})
+					.from(trainingPaymentTable)
+					.where(
+						and(
+							orgFilter,
+							paidStatus,
+							gte(trainingPaymentTable.paymentDate, weekStart),
+							lte(trainingPaymentTable.paymentDate, todayEnd),
+						),
+					),
+
+				// Collected this month
+				db
+					.select({
+						total: sum(trainingPaymentTable.paidAmount),
+						count: count(),
+					})
+					.from(trainingPaymentTable)
+					.where(
+						and(
+							orgFilter,
+							paidStatus,
+							gte(trainingPaymentTable.paymentDate, monthStart),
+							lte(trainingPaymentTable.paymentDate, todayEnd),
+						),
+					),
+
+				// Pending (outstanding balance)
+				db
+					.select({
+						total: sum(
+							sql`${trainingPaymentTable.amount} - ${trainingPaymentTable.paidAmount}`,
+						),
+						count: count(),
+					})
+					.from(trainingPaymentTable)
+					.where(
+						and(
+							orgFilter,
+							or(
+								eq(trainingPaymentTable.status, TrainingPaymentStatus.pending),
+								eq(trainingPaymentTable.status, TrainingPaymentStatus.partial),
+							),
+						),
+					),
+
+				// Total collected (all time)
+				db
+					.select({
+						total: sum(trainingPaymentTable.paidAmount),
+						count: count(),
+					})
+					.from(trainingPaymentTable)
+					.where(and(orgFilter, paidStatus)),
+			]);
+
+		return {
+			today: {
+				total: Number(todayResult[0]?.total ?? 0),
+				count: Number(todayResult[0]?.count ?? 0),
+			},
+			week: {
+				total: Number(weekResult[0]?.total ?? 0),
+				count: Number(weekResult[0]?.count ?? 0),
+			},
+			month: {
+				total: Number(monthResult[0]?.total ?? 0),
+				count: Number(monthResult[0]?.count ?? 0),
+			},
+			pending: {
+				total: Number(pendingResult[0]?.total ?? 0),
+				count: Number(pendingResult[0]?.count ?? 0),
+			},
+			totalCollected: {
+				total: Number(totalResult[0]?.total ?? 0),
+				count: Number(totalResult[0]?.count ?? 0),
+			},
+		};
 	}),
 });

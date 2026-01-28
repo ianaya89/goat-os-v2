@@ -3,6 +3,7 @@
 import NiceModal, { type NiceModalHocProps } from "@ebay/nice-modal-react";
 import { format } from "date-fns";
 import { CalendarIcon, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -46,18 +47,14 @@ import { cn } from "@/lib/utils";
 import { createEventPaymentSchema } from "@/schemas/organization-sports-event-schemas";
 import { trpc } from "@/trpc/client";
 
-// Helper to get payment method label
-function getPaymentMethodLabel(method: string): string {
-	const labels: Record<string, string> = {
-		cash: "Efectivo",
-		bank_transfer: "Transferencia Bancaria",
-		mercado_pago: "MercadoPago",
-		stripe: "Stripe",
-		card: "Tarjeta",
-		other: "Otro",
-	};
-	return labels[method] || method;
-}
+const methodKeys: Record<string, string> = {
+	cash: "cash",
+	bank_transfer: "bankTransfer",
+	mercado_pago: "mercadoPago",
+	stripe: "stripe",
+	card: "card",
+	other: "other",
+};
 
 interface Registration {
 	id: string;
@@ -77,6 +74,7 @@ export type EventPaymentModalProps = NiceModalHocProps & {
 
 export const EventPaymentModal = NiceModal.create<EventPaymentModalProps>(
 	({ eventId, registration, onSuccess }) => {
+		const t = useTranslations("finance.eventPayments");
 		const modal = useEnhancedModal();
 		const [selectedRegistrationId, setSelectedRegistrationId] = React.useState<
 			string | null
@@ -100,7 +98,7 @@ export const EventPaymentModal = NiceModal.create<EventPaymentModalProps>(
 		const createPaymentMutation =
 			trpc.organization.sportsEvent.createPayment.useMutation({
 				onSuccess: () => {
-					toast.success("Pago registrado correctamente");
+					toast.success(t("success.created"));
 					utils.organization.sportsEvent.listPayments.invalidate();
 					utils.organization.sportsEvent.listRegistrations.invalidate();
 					utils.organization.sportsEvent.get.invalidate();
@@ -108,7 +106,7 @@ export const EventPaymentModal = NiceModal.create<EventPaymentModalProps>(
 					modal.handleClose();
 				},
 				onError: (error: { message?: string }) => {
-					toast.error(error.message || "Error al registrar el pago");
+					toast.error(error.message || t("error.createFailed"));
 				},
 			});
 
@@ -156,11 +154,13 @@ export const EventPaymentModal = NiceModal.create<EventPaymentModalProps>(
 					onClose={modal.handleClose}
 				>
 					<DialogHeader>
-						<DialogTitle>Registrar Pago</DialogTitle>
+						<DialogTitle>{t("modal.title")}</DialogTitle>
 						<DialogDescription>
 							{registration
-								? `Registrar pago para ${registration.registrantName}`
-								: "Selecciona una inscripción y registra el pago"}
+								? t("modal.descriptionWithName", {
+										name: registration.registrantName,
+									})
+								: t("modal.descriptionGeneric")}
 						</DialogDescription>
 					</DialogHeader>
 
@@ -172,7 +172,7 @@ export const EventPaymentModal = NiceModal.create<EventPaymentModalProps>(
 									name="registrationId"
 									render={({ field }) => (
 										<FormItem>
-											<FormLabel>Inscripción</FormLabel>
+											<FormLabel>{t("modal.registration")}</FormLabel>
 											<Select
 												onValueChange={(value) => {
 													field.onChange(value);
@@ -182,7 +182,9 @@ export const EventPaymentModal = NiceModal.create<EventPaymentModalProps>(
 											>
 												<FormControl>
 													<SelectTrigger>
-														<SelectValue placeholder="Seleccionar inscripción" />
+														<SelectValue
+															placeholder={t("modal.selectRegistration")}
+														/>
 													</SelectTrigger>
 												</FormControl>
 												<SelectContent>
@@ -191,7 +193,7 @@ export const EventPaymentModal = NiceModal.create<EventPaymentModalProps>(
 															#{reg.registrationNumber} - {reg.registrantName}
 															{reg.price - reg.paidAmount > 0 && (
 																<span className="text-muted-foreground ml-2">
-																	(Debe:{" "}
+																	({t("modal.owes")}{" "}
 																	{formatEventPrice(
 																		reg.price - reg.paidAmount,
 																		reg.currency,
@@ -212,7 +214,9 @@ export const EventPaymentModal = NiceModal.create<EventPaymentModalProps>(
 							{selectedReg && (
 								<div className="rounded-lg border bg-muted/50 p-3 space-y-1 text-sm">
 									<div className="flex justify-between">
-										<span className="text-muted-foreground">Total:</span>
+										<span className="text-muted-foreground">
+											{t("modal.summaryTotal")}
+										</span>
 										<span className="font-medium">
 											{formatEventPrice(
 												selectedReg.price,
@@ -221,7 +225,9 @@ export const EventPaymentModal = NiceModal.create<EventPaymentModalProps>(
 										</span>
 									</div>
 									<div className="flex justify-between">
-										<span className="text-muted-foreground">Pagado:</span>
+										<span className="text-muted-foreground">
+											{t("modal.summaryPaid")}
+										</span>
 										<span className="font-medium">
 											{formatEventPrice(
 												selectedReg.paidAmount,
@@ -230,7 +236,9 @@ export const EventPaymentModal = NiceModal.create<EventPaymentModalProps>(
 										</span>
 									</div>
 									<div className="flex justify-between border-t pt-1">
-										<span className="text-muted-foreground">Pendiente:</span>
+										<span className="text-muted-foreground">
+											{t("modal.summaryPending")}
+										</span>
 										<span className="font-medium text-primary">
 											{formatEventPrice(remainingAmount, selectedReg.currency)}
 										</span>
@@ -243,7 +251,7 @@ export const EventPaymentModal = NiceModal.create<EventPaymentModalProps>(
 								name="amount"
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel>Monto</FormLabel>
+										<FormLabel>{t("modal.amount")}</FormLabel>
 										<FormControl>
 											<Input
 												type="number"
@@ -255,7 +263,9 @@ export const EventPaymentModal = NiceModal.create<EventPaymentModalProps>(
 											/>
 										</FormControl>
 										<FormDescription>
-											Monto en {selectedReg?.currency || "ARS"}
+											{t("modal.amountDescription", {
+												currency: selectedReg?.currency || "ARS",
+											})}
 										</FormDescription>
 										<FormMessage />
 									</FormItem>
@@ -267,17 +277,17 @@ export const EventPaymentModal = NiceModal.create<EventPaymentModalProps>(
 								name="paymentMethod"
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel>Método de Pago</FormLabel>
+										<FormLabel>{t("modal.paymentMethod")}</FormLabel>
 										<Select onValueChange={field.onChange} value={field.value}>
 											<FormControl>
 												<SelectTrigger>
-													<SelectValue placeholder="Seleccionar método" />
+													<SelectValue placeholder={t("modal.selectMethod")} />
 												</SelectTrigger>
 											</FormControl>
 											<SelectContent>
 												{EventPaymentMethods.map((method) => (
 													<SelectItem key={method} value={method}>
-														{getPaymentMethodLabel(method)}
+														{t(`methods.${methodKeys[method] ?? method}`)}
 													</SelectItem>
 												))}
 											</SelectContent>
@@ -295,7 +305,7 @@ export const EventPaymentModal = NiceModal.create<EventPaymentModalProps>(
 										field.value instanceof Date ? field.value : undefined;
 									return (
 										<FormItem className="flex flex-col">
-											<FormLabel>Fecha de Pago</FormLabel>
+											<FormLabel>{t("modal.paymentDate")}</FormLabel>
 											<Popover>
 												<PopoverTrigger asChild>
 													<FormControl>
@@ -309,7 +319,7 @@ export const EventPaymentModal = NiceModal.create<EventPaymentModalProps>(
 															{dateValue ? (
 																format(dateValue, "PPP")
 															) : (
-																<span>Seleccionar fecha</span>
+																<span>{t("modal.selectDate")}</span>
 															)}
 															<CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
 														</Button>
@@ -336,10 +346,10 @@ export const EventPaymentModal = NiceModal.create<EventPaymentModalProps>(
 								name="receiptNumber"
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel>Número de Comprobante (opcional)</FormLabel>
+										<FormLabel>{t("modal.receiptNumber")}</FormLabel>
 										<FormControl>
 											<Input
-												placeholder="Ej: 0001-00012345"
+												placeholder={t("modal.receiptPlaceholder")}
 												{...field}
 												value={field.value ?? ""}
 											/>
@@ -354,10 +364,10 @@ export const EventPaymentModal = NiceModal.create<EventPaymentModalProps>(
 								name="notes"
 								render={({ field }) => (
 									<FormItem>
-										<FormLabel>Notas (opcional)</FormLabel>
+										<FormLabel>{t("modal.notes")}</FormLabel>
 										<FormControl>
 											<Textarea
-												placeholder="Notas adicionales sobre el pago..."
+												placeholder={t("modal.notesPlaceholder")}
 												className="resize-none"
 												rows={2}
 												{...field}
@@ -375,7 +385,7 @@ export const EventPaymentModal = NiceModal.create<EventPaymentModalProps>(
 									variant="outline"
 									onClick={modal.handleClose}
 								>
-									Cancelar
+									{t("modal.cancel")}
 								</Button>
 								<Button
 									type="submit"
@@ -386,7 +396,7 @@ export const EventPaymentModal = NiceModal.create<EventPaymentModalProps>(
 									{createPaymentMutation.isPending && (
 										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 									)}
-									Registrar Pago
+									{t("modal.submit")}
 								</Button>
 							</DialogFooter>
 						</form>

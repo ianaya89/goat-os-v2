@@ -16,7 +16,7 @@ import {
 	ProfileEditSection,
 	ProfileEditSheet,
 } from "@/components/athlete/profile-edit-sheet";
-import { PaymentReceiptModal } from "@/components/organization/payment-receipt-modal";
+import { PaymentReceiptModal } from "@/components/organization/receipt-modal";
 import { Button } from "@/components/ui/button";
 import {
 	Command,
@@ -168,10 +168,10 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 			trpc.organization.trainingPayment.create.useMutation({
 				onSuccess: (data) => {
 					toast.success(t("success.created"));
-					utils.organization.trainingPayment.list.invalidate();
-					utils.organization.trainingPayment.getSessionPayments.invalidate();
+					utils.organization.trainingPayment.invalidate();
 					modal.handleClose();
-					if (data?.id) {
+					const method = form.getValues("paymentMethod");
+					if (data?.id && method === "bank_transfer") {
 						NiceModal.show(PaymentReceiptModal, {
 							paymentId: data.id,
 							hasReceipt: false,
@@ -187,8 +187,7 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 			trpc.organization.trainingPayment.update.useMutation({
 				onSuccess: () => {
 					toast.success(t("success.updated"));
-					utils.organization.trainingPayment.list.invalidate();
-					utils.organization.trainingPayment.getSessionPayments.invalidate();
+					utils.organization.trainingPayment.invalidate();
 					modal.handleClose();
 				},
 				onError: (error) => {
@@ -219,7 +218,7 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 						amount: 0,
 						currency: "ARS",
 						status: TrainingPaymentStatus.paid,
-						paymentMethod: undefined,
+						paymentMethod: "cash",
 						paidAmount: 0,
 						paymentDate: new Date(),
 						receiptNumber: "",

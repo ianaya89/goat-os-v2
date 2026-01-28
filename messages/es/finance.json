@@ -2,6 +2,14 @@
 	"payments": {
 		"title": "Pagos",
 		"description": "Gestiona los pagos de tu organización.",
+		"summary": {
+			"today": "Cobrado hoy",
+			"thisWeek": "Esta semana",
+			"thisMonth": "Este mes",
+			"pending": "Pendiente de cobro",
+			"totalCollected": "Recaudación total",
+			"paymentsCount": "{count, plural, one {# pago} other {# pagos}}"
+		},
 		"add": "Registrar pago",
 		"edit": "Editar pago",
 		"view": "Ver pago",
@@ -171,6 +179,15 @@
 	"expenses": {
 		"title": "Gastos",
 		"description": "Gestiona los gastos de tu organización.",
+		"summary": {
+			"today": "Gastado hoy",
+			"thisWeek": "Esta semana",
+			"thisMonth": "Este mes",
+			"totalSpent": "Gasto total",
+			"topCategory": "Mayor categoría",
+			"expensesCount": "{count, plural, one {# gasto} other {# gastos}}",
+			"noCategory": "Sin categoría"
+		},
 		"add": "Registrar gasto",
 		"edit": "Editar gasto",
 		"view": "Ver gasto",
@@ -187,26 +204,106 @@
 			"amount": "Monto",
 			"date": "Fecha",
 			"vendor": "Proveedor",
+			"method": "Método",
 			"status": "Estado",
-			"actions": "Acciones"
+			"actions": "Acciones",
+			"noExpenses": "No se encontraron gastos.",
+			"openMenu": "Abrir menú",
+			"noCategory": "Sin categoría",
+			"receiptNumber": "Comprobante #{number}"
 		},
 		"form": {
 			"description": "Descripción",
+			"descriptionPlaceholder": "ej., Compra de equipamiento",
 			"category": "Categoría",
-			"amount": "Monto",
+			"selectCategory": "Seleccionar categoría",
+			"noCategory": "Sin categoría",
+			"amountCents": "Monto (centavos)",
 			"date": "Fecha",
+			"method": "Método de pago",
+			"selectMethod": "Seleccionar método",
+			"notSpecified": "No especificado",
 			"vendor": "Proveedor",
-			"receipt": "Comprobante",
-			"notes": "Notas"
+			"vendorPlaceholder": "Nombre del proveedor",
+			"receiptNumber": "Número de Comprobante",
+			"receiptPlaceholder": "Factura/Recibo #",
+			"receiptUpload": "Comprobante / Factura",
+			"notes": "Notas",
+			"notesPlaceholder": "Notas adicionales..."
+		},
+		"modal": {
+			"createTitle": "Registrar Gasto",
+			"createSubtitle": "Completa los datos para registrar un nuevo gasto.",
+			"editTitle": "Editar Gasto",
+			"editSubtitle": "Actualiza la información del gasto.",
+			"cancel": "Cancelar",
+			"create": "Registrar Gasto",
+			"update": "Actualizar Gasto",
+			"createdSuccess": "Gasto registrado correctamente",
+			"attachReceipt": "¿Deseas adjuntar un comprobante o factura?",
+			"done": "Listo"
+		},
+		"methods": {
+			"cash": "Efectivo",
+			"bankTransfer": "Transferencia Bancaria",
+			"mercadoPago": "Mercado Pago",
+			"card": "Tarjeta",
+			"other": "Otro"
 		},
 		"categories": {
+			"field_rental": "Alquiler de Canchas",
 			"equipment": "Equipamiento",
-			"facilities": "Instalaciones",
+			"sports_materials": "Material Deportivo",
+			"transport": "Transporte",
 			"salaries": "Salarios",
-			"travel": "Viajes",
-			"marketing": "Marketing",
+			"commissions": "Comisiones",
 			"utilities": "Servicios",
+			"marketing": "Marketing",
+			"insurance": "Seguros",
+			"maintenance": "Mantenimiento",
+			"facilities": "Instalaciones",
+			"medical": "Gastos Médicos",
+			"technology": "Tecnología",
 			"other": "Otros"
+		},
+		"categoryTypes": {
+			"operational": "Operacional",
+			"personnel": "Personal",
+			"other": "Otros"
+		},
+		"deleteConfirm": {
+			"title": "¿Eliminar gasto?",
+			"message": "¿Estás seguro de que deseas eliminar este gasto? Esta acción no se puede deshacer.",
+			"confirm": "Eliminar"
+		},
+		"bulk": {
+			"selected": "{count} seleccionado(s)",
+			"deleteTitle": "¿Eliminar gastos seleccionados?",
+			"deleteMessage": "Estás por eliminar {count, plural, one {# gasto} other {# gastos}}. Esta acción no se puede deshacer.",
+			"deleted": "{count, plural, one {# gasto eliminado} other {# gastos eliminados}}.",
+			"deleteFailed": "No se pudieron eliminar los gastos."
+		},
+		"receipt": {
+			"view": "Ver",
+			"manage": "Comprobante",
+			"dialogTitle": "Comprobante de Gasto",
+			"dialogDescription": "Gestiona el comprobante de este gasto.",
+			"pdfTitle": "Comprobante PDF",
+			"imageAlt": "Comprobante de gasto",
+			"uploading": "Subiendo...",
+			"upload": "Subir comprobante",
+			"invalidType": "Tipo de archivo no permitido. Use JPG, PNG o PDF.",
+			"fileTooLarge": "El archivo es muy grande. Máximo 10MB.",
+			"uploadError": "Error al subir el archivo",
+			"uploadFailed": "Error al subir el comprobante",
+			"uploadSuccess": "Comprobante subido correctamente",
+			"deleted": "Comprobante eliminado",
+			"deleteFailed": "Error al eliminar el comprobante",
+			"loadFailed": "Error al cargar el comprobante",
+			"hasReceipt": "Comprobante adjunto",
+			"noReceipt": "Sin comprobante adjunto",
+			"close": "Cerrar",
+			"deleteConfirm": "¿Estás seguro de que deseas eliminar este comprobante?"
 		},
 		"success": {
 			"created": "Gasto registrado correctamente.",
@@ -236,7 +333,9 @@
 			"amount": "Monto",
 			"balance": "Saldo",
 			"user": "Usuario",
-			"actions": "Acciones"
+			"actions": "Acciones",
+			"time": "Hora",
+			"recordedBy": "Registrado por"
 		},
 		"form": {
 			"type": "Tipo de movimiento",
@@ -246,7 +345,96 @@
 		},
 		"types": {
 			"income": "Ingreso",
-			"expense": "Egreso"
+			"expense": "Egreso",
+			"adjustment": "Ajuste"
+		},
+		"referenceTypes": {
+			"payment": "Pago",
+			"event_payment": "Pago de Evento",
+			"expense": "Gasto",
+			"manual": "Manual",
+			"product_sale": "Venta de Productos"
+		},
+		"referenceTypeBadge": {
+			"payment": "Pago",
+			"event_payment": "Pago",
+			"expense": "Gasto",
+			"manual": "Manual",
+			"product_sale": "Venta"
+		},
+		"search": "Buscar movimiento...",
+		"filterType": "Tipo",
+		"filterOrigin": "Origen",
+		"movements": {
+			"title": "Movimientos del Día",
+			"description": "Todos los movimientos registrados hoy",
+			"empty": "No hay movimientos registrados.",
+			"noRegister": "Abre la caja para registrar movimientos",
+			"noRegisterEmpty": "No hay caja abierta para hoy"
+		},
+		"history": {
+			"title": "Historial de Caja",
+			"empty": "No hay historial de caja.",
+			"date": "Fecha",
+			"status": "Estado",
+			"openingBalance": "Saldo Inicial",
+			"closingBalance": "Saldo Final",
+			"difference": "Diferencia",
+			"openedBy": "Abierta por",
+			"closedBy": "Cerrada por",
+			"statusOpen": "Abierta",
+			"statusClosed": "Cerrada",
+			"search": "Buscar en historial...",
+			"filterStatus": "Estado",
+			"today": "Hoy",
+			"todayRegister": "Caja del día",
+			"viewMovements": "Ver movimientos",
+			"actions": "",
+			"detail": {
+				"title": "Detalle de Caja",
+				"subtitle": "Resumen y movimientos del día",
+				"openingBalance": "Saldo Inicial",
+				"closingBalance": "Saldo Final",
+				"netFlow": "Flujo Neto",
+				"totalMovements": "Movimientos",
+				"opened": "Apertura",
+				"closed": "Cierre",
+				"notClosed": "Sin cerrar"
+			},
+			"historicalIndicator": "Registro anterior"
+		},
+		"modal": {
+			"openTitle": "Abrir Caja",
+			"openDescription": "Ingresa el saldo inicial para abrir la caja del día.",
+			"closeTitle": "Cerrar Caja",
+			"closeDescription": "Revisa el resumen del día y confirma el cierre de caja.",
+			"closeOpeningBalance": "Saldo Inicial",
+			"closeNetFlow": "Flujo Neto",
+			"closeClosingBalance": "Saldo Final",
+			"movementTitle": "Agregar Movimiento",
+			"movementDescription": "Registra un movimiento manual en la caja. Opcionalmente selecciona productos para descontar stock automáticamente.",
+			"openingBalanceCents": "Saldo Inicial (centavos)",
+			"closingBalanceCents": "Saldo Final (centavos)",
+			"currentOpeningBalance": "Saldo Inicial:",
+			"notes": "Notas (opcional)",
+			"notesOpenPlaceholder": "Observaciones al abrir la caja...",
+			"notesClosePlaceholder": "Observaciones al cerrar la caja...",
+			"cancel": "Cancelar",
+			"open": "Abrir Caja",
+			"close": "Cerrar Caja",
+			"add": "Agregar",
+			"movementType": "Tipo de Movimiento",
+			"selectType": "Seleccionar tipo",
+			"products": "Productos (opcional)",
+			"clearProducts": "Limpiar",
+			"searchProduct": "Buscar producto...",
+			"selectedProducts": "Productos seleccionados:",
+			"total": "Total:",
+			"amountCents": "Monto (centavos)",
+			"amountAutoCalculated": "El monto se calcula automáticamente de los productos",
+			"descriptionField": "Descripción",
+			"descriptionPlaceholder": "Descripción del movimiento",
+			"salePrefix": "Venta:"
 		},
 		"success": {
 			"created": "Movimiento registrado correctamente.",
@@ -257,6 +445,82 @@
 			"createFailed": "No se pudo registrar el movimiento.",
 			"openFailed": "No se pudo abrir la caja.",
 			"closeFailed": "No se pudo cerrar la caja."
+		}
+	},
+	"eventPayments": {
+		"title": "Pagos de Evento",
+		"add": "Registrar Pago",
+		"noPayments": "No hay pagos registrados.",
+		"table": {
+			"registration": "Inscripción",
+			"amount": "Monto",
+			"method": "Método",
+			"status": "Estado",
+			"date": "Fecha",
+			"openMenu": "Abrir menú"
+		},
+		"refund": {
+			"success": "Reembolso procesado",
+			"error": "Error al procesar el reembolso",
+			"confirmTitle": "¿Procesar reembolso?",
+			"confirmMessage": "Se reembolsará el monto total de {amount}",
+			"confirmLabel": "Reembolsar",
+			"action": "Procesar Reembolso"
+		},
+		"modal": {
+			"title": "Registrar Pago",
+			"descriptionWithName": "Registrar pago para {name}",
+			"descriptionGeneric": "Selecciona una inscripción y registra el pago",
+			"registration": "Inscripción",
+			"selectRegistration": "Seleccionar inscripción",
+			"owes": "Debe:",
+			"summaryTotal": "Total:",
+			"summaryPaid": "Pagado:",
+			"summaryPending": "Pendiente:",
+			"amount": "Monto",
+			"amountDescription": "Monto en {currency}",
+			"paymentMethod": "Método de Pago",
+			"selectMethod": "Seleccionar método",
+			"paymentDate": "Fecha de Pago",
+			"selectDate": "Seleccionar fecha",
+			"receiptNumber": "Número de Comprobante (opcional)",
+			"receiptPlaceholder": "Ej: 0001-00012345",
+			"notes": "Notas (opcional)",
+			"notesPlaceholder": "Notas adicionales sobre el pago...",
+			"cancel": "Cancelar",
+			"submit": "Registrar Pago"
+		},
+		"methods": {
+			"cash": "Efectivo",
+			"bankTransfer": "Transferencia",
+			"mercadoPago": "MercadoPago",
+			"stripe": "Stripe",
+			"card": "Tarjeta",
+			"other": "Otro"
+		},
+		"success": {
+			"created": "Pago registrado correctamente"
+		},
+		"error": {
+			"createFailed": "Error al registrar el pago"
+		},
+		"receipt": {
+			"view": "Ver",
+			"manage": "Comprobante",
+			"dialogTitle": "Comprobante de Pago",
+			"dialogDescription": "Gestiona el comprobante de este pago.",
+			"pdfTitle": "Comprobante PDF",
+			"imageAlt": "Comprobante de pago",
+			"uploading": "Subiendo...",
+			"upload": "Subir comprobante",
+			"invalidType": "Tipo de archivo no permitido. Use JPG, PNG o PDF.",
+			"fileTooLarge": "El archivo es muy grande. Máximo 10MB.",
+			"uploadError": "Error al subir el archivo",
+			"uploadFailed": "Error al subir el comprobante",
+			"uploadSuccess": "Comprobante subido correctamente",
+			"deleted": "Comprobante eliminado",
+			"deleteFailed": "Error al eliminar el comprobante",
+			"loadFailed": "Error al cargar el comprobante"
 		}
 	},
 	"products": {

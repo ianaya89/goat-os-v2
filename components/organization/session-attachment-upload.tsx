@@ -34,6 +34,7 @@ export function SessionAttachmentUpload({
 	const [isDragging, setIsDragging] = React.useState(false);
 	const [previewOpen, setPreviewOpen] = React.useState(false);
 	const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
+	const [isLoadingPreview, setIsLoadingPreview] = React.useState(false);
 	const fileInputRef = React.useRef<HTMLInputElement>(null);
 
 	const utils = trpc.useUtils();
@@ -122,14 +123,17 @@ export function SessionAttachmentUpload({
 	};
 
 	const handleViewAttachment = async (): Promise<void> => {
+		setPreviewOpen(true);
+		setIsLoadingPreview(true);
 		try {
 			const result = await fetchDownloadUrl();
 			if (result.data?.downloadUrl) {
 				setPreviewUrl(result.data.downloadUrl);
-				setPreviewOpen(true);
 			}
 		} catch {
 			toast.error("Error al cargar el archivo");
+		} finally {
+			setIsLoadingPreview(false);
 		}
 	};
 
@@ -206,31 +210,68 @@ export function SessionAttachmentUpload({
 					</Button>
 				</div>
 
-				<Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-					<DialogContent className="max-w-3xl">
+				<Dialog
+					open={previewOpen}
+					onOpenChange={(open) => {
+						setPreviewOpen(open);
+						if (!open) {
+							setPreviewUrl(null);
+						}
+					}}
+				>
+					<DialogContent className="sm:max-w-lg">
 						<DialogHeader>
 							<DialogTitle>Archivo Adjunto</DialogTitle>
 							<DialogDescription>
 								Vista previa del archivo adjunto de la sesión
 							</DialogDescription>
 						</DialogHeader>
-						{previewUrl && (
-							<div className="mt-4">
-								{previewUrl.includes(".pdf") ? (
-									<iframe
-										src={previewUrl}
-										className="w-full h-[500px] border rounded"
-										title="PDF adjunto"
-									/>
-								) : (
-									<img
-										src={previewUrl}
-										alt="Archivo adjunto"
-										className="max-w-full max-h-[500px] mx-auto rounded"
-									/>
-								)}
-							</div>
-						)}
+						<div className="relative overflow-hidden rounded-lg border">
+							{isLoadingPreview && (
+								<div className="flex items-center justify-center bg-muted/30 py-12">
+									<Loader2 className="size-6 animate-spin text-muted-foreground" />
+								</div>
+							)}
+							{previewUrl && (
+								<>
+									{previewUrl.includes(".pdf") ? (
+										<iframe
+											src={`${previewUrl}#toolbar=0&navpanes=0`}
+											className="h-[400px] w-full"
+											title="PDF adjunto"
+										/>
+									) : (
+										<img
+											src={previewUrl}
+											alt="Archivo adjunto"
+											className="mx-auto max-h-[400px] max-w-full"
+										/>
+									)}
+								</>
+							)}
+							{previewUrl && (
+								<button
+									type="button"
+									onClick={() => {
+										setPreviewOpen(false);
+										setPreviewUrl(null);
+										handleDelete();
+									}}
+									disabled={deleteAttachmentMutation.isPending}
+									className={cn(
+										"absolute top-2 right-2 flex size-8 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-destructive",
+										deleteAttachmentMutation.isPending &&
+											"pointer-events-none opacity-50",
+									)}
+								>
+									{deleteAttachmentMutation.isPending ? (
+										<Loader2 className="size-4 animate-spin" />
+									) : (
+										<Trash2 className="size-4" />
+									)}
+								</button>
+							)}
+						</div>
 					</DialogContent>
 				</Dialog>
 			</>

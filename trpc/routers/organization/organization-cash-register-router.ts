@@ -30,6 +30,7 @@ import {
 	addManualMovementSchema,
 	closeCashRegisterSchema,
 	getCashMovementsSchema,
+	getCashRegisterByIdSchema,
 	getCashRegisterHistorySchema,
 	getDailySummarySchema,
 	openCashRegisterSchema,
@@ -67,6 +68,31 @@ export const organizationCashRegisterRouter = createTRPCRouter({
 
 		return cashRegister ?? null;
 	}),
+
+	// Get cash register by ID
+	getById: protectedOrganizationProcedure
+		.input(getCashRegisterByIdSchema)
+		.query(async ({ ctx, input }) => {
+			const cashRegister = await db.query.cashRegisterTable.findFirst({
+				where: and(
+					eq(cashRegisterTable.id, input.id),
+					eq(cashRegisterTable.organizationId, ctx.organization.id),
+				),
+				with: {
+					openedByUser: { columns: { id: true, name: true } },
+					closedByUser: { columns: { id: true, name: true } },
+				},
+			});
+
+			if (!cashRegister) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Cash register not found",
+				});
+			}
+
+			return cashRegister;
+		}),
 
 	// Open cash register for today
 	open: protectedOrganizationProcedure
@@ -152,8 +178,8 @@ export const organizationCashRegisterRouter = createTRPCRouter({
 				eq(cashRegisterTable.organizationId, ctx.organization.id),
 			];
 
-			if (input.status) {
-				conditions.push(eq(cashRegisterTable.status, input.status));
+			if (input.status && input.status.length > 0) {
+				conditions.push(inArray(cashRegisterTable.status, input.status));
 			}
 
 			if (input.dateRange) {
@@ -196,8 +222,14 @@ export const organizationCashRegisterRouter = createTRPCRouter({
 				eq(cashMovementTable.organizationId, ctx.organization.id),
 			];
 
-			if (input.type) {
-				conditions.push(eq(cashMovementTable.type, input.type));
+			if (input.type && input.type.length > 0) {
+				conditions.push(inArray(cashMovementTable.type, input.type));
+			}
+
+			if (input.referenceType && input.referenceType.length > 0) {
+				conditions.push(
+					inArray(cashMovementTable.referenceType, input.referenceType),
+				);
 			}
 
 			const whereCondition = and(...conditions);

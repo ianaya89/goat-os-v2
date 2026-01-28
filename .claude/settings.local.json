@@ -64,7 +64,9 @@
 			"Bash(node -e:*)",
 			"Bash(tree:*)",
 			"Bash(npx sharp --help:*)",
-			"Bash(magick:*)"
+			"Bash(magick:*)",
+			"Bash(stat:*)",
+			"Bash(rsvg-convert:*)"
 		]
 	}
 }

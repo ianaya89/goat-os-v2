@@ -870,7 +870,7 @@ function AttachmentPreview({
 	const isImage = attachmentKey ? /\.(jpe?g|png)$/i.test(attachmentKey) : false;
 
 	React.useEffect(() => {
-		if (!attachmentKey || isPdf) return;
+		if (!attachmentKey) return;
 
 		let cancelled = false;
 		setIsLoadingPreview(true);
@@ -889,7 +889,7 @@ function AttachmentPreview({
 		return () => {
 			cancelled = true;
 		};
-	}, [attachmentKey, isPdf, fetchDownloadUrl]);
+	}, [attachmentKey, fetchDownloadUrl]);
 
 	if (!attachmentKey) {
 		return (
@@ -910,7 +910,7 @@ function AttachmentPreview({
 
 	return (
 		<div className="flex flex-1 items-center justify-center overflow-hidden rounded-md border bg-muted/30">
-			{isImage && isLoadingPreview && (
+			{isLoadingPreview && (
 				<div className="flex flex-col items-center gap-2 text-muted-foreground">
 					<div className="size-8 animate-spin rounded-full border-2 border-current border-t-transparent" />
 				</div>
@@ -922,11 +922,12 @@ function AttachmentPreview({
 					className="max-h-full max-w-full object-contain p-2"
 				/>
 			)}
-			{isPdf && (
-				<div className="flex flex-col items-center gap-3 p-6 text-muted-foreground">
-					<FileTextIcon className="size-16 text-red-500/70" />
-					<span className="font-medium text-sm">PDF</span>
-				</div>
+			{isPdf && previewUrl && (
+				<iframe
+					src={`${previewUrl}#toolbar=0&navpanes=0`}
+					className="h-full w-full"
+					title="PDF adjunto"
+				/>
 			)}
 		</div>
 	);

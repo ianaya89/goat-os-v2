@@ -60,6 +60,7 @@ import {
 	EventTaskStatus,
 	EventTimeBlockType,
 	EventType,
+	ExpenseCategory,
 	ExpenseCategoryType,
 	enumToPgEnum,
 	FitnessTestType,
@@ -2660,6 +2661,9 @@ export const expenseTable = pgTable(
 		categoryId: uuid("category_id").references(() => expenseCategoryTable.id, {
 			onDelete: "set null",
 		}),
+		category: text("category", {
+			enum: enumToPgEnum(ExpenseCategory),
+		}).$type<ExpenseCategory>(),
 
 		// Amount in smallest currency unit (centavos)
 		amount: integer("amount").notNull(),
@@ -2697,6 +2701,7 @@ export const expenseTable = pgTable(
 	(table) => [
 		index("expense_org_idx").on(table.organizationId),
 		index("expense_category_idx").on(table.categoryId),
+		index("expense_category_enum_idx").on(table.category),
 		index("expense_date_idx").on(table.expenseDate),
 		index("expense_payment_method_idx").on(table.paymentMethod),
 		index("expense_org_date_idx").on(table.organizationId, table.expenseDate),

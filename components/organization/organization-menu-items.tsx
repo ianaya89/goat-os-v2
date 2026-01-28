@@ -14,6 +14,8 @@ import {
 	FileTextIcon,
 	HandshakeIcon,
 	HardHatIcon,
+	HistoryIcon,
+	LandmarkIcon,
 	LayoutDashboardIcon,
 	MapPinIcon,
 	MedalIcon,
@@ -63,6 +65,8 @@ type MenuItem = {
 	icon: React.ComponentType<{ className?: string }>;
 	external?: boolean;
 	exactMatch?: boolean;
+	/** Optional prefix to use for active state detection instead of href */
+	activePrefix?: string;
 	/** Optional feature flag - if set, item only shows when this feature is enabled */
 	feature?: OrganizationFeature;
 };
@@ -274,7 +278,15 @@ export function OrganizationMenuItems(): React.JSX.Element {
 				{
 					label: t("cashRegister"),
 					href: `${basePath}/cash-register`,
-					icon: WalletIcon,
+					exactMatch: true,
+					icon: LandmarkIcon,
+					feature: OrganizationFeature.cashRegister,
+				},
+				{
+					label: t("cashRegisterHistory"),
+					href: `${basePath}/cash-register/history`,
+					activePrefix: `${basePath}/cash-register/`,
+					icon: HistoryIcon,
 					feature: OrganizationFeature.cashRegister,
 				},
 				{
@@ -441,6 +453,9 @@ export function OrganizationMenuItems(): React.JSX.Element {
 			}
 			if (item.exactMatch) {
 				return pathname === item.href;
+			}
+			if (item.activePrefix) {
+				return pathname.startsWith(item.activePrefix);
 			}
 			// Check if the href contains query params
 			if (item.href.includes("?")) {

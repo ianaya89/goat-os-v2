@@ -1,5 +1,6 @@
 import { z } from "zod/v4";
 import {
+	ExpenseCategory,
 	ExpenseCategoryType,
 	TrainingPaymentMethod,
 } from "@/lib/db/schema/enums";
@@ -50,6 +51,7 @@ export const listExpensesSchema = z.object({
 	filters: z
 		.object({
 			categoryId: z.string().uuid().optional(),
+			category: z.array(z.nativeEnum(ExpenseCategory)).optional(),
 			categoryType: z.nativeEnum(ExpenseCategoryType).optional(),
 			paymentMethod: z.array(z.nativeEnum(TrainingPaymentMethod)).optional(),
 			dateRange: z
@@ -76,6 +78,7 @@ export const getExpenseSchema = z.object({
 // Create expense
 export const createExpenseSchema = z.object({
 	categoryId: z.string().uuid().optional().nullable(),
+	category: z.nativeEnum(ExpenseCategory).optional().nullable(),
 	amount: z.number().int().min(1, "Amount must be positive"),
 	currency: z.string().default("ARS"),
 	description: z.string().trim().min(1, "Description is required").max(500),
@@ -92,6 +95,7 @@ export const createExpenseSchema = z.object({
 export const updateExpenseSchema = z.object({
 	id: z.string().uuid(),
 	categoryId: z.string().uuid().optional().nullable(),
+	category: z.nativeEnum(ExpenseCategory).optional().nullable(),
 	amount: z.number().int().min(1).optional(),
 	description: z.string().trim().min(1).max(500).optional(),
 	expenseDate: z.coerce.date().optional(),
@@ -104,6 +108,29 @@ export const updateExpenseSchema = z.object({
 // Delete expense
 export const deleteExpenseSchema = z.object({
 	id: z.string().uuid(),
+});
+
+// Receipt upload URL
+export const getExpenseReceiptUploadUrlSchema = z.object({
+	expenseId: z.string().uuid(),
+	filename: z.string().min(1),
+	contentType: z.enum(["image/jpeg", "image/png", "application/pdf"]),
+});
+
+// Update expense receipt
+export const updateExpenseReceiptSchema = z.object({
+	expenseId: z.string().uuid(),
+	receiptImageKey: z.string().min(1),
+});
+
+// Delete expense receipt
+export const deleteExpenseReceiptSchema = z.object({
+	expenseId: z.string().uuid(),
+});
+
+// Get receipt download URL
+export const getExpenseReceiptDownloadUrlSchema = z.object({
+	expenseId: z.string().uuid(),
 });
 
 // Bulk delete expenses

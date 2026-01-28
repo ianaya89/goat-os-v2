@@ -29,9 +29,9 @@ import {
 import * as React from "react";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/confirmation-modal";
-import { PaymentReceiptModal } from "@/components/organization/payment-receipt-modal";
 import { PaymentsBulkActions } from "@/components/organization/payments-bulk-actions";
 import { PaymentsModal } from "@/components/organization/payments-modal";
+import { PaymentReceiptModal } from "@/components/organization/receipt-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -231,7 +231,7 @@ export function PaymentsTable(): React.JSX.Element {
 		trpc.organization.trainingPayment.delete.useMutation({
 			onSuccess: () => {
 				toast.success(t("success.deleted"));
-				utils.organization.trainingPayment.list.invalidate();
+				utils.organization.trainingPayment.invalidate();
 			},
 			onError: (error) => {
 				toast.error(error.message || t("error.deleteFailed"));

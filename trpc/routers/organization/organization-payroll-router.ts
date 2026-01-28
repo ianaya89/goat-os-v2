@@ -548,7 +548,7 @@ export const organizationPayrollRouter = createTRPCRouter({
 						organizationId: ctx.organization.id,
 						paymentMethod: input.paymentMethod,
 						amount: existing.totalAmount,
-						description: `Pago de sueldo: ${recipientName}`,
+						description: recipientName,
 						referenceType: CashMovementReferenceType.expense,
 						referenceId: expense.id,
 						recordedBy: ctx.user.id,

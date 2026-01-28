@@ -8,14 +8,14 @@ import type {
 } from "@tanstack/react-table";
 import { format } from "date-fns";
 import {
-	BanknoteIcon,
-	FolderIcon,
+	FileTextIcon,
 	MoreHorizontalIcon,
 	PencilIcon,
 	PlusIcon,
 	StoreIcon,
 	Trash2Icon,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
 	parseAsArrayOf,
 	parseAsInteger,
@@ -26,9 +26,10 @@ import {
 import * as React from "react";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/confirmation-modal";
+import { ExpenseCategoryBadge } from "@/components/organization/expense-category-badge";
 import { ExpensesBulkActions } from "@/components/organization/expenses-bulk-actions";
 import { ExpensesModal } from "@/components/organization/expenses-modal";
-import { Badge } from "@/components/ui/badge";
+import { ExpenseReceiptModal } from "@/components/organization/receipt-modal";
 import { Button } from "@/components/ui/button";
 import {
 	createSelectionColumn,
@@ -45,10 +46,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { appConfig } from "@/config/app.config";
 import {
+	ExpenseCategories,
+	type ExpenseCategory,
 	type TrainingPaymentMethod,
 	TrainingPaymentMethods,
 } from "@/lib/db/schema/enums";
-import { cn } from "@/lib/utils";
 import { ExpenseSortField } from "@/schemas/organization-expense-schemas";
 import { trpc } from "@/trpc/client";
 
@@ -58,41 +60,33 @@ interface Expense {
 	id: string;
 	organizationId: string;
 	categoryId: string | null;
+	category: string | null;
 	amount: number;
 	currency: string;
 	description: string;
 	expenseDate: Date;
 	paymentMethod: string | null;
 	receiptNumber: string | null;
+	receiptImageKey: string | null;
 	vendor: string | null;
 	notes: string | null;
 	createdAt: Date;
-	category: {
-		id: string;
-		name: string;
-		type: string;
-	} | null;
 	recordedByUser: {
 		id: string;
 		name: string;
 	} | null;
 }
 
-const categoryTypeColors: Record<string, string> = {
-	operational: "bg-blue-100 dark:bg-blue-900",
-	personnel: "bg-purple-100 dark:bg-purple-900",
-	other: "bg-gray-100 dark:bg-gray-800",
-};
-
-const methodLabels: Record<string, string> = {
-	cash: "Efectivo",
-	bank_transfer: "Transferencia",
-	mercado_pago: "Mercado Pago",
-	card: "Tarjeta",
-	other: "Otro",
+const methodKeys: Record<string, string> = {
+	cash: "cash",
+	bank_transfer: "bankTransfer",
+	mercado_pago: "mercadoPago",
+	card: "card",
+	other: "other",
 };
 
 export function ExpensesTable(): React.JSX.Element {
+	const t = useTranslations("finance.expenses");
 	const [rowSelection, setRowSelection] = React.useState({});
 
 	const [searchQuery, setSearchQuery] = useQueryState(
@@ -123,6 +117,13 @@ export function ExpensesTable(): React.JSX.Element {
 		}),
 	);
 
+	const [categoryFilter, setCategoryFilter] = useQueryState(
+		"category",
+		parseAsArrayOf(parseAsString).withDefault([]).withOptions({
+			shallow: true,
+		}),
+	);
+
 	const [sorting, setSorting] = useQueryState<SortingState>(
 		"sort",
 		parseAsJson<SortingState>((value) => {
@@ -146,8 +147,11 @@ export function ExpensesTable(): React.JSX.Element {
 		if (methodFilter && methodFilter.length > 0) {
 			filters.push({ id: "paymentMethod", value: methodFilter });
 		}
+		if (categoryFilter && categoryFilter.length > 0) {
+			filters.push({ id: "category", value: categoryFilter });
+		}
 		return filters;
-	}, [methodFilter]);
+	}, [methodFilter, categoryFilter]);
 
 	const handleFiltersChange = (filters: ColumnFiltersState): void => {
 		const getFilterValue = (id: string): string[] => {
@@ -156,6 +160,7 @@ export function ExpensesTable(): React.JSX.Element {
 		};
 
 		setMethodFilter(getFilterValue("paymentMethod"));
+		setCategoryFilter(getFilterValue("category"));
 
 		if (pageIndex !== 0) {
 			setPageIndex(0);
@@ -193,6 +198,12 @@ export function ExpensesTable(): React.JSX.Element {
 				paymentMethod: (methodFilter || []).filter((m) =>
 					TrainingPaymentMethods.includes(m as TrainingPaymentMethod),
 				) as TrainingPaymentMethod[],
+				category:
+					categoryFilter && categoryFilter.length > 0
+						? (categoryFilter.filter((c) =>
+								ExpenseCategories.includes(c as ExpenseCategory),
+							) as ExpenseCategory[])
+						: undefined,
 			},
 		},
 		{
@@ -202,11 +213,11 @@ export function ExpensesTable(): React.JSX.Element {
 
 	const deleteExpenseMutation = trpc.organization.expense.delete.useMutation({
 		onSuccess: () => {
-			toast.success("Gasto eliminado exitosamente");
-			utils.organization.expense.list.invalidate();
+			toast.success(t("success.deleted"));
+			utils.organization.expense.invalidate();
 		},
 		onError: (error) => {
-			toast.error(error.message || "Error al eliminar el gasto");
+			toast.error(error.message || t("error.deleteFailed"));
 		},
 	});
 
@@ -230,7 +241,7 @@ export function ExpensesTable(): React.JSX.Element {
 		createSelectionColumn<Expense>(),
 		{
 			accessorKey: "description",
-			header: "Descripcion",
+			header: t("table.description"),
 			cell: ({ row }) => (
 				<div className="flex flex-col gap-0.5">
 					<span
@@ -249,40 +260,40 @@ export function ExpensesTable(): React.JSX.Element {
 		},
 		{
 			accessorKey: "category",
-			header: "Categoria",
+			header: t("table.category"),
 			cell: ({ row }) =>
 				row.original.category ? (
-					<div className="flex items-center gap-1.5">
-						<FolderIcon className="size-4 text-foreground/60" />
-						<Badge
-							className={cn(
-								"border-none px-2 py-0.5 font-medium text-foreground text-xs shadow-none",
-								categoryTypeColors[row.original.category.type] ||
-									"bg-gray-100 dark:bg-gray-800",
-							)}
-							variant="outline"
-						>
-							{row.original.category.name}
-						</Badge>
-					</div>
+					<ExpenseCategoryBadge
+						category={row.original.category}
+						name={t(`categories.${row.original.category}`)}
+					/>
 				) : (
-					<span className="text-muted-foreground">Sin categoria</span>
+					<span className="text-muted-foreground">{t("table.noCategory")}</span>
 				),
 		},
 		{
 			accessorKey: "amount",
 			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Monto" />
+				<SortableColumnHeader column={column} title={t("table.amount")} />
 			),
 			cell: ({ row }) => (
-				<span className="font-medium text-foreground">
-					{formatAmount(row.original.amount, row.original.currency)}
-				</span>
+				<div className="flex flex-col gap-0.5">
+					<span className="font-medium text-foreground">
+						{formatAmount(row.original.amount, row.original.currency)}
+					</span>
+					{row.original.paymentMethod && (
+						<span className="text-foreground/60 text-xs">
+							{t(
+								`methods.${methodKeys[row.original.paymentMethod] ?? row.original.paymentMethod}`,
+							)}
+						</span>
+					)}
+				</div>
 			),
 		},
 		{
 			accessorKey: "vendor",
-			header: "Proveedor",
+			header: t("table.vendor"),
 			cell: ({ row }) =>
 				row.original.vendor ? (
 					<div className="flex items-center gap-1.5 text-foreground/80">
@@ -296,25 +307,9 @@ export function ExpensesTable(): React.JSX.Element {
 				),
 		},
 		{
-			accessorKey: "paymentMethod",
-			header: "Metodo",
-			cell: ({ row }) =>
-				row.original.paymentMethod ? (
-					<div className="flex items-center gap-1.5 text-foreground/80">
-						<BanknoteIcon className="size-4" />
-						<span>
-							{methodLabels[row.original.paymentMethod] ??
-								row.original.paymentMethod}
-						</span>
-					</div>
-				) : (
-					<span className="text-muted-foreground">-</span>
-				),
-		},
-		{
 			accessorKey: "expenseDate",
 			header: ({ column }) => (
-				<SortableColumnHeader column={column} title="Fecha" />
+				<SortableColumnHeader column={column} title={t("table.date")} />
 			),
 			cell: ({ row }) => (
 				<span className="text-foreground/80">
@@ -335,7 +330,7 @@ export function ExpensesTable(): React.JSX.Element {
 								variant="ghost"
 							>
 								<MoreHorizontalIcon className="shrink-0" />
-								<span className="sr-only">Abrir menu</span>
+								<span className="sr-only">{t("table.openMenu")}</span>
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
@@ -345,16 +340,26 @@ export function ExpensesTable(): React.JSX.Element {
 								}}
 							>
 								<PencilIcon className="mr-2 size-4" />
-								Editar
+								{t("edit")}
+							</DropdownMenuItem>
+							<DropdownMenuItem
+								onClick={() => {
+									NiceModal.show(ExpenseReceiptModal, {
+										expenseId: row.original.id,
+										hasReceipt: !!row.original.receiptImageKey,
+									});
+								}}
+							>
+								<FileTextIcon className="mr-2 size-4" />
+								{t("receipt.manage")}
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 							<DropdownMenuItem
 								onClick={() => {
 									NiceModal.show(ConfirmationModal, {
-										title: "Eliminar gasto?",
-										message:
-											"Estas seguro de eliminar este gasto? Esta accion no se puede deshacer.",
-										confirmLabel: "Eliminar",
+										title: t("deleteConfirm.title"),
+										message: t("deleteConfirm.message"),
+										confirmLabel: t("deleteConfirm.confirm"),
 										destructive: true,
 										onConfirm: () =>
 											deleteExpenseMutation.mutate({ id: row.original.id }),
@@ -363,7 +368,7 @@ export function ExpensesTable(): React.JSX.Element {
 								variant="destructive"
 							>
 								<Trash2Icon className="mr-2 size-4" />
-								Eliminar
+								{t("delete")}
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
@@ -374,11 +379,19 @@ export function ExpensesTable(): React.JSX.Element {
 
 	const expenseFilters: FilterConfig[] = [
 		{
+			key: "category",
+			title: t("table.category"),
+			options: ExpenseCategories.map((cat) => ({
+				value: cat,
+				label: t(`categories.${cat}`),
+			})),
+		},
+		{
 			key: "paymentMethod",
-			title: "Metodo",
+			title: t("table.method"),
 			options: TrainingPaymentMethods.map((method) => ({
 				value: method,
-				label: methodLabels[method] ?? method,
+				label: t(`methods.${methodKeys[method] ?? method}`),
 			})),
 		},
 	];
@@ -388,7 +401,7 @@ export function ExpensesTable(): React.JSX.Element {
 			columnFilters={columnFilters}
 			columns={columns}
 			data={(data?.expenses as Expense[]) || []}
-			emptyMessage="No se encontraron gastos."
+			emptyMessage={t("table.noExpenses")}
 			enableFilters
 			enablePagination
 			enableRowSelection
@@ -405,14 +418,14 @@ export function ExpensesTable(): React.JSX.Element {
 			pageSize={pageSize || appConfig.pagination.defaultLimit}
 			renderBulkActions={(table) => <ExpensesBulkActions table={table} />}
 			rowSelection={rowSelection}
-			searchPlaceholder="Buscar gastos..."
+			searchPlaceholder={t("search")}
 			searchQuery={searchQuery || ""}
 			defaultSorting={DEFAULT_SORTING}
 			sorting={sorting}
 			toolbarActions={
 				<Button onClick={() => NiceModal.show(ExpensesModal)} size="sm">
 					<PlusIcon className="size-4 shrink-0" />
-					Agregar Gasto
+					{t("add")}
 				</Button>
 			}
 			totalCount={data?.total ?? 0}

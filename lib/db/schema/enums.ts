@@ -340,6 +340,27 @@ export type ExpenseCategoryType =
 	(typeof ExpenseCategoryType)[keyof typeof ExpenseCategoryType];
 export const ExpenseCategoryTypes = Object.values(ExpenseCategoryType);
 
+// Expense category enum (fixed list)
+export const ExpenseCategory = {
+	fieldRental: "field_rental", // Alquiler de canchas
+	equipment: "equipment", // Equipamiento
+	sportsMaterials: "sports_materials", // Material deportivo
+	transport: "transport", // Transporte
+	salaries: "salaries", // Salarios
+	commissions: "commissions", // Comisiones
+	utilities: "utilities", // Servicios (luz, gas, agua)
+	marketing: "marketing", // Marketing y publicidad
+	insurance: "insurance", // Seguros
+	maintenance: "maintenance", // Mantenimiento
+	facilities: "facilities", // Instalaciones
+	medical: "medical", // Gastos médicos
+	technology: "technology", // Tecnología
+	other: "other",
+} as const;
+export type ExpenseCategory =
+	(typeof ExpenseCategory)[keyof typeof ExpenseCategory];
+export const ExpenseCategories = Object.values(ExpenseCategory);
+
 // Cash register status enum
 export const CashRegisterStatus = {
 	open: "open",
@@ -361,7 +382,7 @@ export const CashMovementTypes = Object.values(CashMovementType);
 
 // Cash movement reference type enum
 export const CashMovementReferenceType = {
-	trainingPayment: "training_payment",
+	payment: "payment",
 	eventPayment: "event_payment",
 	expense: "expense",
 	manual: "manual",
