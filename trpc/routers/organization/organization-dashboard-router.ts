@@ -778,30 +778,92 @@ export const organizationDashboardRouter = createTRPCRouter({
 		};
 	}),
 
-	// Session occupancy stats
-	getSessionOccupancy: protectedOrganizationProcedure.query(async ({ ctx }) => {
+	// Group occupancy stats - members vs max capacity per active group
+	getGroupOccupancy: protectedOrganizationProcedure.query(async ({ ctx }) => {
+		const organizationId = ctx.organization.id;
+
+		// Get active groups with their member counts
+		const groups = await db
+			.select({
+				groupId: athleteGroupTable.id,
+				name: athleteGroupTable.name,
+				maxCapacity: athleteGroupTable.maxCapacity,
+				memberCount: sql<number>`(
+					SELECT COUNT(*) FROM ${athleteGroupMemberTable}
+					WHERE ${athleteGroupMemberTable.groupId} = ${athleteGroupTable.id}
+				)`.as("member_count"),
+			})
+			.from(athleteGroupTable)
+			.where(
+				and(
+					eq(athleteGroupTable.organizationId, organizationId),
+					eq(athleteGroupTable.isActive, true),
+				),
+			)
+			.orderBy(athleteGroupTable.name);
+
+		// Calculate occupancy stats
+		let totalCapacity = 0;
+		let totalMembers = 0;
+		let groupsWithCapacity = 0;
+
+		const groupDetails = groups.map((g) => {
+			const capacity = g.maxCapacity ?? 0;
+			const members = Number(g.memberCount) || 0;
+
+			if (capacity > 0) {
+				totalCapacity += capacity;
+				totalMembers += members;
+				groupsWithCapacity++;
+			}
+
+			return {
+				id: g.groupId,
+				name: g.name,
+				capacity,
+				members,
+				occupancyRate: capacity > 0 ? (members / capacity) * 100 : 0,
+			};
+		});
+
+		const averageOccupancy =
+			totalCapacity > 0 ? (totalMembers / totalCapacity) * 100 : 0;
+
+		// Sort by occupancy rate descending for the top 5
+		const topGroups = [...groupDetails]
+			.filter((g) => g.capacity > 0)
+			.sort((a, b) => b.occupancyRate - a.occupancyRate)
+			.slice(0, 5);
+
+		return {
+			totalGroups: groups.length,
+			groupsWithCapacity,
+			totalCapacity,
+			totalMembers,
+			averageOccupancy: Math.round(averageOccupancy * 10) / 10,
+			groups: topGroups,
+		};
+	}),
+
+	// Location usage stats - sessions per location this week
+	getLocationUsage: protectedOrganizationProcedure.query(async ({ ctx }) => {
 		const organizationId = ctx.organization.id;
 		const now = new Date();
 		const weekStart = getStartOfWeek(now);
 		const weekEnd = getEndOfWeek(now);
 
-		// Get sessions for this week with attendance count and group capacity
-		const sessions = await db
+		// Get session counts per location for this week
+		const locationSessions = await db
 			.select({
-				sessionId: trainingSessionTable.id,
-				title: trainingSessionTable.title,
-				startTime: trainingSessionTable.startTime,
-				status: trainingSessionTable.status,
-				groupCapacity: athleteGroupTable.maxCapacity,
-				attendanceCount: sql<number>`(
-					SELECT COUNT(*) FROM ${attendanceTable}
-					WHERE ${attendanceTable.sessionId} = ${trainingSessionTable.id}
-				)`.as("attendance_count"),
+				locationId: locationTable.id,
+				locationName: locationTable.name,
+				locationColor: locationTable.color,
+				sessionCount: count(),
 			})
 			.from(trainingSessionTable)
-			.leftJoin(
-				athleteGroupTable,
-				eq(trainingSessionTable.athleteGroupId, athleteGroupTable.id),
+			.innerJoin(
+				locationTable,
+				eq(trainingSessionTable.locationId, locationTable.id),
 			)
 			.where(
 				and(
@@ -811,44 +873,34 @@ export const organizationDashboardRouter = createTRPCRouter({
 					eq(trainingSessionTable.isRecurring, false),
 				),
 			)
-			.orderBy(trainingSessionTable.startTime);
+			.groupBy(locationTable.id, locationTable.name, locationTable.color)
+			.orderBy(sql`count(*) DESC`);
 
-		// Calculate occupancy stats
-		let totalCapacity = 0;
-		let totalAttendance = 0;
-		let sessionsWithCapacity = 0;
+		// Total sessions this week (including those without a location)
+		const totalSessions = await db
+			.select({ count: count() })
+			.from(trainingSessionTable)
+			.where(
+				and(
+					eq(trainingSessionTable.organizationId, organizationId),
+					gte(trainingSessionTable.startTime, weekStart),
+					lte(trainingSessionTable.startTime, weekEnd),
+					eq(trainingSessionTable.isRecurring, false),
+				),
+			)
+			.then((r) => r[0]?.count ?? 0);
 
-		const sessionDetails = sessions.map((s) => {
-			const capacity = s.groupCapacity ?? 0;
-			const attendance = Number(s.attendanceCount) || 0;
-
-			if (capacity > 0) {
-				totalCapacity += capacity;
-				totalAttendance += Math.min(attendance, capacity);
-				sessionsWithCapacity++;
-			}
-
-			return {
-				id: s.sessionId,
-				title: s.title,
-				capacity,
-				attendance,
-				occupancyRate: capacity > 0 ? (attendance / capacity) * 100 : 0,
-				startTime: s.startTime,
-				status: s.status,
-			};
-		});
-
-		const averageOccupancy =
-			totalCapacity > 0 ? (totalAttendance / totalCapacity) * 100 : 0;
+		const locations = locationSessions.map((l) => ({
+			id: l.locationId,
+			name: l.locationName,
+			color: l.locationColor,
+			sessionCount: Number(l.sessionCount),
+		}));
 
 		return {
-			totalSessions: sessions.length,
-			sessionsWithCapacity,
-			totalCapacity,
-			totalAttendance,
-			averageOccupancy: Math.round(averageOccupancy * 10) / 10,
-			sessions: sessionDetails.slice(0, 5),
+			totalSessions,
+			totalLocations: locations.length,
+			locations: locations.slice(0, 5),
 		};
 	}),
 

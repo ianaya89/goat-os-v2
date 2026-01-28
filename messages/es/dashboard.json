@@ -170,18 +170,30 @@
 		"addAthletes": "Agregar atletas",
 		"viewAthletes": "Ver atletas"
 	},
-	"sessionOccupancy": {
-		"title": "Ocupacion de Sesiones",
+	"groupOccupancy": {
+		"title": "Ocupacion de Grupos",
+		"noData": "No hay datos disponibles",
+		"description": "Miembros vs capacidad",
+		"average": "Promedio",
+		"groups": "Grupos",
+		"members": "Miembros",
+		"capacity": "Capacidad",
+		"topGroups": "Grupos con mas ocupacion",
+		"noGroups": "No hay grupos activos",
+		"manageGroups": "Gestionar grupos",
+		"viewAllGroups": "Ver todos los grupos"
+	},
+	"locationUsage": {
+		"title": "Uso de Ubicaciones",
 		"noData": "No hay datos disponibles",
 		"thisWeek": "Esta semana",
-		"average": "Promedio",
 		"sessions": "Sesiones",
-		"attendees": "Asistentes",
-		"capacity": "Capacidad",
-		"weekSessions": "Sesiones de esta semana",
+		"locations": "Ubicaciones",
+		"ranking": "Ubicaciones mas usadas",
+		"sessionCount": "{count, plural, one {# sesion} other {# sesiones}}",
 		"noSessions": "No hay sesiones esta semana",
 		"viewCalendar": "Ver calendario",
-		"viewAllSessions": "Ver todas las sesiones"
+		"viewAllLocations": "Ver todas las ubicaciones"
 	},
 	"upcomingEvents": {
 		"title": "Proximos Eventos",

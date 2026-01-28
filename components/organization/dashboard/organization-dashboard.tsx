@@ -3,9 +3,10 @@
 import { useOrganizationUserProfile } from "@/app/(saas)/dashboard/(sidebar)/organization/providers";
 import { AthleteDashboard } from "@/components/organization/dashboard/athlete-dashboard";
 import { DailySummaryCard } from "@/components/organization/dashboard/daily-summary-card";
+import { GroupOccupancyCard } from "@/components/organization/dashboard/group-occupancy-card";
+import { LocationUsageCard } from "@/components/organization/dashboard/location-usage-card";
 import { PendingPaymentsCard } from "@/components/organization/dashboard/pending-payments-card";
 import { RetentionCard } from "@/components/organization/dashboard/retention-card";
-import { SessionOccupancyCard } from "@/components/organization/dashboard/session-occupancy-card";
 import { WeeklySummaryCard } from "@/components/organization/dashboard/weekly-summary-card";
 import { WelcomeSection } from "@/components/organization/dashboard/welcome-section";
 
@@ -30,10 +31,11 @@ export function OrganizationDashboard() {
 			{/* Row 1: Daily Summary */}
 			<DailySummaryCard />
 
-			{/* Row 2: Actionable Metrics - Pending Payments + Session Occupancy + Retention */}
-			<div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2 lg:grid-cols-3">
+			{/* Row 2: Actionable Metrics */}
+			<div className="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
 				<PendingPaymentsCard />
-				<SessionOccupancyCard />
+				<GroupOccupancyCard />
+				<LocationUsageCard />
 				<RetentionCard />
 			</div>
 

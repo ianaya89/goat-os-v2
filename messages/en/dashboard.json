@@ -170,18 +170,30 @@
 		"addAthletes": "Add athletes",
 		"viewAthletes": "View athletes"
 	},
-	"sessionOccupancy": {
-		"title": "Session Occupancy",
+	"groupOccupancy": {
+		"title": "Group Occupancy",
+		"noData": "No data available",
+		"description": "Members vs capacity",
+		"average": "Average",
+		"groups": "Groups",
+		"members": "Members",
+		"capacity": "Capacity",
+		"topGroups": "Top groups by occupancy",
+		"noGroups": "No active groups",
+		"manageGroups": "Manage groups",
+		"viewAllGroups": "View all groups"
+	},
+	"locationUsage": {
+		"title": "Location Usage",
 		"noData": "No data available",
 		"thisWeek": "This week",
-		"average": "Average",
 		"sessions": "Sessions",
-		"attendees": "Attendees",
-		"capacity": "Capacity",
-		"weekSessions": "Sessions this week",
+		"locations": "Locations",
+		"ranking": "Most used locations",
+		"sessionCount": "{count, plural, one {# session} other {# sessions}}",
 		"noSessions": "No sessions this week",
 		"viewCalendar": "View calendar",
-		"viewAllSessions": "View all sessions"
+		"viewAllLocations": "View all locations"
 	},
 	"upcomingEvents": {
 		"title": "Upcoming Events",

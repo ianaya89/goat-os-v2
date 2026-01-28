@@ -1,10 +1,8 @@
 "use client";
 
-import { format } from "date-fns";
-import { enUS, es } from "date-fns/locale";
-import { ArrowRightIcon, CalendarCheckIcon, UsersIcon } from "lucide-react";
+import { ArrowRightIcon, UsersIcon } from "lucide-react";
 import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import type * as React from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,13 +17,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
-export function SessionOccupancyCard(): React.JSX.Element {
-	const t = useTranslations("dashboard.sessionOccupancy");
-	const locale = useLocale();
-	const dateLocale = locale === "es" ? es : enUS;
+export function GroupOccupancyCard(): React.JSX.Element {
+	const t = useTranslations("dashboard.groupOccupancy");
 
 	const { data, isLoading } =
-		trpc.organization.dashboard.getSessionOccupancy.useQuery();
+		trpc.organization.dashboard.getGroupOccupancy.useQuery();
 
 	if (isLoading) {
 		return (
@@ -58,27 +54,18 @@ export function SessionOccupancyCard(): React.JSX.Element {
 		return "text-muted-foreground";
 	};
 
-	const getOccupancyBg = (_rate: number) => {
-		return "bg-muted/50";
-	};
-
 	return (
 		<Card className="flex flex-col">
 			<CardHeader>
 				<div className="flex items-center justify-between">
 					<div>
 						<CardTitle className="flex items-center gap-2">
-							<CalendarCheckIcon className="size-5 text-muted-foreground" />
+							<UsersIcon className="size-5 text-muted-foreground" />
 							{t("title")}
 						</CardTitle>
-						<CardDescription>{t("thisWeek")}</CardDescription>
+						<CardDescription>{t("description")}</CardDescription>
 					</div>
-					<div
-						className={cn(
-							"flex flex-col items-center rounded-lg px-3 py-2",
-							getOccupancyBg(data.averageOccupancy),
-						)}
-					>
+					<div className="flex flex-col items-center rounded-lg bg-muted/50 px-3 py-2">
 						<span
 							className={cn(
 								"text-2xl font-bold",
@@ -94,19 +81,17 @@ export function SessionOccupancyCard(): React.JSX.Element {
 				</div>
 			</CardHeader>
 			<CardContent className="flex flex-1 flex-col">
-				{data.totalSessions > 0 ? (
+				{data.totalGroups > 0 ? (
 					<div className="flex flex-1 flex-col space-y-4">
 						{/* Summary Stats */}
 						<div className="grid grid-cols-3 gap-2 text-center">
 							<div className="rounded-lg bg-muted/50 p-2">
-								<p className="text-lg font-bold">{data.totalSessions}</p>
-								<p className="text-xs text-muted-foreground">{t("sessions")}</p>
+								<p className="text-lg font-bold">{data.totalGroups}</p>
+								<p className="text-xs text-muted-foreground">{t("groups")}</p>
 							</div>
 							<div className="rounded-lg bg-muted/50 p-2">
-								<p className="text-lg font-bold">{data.totalAttendance}</p>
-								<p className="text-xs text-muted-foreground">
-									{t("attendees")}
-								</p>
+								<p className="text-lg font-bold">{data.totalMembers}</p>
+								<p className="text-xs text-muted-foreground">{t("members")}</p>
 							</div>
 							<div className="rounded-lg bg-muted/50 p-2">
 								<p className="text-lg font-bold">{data.totalCapacity}</p>
@@ -114,49 +99,39 @@ export function SessionOccupancyCard(): React.JSX.Element {
 							</div>
 						</div>
 
-						{/* Session List */}
-						{data.sessions.length > 0 && (
+						{/* Group List */}
+						{data.groups.length > 0 && (
 							<div className="space-y-2">
 								<h4 className="text-xs font-medium text-muted-foreground">
-									{t("weekSessions")}
+									{t("topGroups")}
 								</h4>
-								{data.sessions.map((session) => (
+								{data.groups.map((group) => (
 									<div
-										key={session.id}
+										key={group.id}
 										className="flex items-center justify-between rounded-lg border p-2"
 									>
 										<div className="flex items-center gap-2 min-w-0">
-											<div
-												className={cn(
-													"flex size-7 items-center justify-center rounded",
-													getOccupancyBg(session.occupancyRate),
-												)}
-											>
+											<div className="flex size-7 items-center justify-center rounded bg-muted/50">
 												<UsersIcon
 													className={cn(
 														"size-3",
-														getOccupancyColor(session.occupancyRate),
+														getOccupancyColor(group.occupancyRate),
 													)}
 												/>
 											</div>
 											<div className="min-w-0">
 												<p className="text-sm font-medium truncate">
-													{session.title}
-												</p>
-												<p className="text-xs text-muted-foreground">
-													{format(new Date(session.startTime), "EEE d, HH:mm", {
-														locale: dateLocale,
-													})}
+													{group.name}
 												</p>
 											</div>
 										</div>
 										<div className="flex items-center gap-2">
 											<Progress
-												value={session.occupancyRate}
+												value={Math.min(group.occupancyRate, 100)}
 												className="w-16 h-2"
 											/>
 											<span className="text-xs w-12 text-right">
-												{session.attendance}/{session.capacity}
+												{group.members}/{group.capacity}
 											</span>
 										</div>
 									</div>
@@ -170,19 +145,19 @@ export function SessionOccupancyCard(): React.JSX.Element {
 							asChild
 							className="mt-auto w-full gap-1.5"
 						>
-							<Link href="/dashboard/organization/training-sessions">
-								{t("viewAllSessions")}
+							<Link href="/dashboard/organization/athlete-groups">
+								{t("viewAllGroups")}
 								<ArrowRightIcon className="size-3.5" />
 							</Link>
 						</Button>
 					</div>
 				) : (
 					<div className="flex flex-col items-center py-6 text-center">
-						<CalendarCheckIcon className="size-10 text-muted-foreground/50 mb-2" />
-						<p className="text-muted-foreground text-sm">{t("noSessions")}</p>
+						<UsersIcon className="size-10 text-muted-foreground/50 mb-2" />
+						<p className="text-muted-foreground text-sm">{t("noGroups")}</p>
 						<Button variant="link" size="sm" asChild className="mt-2">
-							<Link href="/dashboard/organization/training-sessions">
-								{t("viewCalendar")}
+							<Link href="/dashboard/organization/athlete-groups">
+								{t("manageGroups")}
 							</Link>
 						</Button>
 					</div>
