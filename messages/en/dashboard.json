@@ -55,7 +55,17 @@
 		"noSessions": "No sessions scheduled",
 		"noSessionsTomorrow": "No sessions scheduled for tomorrow",
 		"noSessionsWeek": "No sessions scheduled this week",
-		"viewCalendar": "View session calendar"
+		"viewCalendar": "View session calendar",
+		"sendConfirmation": "Send confirmation",
+		"confirmationMessage": "A reminder will be sent to {count} athletes via {channel}.",
+		"sendViaEmail": "Send via Email",
+		"sendViaWhatsApp": "Send via WhatsApp",
+		"sendViaSms": "Send via SMS",
+		"primaryCoach": "Primary coach",
+		"assistant": "assistant",
+		"assistants": "assistants",
+		"athlete": "athlete",
+		"athletes": "athletes"
 	},
 	"weekly": {
 		"title": "Weekly Summary",
@@ -77,6 +87,7 @@
 	"home": {
 		"title": "Home",
 		"subtitle": "Your personal dashboard",
+		"selectOrganization": "Select an organization",
 		"myOrganizations": "My Organizations",
 		"myOrganizationsDescription": "Select an organization to access its dashboard",
 		"noOrganizations": "You don't belong to any organization yet.",

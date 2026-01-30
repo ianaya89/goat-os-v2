@@ -372,9 +372,10 @@ export const organizationDashboardRouter = createTRPCRouter({
 		const weekEnd = getEndOfWeek(today);
 
 		const sessionWith = {
-			location: { columns: { id: true, name: true } },
+			location: { columns: { id: true, name: true, color: true } },
 			athleteGroup: { columns: { id: true, name: true } },
 			coaches: {
+				columns: { isPrimary: true },
 				with: {
 					coach: {
 						with: {

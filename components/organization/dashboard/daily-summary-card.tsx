@@ -1,5 +1,6 @@
 "use client";
 
+import NiceModal from "@ebay/nice-modal-react";
 import { format } from "date-fns";
 import { enUS, es } from "date-fns/locale";
 import {
@@ -7,14 +8,22 @@ import {
 	CalendarCheckIcon,
 	CalendarIcon,
 	ClockIcon,
-	MapPinIcon,
+	MailIcon,
+	MessageSquareIcon,
+	SendIcon,
+	SmartphoneIcon,
+	UserIcon,
 	UsersIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type * as React from "react";
+import { toast } from "sonner";
+import { ConfirmationModal } from "@/components/confirmation-modal";
+import { LocationBadge } from "@/components/organization/location-badge";
 import { TrainingSessionStatusSelect } from "@/components/organization/training-session-status-select";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
@@ -22,8 +31,20 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
+import type { NotificationChannel } from "@/lib/db/schema/enums";
 import { trpc } from "@/trpc/client";
 
 type SessionItem = {
@@ -32,9 +53,10 @@ type SessionItem = {
 	startTime: Date;
 	endTime: Date;
 	status: string;
-	location: { id: string; name: string } | null;
+	location: { id: string; name: string; color: string | null } | null;
 	athleteGroup: { id: string; name: string } | null;
 	coaches: Array<{
+		isPrimary: boolean;
 		coach: {
 			user: { id: string; name: string } | null;
 		};
@@ -49,10 +71,19 @@ type SessionItem = {
 function SessionList({
 	sessions,
 	emptyMessage,
+	onSendConfirmation,
+	isSendingConfirmation,
 }: {
 	sessions: SessionItem[];
 	emptyMessage: string;
+	onSendConfirmation: (
+		session: SessionItem,
+		channel: NotificationChannel,
+	) => void;
+	isSendingConfirmation: boolean;
 }) {
+	const t = useTranslations("dashboard.daily");
+
 	if (sessions.length === 0) {
 		return (
 			<div className="flex flex-col items-center py-6 text-center">
@@ -63,107 +94,173 @@ function SessionList({
 	}
 
 	return (
-		<div className="max-h-56 overflow-y-auto space-y-1.5 pr-1">
+		<div className="max-h-64 overflow-y-auto space-y-2 pr-1">
 			{sessions.map((session) => {
-				const coaches = session.coaches
-					?.map((c) => c.coach.user)
+				const primaryCoach = session.coaches?.find((c) => c.isPrimary)?.coach
+					.user;
+				const assistantCoaches = session.coaches
+					?.filter((c) => !c.isPrimary)
+					.map((c) => c.coach.user)
 					.filter(Boolean);
 				const athletes = session.athletes
 					?.map((a) => a.athlete.user)
 					.filter(Boolean);
-				const hasMetadata =
-					session.location ||
-					coaches.length > 0 ||
-					session.athleteGroup ||
-					athletes.length > 0;
+				const athleteCount = athletes.length;
 
 				return (
-					<div key={session.id} className="rounded-md border p-2 space-y-1">
-						<div className="flex items-center justify-between gap-2">
-							<div className="flex items-center gap-2 min-w-0">
-								<div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted">
-									<ClockIcon className="size-3.5 text-muted-foreground" />
-								</div>
-								<div className="min-w-0">
-									<Link
-										href={`/dashboard/organization/training-sessions/${session.id}`}
-										className="font-medium text-xs hover:underline leading-tight"
-									>
-										{session.title}
-									</Link>
-									<p className="text-muted-foreground text-[11px]">
+					<div
+						key={session.id}
+						className="rounded-lg border bg-card p-3 transition-colors hover:bg-accent/30"
+					>
+						{/* Header row: Title + Time + Status + Actions */}
+						<div className="flex items-start justify-between gap-2">
+							<div className="min-w-0 flex-1">
+								<Link
+									href={`/dashboard/organization/training-sessions/${session.id}`}
+									className="font-medium text-sm hover:underline hover:text-primary leading-tight"
+								>
+									{session.title}
+								</Link>
+								<div className="mt-0.5 flex items-center gap-1.5 text-muted-foreground text-xs">
+									<ClockIcon className="size-3" />
+									<span>
 										{format(session.startTime, "HH:mm")} -{" "}
 										{format(session.endTime, "HH:mm")}
-									</p>
+									</span>
 								</div>
 							</div>
-							<TrainingSessionStatusSelect
-								sessionId={session.id}
-								currentStatus={session.status}
-								size="sm"
-							/>
-						</div>
-						{hasMetadata && (
-							<div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 pl-9 text-[11px] text-muted-foreground">
-								{session.location && (
-									<Badge
-										variant="outline"
-										className="gap-0.5 font-normal text-[11px] px-1.5 py-0"
-									>
-										<MapPinIcon className="size-2.5" />
-										{session.location.name}
-									</Badge>
-								)}
-								{coaches.length > 0 && (
-									<>
-										{session.location && <span>·</span>}
-										{coaches.map((user, idx) => (
-											<span key={user!.id}>
-												<Link
-													href="/dashboard/organization/coaches"
-													className="hover:text-foreground hover:underline"
-												>
-													{user!.name}
-												</Link>
-												{idx < coaches.length - 1 && <span>, </span>}
-											</span>
-										))}
-									</>
-								)}
-								{session.athleteGroup && (
-									<>
-										{(session.location || coaches.length > 0) && <span>·</span>}
-										<Link
-											href={`/dashboard/organization/groups/${session.athleteGroup.id}`}
-											className="hover:text-foreground hover:underline"
-										>
-											{session.athleteGroup.name}
-										</Link>
-									</>
-								)}
-								{athletes.length > 0 && !session.athleteGroup && (
-									<>
-										{(session.location || coaches.length > 0) && <span>·</span>}
-										{athletes.slice(0, 2).map((user, idx) => (
-											<span key={user!.id}>
-												<Link
-													href="/dashboard/organization/athletes"
-													className="hover:text-foreground hover:underline"
-												>
-													{user!.name}
-												</Link>
-												{idx < Math.min(athletes.length, 2) - 1 && (
-													<span>, </span>
-												)}
-											</span>
-										))}
-										{athletes.length > 2 && (
-											<span> +{athletes.length - 2}</span>
-										)}
-									</>
+							<div className="flex items-center gap-1.5 shrink-0">
+								<TrainingSessionStatusSelect
+									sessionId={session.id}
+									currentStatus={session.status}
+									size="sm"
+								/>
+								{athleteCount > 0 && (
+									<DropdownMenu>
+										<Tooltip>
+											<TooltipTrigger asChild>
+												<DropdownMenuTrigger asChild>
+													<Button
+														variant="ghost"
+														size="icon"
+														className="size-7"
+														disabled={isSendingConfirmation}
+													>
+														<SendIcon className="size-3.5" />
+													</Button>
+												</DropdownMenuTrigger>
+											</TooltipTrigger>
+											<TooltipContent>{t("sendConfirmation")}</TooltipContent>
+										</Tooltip>
+										<DropdownMenuContent align="end">
+											<DropdownMenuItem
+												onClick={() => onSendConfirmation(session, "email")}
+												disabled={isSendingConfirmation}
+											>
+												<MailIcon className="mr-2 size-4" />
+												{t("sendViaEmail")}
+											</DropdownMenuItem>
+											<DropdownMenuItem
+												onClick={() => onSendConfirmation(session, "whatsapp")}
+												disabled={isSendingConfirmation}
+											>
+												<MessageSquareIcon className="mr-2 size-4" />
+												{t("sendViaWhatsApp")}
+											</DropdownMenuItem>
+											<DropdownMenuItem
+												onClick={() => onSendConfirmation(session, "sms")}
+												disabled={isSendingConfirmation}
+											>
+												<SmartphoneIcon className="mr-2 size-4" />
+												{t("sendViaSms")}
+											</DropdownMenuItem>
+										</DropdownMenuContent>
+									</DropdownMenu>
 								)}
 							</div>
-						)}
+						</div>
+
+						{/* Content row: Location + Coach + Participants */}
+						<div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+							{/* Location with color badge */}
+							{session.location && (
+								<LocationBadge
+									locationId={session.location.id}
+									name={session.location.name}
+									color={session.location.color}
+									className="text-[11px] px-1.5 py-0.5"
+								/>
+							)}
+
+							{/* Primary Coach */}
+							{primaryCoach && (
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Link
+											href="/dashboard/organization/coaches"
+											className="inline-flex items-center gap-1 rounded-md bg-blue-100 px-1.5 py-0.5 text-[11px] font-medium text-blue-700 hover:bg-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:hover:bg-blue-900"
+										>
+											<UserIcon className="size-2.5" />
+											{primaryCoach.name}
+										</Link>
+									</TooltipTrigger>
+									<TooltipContent>{t("primaryCoach")}</TooltipContent>
+								</Tooltip>
+							)}
+
+							{/* Assistant Coaches */}
+							{assistantCoaches && assistantCoaches.length > 0 && (
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<span className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">
+											+{assistantCoaches.length}{" "}
+											{assistantCoaches.length === 1
+												? t("assistant")
+												: t("assistants")}
+										</span>
+									</TooltipTrigger>
+									<TooltipContent>
+										{assistantCoaches.map((c) => c!.name).join(", ")}
+									</TooltipContent>
+								</Tooltip>
+							)}
+
+							{/* Divider */}
+							{(session.location ||
+								primaryCoach ||
+								(assistantCoaches && assistantCoaches.length > 0)) &&
+								(session.athleteGroup || athleteCount > 0) && (
+									<span className="text-muted-foreground/50">|</span>
+								)}
+
+							{/* Group or Athletes */}
+							{session.athleteGroup ? (
+								<Link
+									href={`/dashboard/organization/groups/${session.athleteGroup.id}`}
+									className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+								>
+									<UsersIcon className="size-3" />
+									{session.athleteGroup.name}
+								</Link>
+							) : athleteCount > 0 ? (
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<span className="inline-flex items-center gap-1 text-muted-foreground">
+											<UsersIcon className="size-3" />
+											{athleteCount}{" "}
+											{athleteCount === 1 ? t("athlete") : t("athletes")}
+										</span>
+									</TooltipTrigger>
+									<TooltipContent>
+										{athletes
+											.slice(0, 5)
+											.map((a) => a!.name)
+											.join(", ")}
+										{athleteCount > 5 && ` +${athleteCount - 5}`}
+									</TooltipContent>
+								</Tooltip>
+							) : null}
+						</div>
 					</div>
 				);
 			})}
@@ -173,11 +270,56 @@ function SessionList({
 
 export function DailySummaryCard(): React.JSX.Element {
 	const t = useTranslations("dashboard.daily");
+	const tTraining = useTranslations("training");
 	const locale = useLocale();
 	const dateLocale = locale === "es" ? es : enUS;
 
+	const utils = trpc.useUtils();
+
 	const { data, isLoading } =
 		trpc.organization.dashboard.getDailyActivity.useQuery();
+
+	const sendConfirmationMutation =
+		trpc.organization.confirmation.sendForSessions.useMutation({
+			onSuccess: (result) => {
+				toast.success(
+					tTraining("success.reminderSent", { count: result.sent }),
+				);
+				utils.organization.confirmation.getStats.invalidate();
+				utils.organization.confirmation.getHistory.invalidate();
+			},
+			onError: () => {
+				toast.error(tTraining("error.reminderFailed"));
+			},
+		});
+
+	const handleSendConfirmation = (
+		session: SessionItem,
+		channel: NotificationChannel,
+	) => {
+		const athleteCount = session.athletes.length;
+		const channelLabel =
+			channel === "email"
+				? "Email"
+				: channel === "whatsapp"
+					? "WhatsApp"
+					: "SMS";
+
+		NiceModal.show(ConfirmationModal, {
+			title: t("sendConfirmation"),
+			message: t("confirmationMessage", {
+				count: athleteCount,
+				channel: channelLabel,
+			}),
+			confirmLabel: t("sendConfirmation"),
+			onConfirm: () => {
+				sendConfirmationMutation.mutate({
+					sessionIds: [session.id],
+					channel,
+				});
+			},
+		});
+	};
 
 	const formatAmount = (amount: number) => {
 		return new Intl.NumberFormat(locale === "es" ? "es-AR" : "en-US", {
@@ -291,6 +433,8 @@ export function DailySummaryCard(): React.JSX.Element {
 						<SessionList
 							sessions={data.sessions.list as SessionItem[]}
 							emptyMessage={t("noSessions")}
+							onSendConfirmation={handleSendConfirmation}
+							isSendingConfirmation={sendConfirmationMutation.isPending}
 						/>
 					</TabsContent>
 
@@ -298,6 +442,8 @@ export function DailySummaryCard(): React.JSX.Element {
 						<SessionList
 							sessions={data.tomorrow.sessions.list as SessionItem[]}
 							emptyMessage={t("noSessionsTomorrow")}
+							onSendConfirmation={handleSendConfirmation}
+							isSendingConfirmation={sendConfirmationMutation.isPending}
 						/>
 					</TabsContent>
 
@@ -305,6 +451,8 @@ export function DailySummaryCard(): React.JSX.Element {
 						<SessionList
 							sessions={data.week.sessions.list as SessionItem[]}
 							emptyMessage={t("noSessionsWeek")}
+							onSendConfirmation={handleSendConfirmation}
+							isSendingConfirmation={sendConfirmationMutation.isPending}
 						/>
 					</TabsContent>
 				</Tabs>

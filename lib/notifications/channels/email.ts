@@ -6,6 +6,7 @@
 
 import { render } from "@react-email/render";
 import { sendEmail as sendEmailViaResend } from "@/lib/email/resend";
+import { getEmailTranslations } from "@/lib/email/translations";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import type {
@@ -38,18 +39,80 @@ const templateModules: Record<
 		import("@/lib/email/templates/daily-session-summary-email"),
 };
 
-// Default subjects for templates
-const templateSubjects: Record<EmailTemplateName, string> = {
-	"verify-email": "Verify your email address",
-	"password-reset": "Reset your password",
-	"organization-invitation": "You've been invited to join",
-	"payment-failed": "Payment failed",
-	"subscription-canceled": "Your subscription has been canceled",
-	"trial-ending": "Your trial is ending soon",
-	welcome: "Welcome!",
-	"training-session-reminder": "Training Session Reminder",
-	"daily-session-summary": "Your Daily Training Summary",
+// Subject key mapping for each template
+const templateSubjectKeys: Record<
+	EmailTemplateName,
+	{ key: string; params?: string[] }
+> = {
+	"verify-email": { key: "verifyEmail.subject" },
+	"password-reset": { key: "passwordReset.subject" },
+	"organization-invitation": { key: "organizationInvitation.subject" },
+	"payment-failed": {
+		key: "paymentFailed.subject",
+		params: ["organizationName"],
+	},
+	"subscription-canceled": {
+		key: "subscriptionCanceled.subject",
+		params: ["planName"],
+	},
+	"trial-ending": {
+		key: "trialEndingSoon.subject",
+		params: ["planName", "daysText"],
+	},
+	welcome: { key: "coachWelcome.subject", params: ["organizationName"] },
+	"training-session-reminder": { key: "trainingSessionReminder.subject" },
+	"daily-session-summary": { key: "dailySessionSummary.subject" },
 };
+
+/**
+ * Get translated subject for a template
+ */
+function getTranslatedSubject(
+	template: EmailTemplateName,
+	locale: string,
+	data: Record<string, unknown>,
+): string {
+	const t = getEmailTranslations(locale);
+	const subjectConfig = templateSubjectKeys[template];
+
+	// Navigate to the subject string
+	const keys = subjectConfig.key.split(".");
+	let subject: unknown = t;
+	for (const key of keys) {
+		if (subject && typeof subject === "object") {
+			subject = (subject as Record<string, unknown>)[key];
+		}
+	}
+
+	if (typeof subject !== "string") {
+		// Fallback subjects
+		const fallbackSubjects: Record<EmailTemplateName, string> = {
+			"verify-email": "Verify your email address",
+			"password-reset": "Reset your password",
+			"organization-invitation": "You've been invited to join",
+			"payment-failed": "Payment failed",
+			"subscription-canceled": "Your subscription has been canceled",
+			"trial-ending": "Your trial is ending soon",
+			welcome: "Welcome!",
+			"training-session-reminder": "Training Session Reminder",
+			"daily-session-summary": "Your Daily Training Summary",
+		};
+		return fallbackSubjects[template];
+	}
+
+	// Replace parameters in subject
+	let result = subject;
+	if (subjectConfig.params) {
+		for (const param of subjectConfig.params) {
+			const value = data[param];
+			if (value !== undefined) {
+				result = result.replace(`{${param}}`, String(value));
+			}
+		}
+	}
+
+	return result;
+}
 
 /**
  * Render email template to HTML and plain text
@@ -57,6 +120,7 @@ const templateSubjects: Record<EmailTemplateName, string> = {
 async function renderTemplate(
 	template: EmailTemplateName,
 	data: Record<string, unknown>,
+	locale: string,
 ): Promise<{ html: string; text: string }> {
 	const templateLoader = templateModules[template];
 
@@ -64,8 +128,9 @@ async function renderTemplate(
 		throw new Error(`Unknown email template: ${template}`);
 	}
 
+	const t = getEmailTranslations(locale);
 	const { default: Template } = await templateLoader();
-	const element = Template(data);
+	const element = Template({ ...data, t });
 
 	const [html, text] = await Promise.all([
 		render(element),
@@ -85,11 +150,14 @@ export async function sendEmailNotification(
 	options?: {
 		subject?: string;
 		replyTo?: string;
+		locale?: string;
 	},
 ): Promise<NotificationResult> {
 	try {
-		const { html, text } = await renderTemplate(template, data);
-		const subject = options?.subject || templateSubjects[template];
+		const locale = options?.locale || "es";
+		const { html, text } = await renderTemplate(template, data, locale);
+		const subject =
+			options?.subject || getTranslatedSubject(template, locale, data);
 
 		const response = await sendEmailViaResend({
 			recipient: to.email,
@@ -139,6 +207,7 @@ export async function sendBulkEmail(
 	options?: {
 		subject?: string;
 		replyTo?: string;
+		locale?: string;
 	},
 ): Promise<NotificationResult[]> {
 	const results = await Promise.allSettled(

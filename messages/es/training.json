@@ -201,7 +201,9 @@
 		"sendDailySummary": "Enviar Resumen Diario",
 		"sending": "Enviando...",
 		"todaysSessions": "Sesiones de Hoy",
-		"tomorrowsSessions": "Sesiones de Mañana"
+		"tomorrowsSessions": "Sesiones de Mañana",
+		"thisWeeksSessions": "Sesiones de la Semana",
+		"noAthletes": "No hay atletas para notificar"
 	},
 	"modal": {
 		"editTitle": "Editar Sesión",
@@ -297,7 +299,11 @@
 		"time": "Hora",
 		"durationLabel": "Duración",
 		"location": "Ubicación",
-		"close": "Cerrar"
+		"close": "Cerrar",
+		"actions": "Acciones",
+		"sendConfirmation": "Enviar Confirmación",
+		"confirmationsSent": "Confirmaciones enviadas: {sent} de {total}",
+		"confirmationsFailed": "Error al enviar confirmaciones"
 	},
 	"bulk": {
 		"changeStatus": "Cambiar estado",

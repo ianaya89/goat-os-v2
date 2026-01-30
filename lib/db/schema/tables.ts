@@ -215,6 +215,7 @@ export const organizationTable = pgTable(
 		timezone: text("timezone")
 			.notNull()
 			.default("America/Argentina/Buenos_Aires"),
+		locale: text("locale").notNull().default("es"),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.notNull()
 			.defaultNow(),

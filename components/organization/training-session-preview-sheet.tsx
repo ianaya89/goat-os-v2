@@ -1,15 +1,20 @@
 "use client";
 
+import NiceModal from "@ebay/nice-modal-react";
 import { format } from "date-fns";
 import {
 	CalendarDaysIcon,
 	CalendarIcon,
+	ChevronDownIcon,
 	ClockIcon,
 	EditIcon,
 	ExternalLinkIcon,
 	LoaderIcon,
+	MailIcon,
 	MapPinIcon,
+	MessageSquareIcon,
 	RepeatIcon,
+	SmartphoneIcon,
 	Trash2Icon,
 	UserIcon,
 	UsersIcon,
@@ -18,6 +23,8 @@ import {
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import * as React from "react";
+import { toast } from "sonner";
+import { ConfirmationModal } from "@/components/confirmation-modal";
 import { TrainingSessionStatusSelect } from "@/components/organization/training-session-status-select";
 import {
 	AlertDialog,
@@ -32,10 +39,18 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetFooter } from "@/components/ui/sheet";
 import { UserAvatar } from "@/components/user/user-avatar";
+import type { NotificationChannel } from "@/lib/db/schema/enums";
+import { trpc } from "@/trpc/client";
 
 interface SessionCoach {
 	id: string;
@@ -81,6 +96,48 @@ export function TrainingSessionPreviewSheet({
 	isDeleting,
 }: TrainingSessionPreviewSheetProps) {
 	const t = useTranslations("training");
+	const tConfirmations = useTranslations("confirmations");
+	const utils = trpc.useUtils();
+
+	const sendConfirmationsMutation =
+		trpc.organization.confirmation.sendForSessions.useMutation({
+			onSuccess: (data) => {
+				toast.success(t("bulk.confirmationsSent", { count: data.sent }));
+				utils.organization.confirmation.getHistory.invalidate();
+				utils.organization.confirmation.getStats.invalidate();
+			},
+			onError: (error) => {
+				toast.error(error.message || t("preview.confirmationsFailed"));
+			},
+		});
+
+	const handleSendConfirmations = (channel: NotificationChannel) => {
+		if (!session) return;
+
+		const athleteCount =
+			session.athletes.length > 0 ? session.athletes.length : 0;
+		const channelLabel =
+			channel === "email"
+				? "Email"
+				: channel === "whatsapp"
+					? "WhatsApp"
+					: "SMS";
+
+		NiceModal.show(ConfirmationModal, {
+			title: tConfirmations("bulkSend.confirmTitle"),
+			message: tConfirmations("bulkSend.confirmMessage", {
+				count: athleteCount,
+				channel: channelLabel,
+			}),
+			confirmLabel: tConfirmations("bulkSend.confirmButton"),
+			onConfirm: () => {
+				sendConfirmationsMutation.mutate({
+					sessionIds: [session.id],
+					channel,
+				});
+			},
+		});
+	};
 
 	if (!session) return null;
 
@@ -283,71 +340,119 @@ export function TrainingSessionPreviewSheet({
 								</div>
 							)}
 						</div>
+
+						{/* Actions Section */}
+						<Separator />
+						<div className="space-y-3">
+							<h4 className="font-medium text-sm">{t("preview.actions")}</h4>
+							<div className="flex flex-wrap gap-2">
+								<DropdownMenu>
+									<DropdownMenuTrigger asChild>
+										<Button
+											variant="outline"
+											size="sm"
+											disabled={sendConfirmationsMutation.isPending}
+										>
+											{sendConfirmationsMutation.isPending ? (
+												<LoaderIcon className="size-4 animate-spin" />
+											) : (
+												<MailIcon className="size-4" />
+											)}
+											{t("bulk.sendConfirmations")}
+											<ChevronDownIcon className="size-4" />
+										</Button>
+									</DropdownMenuTrigger>
+									<DropdownMenuContent align="start">
+										<DropdownMenuItem
+											onClick={() => handleSendConfirmations("email")}
+										>
+											<MailIcon className="size-4" />
+											{t("bulk.viaEmail")}
+										</DropdownMenuItem>
+										<DropdownMenuItem
+											onClick={() => handleSendConfirmations("whatsapp")}
+										>
+											<MessageSquareIcon className="size-4" />
+											{t("bulk.viaWhatsApp")}
+										</DropdownMenuItem>
+										<DropdownMenuItem
+											onClick={() => handleSendConfirmations("sms")}
+										>
+											<SmartphoneIcon className="size-4" />
+											{t("bulk.viaSms")}
+										</DropdownMenuItem>
+									</DropdownMenuContent>
+								</DropdownMenu>
+								{onEdit && (
+									<Button variant="outline" size="sm" onClick={onEdit}>
+										<EditIcon className="size-4" />
+										{t("edit")}
+									</Button>
+								)}
+								<Button variant="outline" size="sm" asChild>
+									<Link
+										href={`/dashboard/organization/training-sessions/${session.id}`}
+									>
+										<ExternalLinkIcon className="size-4" />
+										{t("preview.details")}
+									</Link>
+								</Button>
+								{onDelete && (
+									<AlertDialog>
+										<AlertDialogTrigger asChild>
+											<Button
+												variant="outline"
+												size="sm"
+												className="text-destructive hover:text-destructive"
+												disabled={isDeleting}
+											>
+												{isDeleting ? (
+													<LoaderIcon className="size-4 animate-spin" />
+												) : (
+													<Trash2Icon className="size-4" />
+												)}
+												{t("preview.deleteSession")}
+											</Button>
+										</AlertDialogTrigger>
+										<AlertDialogContent>
+											<AlertDialogHeader>
+												<AlertDialogTitle>
+													{t("preview.deleteTitle")}
+												</AlertDialogTitle>
+												<AlertDialogDescription>
+													{t("preview.deleteDescription", {
+														title: session.title,
+														date: format(session.start, "EEEE, MMM d"),
+														time: format(session.start, "HH:mm"),
+													})}
+												</AlertDialogDescription>
+											</AlertDialogHeader>
+											<AlertDialogFooter>
+												<AlertDialogCancel>
+													{t("preview.deleteCancel")}
+												</AlertDialogCancel>
+												<AlertDialogAction
+													onClick={onDelete}
+													className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+												>
+													{isDeleting
+														? t("preview.deleting")
+														: t("preview.deleteConfirm")}
+												</AlertDialogAction>
+											</AlertDialogFooter>
+										</AlertDialogContent>
+									</AlertDialog>
+								)}
+							</div>
+						</div>
 					</div>
 				</ScrollArea>
 
 				{/* Footer */}
-				<SheetFooter className="flex-row justify-end gap-3 border-t bg-muted/30 px-6 py-4">
-					{onDelete && (
-						<AlertDialog>
-							<AlertDialogTrigger asChild>
-								<Button
-									variant="ghost"
-									size="sm"
-									className="text-destructive hover:text-destructive hover:bg-destructive/10 mr-auto"
-									disabled={isDeleting}
-								>
-									{isDeleting ? (
-										<LoaderIcon className="size-4 animate-spin" />
-									) : (
-										<Trash2Icon className="size-4" />
-									)}
-									{t("preview.deleteSession")}
-								</Button>
-							</AlertDialogTrigger>
-							<AlertDialogContent>
-								<AlertDialogHeader>
-									<AlertDialogTitle>
-										{t("preview.deleteTitle")}
-									</AlertDialogTitle>
-									<AlertDialogDescription>
-										{t("preview.deleteDescription", {
-											title: session.title,
-											date: format(session.start, "EEEE, MMM d"),
-											time: format(session.start, "HH:mm"),
-										})}
-									</AlertDialogDescription>
-								</AlertDialogHeader>
-								<AlertDialogFooter>
-									<AlertDialogCancel>
-										{t("preview.deleteCancel")}
-									</AlertDialogCancel>
-									<AlertDialogAction
-										onClick={onDelete}
-										className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-									>
-										{isDeleting
-											? t("preview.deleting")
-											: t("preview.deleteConfirm")}
-									</AlertDialogAction>
-								</AlertDialogFooter>
-							</AlertDialogContent>
-						</AlertDialog>
-					)}
-					<Button variant="ghost" size="sm" asChild>
-						<Link
-							href={`/dashboard/organization/training-sessions/${session.id}`}
-						>
-							<ExternalLinkIcon className="size-4" />
-							{t("preview.details")}
-						</Link>
+				<SheetFooter className="flex-row justify-end border-t bg-muted/30 px-6 py-4">
+					<Button variant="outline" onClick={() => onOpenChange(false)}>
+						{t("preview.close")}
 					</Button>
-					{onEdit && (
-						<Button onClick={onEdit}>
-							<EditIcon className="size-4" />
-							{t("edit")}
-						</Button>
-					)}
 				</SheetFooter>
 			</SheetContent>
 		</Sheet>

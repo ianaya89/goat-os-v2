@@ -1,16 +1,7 @@
-import {
-	Body,
-	Container,
-	Head,
-	Heading,
-	Hr,
-	Html,
-	Preview,
-	Section,
-	Text,
-} from "@react-email/components";
-import { Tailwind } from "@react-email/tailwind";
+import { Section, Text } from "@react-email/components";
 import type * as React from "react";
+import { BaseEmailLayout, BRAND_COLORS } from "../components";
+import type { EmailTranslations } from "../translations";
 
 export type SubscriptionCanceledEmailProps = {
 	appName: string;
@@ -19,6 +10,8 @@ export type SubscriptionCanceledEmailProps = {
 	planName: string;
 	cancelDate: string;
 	accessEndDate: string;
+	logoUrl?: string;
+	t: EmailTranslations;
 };
 
 function SubscriptionCanceledEmail({
@@ -28,76 +21,106 @@ function SubscriptionCanceledEmail({
 	planName,
 	cancelDate,
 	accessEndDate,
+	logoUrl,
+	t,
 }: SubscriptionCanceledEmailProps): React.JSX.Element {
+	const preview = t.subscriptionCanceled.preview
+		.replace("{planName}", planName)
+		.replace("{organizationName}", organizationName);
+
+	const footerText = t.common.footer.billingAdmin
+		.replace("{organizationName}", organizationName)
+		.replace("{appName}", appName);
+
 	return (
-		<Html>
-			<Head />
-			<Preview>
-				Your {planName} subscription for {organizationName} has been canceled
-			</Preview>
-			<Tailwind>
-				<Body className="m-auto bg-white px-2 font-sans">
-					<Container className="mx-auto my-[40px] max-w-[465px] rounded-sm border border-[#eaeaea] border-solid p-[20px]">
-						<Heading className="mx-0 my-[30px] p-0 text-center font-normal text-[24px] text-black">
-							Subscription Canceled
-						</Heading>
-						<Text className="text-[14px] text-black leading-[24px]">
-							Hello {userName},
-						</Text>
-						<Text className="text-[14px] text-black leading-[24px]">
-							This email confirms that the subscription for{" "}
-							<strong>{organizationName}</strong> has been canceled.
-						</Text>
+		<BaseEmailLayout
+			preview={preview}
+			heading={t.subscriptionCanceled.title}
+			footerText={footerText}
+			appName={appName}
+			logoUrl={logoUrl}
+		>
+			<Text className="text-[14px] text-black leading-[24px]">
+				{t.common.hello.replace("{name}", userName)}
+			</Text>
+			<Text className="text-[14px] text-black leading-[24px]">
+				{t.subscriptionCanceled.body.replace(
+					"{organizationName}",
+					organizationName,
+				)}
+			</Text>
 
-						{/* Cancellation Details */}
-						<Section className="my-[24px] rounded-md border border-[#eaeaea] border-solid bg-[#f9f9f9] p-[16px]">
-							<Text className="m-0 text-[14px] text-black leading-[24px]">
-								<strong>Plan:</strong> {planName}
-							</Text>
-							<Text className="m-0 text-[14px] text-black leading-[24px]">
-								<strong>Canceled on:</strong> {cancelDate}
-							</Text>
-							<Text className="m-0 text-[14px] text-black leading-[24px]">
-								<strong>Access until:</strong> {accessEndDate}
-							</Text>
-						</Section>
+			{/* Cancellation Details */}
+			<Section
+				className="my-[24px] rounded-md border border-solid p-[16px]"
+				style={{
+					backgroundColor: BRAND_COLORS.infoBox,
+					borderColor: BRAND_COLORS.border,
+				}}
+			>
+				<Text className="m-0 text-[14px] text-black leading-[24px]">
+					<strong>{t.subscriptionCanceled.details.plan}</strong> {planName}
+				</Text>
+				<Text className="m-0 text-[14px] text-black leading-[24px]">
+					<strong>{t.subscriptionCanceled.details.canceledOn}</strong>{" "}
+					{cancelDate}
+				</Text>
+				<Text className="m-0 text-[14px] text-black leading-[24px]">
+					<strong>{t.subscriptionCanceled.details.accessUntil}</strong>{" "}
+					{accessEndDate}
+				</Text>
+			</Section>
 
-						<Text className="text-[14px] text-black leading-[24px]">
-							You will continue to have access to all {planName} features until{" "}
-							<strong>{accessEndDate}</strong>. After this date, your
-							organization will be moved to the free plan.
-						</Text>
+			<Text className="text-[14px] text-black leading-[24px]">
+				{t.subscriptionCanceled.accessInfo
+					.replace("{planName}", planName)
+					.replace("{accessEndDate}", accessEndDate)}
+			</Text>
 
-						<Text className="text-[14px] text-black leading-[24px]">
-							If you change your mind, you can reactivate your subscription at
-							any time before the access end date from your organization's
-							billing settings.
-						</Text>
+			<Text className="text-[14px] text-black leading-[24px]">
+				{t.subscriptionCanceled.reactivate}
+			</Text>
 
-						<Text className="text-[14px] text-black leading-[24px]">
-							We're sorry to see you go. If you have any feedback about your
-							experience, we'd love to hear from you.
-						</Text>
-
-						<Hr className="mx-0 my-[26px] w-full border border-[#eaeaea] border-solid" />
-						<Text className="text-[#666666] text-[12px] leading-[24px]">
-							You received this email because you are a billing administrator
-							for {organizationName} on {appName}.
-						</Text>
-					</Container>
-				</Body>
-			</Tailwind>
-		</Html>
+			<Text className="text-[14px] text-black leading-[24px]">
+				{t.subscriptionCanceled.feedback}
+			</Text>
+		</BaseEmailLayout>
 	);
 }
 
 SubscriptionCanceledEmail.PreviewProps = {
-	appName: "Acme",
-	organizationName: "Evil Corp",
+	appName: "GOAT OS",
+	organizationName: "Sports Academy",
 	userName: "John Doe",
 	planName: "Pro",
-	cancelDate: "December 15, 2024",
-	accessEndDate: "January 15, 2025",
+	cancelDate: "15 de Diciembre, 2024",
+	accessEndDate: "15 de Enero, 2025",
+	t: {
+		common: {
+			hello: "Hola {name},",
+			footer: {
+				billingAdmin:
+					"Recibiste este correo porque sos administrador de facturacion de {organizationName} en {appName}.",
+			},
+		},
+		subscriptionCanceled: {
+			preview:
+				"Tu suscripcion {planName} para {organizationName} fue cancelada",
+			title: "Suscripcion cancelada",
+			body: "Este correo confirma que la suscripcion de {organizationName} fue cancelada.",
+			details: {
+				plan: "Plan:",
+				canceledOn: "Cancelado el:",
+				accessUntil: "Acceso hasta:",
+			},
+			accessInfo:
+				"Vas a seguir teniendo acceso a todas las funciones de {planName} hasta {accessEndDate}. Despues de esta fecha, tu organizacion pasara al plan gratuito.",
+			reactivate:
+				"Si cambias de opinion, podes reactivar tu suscripcion en cualquier momento antes de la fecha de finalizacion del acceso desde la configuracion de facturacion de tu organizacion.",
+			feedback:
+				"Lamentamos verte ir. Si tenes algun comentario sobre tu experiencia, nos encantaria escucharte.",
+		},
+	} as unknown as EmailTranslations,
 } satisfies SubscriptionCanceledEmailProps;
 
 export default SubscriptionCanceledEmail;

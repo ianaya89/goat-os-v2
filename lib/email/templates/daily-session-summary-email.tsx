@@ -1,16 +1,7 @@
-import {
-	Body,
-	Container,
-	Head,
-	Heading,
-	Hr,
-	Html,
-	Preview,
-	Section,
-	Text,
-} from "@react-email/components";
-import { Tailwind } from "@react-email/tailwind";
+import { Section, Text } from "@react-email/components";
 import type * as React from "react";
+import { BaseEmailLayout, BRAND_COLORS } from "../components";
+import type { EmailTranslations } from "../translations";
 
 interface SessionSummaryItem {
 	title: string;
@@ -29,6 +20,8 @@ export type DailySessionSummaryEmailProps = {
 	sessions: SessionSummaryItem[];
 	totalSessions: number;
 	totalAthletes: number;
+	logoUrl?: string;
+	t: EmailTranslations;
 };
 
 function DailySessionSummaryEmail({
@@ -39,113 +32,161 @@ function DailySessionSummaryEmail({
 	sessions,
 	totalSessions,
 	totalAthletes,
+	logoUrl,
+	t,
 }: DailySessionSummaryEmailProps): React.JSX.Element {
+	const statsParts = t.dailySessionSummary.stats.split(" - ");
+	const sessionsLabel = statsParts[0] || "Sesiones";
+	const athletesLabel = statsParts[1] || "Atletas";
+
+	const sessionsText = `${totalSessions} ${sessionsLabel}`;
+	const athletesText = `${totalAthletes} ${athletesLabel}`;
+
+	const preview = t.dailySessionSummary.preview
+		.replace(
+			/{totalSessions, plural, one \{([^}]+)\} other \{([^}]+)\}}/,
+			totalSessions === 1 ? "$1" : "$2",
+		)
+		.replace("{totalSessions}", String(totalSessions))
+		.replace("{summaryDate}", summaryDate);
+
+	const footerText = t.common.footer.sentBy
+		.replace("{organizationName}", organizationName)
+		.replace("{appName}", appName);
+
 	return (
-		<Html>
-			<Head />
-			<Preview>
-				{`${totalSessions} training session${totalSessions !== 1 ? "s" : ""} scheduled for ${summaryDate}`}
-			</Preview>
-			<Tailwind>
-				<Body className="m-auto bg-white px-2 font-sans">
-					<Container className="mx-auto my-[40px] max-w-[600px] rounded-sm border border-[#eaeaea] border-solid p-[20px]">
-						<Heading className="mx-0 my-[30px] p-0 text-center font-normal text-[24px] text-black">
-							Daily Training Summary
-						</Heading>
-						<Text className="text-[14px] text-black leading-[24px]">
-							Hello {recipientName},
-						</Text>
-						<Text className="text-[14px] text-black leading-[24px]">
-							Here's your training schedule for <strong>{summaryDate}</strong>:
-						</Text>
+		<BaseEmailLayout
+			preview={preview}
+			heading={t.dailySessionSummary.title}
+			footerText={footerText}
+			appName={appName}
+			logoUrl={logoUrl}
+			width="wide"
+		>
+			<Text className="text-[14px] text-black leading-[24px]">
+				{t.common.hello.replace("{name}", recipientName)}
+			</Text>
+			<Text className="text-[14px] text-black leading-[24px]">
+				{t.dailySessionSummary.body.replace("{summaryDate}", summaryDate)}
+			</Text>
 
-						{/* Summary Stats */}
-						<Section className="my-[24px] rounded-md bg-[#f0f9ff] p-[16px]">
-							<Text className="m-0 text-center font-semibold text-[16px] text-[#0369a1]">
-								{totalSessions} Session{totalSessions !== 1 ? "s" : ""} •{" "}
-								{totalAthletes} Athlete{totalAthletes !== 1 ? "s" : ""}
-							</Text>
-						</Section>
+			{/* Summary Stats */}
+			<Section
+				className="my-[24px] rounded-md p-[16px]"
+				style={{ backgroundColor: "#f0f9ff" }}
+			>
+				<Text
+					className="m-0 text-center font-semibold text-[16px]"
+					style={{ color: BRAND_COLORS.primary }}
+				>
+					{sessionsText} - {athletesText}
+				</Text>
+			</Section>
 
-						{/* Sessions List */}
-						{sessions.map((session, index) => (
-							<Section
-								key={`session-${index}`}
-								className="my-[16px] rounded-md border border-[#e5e7eb] border-solid p-[16px]"
-							>
-								<Text className="m-0 font-semibold text-[16px] text-black">
-									{session.title}
-								</Text>
-								<Text className="m-0 mt-[8px] text-[14px] text-[#666666]">
-									<strong>Time:</strong> {session.time}
-								</Text>
-								<Text className="m-0 mt-[4px] text-[14px] text-[#666666]">
-									<strong>Location:</strong> {session.location}
-								</Text>
-								<Text className="m-0 mt-[4px] text-[14px] text-[#666666]">
-									<strong>
-										Coach{session.coaches.length !== 1 ? "es" : ""}:
-									</strong>{" "}
-									{session.coaches.join(", ")}
-								</Text>
-								<Text className="m-0 mt-[4px] text-[14px] text-[#666666]">
-									<strong>Athletes:</strong> {session.athleteCount}
-									{session.groupName && ` (${session.groupName})`}
-								</Text>
-							</Section>
-						))}
+			{/* Sessions List */}
+			{sessions.map((session, index) => (
+				<Section
+					key={`session-${index}`}
+					className="my-[16px] rounded-md border border-solid p-[16px]"
+					style={{ borderColor: BRAND_COLORS.border }}
+				>
+					<Text className="m-0 font-semibold text-[16px] text-black">
+						{session.title}
+					</Text>
+					<Text className="m-0 mt-[8px] text-[14px] text-[#666666]">
+						<strong>{t.dailySessionSummary.session.time}</strong> {session.time}
+					</Text>
+					<Text className="m-0 mt-[4px] text-[14px] text-[#666666]">
+						<strong>{t.dailySessionSummary.session.location}</strong>{" "}
+						{session.location}
+					</Text>
+					<Text className="m-0 mt-[4px] text-[14px] text-[#666666]">
+						<strong>
+							{session.coaches.length !== 1
+								? t.dailySessionSummary.session.coaches
+								: t.dailySessionSummary.session.coach}
+						</strong>{" "}
+						{session.coaches.join(", ")}
+					</Text>
+					<Text className="m-0 mt-[4px] text-[14px] text-[#666666]">
+						<strong>{t.dailySessionSummary.session.athletes}</strong>{" "}
+						{session.athleteCount}
+						{session.groupName && ` (${session.groupName})`}
+					</Text>
+				</Section>
+			))}
 
-						{sessions.length === 0 && (
-							<Section className="my-[24px] rounded-md bg-[#f9f9f9] p-[16px] text-center">
-								<Text className="m-0 text-[14px] text-[#666666]">
-									No training sessions scheduled for this date.
-								</Text>
-							</Section>
-						)}
-
-						<Hr className="mx-0 my-[26px] w-full border border-[#eaeaea] border-solid" />
-						<Text className="text-[#666666] text-[12px] leading-[24px]">
-							This summary was sent by {organizationName} via {appName}.
-						</Text>
-					</Container>
-				</Body>
-			</Tailwind>
-		</Html>
+			{sessions.length === 0 && (
+				<Section
+					className="my-[24px] rounded-md p-[16px] text-center"
+					style={{ backgroundColor: BRAND_COLORS.infoBox }}
+				>
+					<Text className="m-0 text-[14px] text-[#666666]">
+						{t.dailySessionSummary.noSessions}
+					</Text>
+				</Section>
+			)}
+		</BaseEmailLayout>
 	);
 }
 
 DailySessionSummaryEmail.PreviewProps = {
-	appName: "GoatOS",
+	appName: "GOAT OS",
 	recipientName: "Coach Smith",
 	organizationName: "Sports Academy",
-	summaryDate: "Monday, January 15, 2024",
+	summaryDate: "Lunes, 15 de Enero, 2024",
 	totalSessions: 3,
 	totalAthletes: 25,
 	sessions: [
 		{
-			title: "Morning Conditioning",
-			time: "7:00 AM - 8:30 AM",
-			location: "Main Field",
+			title: "Acondicionamiento matutino",
+			time: "7:00 - 8:30",
+			location: "Campo principal",
 			coaches: ["Coach Smith"],
 			athleteCount: 12,
-			groupName: "U18 Team",
+			groupName: "Equipo Sub-18",
 		},
 		{
-			title: "Technical Training",
-			time: "10:00 AM - 12:00 PM",
-			location: "Indoor Facility",
+			title: "Entrenamiento tecnico",
+			time: "10:00 - 12:00",
+			location: "Instalacion interior",
 			coaches: ["Coach Johnson", "Coach Williams"],
 			athleteCount: 8,
 		},
 		{
-			title: "Evening Practice",
-			time: "5:00 PM - 7:00 PM",
-			location: "Main Stadium",
+			title: "Practica vespertina",
+			time: "17:00 - 19:00",
+			location: "Estadio principal",
 			coaches: ["Coach Smith"],
 			athleteCount: 5,
-			groupName: "Senior Squad",
+			groupName: "Equipo Senior",
 		},
 	],
+	t: {
+		common: {
+			hello: "Hola {name},",
+			footer: {
+				sentBy:
+					"Este mensaje fue enviado por {organizationName} a traves de {appName}.",
+			},
+		},
+		dailySessionSummary: {
+			preview:
+				"{totalSessions, plural, one {{totalSessions} sesion de entrenamiento} other {{totalSessions} sesiones de entrenamiento}} programadas para {summaryDate}",
+			title: "Resumen diario de entrenamiento",
+			body: "Aca esta tu agenda de entrenamiento para {summaryDate}:",
+			stats: "Sesiones - Atletas",
+			session: {
+				time: "Hora:",
+				location: "Ubicacion:",
+				coach: "Entrenador:",
+				coaches: "Entrenadores:",
+				athletes: "Atletas:",
+			},
+			noSessions:
+				"No hay sesiones de entrenamiento programadas para esta fecha.",
+		},
+	} as unknown as EmailTranslations,
 } satisfies DailySessionSummaryEmailProps;
 
 export default DailySessionSummaryEmail;

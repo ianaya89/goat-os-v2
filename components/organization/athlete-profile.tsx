@@ -399,53 +399,55 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 
 			{/* Detailed Tabs */}
 			<Tabs defaultValue="info" className="space-y-4">
-				<TabsList className="flex-wrap">
-					<TabsTrigger value="info">
-						<UserIcon className="mr-1 size-3.5" />
-						{t("tabs.info")}
-					</TabsTrigger>
-					<TabsTrigger value="sessions">
-						{t("tabs.sessions")} ({sessions.length})
-					</TabsTrigger>
-					<TabsTrigger value="evaluations">
-						{t("tabs.evaluations")} ({evaluations.length})
-					</TabsTrigger>
-					<TabsTrigger value="attendance">
-						{t("tabs.attendance")} ({attendanceRecords.length})
-					</TabsTrigger>
-					<TabsTrigger value="physical">
-						<RulerIcon className="mr-1 size-3.5" />
-						{t("tabs.physical")} ({physicalMetrics?.length ?? 0})
-					</TabsTrigger>
-					<TabsTrigger value="fitness">
-						<ActivityIcon className="mr-1 size-3.5" />
-						{t("tabs.fitness")} ({fitnessTests?.length ?? 0})
-					</TabsTrigger>
-					<TabsTrigger value="career">
-						<BriefcaseIcon className="mr-1 size-3.5" />
-						{t("tabs.career")} ({careerHistory?.length ?? 0})
-					</TabsTrigger>
-					<TabsTrigger value="achievements">
-						<TrophyIcon className="mr-1 size-3.5" />
-						{t("tabs.achievements")} ({achievements?.length ?? 0})
-					</TabsTrigger>
-					<TabsTrigger value="teams">
-						<ShieldIcon className="mr-1 size-3.5" />
-						{t("tabs.teams")} ({teams?.length ?? 0})
-					</TabsTrigger>
-					<TabsTrigger value="wellness">
-						<HeartPulseIcon className="mr-1 size-3.5" />
-						{t("tabs.wellness")} ({wellnessSurveys?.length ?? 0})
-					</TabsTrigger>
-					<TabsTrigger value="medical">
-						<FileHeartIcon className="mr-1 size-3.5" />
-						{t("tabs.medical")}
-					</TabsTrigger>
-					<TabsTrigger value="education">
-						<GraduationCapIcon className="mr-1 size-3.5" />
-						{t("tabs.education")} ({education?.length ?? 0})
-					</TabsTrigger>
-				</TabsList>
+				<div className="overflow-x-auto pb-2 -mb-2">
+					<TabsList className="inline-flex w-max">
+						<TabsTrigger value="info">
+							<UserIcon className="mr-1 size-3.5" />
+							{t("tabs.info")}
+						</TabsTrigger>
+						<TabsTrigger value="sessions">
+							{t("tabs.sessions")} ({sessions.length})
+						</TabsTrigger>
+						<TabsTrigger value="evaluations">
+							{t("tabs.evaluations")} ({evaluations.length})
+						</TabsTrigger>
+						<TabsTrigger value="attendance">
+							{t("tabs.attendance")} ({attendanceRecords.length})
+						</TabsTrigger>
+						<TabsTrigger value="physical">
+							<RulerIcon className="mr-1 size-3.5" />
+							{t("tabs.physical")} ({physicalMetrics?.length ?? 0})
+						</TabsTrigger>
+						<TabsTrigger value="fitness">
+							<ActivityIcon className="mr-1 size-3.5" />
+							{t("tabs.fitness")} ({fitnessTests?.length ?? 0})
+						</TabsTrigger>
+						<TabsTrigger value="career">
+							<BriefcaseIcon className="mr-1 size-3.5" />
+							{t("tabs.career")} ({careerHistory?.length ?? 0})
+						</TabsTrigger>
+						<TabsTrigger value="achievements">
+							<TrophyIcon className="mr-1 size-3.5" />
+							{t("tabs.achievements")} ({achievements?.length ?? 0})
+						</TabsTrigger>
+						<TabsTrigger value="teams">
+							<ShieldIcon className="mr-1 size-3.5" />
+							{t("tabs.teams")} ({teams?.length ?? 0})
+						</TabsTrigger>
+						<TabsTrigger value="wellness">
+							<HeartPulseIcon className="mr-1 size-3.5" />
+							{t("tabs.wellness")} ({wellnessSurveys?.length ?? 0})
+						</TabsTrigger>
+						<TabsTrigger value="medical">
+							<FileHeartIcon className="mr-1 size-3.5" />
+							{t("tabs.medical")}
+						</TabsTrigger>
+						<TabsTrigger value="education">
+							<GraduationCapIcon className="mr-1 size-3.5" />
+							{t("tabs.education")} ({education?.length ?? 0})
+						</TabsTrigger>
+					</TabsList>
+				</div>
 
 				<TabsContent value="sessions" className="space-y-4">
 					<div className="flex justify-end">
@@ -2028,156 +2030,6 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 							</CardContent>
 						</Card>
 
-						{/* Education */}
-						<Card>
-							<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-								<CardTitle className="flex items-center gap-2 text-base">
-									<GraduationCapIcon className="size-4" />
-									{t("info.education")}
-									{education && education.length > 0 && (
-										<Badge variant="secondary" className="ml-1">
-											{education.length}
-										</Badge>
-									)}
-								</CardTitle>
-								<Button
-									size="sm"
-									variant="ghost"
-									onClick={() =>
-										NiceModal.show(OrgAthleteEducationEditModal, {
-											athleteId,
-										})
-									}
-								>
-									<PlusIcon className="size-4" />
-								</Button>
-							</CardHeader>
-							<CardContent className="space-y-3">
-								{education && education.length > 0 ? (
-									<div className="space-y-3">
-										{education.map((entry) => (
-											<div
-												key={entry.id}
-												role="button"
-												tabIndex={0}
-												className="group relative rounded-lg border p-3 hover:bg-muted/50 transition-colors cursor-pointer"
-												onClick={() =>
-													NiceModal.show(OrgAthleteEducationEditModal, {
-														athleteId,
-														entry: {
-															id: entry.id,
-															institution: entry.institution,
-															degree: entry.degree,
-															fieldOfStudy: entry.fieldOfStudy,
-															academicYear: entry.academicYear,
-															startDate: entry.startDate
-																? new Date(entry.startDate)
-																: null,
-															endDate: entry.endDate
-																? new Date(entry.endDate)
-																: null,
-															expectedGraduationDate:
-																entry.expectedGraduationDate
-																	? new Date(entry.expectedGraduationDate)
-																	: null,
-															gpa: entry.gpa,
-															isCurrent: entry.isCurrent,
-															notes: entry.notes,
-														},
-													})
-												}
-												onKeyDown={(e) => {
-													if (e.key === "Enter" || e.key === " ") {
-														e.preventDefault();
-														NiceModal.show(OrgAthleteEducationEditModal, {
-															athleteId,
-															entry: {
-																id: entry.id,
-																institution: entry.institution,
-																degree: entry.degree,
-																fieldOfStudy: entry.fieldOfStudy,
-																academicYear: entry.academicYear,
-																startDate: entry.startDate
-																	? new Date(entry.startDate)
-																	: null,
-																endDate: entry.endDate
-																	? new Date(entry.endDate)
-																	: null,
-																expectedGraduationDate:
-																	entry.expectedGraduationDate
-																		? new Date(entry.expectedGraduationDate)
-																		: null,
-																gpa: entry.gpa,
-																isCurrent: entry.isCurrent,
-																notes: entry.notes,
-															},
-														});
-													}
-												}}
-											>
-												<div className="flex items-start justify-between gap-2">
-													<div className="space-y-1">
-														<div className="flex items-center gap-2">
-															<p className="font-medium">{entry.institution}</p>
-															{entry.isCurrent && (
-																<Badge variant="outline" className="text-xs">
-																	{t("info.educationCurrent")}
-																</Badge>
-															)}
-														</div>
-														{(entry.degree || entry.fieldOfStudy) && (
-															<p className="text-muted-foreground text-sm">
-																{[entry.degree, entry.fieldOfStudy]
-																	.filter(Boolean)
-																	.join(" - ")}
-															</p>
-														)}
-														<div className="flex flex-wrap items-center gap-3 text-muted-foreground text-xs">
-															{entry.academicYear && (
-																<span>{entry.academicYear}</span>
-															)}
-															{entry.gpa && <span>GPA: {entry.gpa}</span>}
-															{(entry.startDate ||
-																entry.endDate ||
-																entry.expectedGraduationDate) && (
-																<span>
-																	{entry.startDate
-																		? format(
-																				new Date(entry.startDate),
-																				"MMM yyyy",
-																			)
-																		: ""}
-																	{entry.startDate &&
-																	(entry.endDate || entry.isCurrent)
-																		? " - "
-																		: ""}
-																	{entry.isCurrent
-																		? t("info.educationPresent")
-																		: entry.endDate
-																			? format(
-																					new Date(entry.endDate),
-																					"MMM yyyy",
-																				)
-																			: ""}
-																</span>
-															)}
-														</div>
-													</div>
-													<PencilIcon className="size-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-												</div>
-											</div>
-										))}
-									</div>
-								) : (
-									<EmptyState
-										icon={GraduationCapIcon}
-										title={t("info.noEducationInfo")}
-										size="sm"
-									/>
-								)}
-							</CardContent>
-						</Card>
-
 						{/* Health & Dietary */}
 						<Card>
 							<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -2229,7 +2081,7 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 						</Card>
 
 						{/* Bio */}
-						<Card className="md:col-span-2">
+						<Card>
 							<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 								<CardTitle className="flex items-center gap-2 text-base">
 									<UserIcon className="size-4" />

@@ -1,82 +1,66 @@
-import {
-	Body,
-	Button,
-	Container,
-	Head,
-	Heading,
-	Hr,
-	Html,
-	Link,
-	Preview,
-	Section,
-	Text,
-} from "@react-email/components";
-import { Tailwind } from "@react-email/tailwind";
+import { Section, Text } from "@react-email/components";
 import type * as React from "react";
+import { BaseEmailLayout, EmailButton, EmailLinkFallback } from "../components";
+import type { EmailTranslations } from "../translations";
 
 export type PasswordResetEmailProps = {
 	appName: string;
 	name: string;
 	resetPasswordLink: string;
+	logoUrl?: string;
+	t: EmailTranslations;
 };
 
 function PasswordResetEmail({
 	appName,
 	name,
 	resetPasswordLink,
+	logoUrl,
+	t,
 }: PasswordResetEmailProps): React.JSX.Element {
 	return (
-		<Html>
-			<Head />
-			<Preview>{appName} reset your password</Preview>
-			<Tailwind>
-				<Body className="m-auto bg-white px-2 font-sans">
-					<Container className="mx-auto my-[40px] max-w-[465px] rounded-sm border border-[#eaeaea] border-solid p-[20px]">
-						<Heading className="mx-0 my-[30px] p-0 text-center font-normal text-[24px] text-black">
-							Reset Instructions
-						</Heading>
-						<Text className="text-[14px] text-black leading-[24px]">
-							Hello {name},
-						</Text>
-						<Text className="text-[14px] text-black leading-[24px]">
-							Someone recently requested a password change for your {appName}{" "}
-							account. If this was you, you can set a new password here:
-						</Text>
-						<Section className="my-[32px] text-center">
-							<Button
-								className="rounded-sm bg-[#000000] px-5 py-3 text-center font-semibold text-[12px] text-white no-underline"
-								href={resetPasswordLink}
-							>
-								Reset password
-							</Button>
-						</Section>
-						<Text className="text-[14px] text-black leading-[24px]">
-							or copy and paste this URL into your browser:{" "}
-							<Link
-								href={resetPasswordLink}
-								className="break-all text-blue-600 no-underline"
-							>
-								{resetPasswordLink}
-							</Link>
-						</Text>
-						<Hr className="mx-0 my-[26px] w-full border border-[#eaeaea] border-solid" />
-						<Text className="text-[#666666] text-[12px] leading-[24px]">
-							If you don't want to change your password or didn't request this,
-							just ignore and delete this message. To keep your account secure,
-							please don't forward this email to anyone.
-						</Text>
-					</Container>
-				</Body>
-			</Tailwind>
-		</Html>
+		<BaseEmailLayout
+			preview={t.passwordReset.preview}
+			heading={t.passwordReset.title}
+			footerText={t.passwordReset.footer}
+			appName={appName}
+			logoUrl={logoUrl}
+		>
+			<Text className="text-[14px] text-black leading-[24px]">
+				{t.common.hello.replace("{name}", name)}
+			</Text>
+			<Text className="text-[14px] text-black leading-[24px]">
+				{t.passwordReset.body.replace("{appName}", appName)}
+			</Text>
+			<Section className="my-[32px] text-center">
+				<EmailButton href={resetPasswordLink}>
+					{t.passwordReset.button}
+				</EmailButton>
+			</Section>
+			<EmailLinkFallback href={resetPasswordLink} label={t.common.orCopyLink} />
+		</BaseEmailLayout>
 	);
 }
 
 PasswordResetEmail.PreviewProps = {
-	appName: "Acme",
+	appName: "GOAT OS",
 	name: "John Doe",
 	resetPasswordLink:
 		"https://example.com/reset-password/request/a5cffa7e-76eb-4671-a195-d1670a7d4df3",
+	t: {
+		common: {
+			hello: "Hola {name},",
+			orCopyLink: "o copia y pega esta URL en tu navegador:",
+		},
+		passwordReset: {
+			preview: "Restablece tu contrasena",
+			title: "Restablecer contrasena",
+			body: "Recibimos una solicitud para restablecer la contrasena de tu cuenta de {appName}. Hace clic en el boton de abajo para elegir una nueva contrasena.",
+			button: "Restablecer contrasena",
+			footer:
+				"Si no solicitaste restablecer tu contrasena, podes ignorar este correo de forma segura. Tu contrasena permanecera sin cambios.",
+		},
+	} as unknown as EmailTranslations,
 } satisfies PasswordResetEmailProps;
 
 export default PasswordResetEmail;

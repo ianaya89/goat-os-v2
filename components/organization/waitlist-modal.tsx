@@ -1,6 +1,7 @@
 "use client";
 
 import NiceModal, { type NiceModalHocProps } from "@ebay/nice-modal-react";
+import { CheckIcon, ClockIcon, PlusIcon, XIcon } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -36,14 +37,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import {
-	Sheet,
-	SheetContent,
-	SheetDescription,
-	SheetFooter,
-	SheetHeader,
-	SheetTitle,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetFooter } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
@@ -192,19 +186,41 @@ export const WaitlistModal = NiceModal.create<WaitlistModalProps>(
 
 		const referenceType = form.watch("referenceType");
 
-		const onSubmit = form.handleSubmit(async (data) => {
-			if (isEditing) {
-				updateMutation.mutate(
-					data as Parameters<typeof updateMutation.mutate>[0],
-				);
-			} else {
-				const createData = {
-					...data,
-					athleteId: selectedAthleteId!,
-				} as Parameters<typeof createMutation.mutate>[0];
-				createMutation.mutate(createData);
+		// Sync selected athlete with form
+		React.useEffect(() => {
+			if (selectedAthleteId && !isEditing) {
+				form.setValue("athleteId", selectedAthleteId);
 			}
-		});
+		}, [selectedAthleteId, isEditing, form]);
+
+		const onSubmit = form.handleSubmit(
+			async (data) => {
+				if (isEditing) {
+					updateMutation.mutate(
+						data as Parameters<typeof updateMutation.mutate>[0],
+					);
+				} else {
+					createMutation.mutate(
+						data as Parameters<typeof createMutation.mutate>[0],
+					);
+				}
+			},
+			(errors) => {
+				// Show validation errors
+				const errorKeys = Object.keys(errors);
+				if (errors.root) {
+					toast.error(errors.root.message || "Error de validacion");
+				} else if (errorKeys.includes("preferredDays")) {
+					toast.error("Debes seleccionar al menos un dia preferido");
+				} else if (errorKeys.includes("athleteGroupId")) {
+					toast.error("Debes seleccionar un grupo");
+				} else if (errorKeys.includes("athleteId")) {
+					toast.error("Debes seleccionar un atleta");
+				} else {
+					toast.error("Por favor completa todos los campos requeridos");
+				}
+			},
+		);
 
 		const isPending = createMutation.isPending || updateMutation.isPending;
 
@@ -218,17 +234,44 @@ export const WaitlistModal = NiceModal.create<WaitlistModalProps>(
 				<SheetContent
 					className="sm:max-w-lg"
 					onAnimationEndCapture={modal.handleAnimationEndCapture}
+					hideDefaultHeader
 				>
-					<SheetHeader>
-						<SheetTitle>
-							{isEditing ? "Editar Entrada" : "Agregar a Lista de Espera"}
-						</SheetTitle>
-						<SheetDescription className="sr-only">
-							{isEditing
-								? "Actualiza la informacion de la entrada."
-								: "Agrega un atleta a la lista de espera."}
-						</SheetDescription>
-					</SheetHeader>
+					{/* Custom Header with accent stripe */}
+					<div className="relative shrink-0">
+						{/* Accent stripe */}
+						<div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-slate-400 to-slate-500" />
+
+						{/* Header content */}
+						<div className="flex items-start justify-between gap-4 px-6 pt-6 pb-4">
+							<div className="flex items-start gap-3">
+								<div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-slate-400 to-slate-500 text-white shadow-sm">
+									<ClockIcon className="size-5" />
+								</div>
+								<div>
+									<h2 className="font-semibold text-lg tracking-tight">
+										{isEditing ? "Editar Entrada" : "Agregar a Lista de Espera"}
+									</h2>
+									<p className="mt-0.5 text-muted-foreground text-sm">
+										{isEditing
+											? "Actualiza la informacion de la entrada."
+											: "Agrega un atleta a la lista de espera."}
+									</p>
+								</div>
+							</div>
+							<button
+								type="button"
+								onClick={modal.handleClose}
+								disabled={isPending}
+								className="flex size-8 items-center justify-center rounded-lg transition-all duration-150 text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+							>
+								<XIcon className="size-4" />
+								<span className="sr-only">Cerrar</span>
+							</button>
+						</div>
+
+						{/* Separator */}
+						<div className="h-px bg-border" />
+					</div>
 
 					<Form {...form}>
 						<form
@@ -611,20 +654,28 @@ export const WaitlistModal = NiceModal.create<WaitlistModalProps>(
 								</div>
 							</ScrollArea>
 
-							<SheetFooter className="flex-row justify-end gap-2 border-t">
+							<SheetFooter className="flex-row justify-end gap-3 border-t bg-muted/30 px-6 py-4">
 								<Button
 									type="button"
-									variant="outline"
+									variant="ghost"
 									onClick={modal.handleClose}
 									disabled={isPending}
+									className="min-w-[100px]"
 								>
+									<XIcon className="size-4" />
 									Cancelar
 								</Button>
 								<Button
 									type="submit"
 									disabled={isPending || (!isEditing && !selectedAthleteId)}
 									loading={isPending}
+									className="min-w-[100px]"
 								>
+									{isEditing ? (
+										<CheckIcon className="size-4" />
+									) : (
+										<PlusIcon className="size-4" />
+									)}
 									{isEditing ? "Actualizar" : "Agregar"}
 								</Button>
 							</SheetFooter>

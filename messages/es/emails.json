@@ -1,0 +1,210 @@
+{
+	"common": {
+		"hello": "Hola {name},",
+		"helloGeneric": "Hola,",
+		"footer": {
+			"ignoreIfNotExpected": "Si no esperabas este correo, puedes ignorarlo.",
+			"dontForward": "Por favor, no reenvíes este correo a nadie.",
+			"contactAdmin": "Si no esperabas este correo, por favor contacta al administrador de tu organización.",
+			"billingAdmin": "Recibiste este correo porque sos administrador de facturación de {organizationName} en {appName}.",
+			"sentBy": "Este mensaje fue enviado por {organizationName} a través de {appName}."
+		},
+		"orCopyLink": "o copia y pega esta URL en tu navegador:"
+	},
+	"verifyEmail": {
+		"subject": "Verificá tu correo electrónico",
+		"preview": "Verificación de correo electrónico",
+		"title": "Verificación de correo electrónico",
+		"body": "Para completar tu cuenta, necesitás verificar tu correo electrónico.",
+		"button": "Verificar correo",
+		"footer": "Si no querés verificar tu correo o no solicitaste esto, simplemente ignorá y eliminá este mensaje. Por favor, no reenvíes este correo a nadie."
+	},
+	"confirmEmailChange": {
+		"subject": "Confirmá el cambio de correo electrónico",
+		"preview": "Confirmación de cambio de correo",
+		"title": "Confirmar cambio de correo",
+		"body": "Recibimos una solicitud para cambiar el correo electrónico de tu cuenta. Hacé clic en el botón de abajo para confirmar este cambio.",
+		"button": "Confirmar cambio",
+		"footer": "Si no solicitaste este cambio, podés ignorar este correo de forma segura. Tu correo electrónico permanecerá sin cambios."
+	},
+	"passwordReset": {
+		"subject": "Instrucciones para restablecer contraseña",
+		"preview": "Restablecé tu contraseña",
+		"title": "Restablecer contraseña",
+		"body": "Recibimos una solicitud para restablecer la contraseña de tu cuenta de {appName}. Hacé clic en el botón de abajo para elegir una nueva contraseña.",
+		"button": "Restablecer contraseña",
+		"footer": "Si no solicitaste restablecer tu contraseña, podés ignorar este correo de forma segura. Tu contraseña permanecerá sin cambios."
+	},
+	"organizationInvitation": {
+		"subject": "Invitación a organización",
+		"preview": "Unite a {organizationName} en {appName}",
+		"title": "Unite a {organizationName} en {appName}",
+		"body": "{invitedByName} ({invitedByEmail}) te invitó a unirte a la organización {organizationName} en {appName}.",
+		"button": "Aceptar",
+		"footer": "Si no esperabas esta invitación, podés ignorar este correo."
+	},
+	"revokedInvitation": {
+		"subject": "Invitación revocada",
+		"preview": "Tu invitación a {organizationName} fue revocada",
+		"title": "Invitación revocada",
+		"body": "Tu invitación para unirte a {organizationName} en {appName} ha sido revocada.",
+		"explanation": "Esto significa que el enlace de invitación que recibiste anteriormente ya no es válido. Si creés que esto es un error, por favor contactá al administrador de la organización.",
+		"footer": "Si no esperabas esta invitación originalmente, podés ignorar este correo de forma segura."
+	},
+	"subscriptionCanceled": {
+		"subject": "Tu suscripción {planName} fue cancelada",
+		"preview": "Tu suscripción {planName} para {organizationName} fue cancelada",
+		"title": "Suscripción cancelada",
+		"body": "Este correo confirma que la suscripción de {organizationName} fue cancelada.",
+		"details": {
+			"plan": "Plan:",
+			"canceledOn": "Cancelado el:",
+			"accessUntil": "Acceso hasta:"
+		},
+		"accessInfo": "Vas a seguir teniendo acceso a todas las funciones de {planName} hasta {accessEndDate}. Después de esta fecha, tu organización pasará al plan gratuito.",
+		"reactivate": "Si cambiás de opinión, podés reactivar tu suscripción en cualquier momento antes de la fecha de finalización del acceso desde la configuración de facturación de tu organización.",
+		"feedback": "Lamentamos verte ir. Si tenés algún comentario sobre tu experiencia, nos encantaría escucharte."
+	},
+	"paymentFailed": {
+		"subject": "Falló el pago de {organizationName} - Acción requerida",
+		"preview": "Falló el pago de {organizationName} - Acción requerida",
+		"title": "Falló el pago",
+		"body": "No pudimos procesar el pago de la suscripción de {organizationName}.",
+		"details": {
+			"amount": "Monto:",
+			"invoice": "Factura:"
+		},
+		"action": "Para evitar interrupciones en tu servicio, por favor actualizá tu método de pago lo antes posible. Tu suscripción permanecerá activa por tiempo limitado mientras reintentamos el pago.",
+		"button": "Actualizar método de pago",
+		"footer": "Si creés que esto es un error o ya actualizaste tu método de pago, ignorá este correo. Si tenés alguna pregunta, por favor contactá a nuestro equipo de soporte."
+	},
+	"trialEndingSoon": {
+		"subject": "Tu prueba de {planName} termina en {daysText}",
+		"preview": "Tu prueba de {planName} para {organizationName} está por terminar",
+		"title": "Tu prueba está por terminar",
+		"body": "Este es un recordatorio de que tu período de prueba de {planName} para {organizationName} termina el {trialEndDate}.",
+		"daysRemaining": "Te {daysRemaining, plural, one {queda 1 día} other {quedan {daysRemaining} días}} de prueba.",
+		"features": "Para seguir disfrutando de todas las funciones de {planName}, actualizá a un plan pago antes de que termine tu prueba.",
+		"button": "Actualizar ahora",
+		"footer": "Si no querés continuar después de la prueba, no se requiere ninguna acción. Tu organización será automáticamente movida al plan gratuito.",
+		"daysText": {
+			"one": "1 día",
+			"other": "{count} días"
+		}
+	},
+	"disputeReceived": {
+		"subject": "URGENTE: Disputa recibida para {organizationName}",
+		"preview": "Disputa de pago recibida - Acción inmediata requerida",
+		"title": "Disputa de pago recibida",
+		"alert": "Se recibió una disputa de pago (contracargo) para {organizationName}. Esto requiere tu atención inmediata.",
+		"details": {
+			"title": "Detalles de la disputa",
+			"amount": "Monto:",
+			"disputeId": "ID de disputa:",
+			"reason": "Motivo:",
+			"evidenceDue": "Evidencia requerida antes de:"
+		},
+		"urgency": "Es crucial que respondas a esta disputa antes de la fecha límite de evidencia. No responder puede resultar en la pérdida automática de la disputa y pérdida de fondos.",
+		"button": "Ver disputa y enviar evidencia",
+		"footer": "Las disputas de pago (contracargos) pueden afectar tu cuenta y reputación. Por favor toma acción inmediata."
+	},
+	"coachWelcome": {
+		"subject": "Bienvenido a {organizationName} - Tu cuenta de entrenador está lista",
+		"preview": "Bienvenido a {organizationName} en {appName}",
+		"title": "Bienvenido a {organizationName}",
+		"body": "Fuiste agregado como Entrenador a la organización {organizationName} en {appName}.",
+		"accountCreated": "Se creó una cuenta para vos. Para acceder a la plataforma, por favor configurá tu contraseña siguiendo estos pasos:",
+		"steps": {
+			"step1": "Hacé clic en el botón de abajo para ir a la página de recuperación de contraseña",
+			"step2": "Ingresá tu correo electrónico y enviá",
+			"step3": "Revisá tu bandeja de entrada para el enlace de recuperación de contraseña",
+			"step4": "Configurá tu nueva contraseña"
+		},
+		"button": "Configurar tu contraseña",
+		"loginInfo": "Después de configurar tu contraseña, podés iniciar sesión en:"
+	},
+	"athleteWelcome": {
+		"subject": "Bienvenido a {organizationName} - Tu cuenta de atleta está lista",
+		"preview": "Bienvenido a {organizationName} en {appName}",
+		"title": "Bienvenido a {organizationName}",
+		"body": "Fuiste agregado como Atleta a la organización {organizationName} en {appName}.",
+		"accountCreated": "Se creó una cuenta para vos. Para acceder a la plataforma, por favor configurá tu contraseña siguiendo estos pasos:",
+		"steps": {
+			"step1": "Hacé clic en el botón de abajo para ir a la página de recuperación de contraseña",
+			"step2": "Ingresá tu correo electrónico y enviá",
+			"step3": "Revisá tu bandeja de entrada para el enlace de recuperación de contraseña",
+			"step4": "Configurá tu nueva contraseña"
+		},
+		"button": "Configurar tu contraseña",
+		"loginInfo": "Después de configurar tu contraseña, podés iniciar sesión en:"
+	},
+	"dailySessionSummary": {
+		"subject": "Tu resumen diario de entrenamiento",
+		"preview": "{totalSessions, plural, one {{totalSessions} sesión de entrenamiento} other {{totalSessions} sesiones de entrenamiento}} programadas para {summaryDate}",
+		"title": "Resumen diario de entrenamiento",
+		"body": "Acá está tu agenda de entrenamiento para {summaryDate}:",
+		"stats": "{totalSessions, plural, one {{totalSessions} Sesión} other {{totalSessions} Sesiones}} - {totalAthletes, plural, one {{totalAthletes} Atleta} other {{totalAthletes} Atletas}}",
+		"session": {
+			"time": "Hora:",
+			"location": "Ubicación:",
+			"coach": "Entrenador:",
+			"coaches": "Entrenadores:",
+			"athletes": "Atletas:"
+		},
+		"noSessions": "No hay sesiones de entrenamiento programadas para esta fecha."
+	},
+	"trainingSessionReminder": {
+		"subject": "Recordatorio de sesión de entrenamiento",
+		"preview": "Recordatorio: Sesión de entrenamiento \"{sessionTitle}\" el {sessionDate}",
+		"title": "Recordatorio de sesión de entrenamiento",
+		"body": "Este es un recordatorio de que tenés una próxima sesión de entrenamiento:",
+		"session": {
+			"date": "Fecha:",
+			"time": "Hora:",
+			"location": "Ubicación:",
+			"coach": "Entrenador:"
+		},
+		"confirmPrompt": "Por favor confirmá tu asistencia haciendo clic en el botón de abajo:",
+		"button": "Confirmar asistencia",
+		"reminder": "Por favor asegurate de llegar a tiempo y traer todo el equipamiento necesario."
+	},
+	"confirmAttendance": {
+		"success": {
+			"title": "¡Asistencia confirmada!",
+			"message": "Gracias, {athleteName}. Tu asistencia a \"{sessionTitle}\" fue confirmada. ¡Nos vemos en la sesión!"
+		},
+		"error": {
+			"invalidLink": {
+				"title": "Enlace inválido",
+				"message": "El enlace de confirmación es inválido o está incompleto."
+			},
+			"linkExpired": {
+				"title": "Enlace expirado",
+				"message": "Este enlace de confirmación ha expirado o es inválido. Por favor contactá a tu entrenador para recibir un nuevo recordatorio."
+			},
+			"sessionNotFound": {
+				"title": "Sesión no encontrada",
+				"message": "No se pudo encontrar la sesión de entrenamiento."
+			},
+			"athleteNotFound": {
+				"title": "Atleta no encontrado",
+				"message": "No se pudo encontrar tu perfil de atleta."
+			},
+			"somethingWentWrong": {
+				"title": "Algo salió mal",
+				"message": "No pudimos confirmar tu asistencia. Por favor intentá de nuevo o contactá a tu entrenador."
+			}
+		},
+		"warning": {
+			"sessionCancelled": {
+				"title": "Sesión cancelada",
+				"message": "Esta sesión de entrenamiento ha sido cancelada."
+			},
+			"sessionEnded": {
+				"title": "Sesión finalizada",
+				"message": "Esta sesión de entrenamiento ya finalizó. Ya no podés confirmar tu asistencia."
+			}
+		},
+		"poweredBy": "Impulsado por"
+	}
+}

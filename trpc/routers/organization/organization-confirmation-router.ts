@@ -1,12 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import {
-	addDays,
-	endOfDay,
-	endOfWeek,
-	format,
-	startOfDay,
-	startOfWeek,
-} from "date-fns";
+import { addDays, endOfDay, endOfWeek, format, startOfWeek } from "date-fns";
 import { and, between, count, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import { appConfig } from "@/config/app.config";
@@ -47,14 +40,13 @@ export const confirmationRouter = createTRPCRouter({
 			const now = new Date();
 
 			// Determine date range based on scope
-			let startDate: Date;
+			// Always start from now (not start of day) to exclude past sessions
+			const startDate = now;
 			let endDate: Date;
 
 			if (input.scope === "today") {
-				startDate = startOfDay(now);
 				endDate = endOfDay(now);
 			} else {
-				startDate = startOfDay(now);
 				endDate = endOfWeek(now, { weekStartsOn: 1 });
 			}
 
@@ -75,24 +67,31 @@ export const confirmationRouter = createTRPCRouter({
 				},
 			});
 
-			// Count unique athletes
-			const athleteIds = new Set<string>();
+			// Count total notifications to send (athletes per session)
+			let totalNotifications = 0;
+			const uniqueAthleteIds = new Set<string>();
+
 			for (const session of sessions) {
-				// Add individual athletes
-				for (const sa of session.athletes) {
-					athleteIds.add(sa.athleteId);
-				}
-				// Add athletes from group
-				if (session.athleteGroup) {
+				// Count athletes for this session
+				if (session.athleteGroup && session.athleteGroup.members.length > 0) {
+					// Use group members
+					totalNotifications += session.athleteGroup.members.length;
 					for (const member of session.athleteGroup.members) {
-						athleteIds.add(member.athleteId);
+						uniqueAthleteIds.add(member.athleteId);
+					}
+				} else if (session.athletes.length > 0) {
+					// Use individual athletes
+					totalNotifications += session.athletes.length;
+					for (const sa of session.athletes) {
+						uniqueAthleteIds.add(sa.athleteId);
 					}
 				}
 			}
 
 			return {
 				sessionCount: sessions.length,
-				athleteCount: athleteIds.size,
+				athleteCount: totalNotifications,
+				uniqueAthleteCount: uniqueAthleteIds.size,
 			};
 		}),
 
@@ -104,15 +103,14 @@ export const confirmationRouter = createTRPCRouter({
 			const channel = input.channel ?? "email";
 
 			// Determine date range based on scope
-			let startDate: Date;
+			// Always start from now (not start of day) to exclude past sessions
+			const startDate = now;
 			let endDate: Date;
 
 			if (input.scope === "today") {
-				startDate = startOfDay(now);
 				endDate = endOfDay(now);
 			} else {
-				// week - from today to end of week
-				startDate = startOfDay(now);
+				// week - from now to end of week
 				endDate = endOfWeek(now, { weekStartsOn: 1 }); // Monday as week start
 			}
 
@@ -187,8 +185,13 @@ export const confirmationRouter = createTRPCRouter({
 
 			for (const session of sessions) {
 				// Get athletes list with contact info
-				const allAthletes = session.athleteGroup?.members
-					? session.athleteGroup.members.map((m) => ({
+				// Use group members if group exists and has members, otherwise use individual athletes
+				const hasGroupMembers =
+					session.athleteGroup?.members &&
+					session.athleteGroup.members.length > 0;
+
+				const allAthletes = hasGroupMembers
+					? session.athleteGroup!.members.map((m) => ({
 							id: m.athlete.id,
 							name: m.athlete.user?.name ?? "Athlete",
 							email: m.athlete.user?.email ?? null,
@@ -409,8 +412,13 @@ export const confirmationRouter = createTRPCRouter({
 				}
 
 				// Get athletes list with contact info
-				const allAthletes = session.athleteGroup?.members
-					? session.athleteGroup.members.map((m) => ({
+				// Use group members if group exists and has members, otherwise use individual athletes
+				const hasGroupMembers =
+					session.athleteGroup?.members &&
+					session.athleteGroup.members.length > 0;
+
+				const allAthletes = hasGroupMembers
+					? session.athleteGroup!.members.map((m) => ({
 							id: m.athlete.id,
 							name: m.athlete.user?.name ?? "Athlete",
 							email: m.athlete.user?.email ?? null,

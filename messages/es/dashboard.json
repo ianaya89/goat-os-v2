@@ -55,7 +55,17 @@
 		"noSessions": "No hay sesiones programadas",
 		"noSessionsTomorrow": "No hay sesiones programadas para mañana",
 		"noSessionsWeek": "No hay sesiones programadas esta semana",
-		"viewCalendar": "Ver calendario de sesiones"
+		"viewCalendar": "Ver calendario de sesiones",
+		"sendConfirmation": "Enviar confirmacion",
+		"confirmationMessage": "Se enviara un recordatorio a {count} atletas via {channel}.",
+		"sendViaEmail": "Enviar por Email",
+		"sendViaWhatsApp": "Enviar por WhatsApp",
+		"sendViaSms": "Enviar por SMS",
+		"primaryCoach": "Entrenador principal",
+		"assistant": "asistente",
+		"assistants": "asistentes",
+		"athlete": "atleta",
+		"athletes": "atletas"
 	},
 	"weekly": {
 		"title": "Resumen Semanal",
@@ -77,6 +87,7 @@
 	"home": {
 		"title": "Inicio",
 		"subtitle": "Tu panel personal",
+		"selectOrganization": "Selecciona una organizacion",
 		"myOrganizations": "Mis Organizaciones",
 		"myOrganizationsDescription": "Selecciona una organizacion para acceder a su panel",
 		"noOrganizations": "Aun no perteneces a ninguna organizacion.",

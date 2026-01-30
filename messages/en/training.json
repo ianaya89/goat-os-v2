@@ -201,7 +201,9 @@
 		"sendDailySummary": "Send Daily Summary",
 		"sending": "Sending...",
 		"todaysSessions": "Today's Sessions",
-		"tomorrowsSessions": "Tomorrow's Sessions"
+		"tomorrowsSessions": "Tomorrow's Sessions",
+		"thisWeeksSessions": "This Week's Sessions",
+		"noAthletes": "No athletes to notify"
 	},
 	"modal": {
 		"editTitle": "Edit Session",
@@ -297,7 +299,11 @@
 		"time": "Time",
 		"durationLabel": "Duration",
 		"location": "Location",
-		"close": "Close"
+		"close": "Close",
+		"actions": "Actions",
+		"sendConfirmation": "Send Confirmation",
+		"confirmationsSent": "Confirmations sent: {sent} of {total}",
+		"confirmationsFailed": "Failed to send confirmations"
 	},
 	"bulk": {
 		"changeStatus": "Change status",

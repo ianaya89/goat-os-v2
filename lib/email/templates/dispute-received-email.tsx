@@ -1,28 +1,20 @@
-import {
-	Body,
-	Button,
-	Container,
-	Head,
-	Heading,
-	Hr,
-	Html,
-	Preview,
-	Section,
-	Text,
-} from "@react-email/components";
-import { Tailwind } from "@react-email/tailwind";
+import { Section, Text } from "@react-email/components";
 import type * as React from "react";
+import { BaseEmailLayout, BRAND_COLORS, EmailButton } from "../components";
+import type { EmailTranslations } from "../translations";
 
 export type DisputeReceivedEmailProps = {
 	appName: string;
 	organizationName: string;
-	recipientName: string; // Admin name
+	recipientName: string;
 	amount: string;
 	currency: string;
 	disputeId: string;
 	reason: string;
 	evidenceDueBy: string;
 	disputeLink: string;
+	logoUrl?: string;
+	t: EmailTranslations;
 };
 
 function DisputeReceivedEmail({
@@ -35,82 +27,109 @@ function DisputeReceivedEmail({
 	reason,
 	evidenceDueBy,
 	disputeLink,
+	logoUrl,
+	t,
 }: DisputeReceivedEmailProps): React.JSX.Element {
+	const preview = t.disputeReceived.preview.replace(
+		"{organizationName}",
+		organizationName,
+	);
+
+	const footerText = t.common.footer.billingAdmin
+		.replace("{organizationName}", organizationName)
+		.replace("{appName}", appName);
+
 	return (
-		<Html>
-			<Head />
-			<Preview>URGENT: Dispute Received for {organizationName}</Preview>
-			<Tailwind>
-				<Body className="m-auto bg-white px-2 font-sans">
-					<Container className="mx-auto my-[40px] max-w-[465px] rounded-sm border border-[#eaeaea] border-solid p-[20px]">
-						<Heading className="mx-0 my-[30px] p-0 text-center font-normal text-[24px] text-red-600">
-							Action Required: Dispute Received
-						</Heading>
-						<Text className="text-[14px] text-black leading-[24px]">
-							Hello {recipientName},
-						</Text>
-						<Text className="text-[14px] text-black leading-[24px]">
-							A payment dispute (chargeback) has been filed against{" "}
-							<strong>{organizationName}</strong>. This means a customer has
-							disputed a charge with their bank.
-						</Text>
-						<Text className="text-[14px] text-black leading-[24px]">
-							To avoid losing the funds and incurring a dispute fee, you must
-							respond with evidence before the deadline.
-						</Text>
+		<BaseEmailLayout
+			preview={preview}
+			heading={t.disputeReceived.title}
+			footerText={footerText}
+			appName={appName}
+			logoUrl={logoUrl}
+		>
+			<Text className="text-[14px] text-black leading-[24px]">
+				{t.common.hello.replace("{name}", recipientName)}
+			</Text>
+			<Text className="text-[14px] text-black leading-[24px]">
+				{t.disputeReceived.alert.replace(
+					"{organizationName}",
+					organizationName,
+				)}
+			</Text>
 
-						{/* Dispute Details */}
-						<Section className="my-[24px] rounded-md border border-[#eaeaea] border-solid bg-[#f9f9f9] p-[16px]">
-							<Text className="m-0 text-[14px] text-black leading-[24px]">
-								<strong>Amount:</strong> {amount} {currency.toUpperCase()}
-							</Text>
-							<Text className="m-0 text-[14px] text-black leading-[24px]">
-								<strong>Reason:</strong> {reason}
-							</Text>
-							<Text className="m-0 text-[14px] text-black leading-[24px]">
-								<strong>Dispute ID:</strong> {disputeId}
-							</Text>
-							<Text className="m-0 text-[14px] text-black leading-[24px] text-red-600 font-semibold">
-								<strong>Evidence Due By:</strong> {evidenceDueBy}
-							</Text>
-						</Section>
+			{/* Dispute Details */}
+			<Section
+				className="my-[24px] rounded-md border border-solid p-[16px]"
+				style={{
+					backgroundColor: BRAND_COLORS.infoBox,
+					borderColor: BRAND_COLORS.border,
+				}}
+			>
+				<Text className="m-0 mb-2 font-semibold text-[14px] text-black">
+					{t.disputeReceived.details.title}
+				</Text>
+				<Text className="m-0 text-[14px] text-black leading-[24px]">
+					<strong>{t.disputeReceived.details.amount}</strong> {amount}{" "}
+					{currency.toUpperCase()}
+				</Text>
+				<Text className="m-0 text-[14px] text-black leading-[24px]">
+					<strong>{t.disputeReceived.details.disputeId}</strong> {disputeId}
+				</Text>
+				<Text className="m-0 text-[14px] text-black leading-[24px]">
+					<strong>{t.disputeReceived.details.reason}</strong> {reason}
+				</Text>
+				<Text className="m-0 font-semibold text-[14px] text-red-600 leading-[24px]">
+					<strong>{t.disputeReceived.details.evidenceDue}</strong>{" "}
+					{evidenceDueBy}
+				</Text>
+			</Section>
 
-						<Section className="my-[32px] text-center">
-							<Button
-								href={disputeLink}
-								className="rounded-sm bg-[#dc2626] px-5 py-3 text-center font-semibold text-[12px] text-white no-underline"
-							>
-								View & Respond to Dispute
-							</Button>
-						</Section>
+			<Text className="text-[14px] text-black leading-[24px]">
+				{t.disputeReceived.urgency}
+			</Text>
 
-						<Text className="text-[14px] text-black leading-[24px]">
-							If you do not respond by the deadline, the dispute will likely be
-							lost, and the funds will be permanently withdrawn.
-						</Text>
-
-						<Hr className="mx-0 my-[26px] w-full border border-[#eaeaea] border-solid" />
-						<Text className="text-[#666666] text-[12px] leading-[24px]">
-							You receive this email because you are a billing administrator for{" "}
-							{organizationName} on {appName}.
-						</Text>
-					</Container>
-				</Body>
-			</Tailwind>
-		</Html>
+			<Section className="my-[32px] text-center">
+				<EmailButton href={disputeLink}>{t.disputeReceived.button}</EmailButton>
+			</Section>
+		</BaseEmailLayout>
 	);
 }
 
 DisputeReceivedEmail.PreviewProps = {
-	appName: "Acme",
-	organizationName: "Evil Corp",
+	appName: "GOAT OS",
+	organizationName: "Sports Academy",
 	recipientName: "Jane Doe",
 	amount: "49.00",
 	currency: "usd",
 	disputeId: "dp_123456789",
-	reason: "fraudulent",
-	evidenceDueBy: "January 15, 2026",
+	reason: "fraudulento",
+	evidenceDueBy: "15 de Enero, 2026",
 	disputeLink: "https://dashboard.stripe.com/disputes/dp_123456789",
+	t: {
+		common: {
+			hello: "Hola {name},",
+			footer: {
+				billingAdmin:
+					"Recibiste este correo porque sos administrador de facturacion de {organizationName} en {appName}.",
+			},
+		},
+		disputeReceived: {
+			preview: "Disputa de pago recibida - Accion inmediata requerida",
+			title: "Disputa de pago recibida",
+			alert:
+				"Se recibio una disputa de pago (contracargo) para {organizationName}. Esto requiere tu atencion inmediata.",
+			details: {
+				title: "Detalles de la disputa",
+				amount: "Monto:",
+				disputeId: "ID de disputa:",
+				reason: "Motivo:",
+				evidenceDue: "Evidencia requerida antes de:",
+			},
+			urgency:
+				"Es crucial que respondas a esta disputa antes de la fecha limite de evidencia. No responder puede resultar en la perdida automatica de la disputa y perdida de fondos.",
+			button: "Ver disputa y enviar evidencia",
+		},
+	} as unknown as EmailTranslations,
 } satisfies DisputeReceivedEmailProps;
 
 export default DisputeReceivedEmail;

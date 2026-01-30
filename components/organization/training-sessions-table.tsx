@@ -149,10 +149,12 @@ const paymentStatusColors: Record<string, string> = {
 
 type TrainingSessionsTableProps = {
 	toolbarActions?: React.ReactNode;
+	renderToolbarActions?: (periodFilter: string) => React.ReactNode;
 };
 
 export function TrainingSessionsTable({
 	toolbarActions,
+	renderToolbarActions,
 }: TrainingSessionsTableProps): React.JSX.Element {
 	const t = useTranslations("training");
 	const [rowSelection, setRowSelection] = React.useState({});
@@ -789,35 +791,48 @@ export function TrainingSessionsTable({
 	];
 
 	return (
-		<DataTable
-			columnFilters={columnFilters}
-			columns={columns}
-			data={(data?.sessions as TrainingSession[]) || []}
-			emptyMessage={t("table.empty")}
-			enableFilters
-			enablePagination
-			enableRowSelection
-			enableSearch
-			filters={sessionFilters}
-			loading={isPending}
-			onFiltersChange={handleFiltersChange}
-			onPageIndexChange={setPageIndex}
-			onPageSizeChange={setPageSize}
-			onRowSelectionChange={setRowSelection}
-			onSearchQueryChange={handleSearchQueryChange}
-			onSortingChange={handleSortingChange}
-			pageIndex={pageIndex || 0}
-			pageSize={pageSize || appConfig.pagination.defaultLimit}
-			renderBulkActions={(table) => (
-				<TrainingSessionsBulkActions table={table} />
-			)}
-			rowSelection={rowSelection}
-			searchPlaceholder={t("search")}
-			searchQuery={searchQuery || ""}
-			defaultSorting={DEFAULT_SORTING}
-			sorting={sorting}
-			toolbarActions={toolbarActions}
-			totalCount={data?.total ?? 0}
-		/>
+		<div>
+			{/* Actions row - same layout as calendar */}
+			<div className="mb-3 flex items-center justify-between">
+				<Badge variant="outline" className="font-medium text-xs">
+					{t("calendar.sessionCount", { count: data?.total ?? 0 })}
+				</Badge>
+				<div className="flex items-center gap-2">
+					{renderToolbarActions
+						? renderToolbarActions(periodFilter || "day")
+						: toolbarActions}
+				</div>
+			</div>
+
+			<DataTable
+				columnFilters={columnFilters}
+				columns={columns}
+				data={(data?.sessions as TrainingSession[]) || []}
+				emptyMessage={t("table.empty")}
+				enableFilters
+				enablePagination
+				enableRowSelection
+				enableSearch
+				filters={sessionFilters}
+				loading={isPending}
+				onFiltersChange={handleFiltersChange}
+				onPageIndexChange={setPageIndex}
+				onPageSizeChange={setPageSize}
+				onRowSelectionChange={setRowSelection}
+				onSearchQueryChange={handleSearchQueryChange}
+				onSortingChange={handleSortingChange}
+				pageIndex={pageIndex || 0}
+				pageSize={pageSize || appConfig.pagination.defaultLimit}
+				renderBulkActions={(table) => (
+					<TrainingSessionsBulkActions table={table} />
+				)}
+				rowSelection={rowSelection}
+				searchPlaceholder={t("search")}
+				searchQuery={searchQuery || ""}
+				defaultSorting={DEFAULT_SORTING}
+				sorting={sorting}
+				totalCount={data?.total ?? 0}
+			/>
+		</div>
 	);
 }

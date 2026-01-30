@@ -1,12 +1,18 @@
 "use client";
 
 import NiceModal from "@ebay/nice-modal-react";
-import { addDays, format } from "date-fns";
-import { MailIcon, PlusIcon, SendIcon } from "lucide-react";
+import {
+	ChevronDownIcon,
+	MailIcon,
+	MessageSquareIcon,
+	PlusIcon,
+	SmartphoneIcon,
+} from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import * as React from "react";
 import { toast } from "sonner";
+import { ConfirmationModal } from "@/components/confirmation-modal";
 import { TrainingSessionCalendar } from "@/components/organization/training-session-calendar";
 import { TrainingSessionViewToggle } from "@/components/organization/training-session-view-toggle";
 import { TrainingSessionsModal } from "@/components/organization/training-sessions-modal";
@@ -18,6 +24,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import type { NotificationChannel } from "@/lib/db/schema/enums";
 import { trpc } from "@/trpc/client";
 
 type ViewMode = "table" | "calendar";
@@ -52,60 +59,138 @@ export function TrainingSessionsView() {
 		[searchParams, router, pathname],
 	);
 
-	const sendDailySummaryMutation =
-		trpc.organization.trainingSession.sendDailySummary.useMutation({
+	const renderToolbarActions = (periodFilter: string) => (
+		<ToolbarActions
+			viewMode={viewMode}
+			onViewModeChange={setViewMode}
+			periodFilter={periodFilter}
+		/>
+	);
+
+	// For calendar view, use a static toolbar (no period filter)
+	const calendarToolbarActions = (
+		<ToolbarActions
+			viewMode={viewMode}
+			onViewModeChange={setViewMode}
+			periodFilter={null}
+		/>
+	);
+
+	return viewMode === "table" ? (
+		<TrainingSessionsTable renderToolbarActions={renderToolbarActions} />
+	) : (
+		<TrainingSessionCalendar toolbarActions={calendarToolbarActions} />
+	);
+}
+
+// Separate component for toolbar actions to handle state properly
+function ToolbarActions({
+	viewMode,
+	onViewModeChange,
+	periodFilter,
+}: {
+	viewMode: ViewMode;
+	onViewModeChange: (mode: ViewMode) => void;
+	periodFilter: string | null;
+}) {
+	const t = useTranslations("training");
+	const tConfirmations = useTranslations("confirmations");
+	const utils = trpc.useUtils();
+
+	// Determine if confirmations can be sent based on period filter
+	const canSendConfirmations =
+		periodFilter === "day" || periodFilter === "week";
+	const confirmationScope =
+		periodFilter === "week" ? ("week" as const) : ("today" as const);
+
+	// Preview confirmation count before sending
+	const { data: preview } = trpc.organization.confirmation.previewBulk.useQuery(
+		{ scope: confirmationScope },
+		{ enabled: canSendConfirmations },
+	);
+
+	const sendBulkConfirmationsMutation =
+		trpc.organization.confirmation.sendBulk.useMutation({
 			onSuccess: (data) => {
-				if (data.sent === 0 && data.message) {
-					toast.info(data.message);
+				if (data.sent === 0) {
+					toast.info(t("viewToggle.noAthletes"));
 				} else {
-					toast.success(
-						t("success.dailySummarySent", {
-							sent: data.sent,
-							date: data.date ?? "",
-						}),
-					);
+					toast.success(t("bulk.confirmationsSent", { count: data.sent }));
 				}
+				utils.organization.confirmation.getHistory.invalidate();
+				utils.organization.confirmation.getStats.invalidate();
+				utils.organization.confirmation.previewBulk.invalidate();
 			},
 			onError: (error) => {
-				toast.error(error.message || t("error.sendDailySummaryFailed"));
+				toast.error(error.message || t("bulk.confirmationsFailed"));
 			},
 		});
 
-	const handleSendSummary = (daysFromNow: number) => {
-		const targetDate = addDays(new Date(), daysFromNow);
-		const dateString = format(targetDate, "yyyy-MM-dd");
-		sendDailySummaryMutation.mutate({ date: dateString });
+	const handleSendConfirmations = (channel: NotificationChannel) => {
+		const channelLabel =
+			channel === "email"
+				? "Email"
+				: channel === "whatsapp"
+					? "WhatsApp"
+					: "SMS";
+
+		NiceModal.show(ConfirmationModal, {
+			title: tConfirmations("bulkSend.confirmTitle"),
+			message: tConfirmations("bulkSend.confirmMessage", {
+				count: preview?.athleteCount ?? 0,
+				channel: channelLabel,
+			}),
+			confirmLabel: tConfirmations("bulkSend.confirmButton"),
+			onConfirm: () => {
+				sendBulkConfirmationsMutation.mutate({
+					scope: confirmationScope,
+					channel,
+				});
+			},
+		});
 	};
 
-	const toolbarActions = (
+	return (
 		<div className="flex items-center gap-2">
 			<TrainingSessionViewToggle
 				viewMode={viewMode}
-				onViewModeChange={setViewMode}
+				onViewModeChange={onViewModeChange}
 			/>
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
 					<Button
 						variant="outline"
 						size="sm"
-						disabled={sendDailySummaryMutation.isPending}
+						disabled={
+							!canSendConfirmations || sendBulkConfirmationsMutation.isPending
+						}
 					>
 						<MailIcon className="size-4 shrink-0" />
 						<span className="hidden sm:inline">
-							{sendDailySummaryMutation.isPending
+							{sendBulkConfirmationsMutation.isPending
 								? t("viewToggle.sending")
-								: t("viewToggle.sendDailySummary")}
+								: t("bulk.sendConfirmations")}
 						</span>
+						{canSendConfirmations && preview && preview.athleteCount > 0 && (
+							<span className="text-muted-foreground text-xs">
+								({preview.athleteCount})
+							</span>
+						)}
+						<ChevronDownIcon className="size-4" />
 					</Button>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end">
-					<DropdownMenuItem onClick={() => handleSendSummary(0)}>
-						<SendIcon className="mr-2 size-4" />
-						{t("viewToggle.todaysSessions")}
+					<DropdownMenuItem onClick={() => handleSendConfirmations("email")}>
+						<MailIcon className="mr-2 size-4" />
+						{t("bulk.viaEmail")}
 					</DropdownMenuItem>
-					<DropdownMenuItem onClick={() => handleSendSummary(1)}>
-						<SendIcon className="mr-2 size-4" />
-						{t("viewToggle.tomorrowsSessions")}
+					<DropdownMenuItem onClick={() => handleSendConfirmations("whatsapp")}>
+						<MessageSquareIcon className="mr-2 size-4" />
+						{t("bulk.viaWhatsApp")}
+					</DropdownMenuItem>
+					<DropdownMenuItem onClick={() => handleSendConfirmations("sms")}>
+						<SmartphoneIcon className="mr-2 size-4" />
+						{t("bulk.viaSms")}
 					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>
@@ -114,11 +199,5 @@ export function TrainingSessionsView() {
 				{t("add")}
 			</Button>
 		</div>
-	);
-
-	return viewMode === "table" ? (
-		<TrainingSessionsTable toolbarActions={toolbarActions} />
-	) : (
-		<TrainingSessionCalendar toolbarActions={toolbarActions} />
 	);
 }

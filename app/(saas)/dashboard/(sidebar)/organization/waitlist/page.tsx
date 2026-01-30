@@ -1,3 +1,4 @@
+import { ClockIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -40,7 +41,10 @@ export default async function WaitlistPage(): Promise<React.JSX.Element> {
 				</PagePrimaryBar>
 			</PageHeader>
 			<PageBody>
-				<PageContent title={t("waitlist.title")}>
+				<PageContent
+					title={t("waitlist.title")}
+					leftAction={<ClockIcon className="size-5 text-muted-foreground" />}
+				>
 					<WaitlistTable />
 				</PageContent>
 			</PageBody>

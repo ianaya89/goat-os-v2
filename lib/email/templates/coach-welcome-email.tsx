@@ -1,18 +1,12 @@
-import {
-	Body,
-	Button,
-	Container,
-	Head,
-	Heading,
-	Hr,
-	Html,
-	Link,
-	Preview,
-	Section,
-	Text,
-} from "@react-email/components";
-import { Tailwind } from "@react-email/tailwind";
+import { Link, Section, Text } from "@react-email/components";
 import type * as React from "react";
+import {
+	BaseEmailLayout,
+	BRAND_COLORS,
+	EmailButton,
+	EmailLinkFallback,
+} from "../components";
+import type { EmailTranslations } from "../translations";
 
 export type CoachWelcomeEmailProps = {
 	appName: string;
@@ -20,6 +14,8 @@ export type CoachWelcomeEmailProps = {
 	organizationName: string;
 	loginUrl: string;
 	forgotPasswordUrl: string;
+	logoUrl?: string;
+	t: EmailTranslations;
 };
 
 function CoachWelcomeEmail({
@@ -28,84 +24,105 @@ function CoachWelcomeEmail({
 	organizationName,
 	loginUrl,
 	forgotPasswordUrl,
+	logoUrl,
+	t,
 }: CoachWelcomeEmailProps): React.JSX.Element {
+	const preview = t.coachWelcome.preview
+		.replace("{organizationName}", organizationName)
+		.replace("{appName}", appName);
+
+	const title = t.coachWelcome.title.replace(
+		"{organizationName}",
+		organizationName,
+	);
+
 	return (
-		<Html>
-			<Head />
-			<Preview>
-				Welcome to {organizationName} on {appName}
-			</Preview>
-			<Tailwind>
-				<Body className="m-auto bg-white px-2 font-sans">
-					<Container className="mx-auto my-[40px] max-w-[465px] rounded-sm border border-[#eaeaea] border-solid p-[20px]">
-						<Heading className="mx-0 my-[30px] p-0 text-center font-normal text-[24px] text-black">
-							Welcome to <strong>{organizationName}</strong>
-						</Heading>
-						<Text className="text-[14px] text-black leading-[24px]">
-							Hello {coachName},
-						</Text>
-						<Text className="text-[14px] text-black leading-[24px]">
-							You have been added as a <strong>Coach</strong> to the{" "}
-							<strong>{organizationName}</strong> organization on{" "}
-							<strong>{appName}</strong>.
-						</Text>
-						<Text className="text-[14px] text-black leading-[24px]">
-							An account has been created for you. To access the platform,
-							please set your password by following these steps:
-						</Text>
-						<Text className="text-[14px] text-black leading-[24px]">
-							1. Click the button below to go to the password reset page
-							<br />
-							2. Enter your email address and submit
-							<br />
-							3. Check your inbox for the password reset link
-							<br />
-							4. Set your new password
-						</Text>
-						<Section className="my-[32px] text-center">
-							<Button
-								href={forgotPasswordUrl}
-								className="rounded-sm bg-[#000000] px-5 py-3 text-center font-semibold text-[12px] text-white no-underline"
-							>
-								Set Your Password
-							</Button>
-						</Section>
-						<Text className="text-[14px] text-black leading-[24px]">
-							or copy and paste this URL into your browser:{" "}
-							<Link
-								href={forgotPasswordUrl}
-								className="break-all text-blue-600 no-underline"
-							>
-								{forgotPasswordUrl}
-							</Link>
-						</Text>
-						<Text className="text-[14px] text-black leading-[24px]">
-							After setting your password, you can log in at:{" "}
-							<Link
-								href={loginUrl}
-								className="break-all text-blue-600 no-underline"
-							>
-								{loginUrl}
-							</Link>
-						</Text>
-						<Hr className="mx-0 my-[26px] w-full border border-[#eaeaea] border-solid" />
-						<Text className="text-[#666666] text-[12px] leading-[24px]">
-							If you were not expecting this email, please contact your
-							organization administrator.
-						</Text>
-					</Container>
-				</Body>
-			</Tailwind>
-		</Html>
+		<BaseEmailLayout
+			preview={preview}
+			heading={title}
+			footerText={t.common.footer.contactAdmin}
+			appName={appName}
+			logoUrl={logoUrl}
+		>
+			<Text className="text-[14px] text-black leading-[24px]">
+				{t.common.hello.replace("{name}", coachName)}
+			</Text>
+			<Text className="text-[14px] text-black leading-[24px]">
+				{t.coachWelcome.body
+					.replace("{organizationName}", organizationName)
+					.replace("{appName}", appName)}
+			</Text>
+			<Text className="text-[14px] text-black leading-[24px]">
+				{t.coachWelcome.accountCreated}
+			</Text>
+			<Section
+				className="my-[16px] rounded-md p-[16px]"
+				style={{ backgroundColor: BRAND_COLORS.infoBox }}
+			>
+				<Text className="m-0 text-[14px] text-black leading-[28px]">
+					<strong>1.</strong> {t.coachWelcome.steps.step1}
+					<br />
+					<strong>2.</strong> {t.coachWelcome.steps.step2}
+					<br />
+					<strong>3.</strong> {t.coachWelcome.steps.step3}
+					<br />
+					<strong>4.</strong> {t.coachWelcome.steps.step4}
+				</Text>
+			</Section>
+			<Section className="my-[32px] text-center">
+				<EmailButton href={forgotPasswordUrl}>
+					{t.coachWelcome.button}
+				</EmailButton>
+			</Section>
+			<EmailLinkFallback href={forgotPasswordUrl} label={t.common.orCopyLink} />
+			<Text className="text-[14px] text-black leading-[24px]">
+				{t.coachWelcome.loginInfo}{" "}
+				<Link
+					href={loginUrl}
+					className="break-all no-underline"
+					style={{ color: BRAND_COLORS.link }}
+				>
+					{loginUrl}
+				</Link>
+			</Text>
+		</BaseEmailLayout>
 	);
 }
 
 CoachWelcomeEmail.PreviewProps = {
-	appName: "Acme",
+	appName: "GOAT OS",
 	coachName: "John Doe",
 	organizationName: "Sports Academy",
 	loginUrl: "https://example.com/auth/sign-in",
 	forgotPasswordUrl: "https://example.com/auth/forgot-password",
+	t: {
+		common: {
+			hello: "Hola {name},",
+			orCopyLink: "o copia y pega esta URL en tu navegador:",
+			footer: {
+				contactAdmin:
+					"Si no esperabas este correo, por favor contacta al administrador de tu organizacion.",
+			},
+		},
+		coachWelcome: {
+			preview: "Bienvenido a {organizationName} en {appName}",
+			title: "Bienvenido a {organizationName}",
+			body: "Fuiste agregado como Entrenador a la organizacion {organizationName} en {appName}.",
+			accountCreated:
+				"Se creo una cuenta para vos. Para acceder a la plataforma, por favor configura tu contrasena siguiendo estos pasos:",
+			steps: {
+				step1:
+					"Hace clic en el boton de abajo para ir a la pagina de recuperacion de contrasena",
+				step2: "Ingresa tu correo electronico y envia",
+				step3:
+					"Revisa tu bandeja de entrada para el enlace de recuperacion de contrasena",
+				step4: "Configura tu nueva contrasena",
+			},
+			button: "Configurar tu contrasena",
+			loginInfo:
+				"Despues de configurar tu contrasena, podes iniciar sesion en:",
+		},
+	} as unknown as EmailTranslations,
 } satisfies CoachWelcomeEmailProps;
 
 export default CoachWelcomeEmail;

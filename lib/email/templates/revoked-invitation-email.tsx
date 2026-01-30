@@ -1,60 +1,65 @@
-import {
-	Body,
-	Container,
-	Head,
-	Heading,
-	Hr,
-	Html,
-	Preview,
-	Text,
-} from "@react-email/components";
-import { Tailwind } from "@react-email/tailwind";
+import { Text } from "@react-email/components";
 import type * as React from "react";
+import { BaseEmailLayout } from "../components";
+import type { EmailTranslations } from "../translations";
 
 export type RevokedInvitationEmailProps = {
 	appName: string;
 	organizationName: string;
+	logoUrl?: string;
+	t: EmailTranslations;
 };
 
 function RevokedInvitationEmail({
 	appName,
 	organizationName,
+	logoUrl,
+	t,
 }: RevokedInvitationEmailProps): React.JSX.Element {
+	const preview = t.revokedInvitation.preview
+		.replace("{organizationName}", organizationName)
+		.replace("{appName}", appName);
+
 	return (
-		<Html>
-			<Head />
-			<Preview>
-				Invitation for {organizationName} on {appName} revoked
-			</Preview>
-			<Tailwind>
-				<Body className="m-auto bg-white px-2 font-sans">
-					<Container className="mx-auto my-[40px] max-w-[465px] rounded-sm border border-[#eaeaea] border-solid p-[20px]">
-						<Heading className="mx-0 my-[30px] p-0 text-center font-normal text-[24px] text-black">
-							Invitation for <strong>{organizationName}</strong> on{" "}
-							<strong>{appName}</strong> revoked
-						</Heading>
-						<Text className="text-[14px] text-black leading-[24px]">
-							Hello,
-						</Text>
-						<Text className="text-[14px] text-black leading-[24px]">
-							Your invitation to join <strong>{organizationName}</strong> has
-							been revoked.
-						</Text>
-						<Hr className="mx-0 my-[26px] w-full border border-[#eaeaea] border-solid" />
-						<Text className="text-[#666666] text-[12px] leading-[24px]">
-							If the revocation was unexpected, ask an admin on the organization
-							to send you a new invitation link.
-						</Text>
-					</Container>
-				</Body>
-			</Tailwind>
-		</Html>
+		<BaseEmailLayout
+			preview={preview}
+			heading={t.revokedInvitation.title}
+			footerText={t.revokedInvitation.footer}
+			appName={appName}
+			logoUrl={logoUrl}
+		>
+			<Text className="text-[14px] text-black leading-[24px]">
+				{t.common.helloGeneric}
+			</Text>
+			<Text className="text-[14px] text-black leading-[24px]">
+				{t.revokedInvitation.body
+					.replace("{organizationName}", organizationName)
+					.replace("{appName}", appName)}
+			</Text>
+			<Text className="text-[14px] text-black leading-[24px]">
+				{t.revokedInvitation.explanation}
+			</Text>
+		</BaseEmailLayout>
 	);
 }
 
 RevokedInvitationEmail.PreviewProps = {
-	appName: "Acme",
-	organizationName: "Evil Corp",
+	appName: "GOAT OS",
+	organizationName: "Sports Academy",
+	t: {
+		common: {
+			helloGeneric: "Hola,",
+		},
+		revokedInvitation: {
+			preview: "Tu invitacion a {organizationName} fue revocada",
+			title: "Invitacion revocada",
+			body: "Tu invitacion para unirte a {organizationName} en {appName} ha sido revocada.",
+			explanation:
+				"Esto significa que el enlace de invitacion que recibiste anteriormente ya no es valido. Si crees que esto es un error, por favor contacta al administrador de la organizacion.",
+			footer:
+				"Si no esperabas esta invitacion originalmente, podes ignorar este correo de forma segura.",
+		},
+	} as unknown as EmailTranslations,
 } satisfies RevokedInvitationEmailProps;
 
 export default RevokedInvitationEmail;
