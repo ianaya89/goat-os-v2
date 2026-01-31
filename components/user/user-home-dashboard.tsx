@@ -186,7 +186,7 @@ function OrganizationsView({
 							key={org.id}
 							type="button"
 							onClick={() => onSelect(org.id)}
-							className="group flex w-full items-center gap-4 rounded-xl border bg-card p-4 text-left transition-all hover:border-primary/50 hover:bg-accent/50 hover:shadow-md"
+							className="group flex w-full cursor-pointer items-center gap-4 rounded-xl border bg-card p-4 text-left transition-all hover:border-primary/50 hover:bg-accent/50 hover:shadow-md"
 						>
 							<OrganizationLogo
 								className="size-12 rounded-lg"

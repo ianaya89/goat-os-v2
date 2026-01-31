@@ -93,6 +93,12 @@
 		"message": "¿Estás seguro de que quieres eliminar este entrenador? Esta acción no se puede deshacer. La cuenta de usuario permanecerá en la organización.",
 		"confirm": "Eliminar"
 	},
+	"profileActions": {
+		"edit": "Editar Entrenador",
+		"delete": "Eliminar Entrenador",
+		"archive": "Archivar Entrenador",
+		"unarchive": "Desarchivar Entrenador"
+	},
 	"bulkDelete": {
 		"title": "¿Eliminar entrenadores?",
 		"message": "¿Estás seguro de que quieres eliminar {count} entrenador(es)? Esta acción no se puede deshacer. Las cuentas de usuario permanecerán en la organización.",

@@ -8,7 +8,7 @@ import {
 	BellIcon,
 	CalendarDaysIcon,
 	CalendarIcon,
-	ChevronDownIcon,
+	CheckCircleIcon,
 	ClipboardListIcon,
 	ClockIcon,
 	EditIcon,
@@ -20,12 +20,13 @@ import {
 	MapPinIcon,
 	MessageSquareIcon,
 	MoreHorizontalIcon,
+	MoreVerticalIcon,
 	PaperclipIcon,
 	PhoneIcon,
 	PlusIcon,
+	RefreshCwIcon,
 	TargetIcon,
 	Trash2Icon,
-	UploadIcon,
 	UserIcon,
 	UsersIcon,
 } from "lucide-react";
@@ -56,7 +57,11 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuPortal,
 	DropdownMenuSeparator,
+	DropdownMenuSub,
+	DropdownMenuSubContent,
+	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -312,107 +317,101 @@ export function TrainingSessionDetail({
 					</div>
 				</div>
 				<div className="flex items-center gap-2">
-					{/* Admin/Coach actions */}
+					{/* Admin/Coach actions - unified dropdown menu */}
 					{!isRestrictedMember && (
-						<>
-							{/* Send Reminder Dropdown - only for future sessions */}
-							{isFutureSession &&
-								session.status !== TrainingSessionStatus.cancelled && (
-									<DropdownMenu>
-										<DropdownMenuTrigger asChild>
-											<Button
-												variant="outline"
-												size="sm"
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<Button variant="ghost" size="icon" className="group">
+									<MoreVerticalIcon className="size-5 transition-transform duration-200 group-data-[state=open]:rotate-90" />
+									<span className="sr-only">{t("table.openMenu")}</span>
+								</Button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent align="end" className="w-56">
+								{/* Send Confirmation - available for non-cancelled sessions */}
+								{session.status !== TrainingSessionStatus.cancelled && (
+									<>
+										<DropdownMenuSub>
+											<DropdownMenuSubTrigger
 												disabled={sendConfirmationMutation.isPending}
 											>
-												<BellIcon className="mr-1.5 size-4" />
+												<BellIcon className="mr-2 size-4" />
 												{sendConfirmationMutation.isPending
 													? t("detail.sending")
 													: t("detail.sendReminder")}
-											</Button>
-										</DropdownMenuTrigger>
-										<DropdownMenuContent align="end">
-											<DropdownMenuItem
-												onClick={() => handleSendReminder("all")}
-												disabled={sendConfirmationMutation.isPending}
-											>
-												<LayersIcon className="mr-2 size-4" />
-												{t("detail.sendViaAllChannels")}
-											</DropdownMenuItem>
-											<DropdownMenuSeparator />
-											<DropdownMenuItem
-												onClick={() => handleSendReminder("email")}
-												disabled={sendConfirmationMutation.isPending}
-											>
-												<MailIcon className="mr-2 size-4" />
-												{t("detail.sendViaEmail")}
-											</DropdownMenuItem>
-											<DropdownMenuItem
-												onClick={() => handleSendReminder("whatsapp")}
-												disabled={sendConfirmationMutation.isPending}
-											>
-												<MessageSquareIcon className="mr-2 size-4" />
-												{t("detail.sendViaWhatsApp")}
-											</DropdownMenuItem>
-											<DropdownMenuItem
-												onClick={() => handleSendReminder("sms")}
-												disabled={sendConfirmationMutation.isPending}
-											>
-												<PhoneIcon className="mr-2 size-4" />
-												{t("detail.sendViaSms")}
-											</DropdownMenuItem>
-										</DropdownMenuContent>
-									</DropdownMenu>
+											</DropdownMenuSubTrigger>
+											<DropdownMenuPortal>
+												<DropdownMenuSubContent>
+													<DropdownMenuItem
+														onClick={() => handleSendReminder("all")}
+														disabled={sendConfirmationMutation.isPending}
+													>
+														<LayersIcon className="mr-2 size-4" />
+														{t("detail.sendViaAllChannels")}
+													</DropdownMenuItem>
+													<DropdownMenuSeparator />
+													<DropdownMenuItem
+														onClick={() => handleSendReminder("email")}
+														disabled={sendConfirmationMutation.isPending}
+													>
+														<MailIcon className="mr-2 size-4" />
+														{t("detail.sendViaEmail")}
+													</DropdownMenuItem>
+													<DropdownMenuItem
+														onClick={() => handleSendReminder("whatsapp")}
+														disabled={sendConfirmationMutation.isPending}
+													>
+														<MessageSquareIcon className="mr-2 size-4" />
+														{t("detail.sendViaWhatsApp")}
+													</DropdownMenuItem>
+													<DropdownMenuItem
+														onClick={() => handleSendReminder("sms")}
+														disabled={sendConfirmationMutation.isPending}
+													>
+														<PhoneIcon className="mr-2 size-4" />
+														{t("detail.sendViaSms")}
+													</DropdownMenuItem>
+												</DropdownMenuSubContent>
+											</DropdownMenuPortal>
+										</DropdownMenuSub>
+										<DropdownMenuSeparator />
+									</>
 								)}
 
-							{/* Status Dropdown */}
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button
-										variant="outline"
-										size="sm"
-										disabled={statusMutation.isPending}
-									>
-										<TrainingSessionStatusBadge status={session.status} />
-										<ChevronDownIcon className="ml-1 size-4" />
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent align="end">
-									{TrainingSessionStatuses.map((s) => (
-										<DropdownMenuItem
-											key={s}
-											disabled={s === session.status}
-											onClick={() =>
-												statusMutation.mutate({
-													ids: [sessionId],
-													status: s,
-												})
-											}
-										>
-											<TrainingSessionStatusBadge status={s} />
-										</DropdownMenuItem>
-									))}
-								</DropdownMenuContent>
-							</DropdownMenu>
+								{/* Change Status */}
+								<DropdownMenuSub>
+									<DropdownMenuSubTrigger disabled={statusMutation.isPending}>
+										<RefreshCwIcon className="mr-2 size-4" />
+										{t("bulk.changeStatus")}
+									</DropdownMenuSubTrigger>
+									<DropdownMenuPortal>
+										<DropdownMenuSubContent>
+											{TrainingSessionStatuses.map((s) => (
+												<DropdownMenuItem
+													key={s}
+													disabled={s === session.status}
+													onClick={() =>
+														statusMutation.mutate({
+															ids: [sessionId],
+															status: s,
+														})
+													}
+												>
+													<TrainingSessionStatusBadge status={s} />
+												</DropdownMenuItem>
+											))}
+										</DropdownMenuSubContent>
+									</DropdownMenuPortal>
+								</DropdownMenuSub>
 
-							{/* More Actions Dropdown */}
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button variant="ghost" size="icon" className="size-8">
-										<MoreHorizontalIcon className="size-4" />
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent align="end">
-									<DropdownMenuItem
-										onClick={handleDelete}
-										variant="destructive"
-									>
-										<Trash2Icon className="mr-2 size-4" />
-										{t("delete")}
-									</DropdownMenuItem>
-								</DropdownMenuContent>
-							</DropdownMenu>
-						</>
+								<DropdownMenuSeparator />
+
+								{/* Delete */}
+								<DropdownMenuItem onClick={handleDelete} variant="destructive">
+									<Trash2Icon className="mr-2 size-4" />
+									{t("delete")}
+								</DropdownMenuItem>
+							</DropdownMenuContent>
+						</DropdownMenu>
 					)}
 					{/* Athlete feedback button */}
 					{isRestrictedMember && (isCompleted || !isFutureSession) && (

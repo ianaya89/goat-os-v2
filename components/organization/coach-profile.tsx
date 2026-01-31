@@ -33,6 +33,7 @@ import { OrgCoachContactEditModal } from "@/components/organization/coach-info/o
 import { OrgCoachEducationEditModal } from "@/components/organization/coach-info/org-coach-education-edit-modal";
 import { CoachExperienceEditModal } from "@/components/organization/coach-info/org-coach-experience-edit-modal";
 import { OrgCoachProfessionalEditModal } from "@/components/organization/coach-info/org-coach-professional-edit-modal";
+import { CoachProfileActions } from "@/components/organization/coach-profile-actions";
 import { OrgAchievementEditModal } from "@/components/organization/org-achievement-edit-modal";
 import { ProfileImageUpload } from "@/components/organization/profile-image-upload";
 import { SessionsListTable } from "@/components/organization/sessions-list-table";
@@ -230,6 +231,11 @@ export function CoachProfile({ coachId }: CoachProfileProps) {
 						</div>
 					</div>
 				</div>
+				<CoachProfileActions
+					coachId={coachId}
+					coachName={coach.user?.name ?? ""}
+					isArchived={coach.archivedAt !== null}
+				/>
 			</div>
 
 			{/* Stats Overview */}

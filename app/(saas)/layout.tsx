@@ -1,4 +1,5 @@
 import type * as React from "react";
+import { FeedbackButton } from "@/components/feedback-button";
 import { ImpersonationBanner } from "@/components/user/impersonate-banner";
 import { SaaSProviders } from "./providers";
 
@@ -14,6 +15,7 @@ export default function SaaSLayout({
 		<SaaSProviders>
 			{children}
 			<ImpersonationBanner />
+			<FeedbackButton />
 		</SaaSProviders>
 	);
 }

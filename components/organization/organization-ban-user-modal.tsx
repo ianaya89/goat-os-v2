@@ -22,7 +22,12 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { Sheet, SheetContent, SheetFooter } from "@/components/ui/sheet";
+import {
+	Sheet,
+	SheetContent,
+	SheetFooter,
+	SheetTitle,
+} from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 import { useZodForm } from "@/hooks/use-zod-form";
@@ -77,6 +82,7 @@ export const OrganizationBanUserModal =
 					onAnimationEndCapture={modal.handleAnimationEndCapture}
 					hideDefaultHeader
 				>
+					<SheetTitle className="sr-only">{t("ban.title")}</SheetTitle>
 					{/* Custom Header with accent stripe */}
 					<div className="relative shrink-0">
 						<div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-red-400 to-red-500" />

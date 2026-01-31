@@ -8,7 +8,7 @@ import { useTranslations } from "next-intl";
 import type * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 import { trpc } from "@/trpc/client";
@@ -51,6 +51,7 @@ export const ServicePriceHistoryModal =
 					onAnimationEndCapture={modal.handleAnimationEndCapture}
 					hideDefaultHeader
 				>
+					<SheetTitle className="sr-only">{t("title")}</SheetTitle>
 					{/* Custom Header with accent stripe */}
 					<div className="relative shrink-0">
 						{/* Accent stripe */}

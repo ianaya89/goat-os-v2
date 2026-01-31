@@ -28,6 +28,7 @@ export const env = createEnv({
 		// Email
 		EMAIL_FROM: z.string().optional(),
 		RESEND_API_KEY: z.string().optional(),
+		ERROR_REPORT_EMAIL: z.string().email().default("ignacio.anaya89@gmail.com"),
 
 		// Sent.dm - SMS and WhatsApp messaging
 		SENT_DM_SENDER_ID: z.string().optional(),
@@ -123,6 +124,7 @@ export const env = createEnv({
 		DATABASE_URL: process.env.DATABASE_URL,
 		EMAIL_FROM: process.env.EMAIL_FROM,
 		RESEND_API_KEY: process.env.RESEND_API_KEY,
+		ERROR_REPORT_EMAIL: process.env.ERROR_REPORT_EMAIL,
 		SENT_DM_SENDER_ID: process.env.SENT_DM_SENDER_ID,
 		SENT_DM_API_KEY: process.env.SENT_DM_API_KEY,
 		TRIGGER_SECRET_KEY: process.env.TRIGGER_SECRET_KEY,

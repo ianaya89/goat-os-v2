@@ -24,7 +24,12 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Sheet, SheetContent, SheetFooter } from "@/components/ui/sheet";
+import {
+	Sheet,
+	SheetContent,
+	SheetFooter,
+	SheetTitle,
+} from "@/components/ui/sheet";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 import { useZodForm } from "@/hooks/use-zod-form";
 import { type MemberRole, MemberRoles } from "@/lib/db/schema/enums";
@@ -116,6 +121,9 @@ export const OrganizationUserFormModal =
 					onAnimationEndCapture={modal.handleAnimationEndCapture}
 					hideDefaultHeader
 				>
+					<SheetTitle className="sr-only">
+						{isEditing ? t("formModal.editTitle") : t("formModal.createTitle")}
+					</SheetTitle>
 					{/* Custom Header with accent stripe */}
 					<div className="relative shrink-0">
 						<div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-slate-400 to-slate-500" />

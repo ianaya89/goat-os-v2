@@ -51,6 +51,7 @@ import { OrgAthletePhysicalProfileEditModal } from "@/components/organization/at
 import { OrgAthleteResidenceEditModal } from "@/components/organization/athlete-info/org-athlete-residence-edit-modal";
 import { OrgAthleteVideosEditModal } from "@/components/organization/athlete-info/org-athlete-videos-edit-modal";
 import { AthleteMedicalTab } from "@/components/organization/athlete-medical-tab";
+import { AthleteProfileActions } from "@/components/organization/athlete-profile-actions";
 import { AthleteEvaluationsTable } from "@/components/organization/evaluations-table";
 import { OrgAchievementEditModal } from "@/components/organization/org-achievement-edit-modal";
 import { ProfileImageUpload } from "@/components/organization/profile-image-upload";
@@ -316,6 +317,11 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 						)}
 					</div>
 				</div>
+				<AthleteProfileActions
+					athleteId={athleteId}
+					athleteName={athlete.user?.name ?? ""}
+					isArchived={athlete.archivedAt !== null}
+				/>
 			</div>
 
 			{/* Stats Overview */}

@@ -99,6 +99,13 @@
       "when": 1769893043000,
       "tag": "20260131213723_archive_feature",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1769897189205,
+      "tag": "20260131220629_daily_shard",
+      "breakpoints": true
     }
   ]
 }

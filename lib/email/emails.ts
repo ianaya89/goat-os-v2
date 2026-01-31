@@ -1,11 +1,14 @@
 import { render } from "@react-email/render";
 import { appConfig } from "@/config/app.config";
+import { env } from "@/lib/env";
 import { sendEmail } from "./resend";
 import type { AthleteWelcomeEmailProps } from "./templates/athlete-welcome-email";
 import type { CoachWelcomeEmailProps } from "./templates/coach-welcome-email";
 import type { ConfirmEmailAddressChangeEmailProps } from "./templates/confirm-email-address-change-email";
 import type { DailySessionSummaryEmailProps } from "./templates/daily-session-summary-email";
 import type { DisputeReceivedEmailProps } from "./templates/dispute-received-email";
+import type { ErrorReportEmailProps } from "./templates/error-report-email";
+import type { FeedbackReportEmailProps } from "./templates/feedback-report-email";
 import type { OrganizationInvitationEmailProps } from "./templates/organization-invitation-email";
 import type { PasswordResetEmailProps } from "./templates/password-reset-email";
 import type { PaymentFailedEmailProps } from "./templates/payment-failed-email";
@@ -22,8 +25,8 @@ type EmailInput<T> = Omit<T, "t" | "logoUrl"> & {
 };
 
 // URL del logo para emails (version blanca para header con fondo oscuro)
-// Nota: Si hay problemas de compatibilidad, convertir logo-email.svg a PNG
-const getLogoUrl = () => `${appConfig.baseUrl}/logo-email.svg`;
+// IMPORTANTE: Usar PNG para compatibilidad con clientes de email (SVG no es soportado)
+const getLogoUrl = () => `${appConfig.baseUrl}/logo-email.png`;
 
 export async function sendOrganizationInvitationEmail(
 	input: EmailInput<OrganizationInvitationEmailProps>,
@@ -355,5 +358,75 @@ export async function sendTrainingSessionReminderEmail(
 		subject,
 		html,
 		text,
+	});
+}
+
+export async function sendErrorReportEmail(
+	input: Omit<ErrorReportEmailProps, "appName" | "logoUrl">,
+): Promise<void> {
+	const { ErrorReportEmail } = await import("./templates/error-report-email");
+	const component = ErrorReportEmail({
+		...input,
+		appName: appConfig.appName,
+		logoUrl: getLogoUrl(),
+	});
+	const html = await render(component);
+	const text = await render(component, { plainText: true });
+
+	const recipient = env.ERROR_REPORT_EMAIL;
+	const subject = `[Error Report] ${input.errorMessage.slice(0, 50)}${input.errorMessage.length > 50 ? "..." : ""}`;
+
+	await sendEmail({
+		recipient,
+		subject,
+		html,
+		text,
+	});
+}
+
+export async function sendFeedbackEmail(
+	input: Omit<FeedbackReportEmailProps, "appName" | "logoUrl">,
+): Promise<void> {
+	const { FeedbackReportEmail } = await import(
+		"./templates/feedback-report-email"
+	);
+
+	// Convert base64 data URLs to attachments
+	const attachments: Array<{ filename: string; content: string }> = [];
+	if (input.images && input.images.length > 0) {
+		input.images.forEach((dataUrl, index) => {
+			// Extract base64 content from data URL (remove "data:image/png;base64," prefix)
+			const matches = dataUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+			if (matches?.[1] && matches[2]) {
+				const extension = matches[1];
+				const base64Content = matches[2];
+				attachments.push({
+					filename: `screenshot-${index + 1}.${extension}`,
+					content: base64Content,
+				});
+			}
+		});
+	}
+
+	// Create email without embedded images
+	const component = FeedbackReportEmail({
+		...input,
+		images: [], // Don't embed images in HTML
+		imageCount: attachments.length, // Pass count for display
+		appName: appConfig.appName,
+		logoUrl: getLogoUrl(),
+	});
+	const html = await render(component);
+	const text = await render(component, { plainText: true });
+
+	const recipient = env.ERROR_REPORT_EMAIL;
+	const subject = `[Feedback] ${input.title.slice(0, 50)}${input.title.length > 50 ? "..." : ""}`;
+
+	await sendEmail({
+		recipient,
+		subject,
+		html,
+		text,
+		attachments: attachments.length > 0 ? attachments : undefined,
 	});
 }

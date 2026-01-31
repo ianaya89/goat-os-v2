@@ -774,6 +774,12 @@
 		"message": "Are you sure you want to delete this athlete? This action cannot be undone. The user account will remain in the organization.",
 		"confirm": "Delete"
 	},
+	"profileActions": {
+		"edit": "Edit Athlete",
+		"delete": "Delete Athlete",
+		"archive": "Archive Athlete",
+		"unarchive": "Unarchive Athlete"
+	},
 	"success": {
 		"created": "Athlete created successfully.",
 		"updated": "Athlete updated successfully.",
@@ -800,6 +806,12 @@
 			"view": "View Group",
 			"edit": "Edit Group",
 			"delete": "Delete Group"
+		},
+		"profileActions": {
+			"edit": "Edit Group",
+			"delete": "Delete Group",
+			"archive": "Archive Group",
+			"unarchive": "Unarchive Group"
 		},
 		"table": {
 			"name": "Name",

@@ -74,7 +74,10 @@
 			"Bash(set +a)",
 			"Bash(awk:*)",
 			"Bash(git checkout:*)",
-			"Bash(xargs:*)"
+			"Bash(xargs:*)",
+			"Bash(npm uninstall:*)",
+			"Bash(convert:*)",
+			"Bash(identify:*)"
 		]
 	}
 }

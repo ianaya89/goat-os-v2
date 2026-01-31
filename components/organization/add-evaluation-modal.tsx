@@ -30,7 +30,12 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Sheet, SheetContent, SheetFooter } from "@/components/ui/sheet";
+import {
+	Sheet,
+	SheetContent,
+	SheetFooter,
+	SheetTitle,
+} from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 import { cn } from "@/lib/utils";
@@ -202,6 +207,9 @@ export const AddEvaluationModal = NiceModal.create<AddEvaluationModalProps>(
 					onAnimationEndCapture={modal.handleAnimationEndCapture}
 					hideDefaultHeader
 				>
+					<SheetTitle className="sr-only">
+						{isEditing ? t("modal.editTitle") : t("modal.title")}
+					</SheetTitle>
 					{/* Custom Header with accent stripe */}
 					<div className="relative shrink-0">
 						{/* Accent stripe */}

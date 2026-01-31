@@ -73,7 +73,10 @@ export default async function RootLayout({
 			suppressHydrationWarning
 		>
 			<head />
-			<body className="size-full min-h-screen bg-background text-foreground antialiased">
+			<body
+				className="size-full min-h-screen bg-background text-foreground antialiased"
+				suppressHydrationWarning
+			>
 				<NextIntlClientProvider locale={locale} messages={messages}>
 					<TRPCProvider
 						organizationId={

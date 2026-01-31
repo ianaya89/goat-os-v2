@@ -774,6 +774,12 @@
 		"message": "¿Estás seguro de que deseas eliminar este atleta? Esta acción no se puede deshacer. La cuenta de usuario permanecerá en la organización.",
 		"confirm": "Eliminar"
 	},
+	"profileActions": {
+		"edit": "Editar Atleta",
+		"delete": "Eliminar Atleta",
+		"archive": "Archivar Atleta",
+		"unarchive": "Desarchivar Atleta"
+	},
 	"success": {
 		"created": "Atleta creado correctamente.",
 		"updated": "Atleta actualizado correctamente.",
@@ -800,6 +806,12 @@
 			"view": "Ver Grupo",
 			"edit": "Editar Grupo",
 			"delete": "Eliminar Grupo"
+		},
+		"profileActions": {
+			"edit": "Editar Grupo",
+			"delete": "Eliminar Grupo",
+			"archive": "Archivar Grupo",
+			"unarchive": "Desarchivar Grupo"
 		},
 		"table": {
 			"name": "Nombre",

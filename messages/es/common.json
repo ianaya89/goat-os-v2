@@ -140,6 +140,23 @@
 		"members": "Miembros",
 		"subscription": "Suscripción"
 	},
+	"feedback": {
+		"buttonLabel": "Reportar problema",
+		"title": "Reportar un problema",
+		"description": "Describe el problema que encontraste. Podes adjuntar capturas de pantalla.",
+		"titleLabel": "Titulo",
+		"titlePlaceholder": "Describe brevemente el problema",
+		"descriptionLabel": "Descripcion",
+		"descriptionPlaceholder": "Proporciona mas detalles sobre el problema...",
+		"imagesLabel": "Imagenes (opcional)",
+		"addImage": "Agregar imagen",
+		"uploadArea": "Arrastra imagenes o hace click para seleccionar",
+		"imagesHint": "{current} de {max} imagenes",
+		"submit": "Enviar reporte",
+		"submitting": "Enviando...",
+		"success": "Reporte enviado correctamente",
+		"error": "No se pudo enviar el reporte"
+	},
 	"sports": {
 		"selectSport": "Seleccionar deporte",
 		"allSports": "Todos los deportes",

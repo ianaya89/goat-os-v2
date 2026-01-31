@@ -16,7 +16,12 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent, SheetFooter } from "@/components/ui/sheet";
+import {
+	Sheet,
+	SheetContent,
+	SheetFooter,
+	SheetTitle,
+} from "@/components/ui/sheet";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 import { useZodForm } from "@/hooks/use-zod-form";
 import { updateServicePriceSchema } from "@/schemas/organization-service-schemas";
@@ -83,6 +88,7 @@ export const ServicePriceUpdateModal =
 					onAnimationEndCapture={modal.handleAnimationEndCapture}
 					hideDefaultHeader
 				>
+					<SheetTitle className="sr-only">{t("priceUpdate.title")}</SheetTitle>
 					{/* Custom Header with accent stripe */}
 					<div className="relative shrink-0">
 						{/* Accent stripe */}

@@ -6,6 +6,21 @@
 	"forbidden": "You don't have permission to perform this action.",
 	"badRequest": "Invalid request.",
 	"serverError": "Server error. Please try again later.",
+	"page": {
+		"subtitle": "Something went wrong",
+		"title": "Application Error",
+		"description": "An unexpected error occurred while processing your request. You can try again or go back to the previous page.",
+		"errorMessage": "Error message",
+		"errorId": "Error ID",
+		"unknownError": "An unknown error occurred",
+		"copiedToClipboard": "Error details copied to clipboard",
+		"tryAgain": "Try again",
+		"goBack": "Go back",
+		"reportError": "Report error",
+		"reportSending": "Sending...",
+		"reportSent": "Report sent",
+		"reportFailed": "Failed to send report"
+	},
 	"trpc": {
 		"BAD_REQUEST": "Invalid request.",
 		"UNAUTHORIZED": "Unauthorized.",

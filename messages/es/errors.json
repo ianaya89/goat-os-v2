@@ -6,6 +6,21 @@
 	"forbidden": "No tienes permisos para realizar esta acción.",
 	"badRequest": "Solicitud inválida.",
 	"serverError": "Error del servidor. Por favor, intenta más tarde.",
+	"page": {
+		"subtitle": "Algo salió mal",
+		"title": "Error de Aplicación",
+		"description": "Ocurrió un error inesperado al procesar tu solicitud. Podés intentar de nuevo o volver a la página anterior.",
+		"errorMessage": "Mensaje de error",
+		"errorId": "ID de error",
+		"unknownError": "Ocurrió un error desconocido",
+		"copiedToClipboard": "Detalles del error copiados al portapapeles",
+		"tryAgain": "Intentar de nuevo",
+		"goBack": "Volver",
+		"reportError": "Reportar error",
+		"reportSending": "Enviando...",
+		"reportSent": "Reporte enviado",
+		"reportFailed": "No se pudo enviar el reporte"
+	},
 	"trpc": {
 		"BAD_REQUEST": "Solicitud inválida.",
 		"UNAUTHORIZED": "No autorizado.",

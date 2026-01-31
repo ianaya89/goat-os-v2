@@ -140,6 +140,23 @@
 		"members": "Members",
 		"subscription": "Subscription"
 	},
+	"feedback": {
+		"buttonLabel": "Report issue",
+		"title": "Report an issue",
+		"description": "Describe the issue you found. You can attach screenshots.",
+		"titleLabel": "Title",
+		"titlePlaceholder": "Briefly describe the issue",
+		"descriptionLabel": "Description",
+		"descriptionPlaceholder": "Provide more details about the issue...",
+		"imagesLabel": "Images (optional)",
+		"addImage": "Add image",
+		"uploadArea": "Drag images or click to select",
+		"imagesHint": "{current} of {max} images",
+		"submit": "Send report",
+		"submitting": "Sending...",
+		"success": "Report sent successfully",
+		"error": "Failed to send report"
+	},
 	"sports": {
 		"selectSport": "Select sport",
 		"allSports": "All sports",

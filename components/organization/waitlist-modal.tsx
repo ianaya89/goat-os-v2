@@ -37,7 +37,12 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { Sheet, SheetContent, SheetFooter } from "@/components/ui/sheet";
+import {
+	Sheet,
+	SheetContent,
+	SheetFooter,
+	SheetTitle,
+} from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
@@ -236,6 +241,9 @@ export const WaitlistModal = NiceModal.create<WaitlistModalProps>(
 					onAnimationEndCapture={modal.handleAnimationEndCapture}
 					hideDefaultHeader
 				>
+					<SheetTitle className="sr-only">
+						{isEditing ? "Editar Entrada" : "Agregar a Lista de Espera"}
+					</SheetTitle>
 					{/* Custom Header with accent stripe */}
 					<div className="relative shrink-0">
 						{/* Accent stripe */}

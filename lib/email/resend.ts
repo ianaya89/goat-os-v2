@@ -48,12 +48,18 @@ function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+export type EmailAttachment = {
+	filename: string;
+	content: string; // Base64 encoded content (without data URL prefix)
+};
+
 export type EmailPayload = {
 	recipient: string;
 	subject: string;
 	text: string;
 	html: string;
 	replyTo?: string;
+	attachments?: EmailAttachment[];
 };
 
 /**
@@ -136,6 +142,10 @@ export async function sendEmail(
 				html: payload.html,
 				text: payload.text,
 				replyTo: sanitizedReplyTo,
+				attachments: payload.attachments?.map((att) => ({
+					filename: att.filename,
+					content: Buffer.from(att.content, "base64"),
+				})),
 			});
 
 			if (response.error) {

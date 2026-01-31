@@ -6,7 +6,7 @@ import { CalendarCheckIcon, MapPinIcon, XIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { AttendanceForm } from "@/components/organization/attendance-form";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 
 interface SessionAttendanceModalProps {
@@ -34,6 +34,7 @@ export const SessionAttendanceModal =
 						onAnimationEndCapture={modal.handleAnimationEndCapture}
 						hideDefaultHeader
 					>
+						<SheetTitle className="sr-only">{t("modalTitle")}</SheetTitle>
 						{/* Custom Header with accent stripe */}
 						<div className="relative shrink-0">
 							{/* Accent stripe */}

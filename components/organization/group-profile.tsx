@@ -7,7 +7,6 @@ import {
 	CalendarCheckIcon,
 	CalendarIcon,
 	CheckCircleIcon,
-	EditIcon,
 	MedalIcon,
 	MoreHorizontalIcon,
 	PlusIcon,
@@ -20,6 +19,7 @@ import { useTranslations } from "next-intl";
 import * as React from "react";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/confirmation-modal";
+import { AthleteGroupProfileActions } from "@/components/organization/athlete-group-profile-actions";
 import { AthleteGroupsModal } from "@/components/organization/athlete-groups-modal";
 import { GroupAttendanceMatrix } from "@/components/organization/group-attendance-matrix";
 import { GroupMemberSearch } from "@/components/organization/group-member-search";
@@ -317,10 +317,12 @@ export function GroupProfile({ groupId }: GroupProfileProps) {
 						</div>
 					</div>
 				</div>
-				<Button size="sm" onClick={handleEditGroup}>
-					<EditIcon className="mr-2 size-4" />
-					{t("profile.editGroup")}
-				</Button>
+				<AthleteGroupProfileActions
+					groupId={groupId}
+					groupName={group.name}
+					isArchived={!!group.archivedAt}
+					onEdit={handleEditGroup}
+				/>
 			</div>
 
 			{/* Stats Cards */}
