@@ -8,6 +8,7 @@ import {
 	gte,
 	ilike,
 	inArray,
+	isNull,
 	lte,
 	or,
 	type SQL,
@@ -47,7 +48,10 @@ import {
 	updateCoachAchievementSchema,
 } from "@/schemas/organization-coach-achievement-schemas";
 import {
+	archiveCoachSchema,
+	bulkArchiveCoachesSchema,
 	bulkDeleteCoachesSchema,
+	bulkUnarchiveCoachesSchema,
 	bulkUpdateCoachesStatusSchema,
 	createCoachEducationSchema,
 	createCoachExperienceSchema,
@@ -59,6 +63,7 @@ import {
 	listCoachEducationSchema,
 	listCoachExperienceSchema,
 	listCoachesSchema,
+	unarchiveCoachSchema,
 	updateCoachEducationSchema,
 	updateCoachExperienceSchema,
 	updateCoachSchema,
@@ -70,6 +75,11 @@ export const organizationCoachRouter = createTRPCRouter({
 		.input(listCoachesSchema)
 		.query(async ({ ctx, input }) => {
 			const conditions = [eq(coachTable.organizationId, ctx.organization.id)];
+
+			// Filter out archived coaches by default
+			if (!input.includeArchived) {
+				conditions.push(isNull(coachTable.archivedAt));
+			}
 
 			// Search query handled separately since we need to join with user table
 			if (input.query) {
@@ -779,6 +789,112 @@ export const organizationCoachRouter = createTRPCRouter({
 			return { success: true, count: updated.length };
 		}),
 
+	// Archive coach (soft delete)
+	archive: protectedOrganizationProcedure
+		.input(archiveCoachSchema)
+		.mutation(async ({ ctx, input }) => {
+			const [archivedCoach] = await db
+				.update(coachTable)
+				.set({ archivedAt: new Date() })
+				.where(
+					and(
+						eq(coachTable.id, input.id),
+						eq(coachTable.organizationId, ctx.organization.id),
+					),
+				)
+				.returning();
+
+			if (!archivedCoach) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Coach not found",
+				});
+			}
+
+			logger.info(
+				{ coachId: input.id, organizationId: ctx.organization.id },
+				"Coach archived",
+			);
+
+			return { success: true };
+		}),
+
+	// Unarchive coach (restore from archive)
+	unarchive: protectedOrganizationProcedure
+		.input(unarchiveCoachSchema)
+		.mutation(async ({ ctx, input }) => {
+			const [unarchivedCoach] = await db
+				.update(coachTable)
+				.set({ archivedAt: null })
+				.where(
+					and(
+						eq(coachTable.id, input.id),
+						eq(coachTable.organizationId, ctx.organization.id),
+					),
+				)
+				.returning();
+
+			if (!unarchivedCoach) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Coach not found",
+				});
+			}
+
+			logger.info(
+				{ coachId: input.id, organizationId: ctx.organization.id },
+				"Coach unarchived",
+			);
+
+			return { success: true };
+		}),
+
+	// Bulk archive coaches
+	bulkArchive: protectedOrganizationProcedure
+		.input(bulkArchiveCoachesSchema)
+		.mutation(async ({ ctx, input }) => {
+			const archived = await db
+				.update(coachTable)
+				.set({ archivedAt: new Date() })
+				.where(
+					and(
+						inArray(coachTable.id, input.ids),
+						eq(coachTable.organizationId, ctx.organization.id),
+					),
+				)
+				.returning({ id: coachTable.id });
+
+			logger.info(
+				{ count: archived.length, organizationId: ctx.organization.id },
+				"Coaches archived in bulk",
+			);
+
+			return { success: true, count: archived.length };
+		}),
+
+	// Bulk unarchive coaches
+	bulkUnarchive: protectedOrganizationProcedure
+		.input(bulkUnarchiveCoachesSchema)
+		.mutation(async ({ ctx, input }) => {
+			const unarchived = await db
+				.update(coachTable)
+				.set({ archivedAt: null })
+				.where(
+					and(
+						inArray(coachTable.id, input.ids),
+						eq(coachTable.organizationId, ctx.organization.id),
+					),
+				)
+				.returning({ id: coachTable.id });
+
+			logger.info(
+				{ count: unarchived.length, organizationId: ctx.organization.id },
+				"Coaches unarchived in bulk",
+			);
+
+			return { success: true, count: unarchived.length };
+		}),
+
 	exportSelectedToCsv: protectedOrganizationProcedure
 		.input(exportCoachesSchema)
 		.mutation(async ({ ctx, input }) => {
@@ -894,7 +1010,8 @@ export const organizationCoachRouter = createTRPCRouter({
 				.insert(coachSportsExperienceTable)
 				.values({
 					coachId: input.coachId,
-					institutionName: input.institutionName,
+					clubId: input.clubId,
+					nationalTeamId: input.nationalTeamId,
 					role: input.role,
 					sport: input.sport ?? undefined,
 					level: input.level ?? undefined,
@@ -944,7 +1061,8 @@ export const organizationCoachRouter = createTRPCRouter({
 			const [updated] = await db
 				.update(coachSportsExperienceTable)
 				.set({
-					institutionName: input.institutionName,
+					clubId: input.clubId,
+					nationalTeamId: input.nationalTeamId,
 					role: input.role,
 					sport: input.sport,
 					level: input.level,
@@ -986,6 +1104,10 @@ export const organizationCoachRouter = createTRPCRouter({
 			const experiences = await db.query.coachSportsExperienceTable.findMany({
 				where: eq(coachSportsExperienceTable.coachId, input.coachId),
 				orderBy: [desc(coachSportsExperienceTable.startDate)],
+				with: {
+					club: true,
+					nationalTeam: true,
+				},
 			});
 
 			return experiences;

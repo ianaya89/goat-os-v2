@@ -8,6 +8,7 @@ import {
 	gte,
 	ilike,
 	inArray,
+	isNull,
 	lte,
 	or,
 	type SQL,
@@ -48,7 +49,10 @@ import {
 	updateAchievementSchema,
 } from "@/schemas/organization-athlete-achievement-schemas";
 import {
+	archiveAthleteSchema,
+	bulkArchiveAthletesSchema,
 	bulkDeleteAthletesSchema,
+	bulkUnarchiveAthletesSchema,
 	bulkUpdateAthletesStatusSchema,
 	createAthleteSchema,
 	createCareerHistorySchema,
@@ -66,6 +70,7 @@ import {
 	listEducationSchema,
 	listFitnessTestsSchema,
 	listPhysicalMetricsSchema,
+	unarchiveAthleteSchema,
 	updateAthleteSchema,
 	updateCareerHistorySchema,
 	updateEducationSchema,
@@ -79,6 +84,11 @@ export const organizationAthleteRouter = createTRPCRouter({
 		.input(listAthletesSchema)
 		.query(async ({ ctx, input }) => {
 			const conditions = [eq(athleteTable.organizationId, ctx.organization.id)];
+
+			// Filter out archived athletes by default
+			if (!input.includeArchived) {
+				conditions.push(isNull(athleteTable.archivedAt));
+			}
 
 			// Search query - search by user name, email, or sport
 			if (input.query && input.query.trim() !== "") {
@@ -315,6 +325,10 @@ export const organizationAthleteRouter = createTRPCRouter({
 				db.query.athleteCareerHistoryTable.findMany({
 					where: eq(athleteCareerHistoryTable.athleteId, athlete.id),
 					orderBy: desc(athleteCareerHistoryTable.startDate),
+					with: {
+						club: true,
+						nationalTeam: true,
+					},
 				}),
 				// Get wellness surveys (last 30)
 				db.query.athleteWellnessSurveyTable.findMany({
@@ -908,6 +922,112 @@ export const organizationAthleteRouter = createTRPCRouter({
 			return { success: true, count: updated.length };
 		}),
 
+	// Archive athlete (soft delete)
+	archive: protectedOrganizationProcedure
+		.input(archiveAthleteSchema)
+		.mutation(async ({ ctx, input }) => {
+			const [archivedAthlete] = await db
+				.update(athleteTable)
+				.set({ archivedAt: new Date() })
+				.where(
+					and(
+						eq(athleteTable.id, input.id),
+						eq(athleteTable.organizationId, ctx.organization.id),
+					),
+				)
+				.returning();
+
+			if (!archivedAthlete) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Athlete not found",
+				});
+			}
+
+			logger.info(
+				{ athleteId: input.id, organizationId: ctx.organization.id },
+				"Athlete archived",
+			);
+
+			return { success: true };
+		}),
+
+	// Unarchive athlete (restore from archive)
+	unarchive: protectedOrganizationProcedure
+		.input(unarchiveAthleteSchema)
+		.mutation(async ({ ctx, input }) => {
+			const [unarchivedAthlete] = await db
+				.update(athleteTable)
+				.set({ archivedAt: null })
+				.where(
+					and(
+						eq(athleteTable.id, input.id),
+						eq(athleteTable.organizationId, ctx.organization.id),
+					),
+				)
+				.returning();
+
+			if (!unarchivedAthlete) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Athlete not found",
+				});
+			}
+
+			logger.info(
+				{ athleteId: input.id, organizationId: ctx.organization.id },
+				"Athlete unarchived",
+			);
+
+			return { success: true };
+		}),
+
+	// Bulk archive athletes
+	bulkArchive: protectedOrganizationProcedure
+		.input(bulkArchiveAthletesSchema)
+		.mutation(async ({ ctx, input }) => {
+			const archived = await db
+				.update(athleteTable)
+				.set({ archivedAt: new Date() })
+				.where(
+					and(
+						inArray(athleteTable.id, input.ids),
+						eq(athleteTable.organizationId, ctx.organization.id),
+					),
+				)
+				.returning({ id: athleteTable.id });
+
+			logger.info(
+				{ count: archived.length, organizationId: ctx.organization.id },
+				"Athletes archived in bulk",
+			);
+
+			return { success: true, count: archived.length };
+		}),
+
+	// Bulk unarchive athletes
+	bulkUnarchive: protectedOrganizationProcedure
+		.input(bulkUnarchiveAthletesSchema)
+		.mutation(async ({ ctx, input }) => {
+			const unarchived = await db
+				.update(athleteTable)
+				.set({ archivedAt: null })
+				.where(
+					and(
+						inArray(athleteTable.id, input.ids),
+						eq(athleteTable.organizationId, ctx.organization.id),
+					),
+				)
+				.returning({ id: athleteTable.id });
+
+			logger.info(
+				{ count: unarchived.length, organizationId: ctx.organization.id },
+				"Athletes unarchived in bulk",
+			);
+
+			return { success: true, count: unarchived.length };
+		}),
+
 	exportSelectedToCsv: protectedOrganizationProcedure
 		.input(exportAthletesSchema)
 		.mutation(async ({ ctx, input }) => {
@@ -1366,13 +1486,12 @@ export const organizationAthleteRouter = createTRPCRouter({
 				.insert(athleteCareerHistoryTable)
 				.values({
 					athleteId: input.athleteId,
-					clubName: input.clubName,
+					clubId: input.clubId,
+					nationalTeamId: input.nationalTeamId,
 					startDate: input.startDate,
 					endDate: input.endDate,
 					position: input.position,
 					achievements: input.achievements,
-					wasNationalTeam: input.wasNationalTeam,
-					nationalTeamLevel: input.nationalTeamLevel,
 					notes: input.notes,
 				})
 				.returning();
@@ -1435,6 +1554,10 @@ export const organizationAthleteRouter = createTRPCRouter({
 					orderBy: desc(athleteCareerHistoryTable.startDate),
 					limit: input.limit,
 					offset: input.offset,
+					with: {
+						club: true,
+						nationalTeam: true,
+					},
 				}),
 				db
 					.select({ count: count() })

@@ -115,6 +115,8 @@
 		"sendViaEmail": "Enviar por Email",
 		"sendViaSms": "Enviar por SMS",
 		"sendViaWhatsApp": "Enviar por WhatsApp",
+		"sendViaAllChannels": "Enviar por Todos los Canales",
+		"allChannels": "Todos los Canales",
 		"completeSession": "Completar Sesión",
 		"giveFeedback": "Dar Feedback",
 		"postNotesOptional": "Notas Post-Sesión (opcional)",
@@ -147,7 +149,8 @@
 		"totalAmount": "Total",
 		"paidAmount": "Pagado",
 		"pendingPayments": "Pendientes",
-		"addPayment": "Agregar Pago"
+		"addPayment": "Agregar Pago",
+		"recordPayment": "Registrar Pago"
 	},
 	"success": {
 		"created": "Sesión creada correctamente.",
@@ -266,7 +269,7 @@
 		"editContentSubtitle": "Actualiza planificación, objetivos y notas."
 	},
 	"calendar": {
-		"allLocations": "Todas las Ubicaciones",
+		"allLocations": "Todas las Locaciones",
 		"allCoaches": "Todos los Entrenadores",
 		"allAthletes": "Todos los Atletas",
 		"clear": "Limpiar",

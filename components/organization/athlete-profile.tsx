@@ -1139,10 +1139,12 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 											className="transition-colors hover:bg-muted/30"
 										>
 											<td className="px-4 py-3">
-												<div className="font-medium">{entry.clubName}</div>
-												{entry.wasNationalTeam && entry.nationalTeamLevel && (
+												<div className="font-medium">
+													{entry.club?.name || entry.nationalTeam?.name || "-"}
+												</div>
+												{entry.nationalTeam?.category && (
 													<span className="text-muted-foreground text-xs">
-														{entry.nationalTeamLevel}
+														{entry.nationalTeam.category}
 													</span>
 												)}
 											</td>
@@ -1162,7 +1164,7 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 												{entry.achievements || "-"}
 											</td>
 											<td className="px-4 py-3">
-												{entry.wasNationalTeam ? (
+												{entry.nationalTeam ? (
 													<Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400">
 														<FlagIcon className="mr-1 size-3" />
 														{t("career.types.national")}
@@ -1191,13 +1193,12 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 																	athleteId,
 																	initialValues: {
 																		id: entry.id,
-																		clubName: entry.clubName,
+																		clubId: entry.clubId,
+																		nationalTeamId: entry.nationalTeamId,
 																		startDate: entry.startDate,
 																		endDate: entry.endDate,
 																		position: entry.position,
 																		achievements: entry.achievements,
-																		wasNationalTeam: entry.wasNationalTeam,
-																		nationalTeamLevel: entry.nationalTeamLevel,
 																		notes: entry.notes,
 																	},
 																});
@@ -1213,7 +1214,10 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 																NiceModal.show(ConfirmationModal, {
 																	title: t("career.deleteConfirm.title"),
 																	message: t("career.deleteConfirm.message", {
-																		clubName: entry.clubName,
+																		clubName:
+																			entry.club?.name ||
+																			entry.nationalTeam?.name ||
+																			"-",
 																	}),
 																	confirmLabel: t(
 																		"career.deleteConfirm.confirm",

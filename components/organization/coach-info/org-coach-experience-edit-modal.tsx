@@ -57,8 +57,10 @@ import {
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
+// TODO: Implement club/nationalTeam selectors instead of text inputs
 const coachExperienceSchema = z.object({
-	institutionName: z.string().trim().min(1, "Required").max(200),
+	clubId: z.string().uuid().optional().nullable(),
+	nationalTeamId: z.string().uuid().optional().nullable(),
 	role: z.string().trim().min(1, "Required").max(100),
 	sport: z.nativeEnum(AthleteSport).optional().nullable(),
 	level: z.nativeEnum(CoachExperienceLevel).optional().nullable(),
@@ -74,7 +76,8 @@ interface CoachExperienceEditModalProps {
 	coachId: string;
 	initialValues?: {
 		id: string;
-		institutionName: string;
+		clubId: string | null;
+		nationalTeamId: string | null;
 		role: string;
 		sport: AthleteSport | null;
 		level: CoachExperienceLevel | null;
@@ -97,7 +100,8 @@ export const CoachExperienceEditModal =
 			const form = useZodForm({
 				schema: coachExperienceSchema,
 				defaultValues: {
-					institutionName: initialValues?.institutionName ?? "",
+					clubId: initialValues?.clubId ?? null,
+					nationalTeamId: initialValues?.nationalTeamId ?? null,
 					role: initialValues?.role ?? "",
 					sport: initialValues?.sport ?? null,
 					level: initialValues?.level ?? null,
@@ -156,14 +160,15 @@ export const CoachExperienceEditModal =
 
 			const onSubmit = form.handleSubmit((data: CoachExperienceFormData) => {
 				const payload = {
-					institutionName: data.institutionName,
+					clubId: data.clubId ?? undefined,
+					nationalTeamId: data.nationalTeamId ?? undefined,
 					role: data.role,
-					sport: data.sport ?? null,
-					level: data.level ?? null,
-					startDate: data.startDate ?? null,
-					endDate: data.endDate ?? null,
-					achievements: data.achievements || null,
-					description: data.description || null,
+					sport: data.sport ?? undefined,
+					level: data.level ?? undefined,
+					startDate: data.startDate ?? undefined,
+					endDate: data.endDate ?? undefined,
+					achievements: data.achievements || undefined,
+					description: data.description || undefined,
 				};
 
 				if (isEditing && initialValues) {
@@ -207,31 +212,17 @@ export const CoachExperienceEditModal =
 					onAnimationEndCapture={modal.handleAnimationEndCapture}
 				>
 					<div className="space-y-6">
-						{/* Basic Info */}
+						{/* Club/National Team Selector - TODO */}
 						<ProfileEditSection
 							title={t("experience.basicInfo")}
 							description={t("experience.basicInfoDesc")}
 						>
-							<FormField
-								control={form.control}
-								name="institutionName"
-								render={({ field }) => (
-									<FormItem asChild>
-										<Field>
-											<FormLabel>{t("experience.institutionName")}</FormLabel>
-											<FormControl>
-												<Input
-													placeholder={t(
-														"experience.institutionNamePlaceholder",
-													)}
-													{...field}
-												/>
-											</FormControl>
-											<FormMessage />
-										</Field>
-									</FormItem>
-								)}
-							/>
+							<div className="rounded-lg border border-dashed p-4 text-center text-muted-foreground text-sm">
+								{t("experience.selectInstitutionPlaceholder", {
+									defaultValue:
+										"Selector de club/selección pendiente. Configura clubs/selecciones en la sección de configuración.",
+								})}
+							</div>
 
 							<FormField
 								control={form.control}

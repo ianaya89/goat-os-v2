@@ -24,6 +24,8 @@ import {
 } from "@/lib/db/schema/enums";
 import {
 	athleteTable,
+	serviceTable,
+	trainingPaymentSessionTable,
 	trainingPaymentTable,
 	trainingSessionTable,
 } from "@/lib/db/schema/tables";
@@ -35,17 +37,20 @@ import {
 	getSignedUrl,
 } from "@/lib/storage";
 import {
+	addSessionsToPaymentSchema,
 	bulkDeleteTrainingPaymentsSchema,
 	bulkUpdateTrainingPaymentsStatusSchema,
 	createTrainingPaymentSchema,
 	deleteTrainingPaymentReceiptSchema,
 	deleteTrainingPaymentSchema,
 	getAthletePaymentsSchema,
+	getPaymentSessionsSchema,
 	getSessionPaymentsSchema,
 	getTrainingPaymentReceiptDownloadUrlSchema,
 	getTrainingPaymentReceiptUploadUrlSchema,
 	listTrainingPaymentsSchema,
 	recordPaymentSchema,
+	removeSessionsFromPaymentSchema,
 	updateTrainingPaymentReceiptSchema,
 	updateTrainingPaymentSchema,
 } from "@/schemas/organization-training-payment-schemas";
@@ -103,6 +108,13 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 				);
 			}
 
+			// Service filter
+			if (input.filters?.serviceId) {
+				conditions.push(
+					eq(trainingPaymentTable.serviceId, input.filters.serviceId),
+				);
+			}
+
 			// Date range filter
 			if (input.filters?.dateRange) {
 				conditions.push(
@@ -151,6 +163,18 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 						session: {
 							columns: { id: true, title: true, startTime: true },
 						},
+						// Include linked sessions count (for package payments)
+						sessions: {
+							columns: { id: true },
+							with: {
+								session: {
+									columns: { id: true, title: true, startTime: true },
+								},
+							},
+						},
+						service: {
+							columns: { id: true, name: true, currentPrice: true },
+						},
 						recordedByUser: {
 							columns: { id: true, name: true },
 						},
@@ -182,6 +206,17 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 						},
 					},
 					session: true,
+					// Include linked sessions (for package payments)
+					sessions: {
+						with: {
+							session: {
+								columns: { id: true, title: true, startTime: true },
+							},
+						},
+					},
+					service: {
+						columns: { id: true, name: true, currentPrice: true },
+					},
 					recordedByUser: {
 						columns: { id: true, name: true },
 					},
@@ -274,11 +309,13 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 	create: protectedOrganizationProcedure
 		.input(createTrainingPaymentSchema)
 		.mutation(async ({ ctx, input }) => {
-			// Verify session belongs to organization if provided
-			if (input.sessionId) {
+			const { sessionIds, ...paymentData } = input;
+
+			// Verify single session belongs to organization if provided (legacy)
+			if (paymentData.sessionId) {
 				const session = await db.query.trainingSessionTable.findFirst({
 					where: and(
-						eq(trainingSessionTable.id, input.sessionId),
+						eq(trainingSessionTable.id, paymentData.sessionId),
 						eq(trainingSessionTable.organizationId, ctx.organization.id),
 					),
 				});
@@ -291,11 +328,28 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 				}
 			}
 
+			// Verify multiple sessions belong to organization if provided (package)
+			if (sessionIds && sessionIds.length > 0) {
+				const sessions = await db.query.trainingSessionTable.findMany({
+					where: and(
+						inArray(trainingSessionTable.id, sessionIds),
+						eq(trainingSessionTable.organizationId, ctx.organization.id),
+					),
+				});
+
+				if (sessions.length !== sessionIds.length) {
+					throw new TRPCError({
+						code: "NOT_FOUND",
+						message: "One or more sessions not found",
+					});
+				}
+			}
+
 			// Verify athlete belongs to organization if provided
-			if (input.athleteId) {
+			if (paymentData.athleteId) {
 				const athlete = await db.query.athleteTable.findFirst({
 					where: and(
-						eq(athleteTable.id, input.athleteId),
+						eq(athleteTable.id, paymentData.athleteId),
 						eq(athleteTable.organizationId, ctx.organization.id),
 					),
 				});
@@ -308,21 +362,48 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 				}
 			}
 
+			// Verify service belongs to organization if provided
+			if (paymentData.serviceId) {
+				const service = await db.query.serviceTable.findFirst({
+					where: and(
+						eq(serviceTable.id, paymentData.serviceId),
+						eq(serviceTable.organizationId, ctx.organization.id),
+					),
+				});
+
+				if (!service) {
+					throw new TRPCError({
+						code: "NOT_FOUND",
+						message: "Service not found",
+					});
+				}
+			}
+
 			const [payment] = await db
 				.insert(trainingPaymentTable)
 				.values({
 					organizationId: ctx.organization.id,
 					recordedBy: ctx.user.id,
-					...input,
+					...paymentData,
 				})
 				.returning();
 
 			if (payment) {
+				// Link multiple sessions if provided (package payment)
+				if (sessionIds && sessionIds.length > 0) {
+					await db.insert(trainingPaymentSessionTable).values(
+						sessionIds.map((sessionId) => ({
+							paymentId: payment.id,
+							sessionId,
+						})),
+					);
+				}
+
 				await createCashMovementIfCash({
 					organizationId: ctx.organization.id,
-					paymentMethod: input.paymentMethod,
-					amount: input.paidAmount,
-					description: input.description ?? "Entrenamiento",
+					paymentMethod: paymentData.paymentMethod,
+					amount: paymentData.paidAmount,
+					description: paymentData.description ?? "Entrenamiento",
 					referenceType: CashMovementReferenceType.payment,
 					referenceId: payment.id,
 					recordedBy: ctx.user.id,
@@ -708,6 +789,15 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 				session: {
 					columns: { id: true, title: true, startTime: true },
 				},
+				// Include linked sessions (for package payments)
+				sessions: {
+					columns: { id: true },
+					with: {
+						session: {
+							columns: { id: true, title: true, startTime: true },
+						},
+					},
+				},
 			},
 		});
 
@@ -908,5 +998,159 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 				price: service.currentPrice,
 				currency: service.currency,
 			};
+		}),
+
+	// Get service price directly (used when creating a payment without a session)
+	getServicePrice: protectedOrganizationProcedure
+		.input(z.object({ serviceId: z.string().uuid() }))
+		.query(async ({ ctx, input }) => {
+			const service = await db.query.serviceTable.findFirst({
+				where: and(
+					eq(serviceTable.id, input.serviceId),
+					eq(serviceTable.organizationId, ctx.organization.id),
+				),
+				columns: {
+					id: true,
+					name: true,
+					currentPrice: true,
+					currency: true,
+				},
+			});
+
+			if (!service) return null;
+
+			return {
+				serviceId: service.id,
+				serviceName: service.name,
+				price: service.currentPrice,
+				currency: service.currency,
+			};
+		}),
+
+	// ============================================================================
+	// PAYMENT SESSIONS ENDPOINTS (for package payments)
+	// ============================================================================
+
+	// Get sessions linked to a payment
+	getPaymentSessions: protectedOrganizationProcedure
+		.input(getPaymentSessionsSchema)
+		.query(async ({ ctx, input }) => {
+			// Verify payment belongs to organization
+			const payment = await db.query.trainingPaymentTable.findFirst({
+				where: and(
+					eq(trainingPaymentTable.id, input.paymentId),
+					eq(trainingPaymentTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!payment) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Payment not found",
+				});
+			}
+
+			const paymentSessions =
+				await db.query.trainingPaymentSessionTable.findMany({
+					where: eq(trainingPaymentSessionTable.paymentId, input.paymentId),
+					with: {
+						session: {
+							columns: {
+								id: true,
+								title: true,
+								startTime: true,
+								endTime: true,
+							},
+							with: {
+								location: {
+									columns: { id: true, name: true },
+								},
+							},
+						},
+					},
+				});
+
+			return paymentSessions.map((ps) => ps.session);
+		}),
+
+	// Add sessions to a payment (for package payments)
+	addSessionsToPayment: protectedOrganizationProcedure
+		.input(addSessionsToPaymentSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify payment belongs to organization
+			const payment = await db.query.trainingPaymentTable.findFirst({
+				where: and(
+					eq(trainingPaymentTable.id, input.paymentId),
+					eq(trainingPaymentTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!payment) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Payment not found",
+				});
+			}
+
+			// Verify all sessions belong to organization
+			const sessions = await db.query.trainingSessionTable.findMany({
+				where: and(
+					inArray(trainingSessionTable.id, input.sessionIds),
+					eq(trainingSessionTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (sessions.length !== input.sessionIds.length) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "One or more sessions not found",
+				});
+			}
+
+			// Insert payment-session links (ignore duplicates)
+			await db
+				.insert(trainingPaymentSessionTable)
+				.values(
+					input.sessionIds.map((sessionId) => ({
+						paymentId: input.paymentId,
+						sessionId,
+					})),
+				)
+				.onConflictDoNothing();
+
+			return { success: true, count: input.sessionIds.length };
+		}),
+
+	// Remove sessions from a payment
+	removeSessionsFromPayment: protectedOrganizationProcedure
+		.input(removeSessionsFromPaymentSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify payment belongs to organization
+			const payment = await db.query.trainingPaymentTable.findFirst({
+				where: and(
+					eq(trainingPaymentTable.id, input.paymentId),
+					eq(trainingPaymentTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!payment) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Payment not found",
+				});
+			}
+
+			// Delete payment-session links
+			const deleted = await db
+				.delete(trainingPaymentSessionTable)
+				.where(
+					and(
+						eq(trainingPaymentSessionTable.paymentId, input.paymentId),
+						inArray(trainingPaymentSessionTable.sessionId, input.sessionIds),
+					),
+				)
+				.returning({ id: trainingPaymentSessionTable.id });
+
+			return { success: true, count: deleted.length };
 		}),
 });

@@ -4,8 +4,10 @@ import NiceModal, { type NiceModalHocProps } from "@ebay/nice-modal-react";
 import { format } from "date-fns";
 import {
 	BanknoteIcon,
+	CheckIcon,
 	ChevronsUpDownIcon,
 	Loader2Icon,
+	PlusIcon,
 	XIcon,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -17,6 +19,7 @@ import {
 	ProfileEditSheet,
 } from "@/components/athlete/profile-edit-sheet";
 import { PaymentReceiptModal } from "@/components/organization/receipt-modal";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Command,
@@ -90,12 +93,19 @@ export type PaymentsModalProps = NiceModalHocProps & {
 	};
 	/** When set, the session is fixed and cannot be changed (used from session detail) */
 	fixedSessionId?: string;
+	/** When set, these sessions are pre-selected (for package payments) */
+	fixedSessionIds?: string[];
 	/** When set, only these athletes are shown in the selector (used from session detail) */
 	fixedAthletes?: { id: string; name: string }[];
 };
 
+type SelectedSession = {
+	id: string;
+	label: string;
+};
+
 export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
-	({ payment, fixedSessionId, fixedAthletes }) => {
+	({ payment, fixedSessionId, fixedSessionIds, fixedAthletes }) => {
 		const t = useTranslations("finance.payments");
 		const modal = useEnhancedModal();
 		const utils = trpc.useUtils();
@@ -122,10 +132,10 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 				},
 			);
 
-		// Track selected session label for display
-		const [selectedSessionLabel, setSelectedSessionLabel] = React.useState<
-			string | null
-		>(null);
+		// Track selected sessions for display (multiple)
+		const [selectedSessions, setSelectedSessions] = React.useState<
+			SelectedSession[]
+		>([]);
 
 		// Athlete search state
 		const [athletePopoverOpen, setAthletePopoverOpen] = React.useState(false);
@@ -152,18 +162,26 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 			string | null
 		>(null);
 
-		const sessions = sessionsData?.sessions ?? [];
+		// Service selection state (for when no session is selected)
+		const [servicePopoverOpen, setServicePopoverOpen] = React.useState(false);
+		const [serviceSearchQuery, setServiceSearchQuery] = React.useState("");
 
-		// When fixedAthletes is provided, filter locally; otherwise use tRPC results
-		// Normalize to common shape {id, name}
-		const athletes: { id: string; name: string }[] = fixedAthletes
-			? fixedAthletes.filter((a) =>
-					a.name.toLowerCase().includes(athleteSearchQuery.toLowerCase()),
-				)
-			: (athletesData?.athletes ?? []).map((a) => ({
-					id: a.id,
-					name: a.user?.name ?? "Unknown",
-				}));
+		// Fetch all active services for the organization
+		const { data: servicesData, isFetching: isLoadingServices } =
+			trpc.organization.service.list.useQuery(
+				{ limit: 50, offset: 0, filters: { status: ["active"] } },
+				{ staleTime: 30000 },
+			);
+
+		// Track selected service label for display
+		const [selectedServiceLabel, setSelectedServiceLabel] = React.useState<
+			string | null
+		>(null);
+
+		const sessions = sessionsData?.sessions ?? [];
+		const services = (servicesData?.items ?? []).filter((s) =>
+			s.name.toLowerCase().includes(serviceSearchQuery.toLowerCase()),
+		);
 
 		const createPaymentMutation =
 			trpc.organization.trainingPayment.create.useMutation({
@@ -196,6 +214,22 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 				},
 			});
 
+		// Determine initial session IDs
+		const initialSessionIds = React.useMemo(() => {
+			if (fixedSessionId) return [fixedSessionId];
+			if (fixedSessionIds?.length) return fixedSessionIds;
+			return [];
+		}, [fixedSessionId, fixedSessionIds]);
+
+		// Determine initial athlete ID (when only one fixed athlete)
+		const initialAthleteId = React.useMemo(() => {
+			if (fixedAthletes?.length === 1) return fixedAthletes[0]?.id ?? null;
+			return null;
+		}, [fixedAthletes]);
+
+		// Check if athlete is locked (only one fixed athlete)
+		const isAthleteLocked = fixedAthletes?.length === 1;
+
 		const form = useZodForm({
 			schema: isEditing
 				? updateTrainingPaymentSchema
@@ -214,13 +248,16 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 						notes: payment.notes ?? "",
 					}
 				: {
-						sessionId: fixedSessionId ?? null,
-						athleteId: null,
+						sessionId: null, // Keep for backwards compatibility
+						sessionIds: initialSessionIds,
+						athleteId: initialAthleteId,
+						serviceId: null,
 						amount: 0,
 						currency: "ARS",
 						status: TrainingPaymentStatus.paid,
 						paymentMethod: "cash",
 						paidAmount: 0,
+						discountPercentage: 0,
 						paymentDate: new Date(),
 						receiptNumber: "",
 						description: "",
@@ -228,24 +265,141 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 					},
 		});
 
-		// Fetch service price for selected session
-		const watchedSessionId = form.watch("sessionId");
-		const { data: servicePriceData } =
-			trpc.organization.trainingPayment.getServicePriceForSession.useQuery(
-				{ sessionId: watchedSessionId! },
-				{ enabled: !!watchedSessionId && !isEditing },
+		// Watch sessions and service for price auto-fill
+		const primarySessionIds = form.watch("sessionIds") ?? [];
+		const watchedServiceId = form.watch("serviceId");
+
+		// For backwards compatibility, use first session for service/athlete logic
+		const primarySessionId = primarySessionIds[0] ?? null;
+
+		// Fetch first session details (includes athletes and service)
+		const { data: selectedSessionData } =
+			trpc.organization.trainingSession.get.useQuery(
+				{ id: primarySessionId! },
+				{ enabled: !!primarySessionId && !fixedSessionId },
 			);
 
-		// Auto-fill amount from service price
+		// Get athletes from the selected session
+		const sessionAthletes = React.useMemo(() => {
+			if (!selectedSessionData) return [];
+
+			// Combine direct athletes and group members
+			const directAthletes =
+				selectedSessionData.athletes?.map((sa) => ({
+					id: sa.athlete.id,
+					name: sa.athlete.user?.name ?? sa.athlete.id,
+				})) ?? [];
+
+			const groupAthletes =
+				selectedSessionData.athleteGroup?.members?.map((m) => ({
+					id: m.athlete.id,
+					name: m.athlete.user?.name ?? m.athlete.id,
+				})) ?? [];
+
+			// Dedupe by id
+			const allAthletes = [...directAthletes, ...groupAthletes];
+			const uniqueAthletes = allAthletes.filter(
+				(a, index, self) => self.findIndex((b) => b.id === a.id) === index,
+			);
+
+			return uniqueAthletes;
+		}, [selectedSessionData]);
+
+		// Determine athletes to show based on context:
+		// 1. fixedAthletes (from parent) -> use those
+		// 2. Session selected -> use sessionAthletes (no search needed)
+		// 3. No session -> use search results
+		const athletes: { id: string; name: string }[] = React.useMemo(() => {
+			if (fixedAthletes) {
+				return fixedAthletes.filter((a) =>
+					a.name.toLowerCase().includes(athleteSearchQuery.toLowerCase()),
+				);
+			}
+			if (primarySessionId && sessionAthletes.length > 0) {
+				// Filter session athletes by search query
+				return sessionAthletes.filter((a) =>
+					a.name.toLowerCase().includes(athleteSearchQuery.toLowerCase()),
+				);
+			}
+			// Fall back to search results
+			return (athletesData?.athletes ?? []).map((a) => ({
+				id: a.id,
+				name: a.user?.name ?? "Unknown",
+			}));
+		}, [
+			fixedAthletes,
+			primarySessionId,
+			sessionAthletes,
+			athleteSearchQuery,
+			athletesData,
+		]);
+
+		// Should show session athletes directly (without needing to search)
+		const showSessionAthletes = !!primarySessionId && !fixedAthletes;
+
+		// Determine if session has a linked service
+		const sessionService =
+			selectedSessionData?.service ??
+			selectedSessionData?.athleteGroup?.service;
+		const sessionHasService = !!sessionService;
+
+		// Fetch service price for selected session
+		const { data: sessionServicePriceData } =
+			trpc.organization.trainingPayment.getServicePriceForSession.useQuery(
+				{ sessionId: primarySessionId! },
+				{ enabled: !!primarySessionId && !isEditing },
+			);
+
+		// Fetch service price directly (when no session is selected or session has no service)
+		const { data: directServicePriceData } =
+			trpc.organization.trainingPayment.getServicePrice.useQuery(
+				{ serviceId: watchedServiceId! },
+				{ enabled: !!watchedServiceId && !sessionHasService && !isEditing },
+			);
+
+		// Set serviceId from session when session has a service
 		React.useEffect(() => {
-			if (servicePriceData?.price && !isEditing) {
+			if (primarySessionId && sessionService && !isEditing) {
+				form.setValue("serviceId", sessionService.id);
+				const priceFormatted = new Intl.NumberFormat("es-AR", {
+					style: "currency",
+					currency: sessionService.currency,
+					minimumFractionDigits: 0,
+				}).format(sessionService.currentPrice / 100);
+				setSelectedServiceLabel(`${sessionService.name} - ${priceFormatted}`);
+			} else if (!primarySessionId && !isEditing) {
+				// Clear service when session is cleared (only if not editing)
+				form.setValue("serviceId", null);
+				setSelectedServiceLabel(null);
+			}
+		}, [primarySessionId, sessionService, isEditing, form]);
+
+		// Auto-fill amount from session's service price
+		React.useEffect(() => {
+			if (sessionServicePriceData?.price && !isEditing) {
 				const currentAmount = form.getValues("amount");
 				if (currentAmount === 0) {
-					form.setValue("amount", servicePriceData.price);
-					form.setValue("paidAmount", servicePriceData.price);
+					form.setValue("amount", sessionServicePriceData.price);
+					form.setValue("paidAmount", sessionServicePriceData.price);
 				}
 			}
-		}, [servicePriceData, isEditing, form]);
+		}, [sessionServicePriceData, isEditing, form]);
+
+		// Auto-fill amount from direct service price (when no session)
+		React.useEffect(() => {
+			if (directServicePriceData?.price && !primarySessionId && !isEditing) {
+				const currentAmount = form.getValues("amount");
+				if (currentAmount === 0) {
+					form.setValue("amount", directServicePriceData.price);
+					form.setValue("paidAmount", directServicePriceData.price);
+				}
+			}
+		}, [directServicePriceData, primarySessionId, isEditing, form]);
+
+		// Determine which service price data to show in the form
+		const servicePriceData = primarySessionId
+			? sessionServicePriceData
+			: directServicePriceData;
 
 		const onSubmit = form.handleSubmit((data) => {
 			if (isEditing) {
@@ -308,130 +462,192 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 								{!fixedSessionId && (
 									<FormField
 										control={form.control}
-										name="sessionId"
-										render={({ field }) => (
-											<FormItem asChild>
-												<Field>
-													<FormLabel>{t("form.session")}</FormLabel>
-													<Popover
-														open={sessionPopoverOpen}
-														onOpenChange={setSessionPopoverOpen}
-													>
-														<PopoverTrigger asChild>
-															<FormControl>
-																<Button
-																	variant="outline"
-																	className="w-full justify-between font-normal"
-																>
-																	{selectedSessionLabel ?? (
-																		<span className="text-muted-foreground">
-																			{t("form.selectSession")}
+										name="sessionIds"
+										render={({ field }) => {
+											const currentIds = field.value ?? [];
+											const isSelected = (id: string) =>
+												currentIds.includes(id);
+											const toggleSession = (
+												sessionId: string,
+												label: string,
+											) => {
+												if (isSelected(sessionId)) {
+													// Remove session
+													field.onChange(
+														currentIds.filter((id: string) => id !== sessionId),
+													);
+													setSelectedSessions((prev) =>
+														prev.filter((s) => s.id !== sessionId),
+													);
+												} else {
+													// Add session
+													field.onChange([...currentIds, sessionId]);
+													setSelectedSessions((prev) => [
+														...prev,
+														{ id: sessionId, label },
+													]);
+												}
+											};
+											const removeSession = (sessionId: string) => {
+												field.onChange(
+													currentIds.filter((id: string) => id !== sessionId),
+												);
+												setSelectedSessions((prev) =>
+													prev.filter((s) => s.id !== sessionId),
+												);
+											};
+
+											return (
+												<FormItem asChild>
+													<Field>
+														<FormLabel>
+															{t("form.sessions")}
+															{selectedSessions.length > 0 && (
+																<span className="ml-1 text-muted-foreground">
+																	({selectedSessions.length})
+																</span>
+															)}
+														</FormLabel>
+
+														{/* Selected sessions badges */}
+														{selectedSessions.length > 0 && (
+															<div className="flex flex-wrap gap-1.5 pb-2">
+																{selectedSessions.map((session) => (
+																	<Badge
+																		key={session.id}
+																		variant="secondary"
+																		className="gap-1 pr-1"
+																	>
+																		<span className="max-w-[200px] truncate">
+																			{session.label}
 																		</span>
-																	)}
-																	<div className="flex items-center gap-1">
-																		{field.value && (
-																			<span
-																				role="button"
-																				tabIndex={0}
-																				className="rounded-sm p-0.5 hover:bg-muted"
-																				onClick={(e) => {
-																					e.stopPropagation();
-																					field.onChange(null);
-																					setSelectedSessionLabel(null);
-																					setSessionSearchQuery("");
-																				}}
-																				onKeyDown={(e) => {
-																					if (
-																						e.key === "Enter" ||
-																						e.key === " "
-																					) {
-																						e.preventDefault();
-																						e.stopPropagation();
-																						field.onChange(null);
-																						setSelectedSessionLabel(null);
-																						setSessionSearchQuery("");
-																					}
-																				}}
-																			>
-																				<XIcon className="size-3.5 text-muted-foreground" />
-																			</span>
-																		)}
-																		<ChevronsUpDownIcon className="size-4 shrink-0 opacity-50" />
-																	</div>
-																</Button>
-															</FormControl>
-														</PopoverTrigger>
-														<PopoverContent
-															className="w-[350px] p-0"
-															align="start"
+																		<button
+																			type="button"
+																			className="rounded-sm p-0.5 hover:bg-muted-foreground/20"
+																			onClick={() => removeSession(session.id)}
+																		>
+																			<XIcon className="size-3" />
+																		</button>
+																	</Badge>
+																))}
+															</div>
+														)}
+
+														{/* Add session button/popover */}
+														<Popover
+															open={sessionPopoverOpen}
+															onOpenChange={setSessionPopoverOpen}
 														>
-															<Command shouldFilter={false}>
-																<CommandInput
-																	placeholder={t("form.searchSession")}
-																	value={sessionSearchQuery}
-																	onValueChange={setSessionSearchQuery}
-																/>
-																<CommandList>
-																	{!shouldSearchSessions && (
-																		<div className="py-6 text-center text-muted-foreground text-sm">
-																			{t("form.typeToSearchSession")}
-																		</div>
-																	)}
-																	{shouldSearchSessions &&
-																		isSearchingSessions && (
-																			<div className="flex items-center justify-center py-6">
-																				<Loader2Icon className="size-5 animate-spin text-muted-foreground" />
+															<PopoverTrigger asChild>
+																<FormControl>
+																	<Button
+																		type="button"
+																		variant="outline"
+																		size="sm"
+																		className="w-full justify-start gap-2 font-normal text-muted-foreground"
+																	>
+																		<PlusIcon className="size-4" />
+																		{t("form.addSession")}
+																	</Button>
+																</FormControl>
+															</PopoverTrigger>
+															<PopoverContent
+																className="w-[350px] p-0"
+																align="start"
+															>
+																<Command shouldFilter={false}>
+																	<CommandInput
+																		placeholder={t("form.searchSession")}
+																		value={sessionSearchQuery}
+																		onValueChange={setSessionSearchQuery}
+																	/>
+																	<CommandList>
+																		{!shouldSearchSessions && (
+																			<div className="py-6 text-center text-muted-foreground text-sm">
+																				{t("form.typeToSearchSession")}
 																			</div>
 																		)}
-																	{shouldSearchSessions &&
-																		!isSearchingSessions &&
-																		sessions.length === 0 && (
-																			<CommandEmpty>
-																				{t("form.noSessionsFound")}
-																			</CommandEmpty>
-																		)}
-																	{shouldSearchSessions &&
-																		!isSearchingSessions &&
-																		sessions.length > 0 && (
-																			<CommandGroup>
-																				{sessions.map((session) => {
-																					const label = `${session.title} - ${format(session.startTime, "dd/MM/yyyy")}`;
-																					return (
-																						<CommandItem
-																							key={session.id}
-																							value={session.id}
-																							onSelect={() => {
-																								field.onChange(session.id);
-																								setSelectedSessionLabel(label);
-																								setSessionPopoverOpen(false);
-																								setSessionSearchQuery("");
-																							}}
-																						>
-																							<span>{label}</span>
-																						</CommandItem>
-																					);
-																				})}
-																			</CommandGroup>
-																		)}
-																</CommandList>
-															</Command>
-														</PopoverContent>
-													</Popover>
-													<FormMessage />
-												</Field>
-											</FormItem>
-										)}
+																		{shouldSearchSessions &&
+																			isSearchingSessions && (
+																				<div className="flex items-center justify-center py-6">
+																					<Loader2Icon className="size-5 animate-spin text-muted-foreground" />
+																				</div>
+																			)}
+																		{shouldSearchSessions &&
+																			!isSearchingSessions &&
+																			sessions.length === 0 && (
+																				<CommandEmpty>
+																					{t("form.noSessionsFound")}
+																				</CommandEmpty>
+																			)}
+																		{shouldSearchSessions &&
+																			!isSearchingSessions &&
+																			sessions.length > 0 && (
+																				<CommandGroup>
+																					{sessions.map((session) => {
+																						const label = `${session.title} - ${format(session.startTime, "dd/MM/yyyy")}`;
+																						const selected = isSelected(
+																							session.id,
+																						);
+																						return (
+																							<CommandItem
+																								key={session.id}
+																								value={session.id}
+																								onSelect={() => {
+																									toggleSession(
+																										session.id,
+																										label,
+																									);
+																									setSessionSearchQuery("");
+																								}}
+																							>
+																								<div
+																									className={`mr-2 flex size-4 items-center justify-center rounded-sm border ${selected ? "border-primary bg-primary text-primary-foreground" : "border-muted"}`}
+																								>
+																									{selected && (
+																										<CheckIcon className="size-3" />
+																									)}
+																								</div>
+																								<span>{label}</span>
+																							</CommandItem>
+																						);
+																					})}
+																				</CommandGroup>
+																			)}
+																	</CommandList>
+																</Command>
+															</PopoverContent>
+														</Popover>
+														<FormMessage />
+													</Field>
+												</FormItem>
+											);
+										}}
 									/>
 								)}
 
+								{/* Athlete selector - shows session athletes when session is selected */}
 								<FormField
 									control={form.control}
 									name="athleteId"
 									render={({ field }) => (
 										<FormItem asChild>
 											<Field>
-												<FormLabel>{t("form.athleteOptional")}</FormLabel>
-												{fixedAthletes ? (
+												<FormLabel>
+													{isAthleteLocked
+														? t("form.athlete")
+														: t("form.athleteOptional")}
+												</FormLabel>
+												{/* When athlete is locked (only one fixed athlete), show read-only */}
+												{isAthleteLocked ? (
+													<FormControl>
+														<Input
+															value={fixedAthletes?.[0]?.name ?? ""}
+															disabled
+															className="bg-muted"
+														/>
+													</FormControl>
+												) : fixedAthletes || showSessionAthletes ? (
 													<Select
 														onValueChange={(value) =>
 															field.onChange(value === "none" ? null : value)
@@ -449,7 +665,7 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 															<SelectItem value="none">
 																{t("form.noAthlete")}
 															</SelectItem>
-															{fixedAthletes.map((athlete) => (
+															{athletes.map((athlete) => (
 																<SelectItem key={athlete.id} value={athlete.id}>
 																	{athlete.name}
 																</SelectItem>
@@ -566,12 +782,140 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 										</FormItem>
 									)}
 								/>
+
+								{/* Service selector - hidden when session has a linked service */}
+								{!sessionHasService && (
+									<FormField
+										control={form.control}
+										name="serviceId"
+										render={({ field }) => (
+											<FormItem asChild>
+												<Field>
+													<FormLabel>{t("form.serviceOptional")}</FormLabel>
+													<Popover
+														open={servicePopoverOpen}
+														onOpenChange={setServicePopoverOpen}
+													>
+														<PopoverTrigger asChild>
+															<FormControl>
+																<Button
+																	variant="outline"
+																	className="w-full justify-between font-normal"
+																>
+																	{selectedServiceLabel ?? (
+																		<span className="text-muted-foreground">
+																			{t("form.selectService")}
+																		</span>
+																	)}
+																	<div className="flex items-center gap-1">
+																		{field.value && (
+																			<span
+																				role="button"
+																				tabIndex={0}
+																				className="rounded-sm p-0.5 hover:bg-muted"
+																				onClick={(e) => {
+																					e.stopPropagation();
+																					field.onChange(null);
+																					setSelectedServiceLabel(null);
+																					setServiceSearchQuery("");
+																					// Reset amount when clearing service
+																					form.setValue("amount", 0);
+																					form.setValue("paidAmount", 0);
+																				}}
+																				onKeyDown={(e) => {
+																					if (
+																						e.key === "Enter" ||
+																						e.key === " "
+																					) {
+																						e.preventDefault();
+																						e.stopPropagation();
+																						field.onChange(null);
+																						setSelectedServiceLabel(null);
+																						setServiceSearchQuery("");
+																						form.setValue("amount", 0);
+																						form.setValue("paidAmount", 0);
+																					}
+																				}}
+																			>
+																				<XIcon className="size-3.5 text-muted-foreground" />
+																			</span>
+																		)}
+																		<ChevronsUpDownIcon className="size-4 shrink-0 opacity-50" />
+																	</div>
+																</Button>
+															</FormControl>
+														</PopoverTrigger>
+														<PopoverContent
+															className="w-[350px] p-0"
+															align="start"
+														>
+															<Command shouldFilter={false}>
+																<CommandInput
+																	placeholder={t("form.searchService")}
+																	value={serviceSearchQuery}
+																	onValueChange={setServiceSearchQuery}
+																/>
+																<CommandList>
+																	{isLoadingServices && (
+																		<div className="flex items-center justify-center py-6">
+																			<Loader2Icon className="size-5 animate-spin text-muted-foreground" />
+																		</div>
+																	)}
+																	{!isLoadingServices &&
+																		services.length === 0 && (
+																			<CommandEmpty>
+																				{t("form.noServicesFound")}
+																			</CommandEmpty>
+																		)}
+																	{!isLoadingServices &&
+																		services.length > 0 && (
+																			<CommandGroup>
+																				{services.map((service) => {
+																					const priceFormatted =
+																						new Intl.NumberFormat("es-AR", {
+																							style: "currency",
+																							currency: service.currency,
+																							minimumFractionDigits: 0,
+																						}).format(
+																							service.currentPrice / 100,
+																						);
+																					const label = `${service.name} - ${priceFormatted}`;
+																					return (
+																						<CommandItem
+																							key={service.id}
+																							value={service.id}
+																							onSelect={() => {
+																								field.onChange(service.id);
+																								setSelectedServiceLabel(label);
+																								setServicePopoverOpen(false);
+																								setServiceSearchQuery("");
+																							}}
+																						>
+																							<span>{label}</span>
+																						</CommandItem>
+																					);
+																				})}
+																			</CommandGroup>
+																		)}
+																</CommandList>
+															</Command>
+														</PopoverContent>
+													</Popover>
+													<FormDescription>
+														{t("form.serviceHint")}
+													</FormDescription>
+													<FormMessage />
+												</Field>
+											</FormItem>
+										)}
+									/>
+								)}
 							</>
 						)}
 					</ProfileEditSection>
 
 					<ProfileEditSection>
-						<ProfileEditGrid cols={2}>
+						<ProfileEditGrid cols={3}>
 							<FormField
 								control={form.control}
 								name="amount"
@@ -617,6 +961,31 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 											<FormControl>
 												<Input
 													type="number"
+													placeholder="0"
+													{...field}
+													onChange={(e) =>
+														field.onChange(Number(e.target.value))
+													}
+												/>
+											</FormControl>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
+
+							<FormField
+								control={form.control}
+								name="discountPercentage"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("form.discountPercentage")}</FormLabel>
+											<FormControl>
+												<Input
+													type="number"
+													min={0}
+													max={100}
 													placeholder="0"
 													{...field}
 													onChange={(e) =>

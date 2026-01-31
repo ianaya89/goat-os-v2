@@ -190,7 +190,7 @@ export function EventRegistrationWizard({
 				level: existingAthlete.level as FullRegistrationWizardInput["level"],
 				position: existingAthlete.position ?? undefined,
 				secondaryPosition: existingAthlete.secondaryPosition ?? undefined,
-				currentClub: existingAthlete.currentClub ?? undefined,
+				currentClub: existingAthlete.currentClub?.name ?? undefined,
 				jerseyNumber: existingAthlete.jerseyNumber ?? undefined,
 				yearsOfExperience: existingAthlete.yearsOfExperience ?? undefined,
 			};

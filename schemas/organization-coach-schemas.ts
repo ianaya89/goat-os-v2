@@ -22,6 +22,7 @@ export const listCoachesSchema = z.object({
 	query: z.string().optional(),
 	sortBy: CoachSortField.default("createdAt"),
 	sortOrder: z.enum(["asc", "desc"]).default("asc"),
+	includeArchived: z.boolean().default(false),
 	filters: z
 		.object({
 			status: z.array(z.nativeEnum(CoachStatus)).optional(),
@@ -86,6 +87,26 @@ export const deleteCoachSchema = z.object({
 	id: z.string().uuid(),
 });
 
+// Archive coach (soft delete)
+export const archiveCoachSchema = z.object({
+	id: z.string().uuid(),
+});
+
+// Unarchive coach (restore from archive)
+export const unarchiveCoachSchema = z.object({
+	id: z.string().uuid(),
+});
+
+// Bulk archive coaches
+export const bulkArchiveCoachesSchema = z.object({
+	ids: z.array(z.string().uuid()).min(1),
+});
+
+// Bulk unarchive coaches
+export const bulkUnarchiveCoachesSchema = z.object({
+	ids: z.array(z.string().uuid()).min(1),
+});
+
 // Bulk delete coaches
 export const bulkDeleteCoachesSchema = z.object({
 	ids: z.array(z.string().uuid()).min(1),
@@ -120,11 +141,8 @@ export type ExportCoachesInput = z.infer<typeof exportCoachesSchema>;
 // Create coach sports experience
 export const createCoachExperienceSchema = z.object({
 	coachId: z.string().uuid(),
-	institutionName: z
-		.string()
-		.trim()
-		.min(1, "Institution name is required")
-		.max(200, "Institution name is too long"),
+	clubId: z.string().uuid().optional(), // Either clubId OR nationalTeamId should be set
+	nationalTeamId: z.string().uuid().optional(),
 	role: z
 		.string()
 		.trim()
@@ -151,12 +169,8 @@ export const createCoachExperienceSchema = z.object({
 // Update coach sports experience
 export const updateCoachExperienceSchema = z.object({
 	id: z.string().uuid(),
-	institutionName: z
-		.string()
-		.trim()
-		.min(1, "Institution name is required")
-		.max(200, "Institution name is too long")
-		.optional(),
+	clubId: z.string().uuid().optional().nullable(),
+	nationalTeamId: z.string().uuid().optional().nullable(),
 	role: z
 		.string()
 		.trim()

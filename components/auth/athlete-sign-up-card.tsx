@@ -128,7 +128,6 @@ export function AthleteSignUpCard() {
 			phone: "",
 			sport: "",
 			level: AthleteLevel.beginner,
-			currentClub: "",
 			category: "",
 			position: "",
 			// Parent/guardian fields
@@ -185,7 +184,7 @@ export function AthleteSignUpCard() {
 			// Find the first step with errors and navigate to it
 			const errorFields = Object.keys(errors);
 			const step1Fields = ["name", "email", "password", "phone"];
-			const step2Fields = ["sport", "currentClub", "category"];
+			const step2Fields = ["sport", "category"];
 			const step3Fields = ["birthDate", "level", "position"];
 
 			if (errorFields.some((f) => step1Fields.includes(f))) {
@@ -206,7 +205,7 @@ export function AthleteSignUpCard() {
 			case 1:
 				return methods.trigger(["name", "email", "password", "phone"]);
 			case 2:
-				return methods.trigger(["sport", "currentClub", "category"]);
+				return methods.trigger(["sport", "category"]);
 			case 3:
 				return methods.trigger(["birthDate", "level", "position"]);
 			case 4: {
@@ -554,35 +553,6 @@ export function AthleteSignUpCard() {
 										</motion.div>
 										<motion.div
 											custom={1}
-											variants={formItemVariants}
-											initial="hidden"
-											animate="visible"
-										>
-											<FormField
-												control={methods.control}
-												name="currentClub"
-												render={({ field }) => (
-													<FormItem asChild>
-														<Field>
-															<FormLabel>Club actual</FormLabel>
-															<FormControl>
-																<Input
-																	disabled={isSubmitting}
-																	maxLength={100}
-																	type="text"
-																	placeholder="Nombre del club"
-																	className="transition-all duration-200 focus:shadow-md"
-																	{...field}
-																/>
-															</FormControl>
-															<FormMessage />
-														</Field>
-													</FormItem>
-												)}
-											/>
-										</motion.div>
-										<motion.div
-											custom={2}
 											variants={formItemVariants}
 											initial="hidden"
 											animate="visible"

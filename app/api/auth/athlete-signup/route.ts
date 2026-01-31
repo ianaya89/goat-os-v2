@@ -109,7 +109,7 @@ export async function POST(request: Request) {
 				level: data.level,
 				status: AthleteStatus.active,
 				phone: data.phone,
-				currentClub: data.currentClub,
+				// Club is assigned after joining an organization
 				category: data.category,
 				position: data.position,
 				secondaryPosition: null,

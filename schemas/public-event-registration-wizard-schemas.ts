@@ -274,7 +274,7 @@ export interface ExistingAthleteData {
 	birthDate: Date | null;
 	phone: string | null;
 	nationality: string | null;
-	currentClub: string | null;
+	currentClub: { id: string; name: string } | null;
 	jerseyNumber: number | null;
 	yearsOfExperience: number | null;
 }

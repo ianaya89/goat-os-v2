@@ -26,6 +26,7 @@ export const listTrainingPaymentsSchema = z.object({
 			paymentMethod: z.array(z.nativeEnum(TrainingPaymentMethod)).optional(),
 			athleteId: z.string().uuid().optional(),
 			sessionId: z.string().uuid().optional(),
+			serviceId: z.string().uuid().optional(),
 			dateRange: z
 				.object({
 					from: z.coerce.date(),
@@ -50,8 +51,12 @@ export const getSessionPaymentsSchema = z.object({
 
 // Create payment
 export const createTrainingPaymentSchema = z.object({
+	// Legacy: single session (for backwards compatibility)
 	sessionId: z.string().uuid().optional().nullable(),
+	// New: multiple sessions (for package payments)
+	sessionIds: z.array(z.string().uuid()).optional(),
 	athleteId: z.string().uuid().optional().nullable(),
+	serviceId: z.string().uuid().optional().nullable(),
 	amount: z.number().int().min(1, "Amount must be positive"),
 	currency: z.string().default("ARS"),
 	status: z
@@ -59,6 +64,7 @@ export const createTrainingPaymentSchema = z.object({
 		.default(TrainingPaymentStatus.pending),
 	paymentMethod: z.nativeEnum(TrainingPaymentMethod).optional(),
 	paidAmount: z.number().int().min(0).default(0),
+	discountPercentage: z.number().int().min(0).max(100).default(0),
 	paymentDate: z.coerce.date().optional(),
 	receiptNumber: z.string().trim().max(100).optional(),
 	description: z.string().trim().max(500).optional(),
@@ -72,6 +78,7 @@ export const updateTrainingPaymentSchema = z.object({
 	status: z.nativeEnum(TrainingPaymentStatus).optional(),
 	paymentMethod: z.nativeEnum(TrainingPaymentMethod).optional().nullable(),
 	paidAmount: z.number().int().min(0).optional(),
+	discountPercentage: z.number().int().min(0).max(100).optional(),
 	paymentDate: z.coerce.date().optional().nullable(),
 	receiptNumber: z.string().trim().max(100).optional().nullable(),
 	description: z.string().trim().max(500).optional().nullable(),
@@ -91,6 +98,23 @@ export const recordPaymentSchema = z.object({
 // Delete payment
 export const deleteTrainingPaymentSchema = z.object({
 	id: z.string().uuid(),
+});
+
+// Add sessions to payment (for package payments)
+export const addSessionsToPaymentSchema = z.object({
+	paymentId: z.string().uuid(),
+	sessionIds: z.array(z.string().uuid()).min(1),
+});
+
+// Remove sessions from payment
+export const removeSessionsFromPaymentSchema = z.object({
+	paymentId: z.string().uuid(),
+	sessionIds: z.array(z.string().uuid()).min(1),
+});
+
+// Get payment sessions
+export const getPaymentSessionsSchema = z.object({
+	paymentId: z.string().uuid(),
 });
 
 // Bulk delete payments
@@ -143,6 +167,13 @@ export type RecordPaymentInput = z.infer<typeof recordPaymentSchema>;
 export type DeleteTrainingPaymentInput = z.infer<
 	typeof deleteTrainingPaymentSchema
 >;
+export type AddSessionsToPaymentInput = z.infer<
+	typeof addSessionsToPaymentSchema
+>;
+export type RemoveSessionsFromPaymentInput = z.infer<
+	typeof removeSessionsFromPaymentSchema
+>;
+export type GetPaymentSessionsInput = z.infer<typeof getPaymentSessionsSchema>;
 export type BulkDeleteTrainingPaymentsInput = z.infer<
 	typeof bulkDeleteTrainingPaymentsSchema
 >;

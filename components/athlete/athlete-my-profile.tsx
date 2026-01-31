@@ -681,7 +681,7 @@ export function AthleteMyProfile() {
 									{/* Clubs Section */}
 									{(() => {
 										const clubs = careerHistory.filter(
-											(e) => !e.wasNationalTeam,
+											(e) => !e.nationalTeamId,
 										);
 										if (clubs.length === 0) return null;
 										return (
@@ -711,7 +711,7 @@ export function AthleteMyProfile() {
 									{/* National Teams Section */}
 									{(() => {
 										const nationalTeams = careerHistory.filter(
-											(e) => e.wasNationalTeam,
+											(e) => e.nationalTeamId,
 										);
 										if (nationalTeams.length === 0) return null;
 										return (
@@ -1097,13 +1097,14 @@ function getYoutubeVideoId(url: string): string | null {
 // Career Entry Card component
 interface CareerEntry {
 	id: string;
-	clubName: string;
+	clubId: string | null;
+	nationalTeamId: string | null;
+	club?: { id: string; name: string } | null;
+	nationalTeam?: { id: string; name: string; category: string | null } | null;
 	startDate: Date | null;
 	endDate: Date | null;
 	position: string | null;
 	achievements: string | null;
-	wasNationalTeam: boolean;
-	nationalTeamLevel: string | null;
 	notes: string | null;
 }
 
@@ -1129,13 +1130,15 @@ function CareerEntryCard({
 				<div className="flex flex-wrap items-start justify-between gap-2">
 					<div className="space-y-1">
 						<div className="flex flex-wrap items-center gap-2">
-							<h4 className="font-semibold">{entry.clubName}</h4>
-							{isNationalTeam && entry.nationalTeamLevel && (
+							<h4 className="font-semibold">
+								{entry.club?.name || entry.nationalTeam?.name || "-"}
+							</h4>
+							{isNationalTeam && entry.nationalTeam?.category && (
 								<Badge
 									variant="outline"
 									className="border-yellow-500/50 bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400"
 								>
-									{entry.nationalTeamLevel}
+									{entry.nationalTeam.category}
 								</Badge>
 							)}
 						</div>
@@ -1162,13 +1165,12 @@ function CareerEntryCard({
 									athleteId,
 									entry: {
 										id: entry.id,
-										clubName: entry.clubName,
+										clubId: entry.clubId,
+										nationalTeamId: entry.nationalTeamId,
 										startDate: entry.startDate,
 										endDate: entry.endDate,
 										position: entry.position,
 										achievements: entry.achievements,
-										wasNationalTeam: entry.wasNationalTeam,
-										nationalTeamLevel: entry.nationalTeamLevel,
 										notes: entry.notes,
 									},
 								})

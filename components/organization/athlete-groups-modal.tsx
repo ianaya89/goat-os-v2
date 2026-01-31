@@ -295,6 +295,9 @@ export const AthleteGroupsModal = NiceModal.create<AthleteGroupsModalProps>(
 					onAnimationEndCapture={modal.handleAnimationEndCapture}
 					hideDefaultHeader
 				>
+					<SheetTitle className="sr-only">
+						{isEditing ? t("modal.editTitle") : t("modal.createTitle")}
+					</SheetTitle>
 					{/* Custom Header with accent stripe */}
 					<div className="relative shrink-0">
 						{/* Accent stripe */}

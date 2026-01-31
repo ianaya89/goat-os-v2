@@ -7,6 +7,8 @@ import type {
 	SortingState,
 } from "@tanstack/react-table";
 import {
+	ArchiveIcon,
+	ArchiveRestoreIcon,
 	CheckCircle2Icon,
 	ClockIcon,
 	EyeIcon,
@@ -20,6 +22,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import {
 	parseAsArrayOf,
+	parseAsBoolean,
 	parseAsInteger,
 	parseAsJson,
 	parseAsString,
@@ -30,6 +33,7 @@ import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/confirmation-modal";
 import { CoachesBulkActions } from "@/components/organization/coaches-bulk-actions";
 import { CoachesModal } from "@/components/organization/coaches-modal";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MailtoLink, WhatsAppLink } from "@/components/ui/contact-links";
 import {
@@ -45,7 +49,9 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Label } from "@/components/ui/label";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Switch } from "@/components/ui/switch";
 import {
 	Tooltip,
 	TooltipContent,
@@ -75,6 +81,7 @@ interface Coach {
 	status: string;
 	createdAt: Date;
 	updatedAt: Date;
+	archivedAt: Date | null;
 	user: {
 		id: string;
 		name: string;
@@ -88,6 +95,10 @@ interface Coach {
 export function CoachesTable(): React.JSX.Element {
 	const t = useTranslations("coaches");
 	const tCommon = useTranslations("common.sports");
+	const tCommonButtons = useTranslations("common.buttons");
+	const tCommonConfirmation = useTranslations("common.confirmation");
+	const tCommonSuccess = useTranslations("common.success");
+	const tCommonStatus = useTranslations("common.status");
 	const [rowSelection, setRowSelection] = React.useState({});
 
 	const translateSport = (sport: AthleteSport) => {
@@ -135,6 +146,13 @@ export function CoachesTable(): React.JSX.Element {
 	const [sportFilter, setSportFilter] = useQueryState(
 		"sport",
 		parseAsArrayOf(parseAsString).withDefault([]).withOptions({
+			shallow: true,
+		}),
+	);
+
+	const [includeArchived, setIncludeArchived] = useQueryState(
+		"archived",
+		parseAsBoolean.withDefault(false).withOptions({
 			shallow: true,
 		}),
 	);
@@ -215,6 +233,7 @@ export function CoachesTable(): React.JSX.Element {
 			query: searchQuery || "",
 			sortBy: sortParams.sortBy,
 			sortOrder: sortParams.sortOrder,
+			includeArchived: includeArchived ?? false,
 			filters: {
 				status: (statusFilter || []) as ("active" | "inactive")[],
 				createdAt: (createdAtFilter || []) as (
@@ -237,6 +256,26 @@ export function CoachesTable(): React.JSX.Element {
 		},
 		onError: (error) => {
 			toast.error(error.message || t("error.deleteFailed"));
+		},
+	});
+
+	const archiveCoachMutation = trpc.organization.coach.archive.useMutation({
+		onSuccess: () => {
+			toast.success(tCommonSuccess("archived"));
+			utils.organization.coach.list.invalidate();
+		},
+		onError: (error) => {
+			toast.error(error.message);
+		},
+	});
+
+	const unarchiveCoachMutation = trpc.organization.coach.unarchive.useMutation({
+		onSuccess: () => {
+			toast.success(tCommonSuccess("unarchived"));
+			utils.organization.coach.list.invalidate();
+		},
+		onError: (error) => {
+			toast.error(error.message);
 		},
 	});
 
@@ -275,6 +314,7 @@ export function CoachesTable(): React.JSX.Element {
 			cell: ({ row }) => {
 				const name = row.original.user?.name ?? "Unknown";
 				const age = calculateAge(row.original.birthDate);
+				const isArchived = row.original.archivedAt !== null;
 				return (
 					<Link
 						className="flex items-center gap-3 hover:opacity-80"
@@ -293,12 +333,19 @@ export function CoachesTable(): React.JSX.Element {
 							<p className="truncate font-medium text-foreground" title={name}>
 								{name}
 							</p>
-							{age !== null && (
-								<p className="text-muted-foreground text-xs">
-									<span className="font-semibold">{age}</span>{" "}
-									{t("table.yearsOld")}
-								</p>
-							)}
+							<div className="flex items-center gap-2">
+								{age !== null && (
+									<p className="text-muted-foreground text-xs">
+										<span className="font-semibold">{age}</span>{" "}
+										{t("table.yearsOld")}
+									</p>
+								)}
+								{isArchived && (
+									<Badge variant="secondary" className="text-xs">
+										{tCommonStatus("archived")}
+									</Badge>
+								)}
+							</div>
 						</div>
 					</Link>
 				);
@@ -426,57 +473,95 @@ export function CoachesTable(): React.JSX.Element {
 		{
 			id: "actions",
 			enableSorting: false,
-			cell: ({ row }) => (
-				<div className="flex justify-end">
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button
-								className="flex size-8 text-muted-foreground data-[state=open]:bg-muted"
-								size="icon"
-								variant="ghost"
-							>
-								<MoreHorizontalIcon className="shrink-0" />
-								<span className="sr-only">{t("table.actions")}</span>
-							</Button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end">
-							<DropdownMenuItem asChild>
-								<Link
-									href={`/dashboard/organization/coaches/${row.original.id}`}
+			cell: ({ row }) => {
+				const isArchived = row.original.archivedAt !== null;
+				return (
+					<div className="flex justify-end">
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<Button
+									className="flex size-8 text-muted-foreground data-[state=open]:bg-muted"
+									size="icon"
+									variant="ghost"
 								>
-									<EyeIcon className="mr-2 size-4" />
-									{t("table.viewProfile")}
-								</Link>
-							</DropdownMenuItem>
-							<DropdownMenuItem
-								onClick={() => {
-									NiceModal.show(CoachesModal, { coach: row.original });
-								}}
-							>
-								<PencilIcon className="mr-2 size-4" />
-								{t("edit")}
-							</DropdownMenuItem>
-							<DropdownMenuSeparator />
-							<DropdownMenuItem
-								onClick={() => {
-									NiceModal.show(ConfirmationModal, {
-										title: t("delete.title"),
-										message: t("delete.message"),
-										confirmLabel: t("delete.confirm"),
-										destructive: true,
-										onConfirm: () =>
-											deleteCoachMutation.mutate({ id: row.original.id }),
-									});
-								}}
-								variant="destructive"
-							>
-								<Trash2Icon className="mr-2 size-4" />
-								{t("deleteAction")}
-							</DropdownMenuItem>
-						</DropdownMenuContent>
-					</DropdownMenu>
-				</div>
-			),
+									<MoreHorizontalIcon className="shrink-0" />
+									<span className="sr-only">{t("table.actions")}</span>
+								</Button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent align="end">
+								<DropdownMenuItem asChild>
+									<Link
+										href={`/dashboard/organization/coaches/${row.original.id}`}
+									>
+										<EyeIcon className="mr-2 size-4" />
+										{t("table.viewProfile")}
+									</Link>
+								</DropdownMenuItem>
+								<DropdownMenuItem
+									onClick={() => {
+										NiceModal.show(CoachesModal, { coach: row.original });
+									}}
+								>
+									<PencilIcon className="mr-2 size-4" />
+									{t("edit")}
+								</DropdownMenuItem>
+								<DropdownMenuSeparator />
+								{isArchived ? (
+									<DropdownMenuItem
+										onClick={() => {
+											NiceModal.show(ConfirmationModal, {
+												title: tCommonConfirmation("unarchiveTitle"),
+												message: tCommonConfirmation("unarchiveMessage"),
+												confirmLabel: tCommonButtons("unarchive"),
+												onConfirm: () =>
+													unarchiveCoachMutation.mutate({
+														id: row.original.id,
+													}),
+											});
+										}}
+									>
+										<ArchiveRestoreIcon className="mr-2 size-4" />
+										{tCommonButtons("unarchive")}
+									</DropdownMenuItem>
+								) : (
+									<DropdownMenuItem
+										onClick={() => {
+											NiceModal.show(ConfirmationModal, {
+												title: tCommonConfirmation("archiveTitle"),
+												message: tCommonConfirmation("archiveMessage"),
+												confirmLabel: tCommonButtons("archive"),
+												onConfirm: () =>
+													archiveCoachMutation.mutate({
+														id: row.original.id,
+													}),
+											});
+										}}
+									>
+										<ArchiveIcon className="mr-2 size-4" />
+										{tCommonButtons("archive")}
+									</DropdownMenuItem>
+								)}
+								<DropdownMenuItem
+									onClick={() => {
+										NiceModal.show(ConfirmationModal, {
+											title: t("delete.title"),
+											message: t("delete.message"),
+											confirmLabel: t("delete.confirm"),
+											destructive: true,
+											onConfirm: () =>
+												deleteCoachMutation.mutate({ id: row.original.id }),
+										});
+									}}
+									variant="destructive"
+								>
+									<Trash2Icon className="mr-2 size-4" />
+									{t("deleteAction")}
+								</DropdownMenuItem>
+							</DropdownMenuContent>
+						</DropdownMenu>
+					</div>
+				);
+			},
 		},
 	];
 
@@ -526,10 +611,25 @@ export function CoachesTable(): React.JSX.Element {
 			defaultSorting={DEFAULT_SORTING}
 			sorting={sorting}
 			toolbarActions={
-				<Button onClick={() => NiceModal.show(CoachesModal)} size="sm">
-					<PlusIcon className="size-4 shrink-0" />
-					{t("add")}
-				</Button>
+				<div className="flex items-center gap-4">
+					<div className="flex items-center gap-2">
+						<Switch
+							id="show-archived"
+							checked={includeArchived ?? false}
+							onCheckedChange={setIncludeArchived}
+						/>
+						<Label
+							htmlFor="show-archived"
+							className="text-sm text-muted-foreground"
+						>
+							{t("showArchived")}
+						</Label>
+					</div>
+					<Button onClick={() => NiceModal.show(CoachesModal)} size="sm">
+						<PlusIcon className="size-4 shrink-0" />
+						{t("add")}
+					</Button>
+				</div>
 			}
 			totalCount={data?.total ?? 0}
 		/>

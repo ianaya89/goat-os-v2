@@ -191,11 +191,12 @@ export async function seedAthleteCareerHistory(
 					(1 + Math.floor(Math.random() * 2)) * 365,
 				);
 
+				// TODO: Update seed to create clubs first and reference them by ID
 				history.push({
 					id: randomUUID(),
 					athleteId,
-					clubName:
-						clubNames[Math.floor(Math.random() * clubNames.length)] ?? "Club",
+					clubId: null, // Club references need to be created first
+					nationalTeamId: null,
 					startDate,
 					endDate,
 					position:
@@ -204,8 +205,6 @@ export async function seedAthleteCareerHistory(
 						Math.random() > 0.7
 							? "Campeón juvenil, Mejor jugador del torneo"
 							: null,
-					wasNationalTeam: Math.random() > 0.85,
-					nationalTeamLevel: Math.random() > 0.85 ? "Sub-17" : null,
 				});
 			}
 		}

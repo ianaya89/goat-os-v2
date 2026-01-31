@@ -5,6 +5,7 @@ import {
 	BanknoteIcon,
 	CheckCircleIcon,
 	ClockIcon,
+	LayersIcon,
 	WalletIcon,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -153,7 +154,16 @@ export function AthletePaymentsView() {
 										</TableCell>
 										<TableCell>{payment.description || "-"}</TableCell>
 										<TableCell>
-											{payment.session ? (
+											{payment.sessions && payment.sessions.length > 0 ? (
+												<div className="flex items-center gap-1.5">
+													<LayersIcon className="size-4 text-muted-foreground" />
+													<span className="font-medium">
+														{t("table.sessionsCount", {
+															count: payment.sessions.length,
+														})}
+													</span>
+												</div>
+											) : payment.session ? (
 												<div>
 													<p className="font-medium">{payment.session.title}</p>
 													<p className="text-muted-foreground text-xs">

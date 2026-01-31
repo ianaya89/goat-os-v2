@@ -21,6 +21,7 @@ import {
 } from "@/lib/db/schema/tables";
 import {
 	bulkDeleteServicesSchema,
+	bulkUpdateServicesStatusSchema,
 	createServiceSchema,
 	deleteServiceSchema,
 	getServicePriceHistorySchema,
@@ -350,6 +351,24 @@ export const organizationServiceRouter = createTRPCRouter({
 			}
 
 			return { archivedCount, deletedCount };
+		}),
+
+	// Bulk update services status
+	bulkUpdateStatus: protectedOrganizationProcedure
+		.input(bulkUpdateServicesStatusSchema)
+		.mutation(async ({ ctx, input }) => {
+			const updated = await db
+				.update(serviceTable)
+				.set({ status: input.status })
+				.where(
+					and(
+						inArray(serviceTable.id, input.ids),
+						eq(serviceTable.organizationId, ctx.organization.id),
+					),
+				)
+				.returning({ id: serviceTable.id });
+
+			return { success: true, count: updated.length };
 		}),
 
 	// Get price history for a service

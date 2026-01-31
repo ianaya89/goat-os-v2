@@ -980,7 +980,9 @@ export function CoachProfile({ coachId }: CoachProfileProps) {
 											<div className="space-y-1">
 												<div className="flex items-center gap-2">
 													<h4 className="font-semibold">
-														{experience.institutionName}
+														{experience.club?.name ||
+															experience.nationalTeam?.name ||
+															"-"}
 													</h4>
 													{experience.level && (
 														<Badge variant="secondary">
@@ -1015,7 +1017,8 @@ export function CoachProfile({ coachId }: CoachProfileProps) {
 														coachId,
 														initialValues: {
 															id: experience.id,
-															institutionName: experience.institutionName,
+															clubId: experience.clubId,
+															nationalTeamId: experience.nationalTeamId,
 															role: experience.role,
 															sport: experience.sport,
 															level: experience.level,

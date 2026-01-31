@@ -37,6 +37,7 @@ import {
 } from "@/lib/storage/s3";
 import {
 	banOrganizationUserSchema,
+	bulkRemoveOrganizationUsersSchema,
 	createOrganizationUserSchema,
 	getOrganizationUserSchema,
 	getProfileImageUploadUrlSchema,
@@ -1403,5 +1404,82 @@ export const organizationUserRouter = createTRPCRouter({
 			}
 
 			return { imageUrl: null, source: null };
+		}),
+
+	// ============================================================================
+	// BULK REMOVE
+	// ============================================================================
+
+	bulkRemove: protectedOrganizationProcedure
+		.input(bulkRemoveOrganizationUsersSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Check if user is owner/admin
+			if (
+				ctx.membership.role !== MemberRole.owner &&
+				ctx.membership.role !== MemberRole.admin
+			) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "Only owners and admins can remove members",
+				});
+			}
+
+			// Filter out current user from the list
+			const userIdsToRemove = input.userIds.filter((id) => id !== ctx.user.id);
+
+			if (userIdsToRemove.length === 0) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "No valid users to remove",
+				});
+			}
+
+			// Get target members to verify they exist and check roles
+			const targetMembers = await db
+				.select({ userId: memberTable.userId, role: memberTable.role })
+				.from(memberTable)
+				.where(
+					and(
+						eq(memberTable.organizationId, ctx.organization.id),
+						inArray(memberTable.userId, userIdsToRemove),
+					),
+				);
+
+			// Filter out owners if current user is not owner
+			const membersToRemove =
+				ctx.membership.role === MemberRole.owner
+					? targetMembers
+					: targetMembers.filter((m) => m.role !== MemberRole.owner);
+
+			if (membersToRemove.length === 0) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "No valid users to remove",
+				});
+			}
+
+			const memberIdsToRemove = membersToRemove.map((m) => m.userId);
+
+			// Remove members
+			const deleted = await db
+				.delete(memberTable)
+				.where(
+					and(
+						eq(memberTable.organizationId, ctx.organization.id),
+						inArray(memberTable.userId, memberIdsToRemove),
+					),
+				)
+				.returning({ userId: memberTable.userId });
+
+			logger.info(
+				{
+					organizationId: ctx.organization.id,
+					removedUserIds: deleted.map((d) => d.userId),
+					removedBy: ctx.user.id,
+				},
+				"Bulk removed members from organization",
+			);
+
+			return { success: true, count: deleted.length };
 		}),
 });

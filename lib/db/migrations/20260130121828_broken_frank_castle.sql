@@ -1,0 +1,1 @@
+ALTER TABLE "training_payment" ADD COLUMN "discount_percentage" integer DEFAULT 0 NOT NULL;

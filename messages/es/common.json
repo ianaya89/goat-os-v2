@@ -1,4 +1,12 @@
 {
+	"save": "Guardar",
+	"cancel": "Cancelar",
+	"delete": "Eliminar",
+	"edit": "Editar",
+	"create": "Crear",
+	"add": "Agregar",
+	"notes": "Notas",
+	"close": "Cerrar",
 	"buttons": {
 		"save": "Guardar",
 		"cancel": "Cancelar",
@@ -26,7 +34,9 @@
 		"viewAll": "Ver todo",
 		"viewDetails": "Ver detalles",
 		"showMore": "Ver más",
-		"showLess": "Ver menos"
+		"showLess": "Ver menos",
+		"archive": "Archivar",
+		"unarchive": "Desarchivar"
 	},
 	"table": {
 		"noResults": "No se encontraron resultados",
@@ -48,7 +58,11 @@
 	"confirmation": {
 		"deleteTitle": "Confirmar eliminación",
 		"deleteMessage": "¿Estás seguro? Esta acción no se puede deshacer.",
-		"unsavedChanges": "Tienes cambios sin guardar. ¿Deseas continuar?"
+		"unsavedChanges": "Tienes cambios sin guardar. ¿Deseas continuar?",
+		"archiveTitle": "¿Archivar?",
+		"archiveMessage": "El registro será archivado y ya no aparecerá en las listas principales. Podrás desarchivarlo en cualquier momento.",
+		"unarchiveTitle": "¿Desarchivar?",
+		"unarchiveMessage": "El registro será restaurado y volverá a aparecer en las listas principales."
 	},
 	"status": {
 		"active": "Activo",
@@ -85,7 +99,9 @@
 		"deleted": "Eliminado correctamente",
 		"updated": "Actualizado correctamente",
 		"created": "Creado correctamente",
-		"copied": "Copiado al portapapeles"
+		"copied": "Copiado al portapapeles",
+		"archived": "Archivado correctamente",
+		"unarchived": "Desarchivado correctamente"
 	},
 	"menu": {
 		"application": "Aplicacion",

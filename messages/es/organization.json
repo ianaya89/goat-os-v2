@@ -33,12 +33,13 @@
 		"payroll": "Liquidaciones",
 		"financialReports": "Reportes Financieros",
 		"sportsReports": "Reportes Deportivos",
-		"locations": "Ubicaciones",
+		"locations": "Locaciones",
 		"users": "Usuarios",
 		"vendors": "Proveedores",
 		"sponsors": "Patrocinadores",
 		"services": "Servicios",
 		"chatbot": "Chatbot IA",
+		"institutions": "Clubes y Selecciones",
 		"settingsGeneral": "General",
 		"settingsMembers": "Miembros",
 		"settingsSubscription": "Suscripción",
@@ -148,7 +149,7 @@
 			"description": "Gestiona las liquidaciones"
 		},
 		"locations": {
-			"title": "Ubicaciones",
+			"title": "Locaciones",
 			"description": "Gestiona las ubicaciones"
 		},
 		"users": {
@@ -294,7 +295,7 @@
 				"financial_reports": "Reportes Financieros",
 				"sports_reports": "Reportes Deportivos",
 				"pending_reports": "Reporte de Pagos Pendientes",
-				"locations": "Ubicaciones",
+				"locations": "Locaciones",
 				"vendors": "Proveedores",
 				"sponsors": "Patrocinadores",
 				"chatbot": "Chatbot IA",

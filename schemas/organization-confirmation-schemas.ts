@@ -13,7 +13,7 @@ export type SendBulkConfirmationsInput = z.infer<
 // Send confirmation for specific sessions input schema
 export const sendConfirmationsForSessionsSchema = z.object({
 	sessionIds: z.array(z.string().uuid()).min(1),
-	channel: z.enum(["email", "sms", "whatsapp"]).default("email"),
+	channel: z.enum(["email", "sms", "whatsapp", "all"]).default("email"),
 });
 export type SendConfirmationsForSessionsInput = z.infer<
 	typeof sendConfirmationsForSessionsSchema

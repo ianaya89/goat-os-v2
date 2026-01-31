@@ -108,7 +108,15 @@ export const updateOrganizationUserSchema = z.object({
 	role: z.nativeEnum(MemberRole).optional(),
 });
 
+// Bulk remove users from organization
+export const bulkRemoveOrganizationUsersSchema = z.object({
+	userIds: z.array(z.string().uuid()).min(1),
+});
+
 // Type exports
+export type BulkRemoveOrganizationUsersInput = z.infer<
+	typeof bulkRemoveOrganizationUsersSchema
+>;
 export type ListOrganizationUsersInput = z.infer<
 	typeof listOrganizationUsersSchema
 >;

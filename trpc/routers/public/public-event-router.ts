@@ -503,9 +503,11 @@ export const publicEventRouter = createTRPCRouter({
 					birthDate: true,
 					phone: true,
 					nationality: true,
-					currentClub: true,
 					jerseyNumber: true,
 					yearsOfExperience: true,
+				},
+				with: {
+					currentClub: true,
 				},
 			});
 

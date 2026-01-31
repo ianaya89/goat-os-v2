@@ -89,7 +89,16 @@ export const bulkDeleteServicesSchema = z.object({
 	ids: z.array(z.string().uuid()).min(1),
 });
 
+// Bulk update services status
+export const bulkUpdateServicesStatusSchema = z.object({
+	ids: z.array(z.string().uuid()).min(1),
+	status: z.nativeEnum(ServiceStatus),
+});
+
 // Type exports
+export type BulkUpdateServicesStatusInput = z.infer<
+	typeof bulkUpdateServicesStatusSchema
+>;
 export type ListServicesInput = z.infer<typeof listServicesSchema>;
 export type CreateServiceInput = z.infer<typeof createServiceSchema>;
 export type UpdateServiceInput = z.infer<typeof updateServiceSchema>;

@@ -52,6 +52,8 @@ export default getRequestConfig(async () => {
 		teams: (await import(`./messages/${locale}/teams.json`)).default,
 		confirmations: (await import(`./messages/${locale}/confirmations.json`))
 			.default,
+		institutions: (await import(`./messages/${locale}/institutions.json`))
+			.default,
 	};
 
 	return {

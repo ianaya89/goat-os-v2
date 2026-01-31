@@ -784,6 +784,84 @@ export const aiChatTable = pgTable(
 );
 
 // ============================================================================
+// CLUB TABLE
+// ============================================================================
+
+/**
+ * Club table - stores clubs/sports institutions for normalization
+ * Each organization can define their own clubs catalog
+ */
+export const clubTable = pgTable(
+	"club",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizationTable.id, { onDelete: "cascade" }),
+		name: text("name").notNull(),
+		shortName: text("short_name"), // Abbreviated name (e.g., "CARP" for Club Atlético River Plate)
+		country: text("country"), // ISO 3166-1 alpha-2 code (e.g., "AR", "BR", "US")
+		city: text("city"),
+		logoKey: text("logo_key"), // S3 key for club logo
+		website: text("website"),
+		notes: text("notes"),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => [
+		index("club_organization_id_idx").on(table.organizationId),
+		index("club_country_idx").on(table.country),
+		index("club_name_idx").on(table.name),
+		uniqueIndex("club_org_name_unique").on(table.organizationId, table.name),
+	],
+);
+
+// ============================================================================
+// NATIONAL TEAM TABLE
+// ============================================================================
+
+/**
+ * National Team table - stores national team selections for normalization
+ * Each organization can define their own national teams catalog
+ * Used for tracking athlete/coach participation in national selections
+ */
+export const nationalTeamTable = pgTable(
+	"national_team",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizationTable.id, { onDelete: "cascade" }),
+		name: text("name").notNull(), // e.g., "Selección Argentina"
+		country: text("country").notNull(), // ISO 3166-1 alpha-2 code (e.g., "AR", "BR", "US")
+		category: text("category"), // e.g., "Sub-17", "Sub-20", "Senior", "Femenino"
+		logoKey: text("logo_key"), // S3 key for national team logo
+		notes: text("notes"),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => [
+		index("national_team_organization_id_idx").on(table.organizationId),
+		index("national_team_country_idx").on(table.country),
+		uniqueIndex("national_team_org_country_category_unique").on(
+			table.organizationId,
+			table.country,
+			table.category,
+		),
+	],
+);
+
+// ============================================================================
 // COACH TABLE
 // ============================================================================
 
@@ -822,12 +900,15 @@ export const coachTable = pgTable(
 			.notNull()
 			.defaultNow()
 			.$onUpdate(() => new Date()),
+		// Archive timestamp - when set, the coach is archived (soft delete)
+		archivedAt: timestamp("archived_at", { withTimezone: true }),
 	},
 	(table) => [
 		index("coach_organization_id_idx").on(table.organizationId),
 		index("coach_user_id_idx").on(table.userId),
 		index("coach_status_idx").on(table.status),
 		index("coach_created_at_idx").on(table.createdAt),
+		index("coach_archived_at_idx").on(table.archivedAt),
 		// Composite index for common query: coaches by organization and status
 		index("coach_org_status_idx").on(table.organizationId, table.status),
 		// Unique constraint: one coach per user per organization
@@ -849,7 +930,14 @@ export const coachSportsExperienceTable = pgTable(
 		coachId: uuid("coach_id")
 			.notNull()
 			.references(() => coachTable.id, { onDelete: "cascade" }),
-		institutionName: text("institution_name").notNull(), // Club/Institution name
+		// Either clubId OR nationalTeamId should be set, not both
+		clubId: uuid("club_id").references(() => clubTable.id, {
+			onDelete: "set null",
+		}),
+		nationalTeamId: uuid("national_team_id").references(
+			() => nationalTeamTable.id,
+			{ onDelete: "set null" },
+		),
 		role: text("role").notNull(), // Position/Role (e.g., "Head Coach", "Assistant")
 		sport: text("sport", {
 			enum: enumToPgEnum(AthleteSport),
@@ -871,6 +959,10 @@ export const coachSportsExperienceTable = pgTable(
 	},
 	(table) => [
 		index("coach_sports_experience_coach_id_idx").on(table.coachId),
+		index("coach_sports_experience_club_id_idx").on(table.clubId),
+		index("coach_sports_experience_national_team_id_idx").on(
+			table.nationalTeamId,
+		),
 		index("coach_sports_experience_start_date_idx").on(table.startDate),
 		// Composite index for timeline queries
 		index("coach_sports_experience_coach_dates_idx").on(
@@ -1028,8 +1120,14 @@ export const athleteTable = pgTable(
 		// Contact information
 		phone: text("phone"), // Phone number in E.164 format for SMS/WhatsApp notifications
 
-		// Club and category information
-		currentClub: text("current_club"), // Current club or team name
+		// Club and national team information
+		currentClubId: uuid("current_club_id").references(() => clubTable.id, {
+			onDelete: "set null",
+		}),
+		currentNationalTeamId: uuid("current_national_team_id").references(
+			() => nationalTeamTable.id,
+			{ onDelete: "set null" },
+		),
 		category: text("category"), // Age category or division (e.g., "Sub-17", "Primera")
 
 		// Profile information
@@ -1109,6 +1207,8 @@ export const athleteTable = pgTable(
 			.notNull()
 			.defaultNow()
 			.$onUpdate(() => new Date()),
+		// Archive timestamp - when set, the athlete is archived (soft delete)
+		archivedAt: timestamp("archived_at", { withTimezone: true }),
 	},
 	(table) => [
 		index("athlete_organization_id_idx").on(table.organizationId),
@@ -1117,8 +1217,14 @@ export const athleteTable = pgTable(
 		index("athlete_level_idx").on(table.level),
 		index("athlete_status_idx").on(table.status),
 		index("athlete_created_at_idx").on(table.createdAt),
+		index("athlete_archived_at_idx").on(table.archivedAt),
 		// Composite index for common query: athletes by organization and status
 		index("athlete_org_status_idx").on(table.organizationId, table.status),
+		// Club and national team indexes
+		index("athlete_current_club_id_idx").on(table.currentClubId),
+		index("athlete_current_national_team_id_idx").on(
+			table.currentNationalTeamId,
+		),
 		// Public profile indexes
 		index("athlete_is_public_profile_idx").on(table.isPublicProfile),
 		index("athlete_public_profile_enabled_at_idx").on(
@@ -1203,6 +1309,8 @@ export const athleteGroupTable = pgTable(
 			.notNull()
 			.defaultNow()
 			.$onUpdate(() => new Date()),
+		// Archive timestamp - when set, the group is archived (soft delete)
+		archivedAt: timestamp("archived_at", { withTimezone: true }),
 	},
 	(table) => [
 		index("athlete_group_organization_id_idx").on(table.organizationId),
@@ -1211,6 +1319,7 @@ export const athleteGroupTable = pgTable(
 		index("athlete_group_is_active_idx").on(table.isActive),
 		index("athlete_group_age_category_id_idx").on(table.ageCategoryId),
 		index("athlete_group_service_id_idx").on(table.serviceId),
+		index("athlete_group_archived_at_idx").on(table.archivedAt),
 		uniqueIndex("athlete_group_org_name_unique").on(
 			table.organizationId,
 			table.name,
@@ -1595,6 +1704,10 @@ export const trainingPaymentTable = pgTable(
 		athleteId: uuid("athlete_id").references(() => athleteTable.id, {
 			onDelete: "set null",
 		}),
+		// Payment can be linked to a service directly (when not linked to a session)
+		serviceId: uuid("service_id").references(() => serviceTable.id, {
+			onDelete: "set null",
+		}),
 		// Amount in smallest currency unit (cents/centavos)
 		amount: integer("amount").notNull(),
 		currency: text("currency").notNull().default("ARS"),
@@ -1609,6 +1722,8 @@ export const trainingPaymentTable = pgTable(
 		}).$type<TrainingPaymentMethod>(),
 		// For partial payments - amount already paid
 		paidAmount: integer("paid_amount").notNull().default(0),
+		// Discount percentage applied (0-100)
+		discountPercentage: integer("discount_percentage").notNull().default(0),
 		// Mercado Pago integration (for future use)
 		mercadoPagoPaymentId: text("mercado_pago_payment_id"),
 		mercadoPagoPreferenceId: text("mercado_pago_preference_id"),
@@ -1637,6 +1752,7 @@ export const trainingPaymentTable = pgTable(
 		index("training_payment_organization_id_idx").on(table.organizationId),
 		index("training_payment_session_id_idx").on(table.sessionId),
 		index("training_payment_athlete_id_idx").on(table.athleteId),
+		index("training_payment_service_id_idx").on(table.serviceId),
 		index("training_payment_status_idx").on(table.status),
 		index("training_payment_payment_date_idx").on(table.paymentDate),
 		index("training_payment_mercado_pago_id_idx").on(
@@ -1662,6 +1778,39 @@ export const trainingPaymentTable = pgTable(
 		uniqueIndex("training_payment_session_athlete_unique")
 			.on(table.sessionId, table.athleteId)
 			.where(sql`${table.sessionId} IS NOT NULL`),
+	],
+);
+
+// ============================================================================
+// TRAINING PAYMENT SESSION TABLE (Junction table for payment packages)
+// ============================================================================
+
+/**
+ * Training payment session table - links payments to multiple sessions
+ * Allows a single payment to cover multiple training sessions (packages)
+ */
+export const trainingPaymentSessionTable = pgTable(
+	"training_payment_session",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		paymentId: uuid("payment_id")
+			.notNull()
+			.references(() => trainingPaymentTable.id, { onDelete: "cascade" }),
+		sessionId: uuid("session_id")
+			.notNull()
+			.references(() => trainingSessionTable.id, { onDelete: "cascade" }),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+	},
+	(table) => [
+		index("training_payment_session_payment_id_idx").on(table.paymentId),
+		index("training_payment_session_session_id_idx").on(table.sessionId),
+		// Prevent duplicate payment-session links
+		uniqueIndex("training_payment_session_unique").on(
+			table.paymentId,
+			table.sessionId,
+		),
 	],
 );
 
@@ -1842,13 +1991,18 @@ export const athleteCareerHistoryTable = pgTable(
 		athleteId: uuid("athlete_id")
 			.notNull()
 			.references(() => athleteTable.id, { onDelete: "cascade" }),
-		clubName: text("club_name").notNull(),
+		// Either clubId OR nationalTeamId should be set, not both
+		clubId: uuid("club_id").references(() => clubTable.id, {
+			onDelete: "set null",
+		}),
+		nationalTeamId: uuid("national_team_id").references(
+			() => nationalTeamTable.id,
+			{ onDelete: "set null" },
+		),
 		startDate: timestamp("start_date", { withTimezone: true }),
 		endDate: timestamp("end_date", { withTimezone: true }),
 		position: text("position"),
 		achievements: text("achievements"), // Can store JSON or comma-separated list
-		wasNationalTeam: boolean("was_national_team").notNull().default(false),
-		nationalTeamLevel: text("national_team_level"), // e.g., "U17", "U20", "Senior"
 		notes: text("notes"),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.notNull()
@@ -1860,6 +2014,10 @@ export const athleteCareerHistoryTable = pgTable(
 	},
 	(table) => [
 		index("athlete_career_history_athlete_id_idx").on(table.athleteId),
+		index("athlete_career_history_club_id_idx").on(table.clubId),
+		index("athlete_career_history_national_team_id_idx").on(
+			table.nationalTeamId,
+		),
 		index("athlete_career_history_start_date_idx").on(table.startDate),
 		// Composite index for timeline queries
 		index("athlete_career_history_athlete_dates_idx").on(

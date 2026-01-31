@@ -7,6 +7,7 @@ import {
 	eq,
 	ilike,
 	inArray,
+	isNull,
 	or,
 	type SQL,
 } from "drizzle-orm";
@@ -19,13 +20,17 @@ import {
 } from "@/lib/db/schema/tables";
 import {
 	addMembersToGroupSchema,
+	archiveAthleteGroupSchema,
+	bulkArchiveAthleteGroupsSchema,
 	bulkDeleteAthleteGroupsSchema,
+	bulkUnarchiveAthleteGroupsSchema,
 	bulkUpdateAthleteGroupsActiveSchema,
 	createAthleteGroupSchema,
 	deleteAthleteGroupSchema,
 	listAthleteGroupsSchema,
 	removeMembersFromGroupSchema,
 	setGroupMembersSchema,
+	unarchiveAthleteGroupSchema,
 	updateAthleteGroupSchema,
 } from "@/schemas/organization-athlete-group-schemas";
 import { createTRPCRouter, protectedOrganizationProcedure } from "@/trpc/init";
@@ -37,6 +42,11 @@ export const organizationAthleteGroupRouter = createTRPCRouter({
 			const conditions = [
 				eq(athleteGroupTable.organizationId, ctx.organization.id),
 			];
+
+			// Filter out archived groups by default
+			if (!input.includeArchived) {
+				conditions.push(isNull(athleteGroupTable.archivedAt));
+			}
 
 			// Search query
 			if (input.query) {
@@ -391,6 +401,92 @@ export const organizationAthleteGroupRouter = createTRPCRouter({
 				.returning({ id: athleteGroupTable.id });
 
 			return { success: true, count: updated.length };
+		}),
+
+	// Archive group (soft delete)
+	archive: protectedOrganizationProcedure
+		.input(archiveAthleteGroupSchema)
+		.mutation(async ({ ctx, input }) => {
+			const [archivedGroup] = await db
+				.update(athleteGroupTable)
+				.set({ archivedAt: new Date() })
+				.where(
+					and(
+						eq(athleteGroupTable.id, input.id),
+						eq(athleteGroupTable.organizationId, ctx.organization.id),
+					),
+				)
+				.returning();
+
+			if (!archivedGroup) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Athlete group not found",
+				});
+			}
+
+			return { success: true };
+		}),
+
+	// Unarchive group (restore from archive)
+	unarchive: protectedOrganizationProcedure
+		.input(unarchiveAthleteGroupSchema)
+		.mutation(async ({ ctx, input }) => {
+			const [unarchivedGroup] = await db
+				.update(athleteGroupTable)
+				.set({ archivedAt: null })
+				.where(
+					and(
+						eq(athleteGroupTable.id, input.id),
+						eq(athleteGroupTable.organizationId, ctx.organization.id),
+					),
+				)
+				.returning();
+
+			if (!unarchivedGroup) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Athlete group not found",
+				});
+			}
+
+			return { success: true };
+		}),
+
+	// Bulk archive groups
+	bulkArchive: protectedOrganizationProcedure
+		.input(bulkArchiveAthleteGroupsSchema)
+		.mutation(async ({ ctx, input }) => {
+			const archived = await db
+				.update(athleteGroupTable)
+				.set({ archivedAt: new Date() })
+				.where(
+					and(
+						inArray(athleteGroupTable.id, input.ids),
+						eq(athleteGroupTable.organizationId, ctx.organization.id),
+					),
+				)
+				.returning({ id: athleteGroupTable.id });
+
+			return { success: true, count: archived.length };
+		}),
+
+	// Bulk unarchive groups
+	bulkUnarchive: protectedOrganizationProcedure
+		.input(bulkUnarchiveAthleteGroupsSchema)
+		.mutation(async ({ ctx, input }) => {
+			const unarchived = await db
+				.update(athleteGroupTable)
+				.set({ archivedAt: null })
+				.where(
+					and(
+						inArray(athleteGroupTable.id, input.ids),
+						eq(athleteGroupTable.organizationId, ctx.organization.id),
+					),
+				)
+				.returning({ id: athleteGroupTable.id });
+
+			return { success: true, count: unarchived.length };
 		}),
 
 	// Member management

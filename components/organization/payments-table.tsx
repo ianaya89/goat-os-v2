@@ -11,6 +11,7 @@ import {
 	BanknoteIcon,
 	CalendarIcon,
 	FileTextIcon,
+	LayersIcon,
 	MoreHorizontalIcon,
 	PencilIcon,
 	PlusIcon,
@@ -80,6 +81,15 @@ interface TrainingPayment {
 		id: string;
 		title: string;
 	} | null;
+	// Linked sessions for package payments
+	sessions: {
+		id: string;
+		session: {
+			id: string;
+			title: string;
+			startTime: Date;
+		};
+	}[];
 	athlete: {
 		id: string;
 		user: {
@@ -272,8 +282,11 @@ export function PaymentsTable(): React.JSX.Element {
 			id: "athleteSession",
 			header: t("table.athlete"),
 			cell: ({ row }) => {
-				const { athlete, session } = row.original;
-				if (!athlete && !session) {
+				const { athlete, session, sessions } = row.original;
+				const linkedSessionsCount = sessions?.length ?? 0;
+				const hasLinkedSessions = linkedSessionsCount > 0;
+
+				if (!athlete && !session && !hasLinkedSessions) {
 					return <span className="text-muted-foreground">-</span>;
 				}
 				return (
@@ -289,14 +302,26 @@ export function PaymentsTable(): React.JSX.Element {
 								</span>
 							</Link>
 						)}
-						{session && (
-							<Link
-								href={`/dashboard/organization/training-sessions/${session.id}`}
-								className="flex items-center gap-1.5 text-foreground/60 text-xs hover:text-foreground hover:underline"
-							>
-								<CalendarIcon className="size-3 shrink-0" />
-								<span className="max-w-[140px] truncate">{session.title}</span>
-							</Link>
+						{/* Show package indicator if multiple sessions */}
+						{hasLinkedSessions ? (
+							<div className="flex items-center gap-1.5 text-foreground/60 text-xs">
+								<LayersIcon className="size-3 shrink-0" />
+								<span>
+									{t("table.sessionsCount", { count: linkedSessionsCount })}
+								</span>
+							</div>
+						) : (
+							session && (
+								<Link
+									href={`/dashboard/organization/training-sessions/${session.id}`}
+									className="flex items-center gap-1.5 text-foreground/60 text-xs hover:text-foreground hover:underline"
+								>
+									<CalendarIcon className="size-3 shrink-0" />
+									<span className="max-w-[140px] truncate">
+										{session.title}
+									</span>
+								</Link>
+							)
 						)}
 					</div>
 				);

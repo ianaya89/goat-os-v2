@@ -115,6 +115,8 @@
 		"sendViaEmail": "Send via Email",
 		"sendViaSms": "Send via SMS",
 		"sendViaWhatsApp": "Send via WhatsApp",
+		"sendViaAllChannels": "Send via All Channels",
+		"allChannels": "All Channels",
 		"completeSession": "Complete Session",
 		"giveFeedback": "Give Feedback",
 		"postNotesOptional": "Post-Session Notes (optional)",
@@ -147,7 +149,8 @@
 		"totalAmount": "Total",
 		"paidAmount": "Paid",
 		"pendingPayments": "Pending",
-		"addPayment": "Add Payment"
+		"addPayment": "Add Payment",
+		"recordPayment": "Record Payment"
 	},
 	"success": {
 		"created": "Session created successfully.",

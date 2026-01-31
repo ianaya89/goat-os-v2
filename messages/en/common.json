@@ -1,4 +1,12 @@
 {
+	"save": "Save",
+	"cancel": "Cancel",
+	"delete": "Delete",
+	"edit": "Edit",
+	"create": "Create",
+	"add": "Add",
+	"notes": "Notes",
+	"close": "Close",
 	"buttons": {
 		"save": "Save",
 		"cancel": "Cancel",
@@ -26,7 +34,9 @@
 		"viewAll": "View all",
 		"viewDetails": "View details",
 		"showMore": "Show more",
-		"showLess": "Show less"
+		"showLess": "Show less",
+		"archive": "Archive",
+		"unarchive": "Unarchive"
 	},
 	"table": {
 		"noResults": "No results found",
@@ -48,7 +58,11 @@
 	"confirmation": {
 		"deleteTitle": "Confirm deletion",
 		"deleteMessage": "Are you sure? This action cannot be undone.",
-		"unsavedChanges": "You have unsaved changes. Do you want to continue?"
+		"unsavedChanges": "You have unsaved changes. Do you want to continue?",
+		"archiveTitle": "Archive?",
+		"archiveMessage": "The record will be archived and will no longer appear in the main lists. You can unarchive it at any time.",
+		"unarchiveTitle": "Unarchive?",
+		"unarchiveMessage": "The record will be restored and will appear again in the main lists."
 	},
 	"status": {
 		"active": "Active",
@@ -85,7 +99,9 @@
 		"deleted": "Deleted successfully",
 		"updated": "Updated successfully",
 		"created": "Created successfully",
-		"copied": "Copied to clipboard"
+		"copied": "Copied to clipboard",
+		"archived": "Archived successfully",
+		"unarchived": "Unarchived successfully"
 	},
 	"menu": {
 		"application": "Application",

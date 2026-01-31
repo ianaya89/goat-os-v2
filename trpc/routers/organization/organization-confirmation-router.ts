@@ -338,8 +338,6 @@ export const confirmationRouter = createTRPCRouter({
 	sendForSessions: protectedOrganizationProcedure
 		.input(sendConfirmationsForSessionsSchema)
 		.mutation(async ({ ctx, input }) => {
-			// Reuse the sendBulk logic with specific session IDs
-			const channel = input.channel ?? "email";
 			const baseUrl = getBaseUrl();
 			const batchId = crypto.randomUUID();
 
@@ -402,6 +400,12 @@ export const confirmationRouter = createTRPCRouter({
 			const historyRecords: (typeof sessionConfirmationHistoryTable.$inferInsert)[] =
 				[];
 
+			// Determine which channels to send to
+			const channelsToSend: Array<"email" | "sms" | "whatsapp"> =
+				input.channel === "all"
+					? ["email", "whatsapp", "sms"]
+					: [input.channel ?? "email"];
+
 			for (const session of sessions) {
 				// Skip non-pending and past sessions
 				if (
@@ -431,16 +435,6 @@ export const confirmationRouter = createTRPCRouter({
 							phone: a.athlete.phone ?? null,
 						}));
 
-				// Filter athletes based on channel
-				const athletes =
-					channel === "email"
-						? allAthletes.filter((a) => a.email)
-						: allAthletes.filter((a) => a.phone);
-
-				totalSkipped += allAthletes.length - athletes.length;
-
-				if (athletes.length === 0) continue;
-
 				// Get primary coach name
 				const primaryCoach = session.coaches.find((c) => c.isPrimary);
 				const coachName =
@@ -458,84 +452,101 @@ export const confirmationRouter = createTRPCRouter({
 				const shortTime = format(new Date(session.startTime), "h:mm a");
 				const locationName = session.location?.name ?? "TBD";
 
-				// Send notifications
-				for (const athlete of athletes) {
-					const confirmationUrl = generateConfirmationUrl(
-						baseUrl,
-						session.id,
-						athlete.id,
-					);
-
-					const payload =
+				// Send notifications for each channel
+				for (const channel of channelsToSend) {
+					// Filter athletes based on channel
+					const athletes =
 						channel === "email"
-							? {
-									channel: "email" as const,
-									to: { email: athlete.email!, name: athlete.name },
-									template: "training-session-reminder" as const,
-									data: {
-										appName: appConfig.appName,
-										athleteName: athlete.name,
-										sessionTitle: session.title,
-										sessionDate,
-										sessionTime,
-										location: locationName,
-										coachName,
-										organizationName: ctx.organization.name,
-										confirmationUrl,
-									},
-								}
-							: {
-									channel: channel as "sms" | "whatsapp",
-									to: { phone: athlete.phone!, name: athlete.name },
-									template: "training-session-reminder" as const,
-									data: {
-										sessionTitle: session.title,
-										date: shortDate,
-										time: shortTime,
-										confirmationUrl,
-									},
-								};
+							? allAthletes.filter((a) => a.email)
+							: allAthletes.filter((a) => a.phone);
 
-					const result = await sendNotificationWithFallback(payload, {
-						organizationId: ctx.organization.id,
-						triggeredBy: ctx.user.id,
-					});
+					// Only count skipped for single channel mode (not "all")
+					if (input.channel !== "all") {
+						totalSkipped += allAthletes.length - athletes.length;
+					}
 
-					if (result.success) {
-						historyRecords.push({
-							organizationId: ctx.organization.id,
-							sessionId: session.id,
-							athleteId: athlete.id,
-							channel: channel as NotificationChannel,
-							status: ConfirmationStatus.sent,
-							triggerJobId: result.id,
-							batchId,
-							initiatedBy: ctx.user.id,
-						});
+					if (athletes.length === 0) continue;
 
-						totalSent++;
-					} else {
-						logger.error(
-							{
-								error: result.error,
-								athleteId: athlete.id,
-								sessionId: session.id,
-							},
-							"Failed to send notification",
+					// Send notifications
+					for (const athlete of athletes) {
+						const confirmationUrl = generateConfirmationUrl(
+							baseUrl,
+							session.id,
+							athlete.id,
 						);
 
-						historyRecords.push({
+						const payload =
+							channel === "email"
+								? {
+										channel: "email" as const,
+										to: { email: athlete.email!, name: athlete.name },
+										template: "training-session-reminder" as const,
+										data: {
+											appName: appConfig.appName,
+											athleteName: athlete.name,
+											sessionTitle: session.title,
+											sessionDate,
+											sessionTime,
+											location: locationName,
+											coachName,
+											organizationName: ctx.organization.name,
+											confirmationUrl,
+										},
+									}
+								: {
+										channel: channel as "sms" | "whatsapp",
+										to: { phone: athlete.phone!, name: athlete.name },
+										template: "training-session-reminder" as const,
+										data: {
+											sessionTitle: session.title,
+											date: shortDate,
+											time: shortTime,
+											confirmationUrl,
+										},
+									};
+
+						const result = await sendNotificationWithFallback(payload, {
 							organizationId: ctx.organization.id,
-							sessionId: session.id,
-							athleteId: athlete.id,
-							channel: channel as NotificationChannel,
-							status: ConfirmationStatus.failed,
-							errorMessage: result.error ?? "Unknown error",
-							batchId,
-							initiatedBy: ctx.user.id,
+							triggeredBy: ctx.user.id,
 						});
 
-						totalFailed++;
+						if (result.success) {
+							historyRecords.push({
+								organizationId: ctx.organization.id,
+								sessionId: session.id,
+								athleteId: athlete.id,
+								channel: channel as NotificationChannel,
+								status: ConfirmationStatus.sent,
+								triggerJobId: result.id,
+								batchId,
+								initiatedBy: ctx.user.id,
+							});
+
+							totalSent++;
+						} else {
+							logger.error(
+								{
+									error: result.error,
+									athleteId: athlete.id,
+									sessionId: session.id,
+									channel,
+								},
+								"Failed to send notification",
+							);
+
+							historyRecords.push({
+								organizationId: ctx.organization.id,
+								sessionId: session.id,
+								athleteId: athlete.id,
+								channel: channel as NotificationChannel,
+								status: ConfirmationStatus.failed,
+								errorMessage: result.error ?? "Unknown error",
+								batchId,
+								initiatedBy: ctx.user.id,
+							});
+
+							totalFailed++;
+						}
 					}
 				}
 			}

@@ -40,7 +40,9 @@
 			"description": "Descripción",
 			"descriptionPlaceholder": "ej., Cuota mensual de entrenamiento",
 			"session": "Sesión (Opcional)",
+			"sessions": "Sesiones",
 			"selectSession": "Seleccionar sesión",
+			"addSession": "Agregar sesión",
 			"noSession": "Sin sesión",
 			"status": "Estado",
 			"selectStatus": "Seleccionar estado",
@@ -54,7 +56,15 @@
 			"searchAthlete": "Buscar atleta...",
 			"typeToSearchAthlete": "Escribe para buscar atletas",
 			"noAthletesFound": "No se encontraron atletas",
-			"servicePriceHint": "Precio sugerido del servicio \"{name}\": {price}"
+			"servicePriceHint": "Precio sugerido del servicio \"{name}\": {price}",
+			"serviceOptional": "Servicio (Opcional)",
+			"selectService": "Seleccionar servicio",
+			"searchService": "Buscar servicio...",
+			"noServicesFound": "No se encontraron servicios",
+			"serviceHint": "Selecciona un servicio para pre-cargar el precio",
+			"serviceFromSession": "Servicio vinculado a la sesión",
+			"discountPercentage": "Descuento (%)",
+			"discountPercentageHint": "Porcentaje de descuento aplicado (0-100)"
 		},
 		"methods": {
 			"cash": "Efectivo",
@@ -89,6 +99,7 @@
 			"athlete": "Atleta",
 			"concept": "Concepto",
 			"description": "Descripción",
+			"sessionsCount": "{count, plural, one {# sesión} other {# sesiones}}",
 			"amount": "Monto",
 			"dueDate": "Fecha de vencimiento",
 			"paidDate": "Fecha de pago",
@@ -605,6 +616,25 @@
 			"deleteMessage": "Estás por eliminar {count, plural, one {# servicio} other {# servicios}}. Los que tengan referencias serán archivados.",
 			"deleted": "{count, plural, one {# servicio procesado} other {# servicios procesados}}.",
 			"deleteFailed": "No se pudieron eliminar los servicios."
+		},
+		"bulkActions": {
+			"noSelected": "No hay servicios seleccionados.",
+			"changeStatus": "Cambiar estado",
+			"setActive": "Establecer como Activo",
+			"setInactive": "Establecer como Inactivo",
+			"setArchived": "Establecer como Archivado",
+			"delete": "Eliminar",
+			"deleted": "{count} servicio(s) eliminado(s).",
+			"archived": "{count} servicio(s) archivado(s).",
+			"deletedAndArchived": "{deleted} eliminado(s), {archived} archivado(s).",
+			"statusUpdated": "{count} servicio(s) actualizado(s).",
+			"deleteFailed": "No se pudieron eliminar los servicios.",
+			"updateFailed": "No se pudieron actualizar los servicios."
+		},
+		"bulkDelete": {
+			"title": "¿Eliminar servicios?",
+			"message": "¿Estás seguro de eliminar {count} servicio(s)? Los que tengan referencias serán archivados.",
+			"confirm": "Eliminar"
 		},
 		"success": {
 			"created": "Servicio creado correctamente.",

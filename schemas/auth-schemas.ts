@@ -117,8 +117,7 @@ export const athleteSignUpSchema = z
 		sport: z.string().trim().min(1, v.sportRequired).max(100, v.maxLength),
 		birthDate: z.coerce.date(),
 		level: z.nativeEnum(AthleteLevel),
-		// Club and category (required)
-		currentClub: z.string().trim().min(1, v.clubRequired).max(100, v.maxLength),
+		// Category (required) - Club is assigned after joining an organization
 		category: z.string().trim().min(1, v.categoryRequired).max(50, v.maxLength),
 		// Profile information (required)
 		position: z

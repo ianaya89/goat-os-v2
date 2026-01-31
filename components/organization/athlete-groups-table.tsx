@@ -7,6 +7,8 @@ import type {
 	SortingState,
 } from "@tanstack/react-table";
 import {
+	ArchiveIcon,
+	ArchiveRestoreIcon,
 	EyeIcon,
 	MoreHorizontalIcon,
 	PencilIcon,
@@ -18,6 +20,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import {
 	parseAsArrayOf,
+	parseAsBoolean,
 	parseAsInteger,
 	parseAsJson,
 	parseAsString,
@@ -44,6 +47,8 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { appConfig } from "@/config/app.config";
 import { type AthleteSport, AthleteSports } from "@/lib/db/schema/enums";
 import { cn } from "@/lib/utils";
@@ -81,6 +86,7 @@ interface AthleteGroup {
 	isActive: boolean;
 	createdAt: Date;
 	updatedAt: Date;
+	archivedAt: Date | null;
 	members: AthleteGroupMember[];
 	memberCount: number;
 }
@@ -93,6 +99,10 @@ const statusColors: Record<string, string> = {
 export function AthleteGroupsTable(): React.JSX.Element {
 	const t = useTranslations("athletes.groups");
 	const tCommon = useTranslations("common.sports");
+	const tCommonButtons = useTranslations("common.buttons");
+	const tCommonConfirmation = useTranslations("common.confirmation");
+	const tCommonSuccess = useTranslations("common.success");
+	const tCommonStatus = useTranslations("common.status");
 	const [rowSelection, setRowSelection] = React.useState({});
 
 	// Translation helper for sports
@@ -141,6 +151,13 @@ export function AthleteGroupsTable(): React.JSX.Element {
 	const [categoryFilter, setCategoryFilter] = useQueryState(
 		"category",
 		parseAsArrayOf(parseAsString).withDefault([]).withOptions({
+			shallow: true,
+		}),
+	);
+
+	const [includeArchived, setIncludeArchived] = useQueryState(
+		"archived",
+		parseAsBoolean.withDefault(false).withOptions({
 			shallow: true,
 		}),
 	);
@@ -250,6 +267,7 @@ export function AthleteGroupsTable(): React.JSX.Element {
 			query: searchQuery || "",
 			sortBy: sortParams.sortBy,
 			sortOrder: sortParams.sortOrder,
+			includeArchived: includeArchived ?? false,
 			filters: {
 				isActive: isActiveFilter,
 				sport: sportFilterValues,
@@ -274,6 +292,30 @@ export function AthleteGroupsTable(): React.JSX.Element {
 		},
 	);
 
+	const archiveGroupMutation =
+		trpc.organization.athleteGroup.archive.useMutation({
+			onSuccess: () => {
+				toast.success(tCommonSuccess("archived"));
+				utils.organization.athleteGroup.list.invalidate();
+				utils.organization.athleteGroup.listActive.invalidate();
+			},
+			onError: (error) => {
+				toast.error(error.message);
+			},
+		});
+
+	const unarchiveGroupMutation =
+		trpc.organization.athleteGroup.unarchive.useMutation({
+			onSuccess: () => {
+				toast.success(tCommonSuccess("unarchived"));
+				utils.organization.athleteGroup.list.invalidate();
+				utils.organization.athleteGroup.listActive.invalidate();
+			},
+			onError: (error) => {
+				toast.error(error.message);
+			},
+		});
+
 	const handleSearchQueryChange = (value: string): void => {
 		if (value !== searchQuery) {
 			setSearchQuery(value);
@@ -290,15 +332,25 @@ export function AthleteGroupsTable(): React.JSX.Element {
 			header: ({ column }) => (
 				<SortableColumnHeader column={column} title={t("table.name")} />
 			),
-			cell: ({ row }) => (
-				<Link
-					href={`/dashboard/organization/athlete-groups/${row.original.id}`}
-					className="block max-w-[200px] truncate font-medium text-foreground hover:text-primary hover:underline"
-					title={row.original.name}
-				>
-					{row.original.name}
-				</Link>
-			),
+			cell: ({ row }) => {
+				const isArchived = row.original.archivedAt !== null;
+				return (
+					<div className="flex items-center gap-2">
+						<Link
+							href={`/dashboard/organization/athlete-groups/${row.original.id}`}
+							className="block max-w-[200px] truncate font-medium text-foreground hover:text-primary hover:underline"
+							title={row.original.name}
+						>
+							{row.original.name}
+						</Link>
+						{isArchived && (
+							<Badge variant="secondary" className="text-xs">
+								{tCommonStatus("archived")}
+							</Badge>
+						)}
+					</div>
+				);
+			},
 		},
 		{
 			accessorKey: "description",
@@ -377,57 +429,95 @@ export function AthleteGroupsTable(): React.JSX.Element {
 		{
 			id: "actions",
 			enableSorting: false,
-			cell: ({ row }) => (
-				<div className="flex justify-end">
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button
-								className="flex size-8 text-muted-foreground data-[state=open]:bg-muted"
-								size="icon"
-								variant="ghost"
-							>
-								<MoreHorizontalIcon className="shrink-0" />
-								<span className="sr-only">Open menu</span>
-							</Button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end">
-							<DropdownMenuItem asChild>
-								<Link
-									href={`/dashboard/organization/athlete-groups/${row.original.id}`}
+			cell: ({ row }) => {
+				const isArchived = row.original.archivedAt !== null;
+				return (
+					<div className="flex justify-end">
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<Button
+									className="flex size-8 text-muted-foreground data-[state=open]:bg-muted"
+									size="icon"
+									variant="ghost"
 								>
-									<EyeIcon className="mr-2 size-4" />
-									{t("actions.view")}
-								</Link>
-							</DropdownMenuItem>
-							<DropdownMenuItem
-								onClick={() => {
-									NiceModal.show(AthleteGroupsModal, { group: row.original });
-								}}
-							>
-								<PencilIcon className="mr-2 size-4" />
-								{t("actions.edit")}
-							</DropdownMenuItem>
-							<DropdownMenuSeparator />
-							<DropdownMenuItem
-								onClick={() => {
-									NiceModal.show(ConfirmationModal, {
-										title: t("deleteConfirm.title"),
-										message: t("deleteConfirm.message"),
-										confirmLabel: t("deleteConfirm.confirm"),
-										destructive: true,
-										onConfirm: () =>
-											deleteGroupMutation.mutate({ id: row.original.id }),
-									});
-								}}
-								variant="destructive"
-							>
-								<Trash2Icon className="mr-2 size-4" />
-								{t("actions.delete")}
-							</DropdownMenuItem>
-						</DropdownMenuContent>
-					</DropdownMenu>
-				</div>
-			),
+									<MoreHorizontalIcon className="shrink-0" />
+									<span className="sr-only">Open menu</span>
+								</Button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent align="end">
+								<DropdownMenuItem asChild>
+									<Link
+										href={`/dashboard/organization/athlete-groups/${row.original.id}`}
+									>
+										<EyeIcon className="mr-2 size-4" />
+										{t("actions.view")}
+									</Link>
+								</DropdownMenuItem>
+								<DropdownMenuItem
+									onClick={() => {
+										NiceModal.show(AthleteGroupsModal, { group: row.original });
+									}}
+								>
+									<PencilIcon className="mr-2 size-4" />
+									{t("actions.edit")}
+								</DropdownMenuItem>
+								<DropdownMenuSeparator />
+								{isArchived ? (
+									<DropdownMenuItem
+										onClick={() => {
+											NiceModal.show(ConfirmationModal, {
+												title: tCommonConfirmation("unarchiveTitle"),
+												message: tCommonConfirmation("unarchiveMessage"),
+												confirmLabel: tCommonButtons("unarchive"),
+												onConfirm: () =>
+													unarchiveGroupMutation.mutate({
+														id: row.original.id,
+													}),
+											});
+										}}
+									>
+										<ArchiveRestoreIcon className="mr-2 size-4" />
+										{tCommonButtons("unarchive")}
+									</DropdownMenuItem>
+								) : (
+									<DropdownMenuItem
+										onClick={() => {
+											NiceModal.show(ConfirmationModal, {
+												title: tCommonConfirmation("archiveTitle"),
+												message: tCommonConfirmation("archiveMessage"),
+												confirmLabel: tCommonButtons("archive"),
+												onConfirm: () =>
+													archiveGroupMutation.mutate({
+														id: row.original.id,
+													}),
+											});
+										}}
+									>
+										<ArchiveIcon className="mr-2 size-4" />
+										{tCommonButtons("archive")}
+									</DropdownMenuItem>
+								)}
+								<DropdownMenuItem
+									onClick={() => {
+										NiceModal.show(ConfirmationModal, {
+											title: t("deleteConfirm.title"),
+											message: t("deleteConfirm.message"),
+											confirmLabel: t("deleteConfirm.confirm"),
+											destructive: true,
+											onConfirm: () =>
+												deleteGroupMutation.mutate({ id: row.original.id }),
+										});
+									}}
+									variant="destructive"
+								>
+									<Trash2Icon className="mr-2 size-4" />
+									{t("actions.delete")}
+								</DropdownMenuItem>
+							</DropdownMenuContent>
+						</DropdownMenu>
+					</div>
+				);
+			},
 		},
 	];
 
@@ -502,10 +592,25 @@ export function AthleteGroupsTable(): React.JSX.Element {
 			defaultSorting={DEFAULT_SORTING}
 			sorting={sorting}
 			toolbarActions={
-				<Button onClick={() => NiceModal.show(AthleteGroupsModal)} size="sm">
-					<PlusIcon className="size-4 shrink-0" />
-					{t("add")}
-				</Button>
+				<div className="flex items-center gap-4">
+					<div className="flex items-center gap-2">
+						<Switch
+							id="show-archived"
+							checked={includeArchived ?? false}
+							onCheckedChange={setIncludeArchived}
+						/>
+						<Label
+							htmlFor="show-archived"
+							className="text-sm text-muted-foreground"
+						>
+							{t("showArchived")}
+						</Label>
+					</div>
+					<Button onClick={() => NiceModal.show(AthleteGroupsModal)} size="sm">
+						<PlusIcon className="size-4 shrink-0" />
+						{t("add")}
+					</Button>
+				</div>
 			}
 			totalCount={data?.total ?? 0}
 		/>

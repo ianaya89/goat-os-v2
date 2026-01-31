@@ -93,25 +93,23 @@ const updateMyAthleteProfileSchema = z.object({
 
 // Schema for career history
 const createMyCareerHistorySchema = z.object({
-	clubName: z.string().trim().min(1).max(200),
+	clubId: z.string().uuid().optional(),
+	nationalTeamId: z.string().uuid().optional(),
 	startDate: z.coerce.date().optional(),
 	endDate: z.coerce.date().optional(),
 	position: z.string().trim().max(100).optional(),
 	achievements: z.string().trim().max(2000).optional(),
-	wasNationalTeam: z.boolean().default(false),
-	nationalTeamLevel: z.string().trim().max(50).optional(),
 	notes: z.string().trim().max(1000).optional(),
 });
 
 const updateMyCareerHistorySchema = z.object({
 	id: z.string().uuid(),
-	clubName: z.string().trim().min(1).max(200).optional(),
+	clubId: z.string().uuid().optional().nullable(),
+	nationalTeamId: z.string().uuid().optional().nullable(),
 	startDate: z.coerce.date().optional().nullable(),
 	endDate: z.coerce.date().optional().nullable(),
 	position: z.string().trim().max(100).optional().nullable(),
 	achievements: z.string().trim().max(2000).optional().nullable(),
-	wasNationalTeam: z.boolean().optional(),
-	nationalTeamLevel: z.string().trim().max(50).optional().nullable(),
 	notes: z.string().trim().max(1000).optional().nullable(),
 });
 

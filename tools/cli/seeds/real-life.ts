@@ -5,6 +5,12 @@ import {
 	REAL_LIFE_ATHLETE_COUNT,
 	REAL_LIFE_ATHLETES,
 } from "./real-life-athletes";
+import {
+	METROPOLITANO_CLUBS,
+	METROPOLITANO_CLUBS_COUNT,
+	NATIONAL_TEAMS,
+	NATIONAL_TEAMS_COUNT,
+} from "./real-life-institutions";
 import { seedRealLifePayments } from "./real-life-payments";
 import { seedRealLifeSessions } from "./real-life-sessions";
 
@@ -17,12 +23,25 @@ const REAL_LIFE_USER_PASSWORD = "Perico89";
 // Root user (existing user that should have access to org)
 const ROOT_USER_EMAIL = "root@goat.ar";
 
+// Additional admin users
+const ADMIN_USER_G_EMAIL = "g@goat.ar";
+const ADMIN_USER_S_EMAIL = "s@goat.ar";
+const ADMIN_USER_PASSWORD = "g04t5p0rt5";
+
 // Deterministic UUIDs for real-life entities (using prefix 200 to avoid conflicts)
 const REAL_LIFE_ORG_ID = "20000000-0000-4000-8000-000000000001";
 const REAL_LIFE_USER_ID = "20000000-0000-4000-8000-000000000002";
 const REAL_LIFE_MEMBER_ID = "20000000-0000-4000-8000-000000000003";
 const REAL_LIFE_ACCOUNT_ID = "20000000-0000-4000-8000-000000000004";
 const ROOT_MEMBER_ID = "20000000-0000-4000-8000-000000000005";
+
+// Admin users G and S
+const ADMIN_USER_G_ID = "20000000-0000-4000-8000-000000000006";
+const ADMIN_USER_G_MEMBER_ID = "20000000-0000-4000-8000-000000000007";
+const ADMIN_USER_G_ACCOUNT_ID = "20000000-0000-4000-8000-000000000008";
+const ADMIN_USER_S_ID = "20000000-0000-4000-8000-000000000009";
+const ADMIN_USER_S_MEMBER_ID = "20000000-0000-4000-8000-00000000000a";
+const ADMIN_USER_S_ACCOUNT_ID = "20000000-0000-4000-8000-00000000000b";
 
 // Locations
 const LOCATION_CAMPO_VERDE_ID = "20000000-0000-4000-8000-000000000010";
@@ -98,6 +117,13 @@ const AGE_CATEGORY_SUB18_ID = "20000000-0000-4000-8000-000000000114";
 
 // Events
 const EVENT_CAMPUS_VERANO_ID = "20000000-0000-4000-8000-000000000120";
+
+// Services
+const SERVICE_HOCKEY_PERSONALIZADO_ID = "20000000-0000-4000-8000-000000000130";
+const SERVICE_PRETEMPORADA_HOCKEY_ID = "20000000-0000-4000-8000-000000000131";
+const SERVICE_FISICO_30M_ID = "20000000-0000-4000-8000-000000000132";
+const SERVICE_FISICO_60M_ID = "20000000-0000-4000-8000-000000000133";
+const SERVICE_ACADEMIA_ID = "20000000-0000-4000-8000-000000000134";
 
 interface RealLifeCoach {
 	firstName: string;
@@ -341,6 +367,54 @@ const EVENTS: RealLifeEvent[] = [
 	},
 ];
 
+interface RealLifeService {
+	id: string;
+	name: string;
+	description: string;
+	currentPrice: number; // In centavos (smallest currency unit)
+	sortOrder: number;
+}
+
+// Prices in ARS centavos (multiply pesos by 100)
+const SERVICES: RealLifeService[] = [
+	{
+		id: SERVICE_HOCKEY_PERSONALIZADO_ID,
+		name: "Hockey Personalizado",
+		description: "Entrenamiento personalizado de hockey con coach dedicado.",
+		currentPrice: 4000000, // $40,000 ARS
+		sortOrder: 1,
+	},
+	{
+		id: SERVICE_PRETEMPORADA_HOCKEY_ID,
+		name: "Pretemporada de Hockey",
+		description:
+			"Programa intensivo de preparación física y técnica para la temporada de hockey.",
+		currentPrice: 7000000, // $70,000 ARS
+		sortOrder: 2,
+	},
+	{
+		id: SERVICE_FISICO_30M_ID,
+		name: "Físico Personalizado 30m",
+		description: "Sesión de entrenamiento físico personalizado de 30 minutos.",
+		currentPrice: 1000000, // $10,000 ARS
+		sortOrder: 3,
+	},
+	{
+		id: SERVICE_FISICO_60M_ID,
+		name: "Físico Personalizado 60m",
+		description: "Sesión de entrenamiento físico personalizado de 60 minutos.",
+		currentPrice: 2000000, // $20,000 ARS
+		sortOrder: 4,
+	},
+	{
+		id: SERVICE_ACADEMIA_ID,
+		name: "Academia",
+		description: "Programa completo de formación en la academia GOAT Sports.",
+		currentPrice: 7000000, // $70,000 ARS
+		sortOrder: 5,
+	},
+];
+
 // Generate deterministic UUIDs for athlete entities
 function athleteUUID(index: number): string {
 	const indexHex = index.toString(16).padStart(12, "0");
@@ -505,6 +579,107 @@ export async function runRealLifeSeed(): Promise<void> {
 		rootSpinner.stop("User root@goat.ar not found - skipping membership");
 	}
 
+	// 4b. Create admin users g@goat.ar and s@goat.ar
+	const adminUsersSpinner = p.spinner();
+	adminUsersSpinner.start("Setting up admin users g@goat.ar and s@goat.ar...");
+
+	const { hashPassword: hashAdminPassword } = await import(
+		"better-auth/crypto"
+	);
+	const adminHashedPassword = await hashAdminPassword(ADMIN_USER_PASSWORD);
+
+	// Create g@goat.ar
+	const existingGUser = await db.query.userTable.findFirst({
+		where: eq(schema.userTable.email, ADMIN_USER_G_EMAIL),
+	});
+
+	let gUserId = ADMIN_USER_G_ID;
+
+	if (!existingGUser) {
+		await db.insert(schema.userTable).values({
+			id: ADMIN_USER_G_ID,
+			name: "Gera",
+			email: ADMIN_USER_G_EMAIL,
+			emailVerified: true,
+			role: "admin",
+			onboardingComplete: true,
+		});
+
+		await db.insert(schema.accountTable).values({
+			id: ADMIN_USER_G_ACCOUNT_ID,
+			userId: ADMIN_USER_G_ID,
+			accountId: ADMIN_USER_G_ID,
+			providerId: "credential",
+			password: adminHashedPassword,
+		});
+	} else {
+		gUserId = existingGUser.id;
+	}
+
+	// Ensure g@goat.ar membership
+	const existingGMembership = await db.query.memberTable.findFirst({
+		where: and(
+			eq(schema.memberTable.userId, gUserId),
+			eq(schema.memberTable.organizationId, organizationId),
+		),
+	});
+
+	if (!existingGMembership) {
+		await db.insert(schema.memberTable).values({
+			id: ADMIN_USER_G_MEMBER_ID,
+			organizationId,
+			userId: gUserId,
+			role: "admin",
+		});
+	}
+
+	// Create s@goat.ar
+	const existingSUser = await db.query.userTable.findFirst({
+		where: eq(schema.userTable.email, ADMIN_USER_S_EMAIL),
+	});
+
+	let sUserId = ADMIN_USER_S_ID;
+
+	if (!existingSUser) {
+		await db.insert(schema.userTable).values({
+			id: ADMIN_USER_S_ID,
+			name: "Santi",
+			email: ADMIN_USER_S_EMAIL,
+			emailVerified: true,
+			role: "admin",
+			onboardingComplete: true,
+		});
+
+		await db.insert(schema.accountTable).values({
+			id: ADMIN_USER_S_ACCOUNT_ID,
+			userId: ADMIN_USER_S_ID,
+			accountId: ADMIN_USER_S_ID,
+			providerId: "credential",
+			password: adminHashedPassword,
+		});
+	} else {
+		sUserId = existingSUser.id;
+	}
+
+	// Ensure s@goat.ar membership
+	const existingSMembership = await db.query.memberTable.findFirst({
+		where: and(
+			eq(schema.memberTable.userId, sUserId),
+			eq(schema.memberTable.organizationId, organizationId),
+		),
+	});
+
+	if (!existingSMembership) {
+		await db.insert(schema.memberTable).values({
+			id: ADMIN_USER_S_MEMBER_ID,
+			organizationId,
+			userId: sUserId,
+			role: "admin",
+		});
+	}
+
+	adminUsersSpinner.stop("Admin users g@goat.ar and s@goat.ar configured");
+
 	// 5. Create locations
 	const locSpinner = p.spinner();
 	locSpinner.start("Setting up locations...");
@@ -658,6 +833,120 @@ export async function runRealLifeSeed(): Promise<void> {
 		eventsCreated > 0
 			? `Created ${eventsCreated} event(s)`
 			: "Events already exist",
+	);
+
+	// 8b. Create services (check by name + org to be resilient)
+	const serviceSpinner = p.spinner();
+	serviceSpinner.start("Setting up services...");
+
+	let servicesCreated = 0;
+	for (const service of SERVICES) {
+		const existingService = await db.query.serviceTable.findFirst({
+			where: and(
+				eq(schema.serviceTable.organizationId, organizationId),
+				eq(schema.serviceTable.name, service.name),
+			),
+		});
+
+		if (!existingService) {
+			await db
+				.insert(schema.serviceTable)
+				.values({
+					id: service.id,
+					organizationId,
+					name: service.name,
+					description: service.description,
+					currentPrice: service.currentPrice,
+					currency: "ARS",
+					status: "active",
+					sortOrder: service.sortOrder,
+					createdBy: userId,
+				})
+				.onConflictDoNothing();
+			servicesCreated++;
+		}
+	}
+
+	serviceSpinner.stop(
+		servicesCreated > 0
+			? `Created ${servicesCreated} service(s)`
+			: "Services already exist",
+	);
+
+	// 8c. Create clubs (Torneo Metropolitano de Hockey)
+	const clubSpinner = p.spinner();
+	clubSpinner.start(
+		`Setting up ${METROPOLITANO_CLUBS_COUNT} clubs from Torneo Metropolitano...`,
+	);
+
+	let clubsCreated = 0;
+	for (const club of METROPOLITANO_CLUBS) {
+		const existingClub = await db.query.clubTable.findFirst({
+			where: and(
+				eq(schema.clubTable.organizationId, organizationId),
+				eq(schema.clubTable.name, club.name),
+			),
+		});
+
+		if (!existingClub) {
+			await db
+				.insert(schema.clubTable)
+				.values({
+					id: club.id,
+					organizationId,
+					name: club.name,
+					shortName: club.shortName,
+					city: club.city,
+					country: club.country,
+					website: club.website,
+					notes: club.notes,
+				})
+				.onConflictDoNothing();
+			clubsCreated++;
+		}
+	}
+
+	clubSpinner.stop(
+		clubsCreated > 0
+			? `Created ${clubsCreated} club(s)`
+			: "Clubs already exist",
+	);
+
+	// 8d. Create national teams (seleccionados nacionales y provinciales)
+	const nationalTeamSpinner = p.spinner();
+	nationalTeamSpinner.start(
+		`Setting up ${NATIONAL_TEAMS_COUNT} national/provincial teams...`,
+	);
+
+	let nationalTeamsCreated = 0;
+	for (const team of NATIONAL_TEAMS) {
+		const existingTeam = await db.query.nationalTeamTable.findFirst({
+			where: and(
+				eq(schema.nationalTeamTable.organizationId, organizationId),
+				eq(schema.nationalTeamTable.name, team.name),
+			),
+		});
+
+		if (!existingTeam) {
+			await db
+				.insert(schema.nationalTeamTable)
+				.values({
+					id: team.id,
+					organizationId,
+					name: team.name,
+					country: team.country,
+					category: team.category,
+					notes: team.notes,
+				})
+				.onConflictDoNothing();
+			nationalTeamsCreated++;
+		}
+	}
+
+	nationalTeamSpinner.stop(
+		nationalTeamsCreated > 0
+			? `Created ${nationalTeamsCreated} national/provincial team(s)`
+			: "National teams already exist",
 	);
 
 	// 9. Create coaches with user accounts (check by email to be resilient)
@@ -893,10 +1182,14 @@ export async function runRealLifeSeed(): Promise<void> {
 		`Organization: ${REAL_LIFE_ORG_NAME} (${REAL_LIFE_ORG_SLUG})
 User: ${REAL_LIFE_USER_EMAIL} (password: ${REAL_LIFE_USER_PASSWORD})
 Root user: ${ROOT_USER_EMAIL} (added to org if exists)
+Admin users: ${ADMIN_USER_G_EMAIL}, ${ADMIN_USER_S_EMAIL} (password: ${ADMIN_USER_PASSWORD})
 Locations: Campo Verde, Campo Azul
 Groups: Pretemporada Hockey 2026, Sub 10 Hockey
 Age Categories: Sub 10, Sub 12, Sub 14, Sub 16, Sub 18
 Events: Campus Verano 2026
+Services: Hockey Personalizado, Pretemporada de Hockey, Físico 30m/60m, Academia
+Clubs: ${METROPOLITANO_CLUBS_COUNT} clubs (Torneo Metropolitano de Hockey)
+National Teams: ${NATIONAL_TEAMS_COUNT} seleccionados (nacionales y provinciales)
 Coaches: Pilar, Santi, Ignacio, Manuel, Sasha, Santiago, Tomas (password: ${COACH_PASSWORD})
 Athletes: ${REAL_LIFE_ATHLETE_COUNT} GOAT Academy athletes (password: ${ATHLETE_PASSWORD})
 Training Sessions: January 2026 calendar sessions

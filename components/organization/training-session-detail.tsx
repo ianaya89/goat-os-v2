@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import {
 	ActivityIcon,
 	BanknoteIcon,
+	BellIcon,
 	CalendarDaysIcon,
 	CalendarIcon,
 	ChevronDownIcon,
@@ -14,9 +15,13 @@ import {
 	EyeIcon,
 	FileTextIcon,
 	InfoIcon,
+	LayersIcon,
+	MailIcon,
 	MapPinIcon,
+	MessageSquareIcon,
 	MoreHorizontalIcon,
 	PaperclipIcon,
+	PhoneIcon,
 	PlusIcon,
 	TargetIcon,
 	Trash2Icon,
@@ -137,6 +142,17 @@ export function TrainingSessionDetail({
 			},
 		});
 
+	const sendConfirmationMutation =
+		trpc.organization.confirmation.sendForSessions.useMutation({
+			onSuccess: (data) => {
+				toast.success(t("success.reminderSent", { count: data.sent }));
+				utils.organization.confirmation.getStats.invalidate();
+			},
+			onError: () => {
+				toast.error(t("error.reminderFailed"));
+			},
+		});
+
 	React.useEffect(() => {
 		if (session?.postSessionNotes) {
 			setPostNotes(session.postSessionNotes);
@@ -162,6 +178,38 @@ export function TrainingSessionDetail({
 			confirmLabel: t("preview.deleteConfirm"),
 			destructive: true,
 			onConfirm: () => deleteMutation.mutate({ id: sessionId }),
+		});
+	};
+
+	const handleSendReminder = (
+		channel: "email" | "sms" | "whatsapp" | "all",
+	) => {
+		if (!session) return;
+
+		const athleteCount =
+			session.athleteGroup?.members?.length ?? session.athletes.length;
+		const channelLabel =
+			channel === "email"
+				? "Email"
+				: channel === "whatsapp"
+					? "WhatsApp"
+					: channel === "sms"
+						? "SMS"
+						: t("detail.allChannels");
+
+		NiceModal.show(ConfirmationModal, {
+			title: t("detail.sendReminder"),
+			message: t("success.reminderSent", { count: athleteCount }).replace(
+				/\./,
+				` via ${channelLabel}.`,
+			),
+			confirmLabel: t("detail.sendReminder"),
+			onConfirm: () => {
+				sendConfirmationMutation.mutate({
+					sessionIds: [sessionId],
+					channel,
+				});
+			},
 		});
 	};
 
@@ -263,19 +311,61 @@ export function TrainingSessionDetail({
 						)}
 					</div>
 				</div>
-				<div className="flex gap-2">
+				<div className="flex items-center gap-2">
 					{/* Admin/Coach actions */}
 					{!isRestrictedMember && (
 						<>
-							<Button
-								onClick={handleDelete}
-								variant="ghost"
-								size="sm"
-								className="text-destructive hover:text-destructive"
-							>
-								<Trash2Icon className="size-4" />
-								{t("delete")}
-							</Button>
+							{/* Send Reminder Dropdown - only for future sessions */}
+							{isFutureSession &&
+								session.status !== TrainingSessionStatus.cancelled && (
+									<DropdownMenu>
+										<DropdownMenuTrigger asChild>
+											<Button
+												variant="outline"
+												size="sm"
+												disabled={sendConfirmationMutation.isPending}
+											>
+												<BellIcon className="mr-1.5 size-4" />
+												{sendConfirmationMutation.isPending
+													? t("detail.sending")
+													: t("detail.sendReminder")}
+											</Button>
+										</DropdownMenuTrigger>
+										<DropdownMenuContent align="end">
+											<DropdownMenuItem
+												onClick={() => handleSendReminder("all")}
+												disabled={sendConfirmationMutation.isPending}
+											>
+												<LayersIcon className="mr-2 size-4" />
+												{t("detail.sendViaAllChannels")}
+											</DropdownMenuItem>
+											<DropdownMenuSeparator />
+											<DropdownMenuItem
+												onClick={() => handleSendReminder("email")}
+												disabled={sendConfirmationMutation.isPending}
+											>
+												<MailIcon className="mr-2 size-4" />
+												{t("detail.sendViaEmail")}
+											</DropdownMenuItem>
+											<DropdownMenuItem
+												onClick={() => handleSendReminder("whatsapp")}
+												disabled={sendConfirmationMutation.isPending}
+											>
+												<MessageSquareIcon className="mr-2 size-4" />
+												{t("detail.sendViaWhatsApp")}
+											</DropdownMenuItem>
+											<DropdownMenuItem
+												onClick={() => handleSendReminder("sms")}
+												disabled={sendConfirmationMutation.isPending}
+											>
+												<PhoneIcon className="mr-2 size-4" />
+												{t("detail.sendViaSms")}
+											</DropdownMenuItem>
+										</DropdownMenuContent>
+									</DropdownMenu>
+								)}
+
+							{/* Status Dropdown */}
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
 									<Button
@@ -302,6 +392,24 @@ export function TrainingSessionDetail({
 											<TrainingSessionStatusBadge status={s} />
 										</DropdownMenuItem>
 									))}
+								</DropdownMenuContent>
+							</DropdownMenu>
+
+							{/* More Actions Dropdown */}
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button variant="ghost" size="icon" className="size-8">
+										<MoreHorizontalIcon className="size-4" />
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent align="end">
+									<DropdownMenuItem
+										onClick={handleDelete}
+										variant="destructive"
+									>
+										<Trash2Icon className="mr-2 size-4" />
+										{t("delete")}
+									</DropdownMenuItem>
 								</DropdownMenuContent>
 							</DropdownMenu>
 						</>
@@ -532,18 +640,49 @@ export function TrainingSessionDetail({
 					<CardContent>
 						<div className="space-y-3">
 							{athletes.map((athlete) => (
-								<Link
+								<div
 									key={athlete.id}
-									href={`/dashboard/organization/athletes/${athlete.id}`}
-									className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+									className="flex items-center justify-between"
 								>
-									<UserAvatar
-										className="size-8"
-										name={athlete.name}
-										src={athlete.image ?? undefined}
-									/>
-									<span className="font-medium text-sm">{athlete.name}</span>
-								</Link>
+									<Link
+										href={`/dashboard/organization/athletes/${athlete.id}`}
+										className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+									>
+										<UserAvatar
+											className="size-8"
+											name={athlete.name}
+											src={athlete.image ?? undefined}
+										/>
+										<span className="font-medium text-sm">{athlete.name}</span>
+									</Link>
+									<DropdownMenu>
+										<DropdownMenuTrigger asChild>
+											<Button
+												variant="ghost"
+												size="icon"
+												className="size-7 text-muted-foreground"
+											>
+												<MoreHorizontalIcon className="size-4" />
+											</Button>
+										</DropdownMenuTrigger>
+										<DropdownMenuContent align="end">
+											<DropdownMenuItem
+												onClick={() =>
+													NiceModal.show(PaymentsModal, {
+														fixedSessionId: sessionId,
+														fixedSessionIds: [sessionId],
+														fixedAthletes: [
+															{ id: athlete.id, name: athlete.name },
+														],
+													})
+												}
+											>
+												<BanknoteIcon className="mr-2 size-4" />
+												{t("detail.recordPayment")}
+											</DropdownMenuItem>
+										</DropdownMenuContent>
+									</DropdownMenu>
+								</div>
 							))}
 							{athletes.length === 0 && (
 								<p className="text-muted-foreground text-sm">

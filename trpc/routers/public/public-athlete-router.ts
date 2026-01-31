@@ -82,7 +82,6 @@ export const publicAthleteRouter = createTRPCRouter({
 					jerseyNumber: true,
 					bio: true,
 					yearsOfExperience: true,
-					currentClub: true,
 					category: true,
 					residenceCity: true,
 					residenceCountry: true,
@@ -114,6 +113,8 @@ export const publicAthleteRouter = createTRPCRouter({
 							// Exclude email for privacy
 						},
 					},
+					currentClub: true,
+					currentNationalTeam: true,
 				},
 			});
 
@@ -138,14 +139,15 @@ export const publicAthleteRouter = createTRPCRouter({
 				orderBy: desc(athleteCareerHistoryTable.startDate),
 				columns: {
 					id: true,
-					clubName: true,
 					startDate: true,
 					endDate: true,
 					position: true,
 					achievements: true,
-					wasNationalTeam: true,
-					nationalTeamLevel: true,
 					// Exclude private notes
+				},
+				with: {
+					club: true,
+					nationalTeam: true,
 				},
 			});
 
@@ -320,7 +322,6 @@ export const publicAthleteRouter = createTRPCRouter({
 					jerseyNumber: true,
 					bio: true,
 					yearsOfExperience: true,
-					currentClub: true,
 					category: true,
 					residenceCity: true,
 					residenceCountry: true,
@@ -347,6 +348,8 @@ export const publicAthleteRouter = createTRPCRouter({
 							imageKey: true,
 						},
 					},
+					currentClub: true,
+					currentNationalTeam: true,
 				},
 			});
 
@@ -363,13 +366,14 @@ export const publicAthleteRouter = createTRPCRouter({
 				orderBy: desc(athleteCareerHistoryTable.startDate),
 				columns: {
 					id: true,
-					clubName: true,
 					startDate: true,
 					endDate: true,
 					position: true,
 					achievements: true,
-					wasNationalTeam: true,
-					nationalTeamLevel: true,
+				},
+				with: {
+					club: true,
+					nationalTeam: true,
 				},
 			});
 
@@ -596,7 +600,6 @@ export const publicAthleteRouter = createTRPCRouter({
 					residenceCountry: true,
 					birthDate: true,
 					yearsOfExperience: true,
-					currentClub: true,
 					opportunityTypes: true,
 					publicProfileEnabledAt: true,
 				},
@@ -609,6 +612,7 @@ export const publicAthleteRouter = createTRPCRouter({
 							imageKey: true,
 						},
 					},
+					currentClub: true,
 				},
 			});
 

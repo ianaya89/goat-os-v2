@@ -6,9 +6,7 @@ import {
 	BriefcaseIcon,
 	CalendarIcon,
 	FlagIcon,
-	MapPinIcon,
 	TrophyIcon,
-	UserIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod/v4";
@@ -41,14 +39,14 @@ import { useZodForm } from "@/hooks/use-zod-form";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
+// TODO: Implement club/nationalTeam selectors instead of text inputs
 const careerSchema = z.object({
-	clubName: z.string().min(1, "El nombre es requerido").max(100),
+	clubId: z.string().uuid().optional().nullable(),
+	nationalTeamId: z.string().uuid().optional().nullable(),
 	startDate: z.date().optional().nullable(),
 	endDate: z.date().optional().nullable(),
 	position: z.string().max(100).optional().nullable(),
 	achievements: z.string().max(1000).optional().nullable(),
-	wasNationalTeam: z.boolean(),
-	nationalTeamLevel: z.string().max(50).optional().nullable(),
 	notes: z.string().max(500).optional().nullable(),
 });
 
@@ -56,13 +54,12 @@ type CareerFormData = z.infer<typeof careerSchema>;
 
 interface CareerEntry {
 	id: string;
-	clubName: string;
+	clubId: string | null;
+	nationalTeamId: string | null;
 	startDate: Date | null;
 	endDate: Date | null;
 	position: string | null;
 	achievements: string | null;
-	wasNationalTeam: boolean;
-	nationalTeamLevel: string | null;
 	notes: string | null;
 }
 
@@ -80,18 +77,17 @@ export const AthleteCareerEditModal = NiceModal.create(
 		const form = useZodForm({
 			schema: careerSchema,
 			defaultValues: {
-				clubName: entry?.clubName ?? "",
+				clubId: entry?.clubId ?? null,
+				nationalTeamId: entry?.nationalTeamId ?? null,
 				startDate: entry?.startDate ?? null,
 				endDate: entry?.endDate ?? null,
 				position: entry?.position ?? "",
 				achievements: entry?.achievements ?? "",
-				wasNationalTeam: entry?.wasNationalTeam ?? false,
-				nationalTeamLevel: entry?.nationalTeamLevel ?? "",
 				notes: entry?.notes ?? "",
 			},
 		});
 
-		const wasNationalTeam = form.watch("wasNationalTeam");
+		const isNationalTeam = !!form.watch("nationalTeamId");
 
 		const createMutation = trpc.athlete.addCareerHistory.useMutation({
 			onSuccess: () => {
@@ -128,15 +124,12 @@ export const AthleteCareerEditModal = NiceModal.create(
 
 		const onSubmit = form.handleSubmit((data: CareerFormData) => {
 			const payload = {
-				clubName: data.clubName,
+				clubId: data.clubId ?? undefined,
+				nationalTeamId: data.nationalTeamId ?? undefined,
 				startDate: data.startDate ?? undefined,
 				endDate: data.endDate ?? undefined,
 				position: data.position || undefined,
 				achievements: data.achievements || undefined,
-				wasNationalTeam: data.wasNationalTeam,
-				nationalTeamLevel: data.wasNationalTeam
-					? data.nationalTeamLevel || undefined
-					: undefined,
 				notes: data.notes || undefined,
 			};
 
@@ -154,10 +147,10 @@ export const AthleteCareerEditModal = NiceModal.create(
 		};
 
 		const handleTabChange = (value: string) => {
-			form.setValue("wasNationalTeam", value === "national");
-			if (!isEditing) {
-				form.setValue("clubName", "");
-				form.setValue("nationalTeamLevel", "");
+			if (value === "national") {
+				form.setValue("clubId", null);
+			} else {
+				form.setValue("nationalTeamId", null);
 			}
 		};
 
@@ -214,7 +207,7 @@ export const AthleteCareerEditModal = NiceModal.create(
 				<div className="space-y-6">
 					{/* Type Selector */}
 					<Tabs
-						value={wasNationalTeam ? "national" : "club"}
+						defaultValue={isNationalTeam ? "national" : "club"}
 						onValueChange={handleTabChange}
 					>
 						<TabsList className="grid w-full grid-cols-2">
@@ -229,67 +222,19 @@ export const AthleteCareerEditModal = NiceModal.create(
 						</TabsList>
 
 						<TabsContent value="club" className="mt-4">
-							<FormField
-								control={form.control}
-								name="clubName"
-								render={({ field }) => (
-									<FormItem asChild>
-										<Field>
-											<FormLabel>Nombre del Club / Equipo</FormLabel>
-											<FormControl>
-												<Input
-													placeholder="River Plate, Barcelona FC, Lakers..."
-													{...field}
-												/>
-											</FormControl>
-											<FormMessage />
-										</Field>
-									</FormItem>
-								)}
-							/>
+							{/* TODO: Implement club selector */}
+							<div className="rounded-lg border border-dashed p-4 text-center text-muted-foreground text-sm">
+								Selector de club pendiente. Los clubes se configuran desde la
+								organización.
+							</div>
 						</TabsContent>
 
 						<TabsContent value="national" className="mt-4 space-y-4">
-							<FormField
-								control={form.control}
-								name="clubName"
-								render={({ field }) => (
-									<FormItem asChild>
-										<Field>
-											<FormLabel>Seleccion Nacional</FormLabel>
-											<FormControl>
-												<Input
-													placeholder="Argentina, Brasil, USA..."
-													{...field}
-												/>
-											</FormControl>
-											<FormMessage />
-										</Field>
-									</FormItem>
-								)}
-							/>
-							<FormField
-								control={form.control}
-								name="nationalTeamLevel"
-								render={({ field }) => (
-									<FormItem asChild>
-										<Field>
-											<FormLabel>Categoria / Nivel</FormLabel>
-											<FormControl>
-												<Input
-													placeholder="Sub-17, Sub-20, Mayor, Olimpica..."
-													{...field}
-													value={field.value ?? ""}
-												/>
-											</FormControl>
-											<FormDescription>
-												Categoria de edad o nivel del equipo
-											</FormDescription>
-											<FormMessage />
-										</Field>
-									</FormItem>
-								)}
-							/>
+							{/* TODO: Implement national team selector */}
+							<div className="rounded-lg border border-dashed p-4 text-center text-muted-foreground text-sm">
+								Selector de selección nacional pendiente. Las selecciones se
+								configuran desde la organización.
+							</div>
 						</TabsContent>
 					</Tabs>
 

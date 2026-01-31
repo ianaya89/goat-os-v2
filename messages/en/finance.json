@@ -40,7 +40,9 @@
 			"description": "Description",
 			"descriptionPlaceholder": "e.g., Monthly training fee",
 			"session": "Session (Optional)",
+			"sessions": "Sessions",
 			"selectSession": "Select session",
+			"addSession": "Add session",
 			"noSession": "No session",
 			"status": "Status",
 			"selectStatus": "Select status",
@@ -54,7 +56,15 @@
 			"searchAthlete": "Search athlete...",
 			"typeToSearchAthlete": "Type to search athletes",
 			"noAthletesFound": "No athletes found",
-			"servicePriceHint": "Suggested price from service \"{name}\": {price}"
+			"servicePriceHint": "Suggested price from service \"{name}\": {price}",
+			"serviceOptional": "Service (Optional)",
+			"selectService": "Select service",
+			"searchService": "Search service...",
+			"noServicesFound": "No services found",
+			"serviceHint": "Select a service to pre-fill the price",
+			"serviceFromSession": "Service linked to session",
+			"discountPercentage": "Discount (%)",
+			"discountPercentageHint": "Discount percentage applied (0-100)"
 		},
 		"methods": {
 			"cash": "Cash",
@@ -89,6 +99,7 @@
 			"athlete": "Athlete",
 			"concept": "Concept",
 			"description": "Description",
+			"sessionsCount": "{count, plural, one {# session} other {# sessions}}",
 			"amount": "Amount",
 			"dueDate": "Due date",
 			"paidDate": "Paid date",
@@ -605,6 +616,25 @@
 			"deleteMessage": "You are about to delete {count, plural, one {# service} other {# services}}. Those with references will be archived.",
 			"deleted": "{count, plural, one {# service processed} other {# services processed}}.",
 			"deleteFailed": "Failed to delete services."
+		},
+		"bulkActions": {
+			"noSelected": "No services selected.",
+			"changeStatus": "Change status",
+			"setActive": "Set to Active",
+			"setInactive": "Set to Inactive",
+			"setArchived": "Set to Archived",
+			"delete": "Delete",
+			"deleted": "{count} service(s) deleted.",
+			"archived": "{count} service(s) archived.",
+			"deletedAndArchived": "{deleted} deleted, {archived} archived.",
+			"statusUpdated": "{count} service(s) updated.",
+			"deleteFailed": "Failed to delete services.",
+			"updateFailed": "Failed to update services."
+		},
+		"bulkDelete": {
+			"title": "Delete services?",
+			"message": "Are you sure you want to delete {count} service(s)? Those with references will be archived.",
+			"confirm": "Delete"
 		},
 		"success": {
 			"created": "Service created successfully.",

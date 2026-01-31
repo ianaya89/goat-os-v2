@@ -7,6 +7,7 @@
 	"view": "View coach",
 	"deleteAction": "Delete coach",
 	"search": "Search coaches...",
+	"showArchived": "Show archived",
 	"filters": {
 		"all": "All",
 		"active": "Active",

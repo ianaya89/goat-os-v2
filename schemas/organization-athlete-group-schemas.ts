@@ -18,6 +18,7 @@ export const listAthleteGroupsSchema = z.object({
 	query: z.string().optional(),
 	sortBy: AthleteGroupSortField.default("createdAt"),
 	sortOrder: z.enum(["asc", "desc"]).default("asc"),
+	includeArchived: z.boolean().default(false),
 	filters: z
 		.object({
 			isActive: z.boolean().optional(),
@@ -74,6 +75,26 @@ export const updateAthleteGroupSchema = z.object({
 // Delete athlete group
 export const deleteAthleteGroupSchema = z.object({
 	id: z.string().uuid(),
+});
+
+// Archive athlete group (soft delete)
+export const archiveAthleteGroupSchema = z.object({
+	id: z.string().uuid(),
+});
+
+// Unarchive athlete group (restore from archive)
+export const unarchiveAthleteGroupSchema = z.object({
+	id: z.string().uuid(),
+});
+
+// Bulk archive athlete groups
+export const bulkArchiveAthleteGroupsSchema = z.object({
+	ids: z.array(z.string().uuid()).min(1),
+});
+
+// Bulk unarchive athlete groups
+export const bulkUnarchiveAthleteGroupsSchema = z.object({
+	ids: z.array(z.string().uuid()).min(1),
 });
 
 // Bulk delete athlete groups

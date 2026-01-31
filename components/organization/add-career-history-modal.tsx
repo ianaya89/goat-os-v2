@@ -35,14 +35,14 @@ import { useZodForm } from "@/hooks/use-zod-form";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
+// TODO: Implement club/nationalTeam selectors instead of text inputs
 const careerHistorySchema = z.object({
-	clubName: z.string().trim().min(1, "Required").max(200),
+	clubId: z.string().uuid().optional().nullable(),
+	nationalTeamId: z.string().uuid().optional().nullable(),
 	startDate: z.date().optional().nullable(),
 	endDate: z.date().optional().nullable(),
 	position: z.string().trim().max(100).optional(),
 	achievements: z.string().trim().max(2000).optional(),
-	wasNationalTeam: z.boolean(),
-	nationalTeamLevel: z.string().trim().max(50).optional(),
 	notes: z.string().trim().max(1000).optional(),
 });
 
@@ -52,13 +52,12 @@ interface AddCareerHistoryModalProps {
 	athleteId: string;
 	initialValues?: {
 		id: string;
-		clubName: string;
+		clubId: string | null;
+		nationalTeamId: string | null;
 		startDate: Date | string | null;
 		endDate: Date | string | null;
 		position: string | null;
 		achievements: string | null;
-		wasNationalTeam: boolean;
-		nationalTeamLevel: string | null;
 		notes: string | null;
 	};
 }
@@ -74,7 +73,8 @@ export const AddCareerHistoryModal =
 			const form = useZodForm({
 				schema: careerHistorySchema,
 				defaultValues: {
-					clubName: initialValues?.clubName ?? "",
+					clubId: initialValues?.clubId ?? null,
+					nationalTeamId: initialValues?.nationalTeamId ?? null,
 					startDate: initialValues?.startDate
 						? new Date(initialValues.startDate)
 						: null,
@@ -83,19 +83,17 @@ export const AddCareerHistoryModal =
 						: null,
 					position: initialValues?.position ?? "",
 					achievements: initialValues?.achievements ?? "",
-					wasNationalTeam: initialValues?.wasNationalTeam ?? false,
-					nationalTeamLevel: initialValues?.nationalTeamLevel ?? "",
 					notes: initialValues?.notes ?? "",
 				},
 			});
 
-			const wasNationalTeam = form.watch("wasNationalTeam");
+			const isNationalTeam = !!form.watch("nationalTeamId");
 
 			const handleTabChange = (value: string) => {
-				form.setValue("wasNationalTeam", value === "national");
-				if (!isEditing) {
-					form.setValue("clubName", "");
-					form.setValue("nationalTeamLevel", "");
+				if (value === "national") {
+					form.setValue("clubId", null);
+				} else {
+					form.setValue("nationalTeamId", null);
 				}
 			};
 
@@ -129,15 +127,12 @@ export const AddCareerHistoryModal =
 
 			const onSubmit = form.handleSubmit((data: CareerHistoryFormData) => {
 				const payload = {
-					clubName: data.clubName,
+					clubId: data.clubId ?? undefined,
+					nationalTeamId: data.nationalTeamId ?? undefined,
 					startDate: data.startDate ?? undefined,
 					endDate: data.endDate ?? undefined,
 					position: data.position || undefined,
 					achievements: data.achievements || undefined,
-					wasNationalTeam: data.wasNationalTeam,
-					nationalTeamLevel: data.wasNationalTeam
-						? data.nationalTeamLevel || undefined
-						: undefined,
 					notes: data.notes || undefined,
 				};
 
@@ -171,9 +166,9 @@ export const AddCareerHistoryModal =
 					onAnimationEndCapture={modal.handleAnimationEndCapture}
 				>
 					<div className="space-y-6">
-						{/* Type Selector */}
+						{/* TODO: Implement club/nationalTeam selectors */}
 						<Tabs
-							defaultValue={wasNationalTeam ? "national" : "club"}
+							defaultValue={isNationalTeam ? "national" : "club"}
 							onValueChange={handleTabChange}
 						>
 							<TabsList className="grid w-full grid-cols-2">
@@ -188,67 +183,21 @@ export const AddCareerHistoryModal =
 							</TabsList>
 
 							<TabsContent value="club" className="mt-4">
-								<FormField
-									control={form.control}
-									name="clubName"
-									render={({ field }) => (
-										<FormItem asChild>
-											<Field>
-												<FormLabel>{t("career.clubName")}</FormLabel>
-												<FormControl>
-													<Input
-														placeholder={t("career.clubNamePlaceholder")}
-														{...field}
-													/>
-												</FormControl>
-												<FormMessage />
-											</Field>
-										</FormItem>
-									)}
-								/>
+								<div className="rounded-lg border border-dashed p-4 text-center text-muted-foreground text-sm">
+									{t("career.selectClubPlaceholder", {
+										defaultValue:
+											"Club selector pendiente. Configura clubs en la sección de configuración.",
+									})}
+								</div>
 							</TabsContent>
 
-							<TabsContent value="national" className="mt-4 space-y-4">
-								<FormField
-									control={form.control}
-									name="clubName"
-									render={({ field }) => (
-										<FormItem asChild>
-											<Field>
-												<FormLabel>{t("career.nationalTeam")}</FormLabel>
-												<FormControl>
-													<Input
-														placeholder={t("career.nationalTeamPlaceholder")}
-														{...field}
-													/>
-												</FormControl>
-												<FormMessage />
-											</Field>
-										</FormItem>
-									)}
-								/>
-								<FormField
-									control={form.control}
-									name="nationalTeamLevel"
-									render={({ field }) => (
-										<FormItem asChild>
-											<Field>
-												<FormLabel>{t("career.categoryLevel")}</FormLabel>
-												<FormControl>
-													<Input
-														placeholder={t("career.categoryLevelPlaceholder")}
-														{...field}
-														value={field.value ?? ""}
-													/>
-												</FormControl>
-												<FormDescription>
-													{t("career.categoryLevelDesc")}
-												</FormDescription>
-												<FormMessage />
-											</Field>
-										</FormItem>
-									)}
-								/>
+							<TabsContent value="national" className="mt-4">
+								<div className="rounded-lg border border-dashed p-4 text-center text-muted-foreground text-sm">
+									{t("career.selectNationalTeamPlaceholder", {
+										defaultValue:
+											"Selector de selección pendiente. Configura selecciones en la sección de configuración.",
+									})}
+								</div>
 							</TabsContent>
 						</Tabs>
 

@@ -7,6 +7,7 @@
 	"view": "Ver entrenador",
 	"deleteAction": "Eliminar entrenador",
 	"search": "Buscar entrenadores...",
+	"showArchived": "Mostrar archivados",
 	"filters": {
 		"all": "Todos",
 		"active": "Activos",

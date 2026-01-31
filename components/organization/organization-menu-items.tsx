@@ -333,6 +333,12 @@ export function OrganizationMenuItems(): React.JSX.Element {
 			icon: LayoutDashboardIcon,
 			items: [
 				{
+					label: t("institutions"),
+					href: `${basePath}/institutions`,
+					icon: ShieldIcon,
+					// No feature flag - institutions management is always available
+				},
+				{
 					label: t("ageCategories"),
 					href: `${basePath}/age-categories`,
 					icon: TagsIcon,
@@ -398,26 +404,34 @@ export function OrganizationMenuItems(): React.JSX.Element {
 		isRestrictedMember ? restrictedMemberMenuGroups : adminMenuGroups,
 	);
 
-	// Initialize open groups from localStorage or defaults
-	const [openGroups, setOpenGroups] = React.useState<Set<string>>(() => {
-		if (typeof window === "undefined") {
-			return new Set(
-				menuGroups.filter((g) => g.defaultOpen).map((g) => g.label),
-			);
-		}
+	// Initialize open groups with defaults (consistent for SSR and client hydration)
+	const [openGroups, setOpenGroups] = React.useState<Set<string>>(
+		() => new Set(menuGroups.filter((g) => g.defaultOpen).map((g) => g.label)),
+	);
+
+	// Track if we've restored from localStorage to avoid overwriting on first render
+	const hasRestoredRef = React.useRef(false);
+
+	// Restore from localStorage after hydration (client-side only)
+	React.useEffect(() => {
+		if (hasRestoredRef.current) return;
+		hasRestoredRef.current = true;
+
 		try {
 			const stored = localStorage.getItem(STORAGE_KEY);
 			if (stored) {
-				return new Set(JSON.parse(stored));
+				setOpenGroups(new Set(JSON.parse(stored)));
 			}
 		} catch {
 			// Ignore localStorage errors
 		}
-		return new Set(menuGroups.filter((g) => g.defaultOpen).map((g) => g.label));
-	});
+	}, []);
 
 	// Persist open groups to localStorage
 	React.useEffect(() => {
+		// Don't persist until we've restored (to avoid overwriting stored state)
+		if (!hasRestoredRef.current) return;
+
 		try {
 			localStorage.setItem(STORAGE_KEY, JSON.stringify([...openGroups]));
 		} catch {

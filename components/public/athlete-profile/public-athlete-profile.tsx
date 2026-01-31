@@ -82,7 +82,12 @@ interface AthleteData {
 		jerseyNumber: number | null;
 		bio: string | null;
 		yearsOfExperience: number | null;
-		currentClub: string | null;
+		currentClub: { id: string; name: string } | null;
+		currentNationalTeam: {
+			id: string;
+			name: string;
+			category: string | null;
+		} | null;
 		category: string | null;
 		residenceCity: string | null;
 		residenceCountry: string | null;
@@ -106,13 +111,12 @@ interface AthleteData {
 	};
 	careerHistory: Array<{
 		id: string;
-		clubName: string;
+		club: { id: string; name: string } | null;
+		nationalTeam: { id: string; name: string; category: string | null } | null;
 		startDate: Date | null;
 		endDate: Date | null;
 		position: string | null;
 		achievements: string | null;
-		wasNationalTeam: boolean;
-		nationalTeamLevel: string | null;
 	}>;
 	languages: Array<{
 		id: string;
@@ -306,7 +310,9 @@ export function PublicAthleteProfile({ data }: { data: AthleteData }) {
 											</span>
 										)}
 										{athlete.position && athlete.currentClub && <span>•</span>}
-										{athlete.currentClub && <span>{athlete.currentClub}</span>}
+										{athlete.currentClub && (
+											<span>{athlete.currentClub.name}</span>
+										)}
 									</div>
 								</div>
 
@@ -463,7 +469,7 @@ export function PublicAthleteProfile({ data }: { data: AthleteData }) {
 														"size-2.5 rounded-full",
 														!entry.endDate
 															? "bg-green-500"
-															: entry.wasNationalTeam
+															: entry.nationalTeam
 																? "bg-amber-500"
 																: "bg-muted-foreground/40",
 													)}
@@ -474,14 +480,16 @@ export function PublicAthleteProfile({ data }: { data: AthleteData }) {
 												<div className="flex items-start justify-between gap-2">
 													<div>
 														<h4 className="font-medium text-sm">
-															{entry.clubName}
-															{entry.wasNationalTeam && (
+															{entry.club?.name ||
+																entry.nationalTeam?.name ||
+																"-"}
+															{entry.nationalTeam && (
 																<Badge
 																	variant="secondary"
 																	className="ml-2 bg-amber-100 text-amber-800 text-[10px] dark:bg-amber-900/30 dark:text-amber-300"
 																>
 																	<TrophyIcon className="mr-1 size-2.5" />
-																	{entry.nationalTeamLevel || "Selección"}
+																	{entry.nationalTeam.category || "Selección"}
 																</Badge>
 															)}
 														</h4>

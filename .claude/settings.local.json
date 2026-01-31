@@ -73,7 +73,8 @@
 			"Bash(. /Users/ianaya89/Development/goat-os/.env)",
 			"Bash(set +a)",
 			"Bash(awk:*)",
-			"Bash(git checkout:*)"
+			"Bash(git checkout:*)",
+			"Bash(xargs:*)"
 		]
 	}
 }

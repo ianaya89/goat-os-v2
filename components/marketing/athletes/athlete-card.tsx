@@ -33,7 +33,7 @@ interface AthleteCardProps {
 		residenceCountry: string | null;
 		birthDate: Date | null;
 		yearsOfExperience: number | null;
-		currentClub: string | null;
+		currentClub: { id: string; name: string } | null;
 		opportunityTypes: AthleteOpportunityType[] | null;
 		user: {
 			name: string;
@@ -103,7 +103,7 @@ export function AthleteCard({ athlete }: AthleteCardProps) {
 			{/* Current Club */}
 			{athlete.currentClub && (
 				<p className="truncate text-muted-foreground text-sm">
-					{athlete.currentClub}
+					{athlete.currentClub.name}
 				</p>
 			)}
 

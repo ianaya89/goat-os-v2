@@ -26,6 +26,7 @@ export const listAthletesSchema = z.object({
 	query: z.string().optional(),
 	sortBy: AthleteSortField.default("createdAt"),
 	sortOrder: z.enum(["asc", "desc"]).default("asc"),
+	includeArchived: z.boolean().default(false),
 	filters: z
 		.object({
 			status: z.array(z.nativeEnum(AthleteStatus)).optional(),
@@ -156,6 +157,26 @@ export const deleteAthleteSchema = z.object({
 	id: z.string().uuid(),
 });
 
+// Archive athlete (soft delete)
+export const archiveAthleteSchema = z.object({
+	id: z.string().uuid(),
+});
+
+// Unarchive athlete (restore from archive)
+export const unarchiveAthleteSchema = z.object({
+	id: z.string().uuid(),
+});
+
+// Bulk archive athletes
+export const bulkArchiveAthletesSchema = z.object({
+	ids: z.array(z.string().uuid()).min(1),
+});
+
+// Bulk unarchive athletes
+export const bulkUnarchiveAthletesSchema = z.object({
+	ids: z.array(z.string().uuid()).min(1),
+});
+
 // Bulk delete athletes
 export const bulkDeleteAthletesSchema = z.object({
 	ids: z.array(z.string().uuid()).min(1),
@@ -247,25 +268,23 @@ export const deleteFitnessTestSchema = z.object({
 
 export const createCareerHistorySchema = z.object({
 	athleteId: z.string().uuid(),
-	clubName: z.string().trim().min(1).max(200),
+	clubId: z.string().uuid().optional(), // Either clubId OR nationalTeamId should be set
+	nationalTeamId: z.string().uuid().optional(),
 	startDate: z.coerce.date().optional(),
 	endDate: z.coerce.date().optional(),
 	position: z.string().trim().max(100).optional(),
 	achievements: z.string().trim().max(2000).optional(),
-	wasNationalTeam: z.boolean().default(false),
-	nationalTeamLevel: z.string().trim().max(50).optional(), // "U17", "U20", "Senior"
 	notes: z.string().trim().max(1000).optional(),
 });
 
 export const updateCareerHistorySchema = z.object({
 	id: z.string().uuid(),
-	clubName: z.string().trim().min(1).max(200).optional(),
+	clubId: z.string().uuid().optional().nullable(),
+	nationalTeamId: z.string().uuid().optional().nullable(),
 	startDate: z.coerce.date().optional().nullable(),
 	endDate: z.coerce.date().optional().nullable(),
 	position: z.string().trim().max(100).optional().nullable(),
 	achievements: z.string().trim().max(2000).optional().nullable(),
-	wasNationalTeam: z.boolean().optional(),
-	nationalTeamLevel: z.string().trim().max(50).optional().nullable(),
 	notes: z.string().trim().max(1000).optional().nullable(),
 });
 

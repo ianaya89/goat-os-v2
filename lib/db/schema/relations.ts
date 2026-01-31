@@ -22,6 +22,7 @@ import {
 	billingEventTable,
 	cashMovementTable,
 	cashRegisterTable,
+	clubTable,
 	coachAchievementTable,
 	coachEducationTable,
 	coachSportsExperienceTable,
@@ -73,6 +74,7 @@ import {
 	locationTable,
 	matchTable,
 	memberTable,
+	nationalTeamTable,
 	orderItemTable,
 	orderTable,
 	organizationFeatureTable,
@@ -97,6 +99,7 @@ import {
 	teamStaffTable,
 	teamTable,
 	trainingEquipmentTable,
+	trainingPaymentSessionTable,
 	trainingPaymentTable,
 	trainingSessionAthleteTable,
 	trainingSessionCoachTable,
@@ -145,6 +148,8 @@ export const organizationRelations = relations(
 		orders: many(orderTable),
 		billingEvents: many(billingEventTable),
 		aiChats: many(aiChatTable),
+		clubs: many(clubTable),
+		nationalTeams: many(nationalTeamTable),
 		coaches: many(coachTable),
 		athletes: many(athleteTable),
 		creditBalance: one(creditBalanceTable),
@@ -179,6 +184,31 @@ export const organizationFeatureRelations = relations(
 			fields: [organizationFeatureTable.organizationId],
 			references: [organizationTable.id],
 		}),
+	}),
+);
+
+// Club relations
+export const clubRelations = relations(clubTable, ({ one, many }) => ({
+	organization: one(organizationTable, {
+		fields: [clubTable.organizationId],
+		references: [organizationTable.id],
+	}),
+	athletes: many(athleteTable),
+	athleteCareerHistory: many(athleteCareerHistoryTable),
+	coachSportsExperience: many(coachSportsExperienceTable),
+}));
+
+// National Team relations
+export const nationalTeamRelations = relations(
+	nationalTeamTable,
+	({ one, many }) => ({
+		organization: one(organizationTable, {
+			fields: [nationalTeamTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		athletes: many(athleteTable),
+		athleteCareerHistory: many(athleteCareerHistoryTable),
+		coachSportsExperience: many(coachSportsExperienceTable),
 	}),
 );
 
@@ -337,6 +367,14 @@ export const coachSportsExperienceRelations = relations(
 			fields: [coachSportsExperienceTable.coachId],
 			references: [coachTable.id],
 		}),
+		club: one(clubTable, {
+			fields: [coachSportsExperienceTable.clubId],
+			references: [clubTable.id],
+		}),
+		nationalTeam: one(nationalTeamTable, {
+			fields: [coachSportsExperienceTable.nationalTeamId],
+			references: [nationalTeamTable.id],
+		}),
 	}),
 );
 
@@ -370,6 +408,14 @@ export const athleteRelations = relations(athleteTable, ({ one, many }) => ({
 	user: one(userTable, {
 		fields: [athleteTable.userId],
 		references: [userTable.id],
+	}),
+	currentClub: one(clubTable, {
+		fields: [athleteTable.currentClubId],
+		references: [clubTable.id],
+	}),
+	currentNationalTeam: one(nationalTeamTable, {
+		fields: [athleteTable.currentNationalTeamId],
+		references: [nationalTeamTable.id],
 	}),
 	groupMemberships: many(athleteGroupMemberTable),
 	sessionAssignments: many(trainingSessionAthleteTable),
@@ -481,6 +527,8 @@ export const trainingSessionRelations = relations(
 		athletes: many(trainingSessionAthleteTable),
 		attendances: many(attendanceTable),
 		payments: many(trainingPaymentTable),
+		// New: payments via junction table (for packages)
+		paymentLinks: many(trainingPaymentSessionTable),
 		evaluations: many(athleteEvaluationTable),
 		exceptions: many(recurringSessionExceptionTable),
 		feedback: many(athleteSessionFeedbackTable),
@@ -551,22 +599,44 @@ export const attendanceRelations = relations(attendanceTable, ({ one }) => ({
 // Training Payment relations
 export const trainingPaymentRelations = relations(
 	trainingPaymentTable,
-	({ one }) => ({
+	({ one, many }) => ({
 		organization: one(organizationTable, {
 			fields: [trainingPaymentTable.organizationId],
 			references: [organizationTable.id],
 		}),
+		// Legacy: single session link (for backwards compatibility)
 		session: one(trainingSessionTable, {
 			fields: [trainingPaymentTable.sessionId],
 			references: [trainingSessionTable.id],
 		}),
+		// New: multiple sessions via junction table (for packages)
+		sessions: many(trainingPaymentSessionTable),
 		athlete: one(athleteTable, {
 			fields: [trainingPaymentTable.athleteId],
 			references: [athleteTable.id],
 		}),
+		service: one(serviceTable, {
+			fields: [trainingPaymentTable.serviceId],
+			references: [serviceTable.id],
+		}),
 		recordedByUser: one(userTable, {
 			fields: [trainingPaymentTable.recordedBy],
 			references: [userTable.id],
+		}),
+	}),
+);
+
+// Training Payment Session relations (junction table)
+export const trainingPaymentSessionRelations = relations(
+	trainingPaymentSessionTable,
+	({ one }) => ({
+		payment: one(trainingPaymentTable, {
+			fields: [trainingPaymentSessionTable.paymentId],
+			references: [trainingPaymentTable.id],
+		}),
+		session: one(trainingSessionTable, {
+			fields: [trainingPaymentSessionTable.sessionId],
+			references: [trainingSessionTable.id],
 		}),
 	}),
 );
@@ -584,6 +654,7 @@ export const serviceRelations = relations(serviceTable, ({ one, many }) => ({
 	priceHistory: many(servicePriceHistoryTable),
 	athleteGroups: many(athleteGroupTable),
 	trainingSessions: many(trainingSessionTable),
+	payments: many(trainingPaymentTable),
 }));
 
 // Service Price History relations
@@ -661,6 +732,14 @@ export const athleteCareerHistoryRelations = relations(
 		athlete: one(athleteTable, {
 			fields: [athleteCareerHistoryTable.athleteId],
 			references: [athleteTable.id],
+		}),
+		club: one(clubTable, {
+			fields: [athleteCareerHistoryTable.clubId],
+			references: [clubTable.id],
+		}),
+		nationalTeam: one(nationalTeamTable, {
+			fields: [athleteCareerHistoryTable.nationalTeamId],
+			references: [nationalTeamTable.id],
 		}),
 	}),
 );

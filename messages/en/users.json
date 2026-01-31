@@ -49,6 +49,17 @@
 		"message": "Are you sure you want to remove this user from the organization? Their coach and athlete profiles will also be removed.",
 		"confirm": "Remove"
 	},
+	"bulkActions": {
+		"noSelected": "No users selected.",
+		"remove": "Remove from organization",
+		"removed": "{count} user(s) removed from organization.",
+		"removeFailed": "Failed to remove users."
+	},
+	"bulkRemove": {
+		"title": "Remove users?",
+		"message": "Are you sure you want to remove {count} user(s) from the organization? Their coach and athlete profiles will also be removed.",
+		"confirm": "Remove"
+	},
 	"ban": {
 		"title": "Ban User",
 		"subtitle": "Ban this user from the platform",

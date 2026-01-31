@@ -36,9 +36,11 @@ import { ConfirmationModal } from "@/components/confirmation-modal";
 import { OrganizationBanUserModal } from "@/components/organization/organization-ban-user-modal";
 import { OrganizationUserFormModal } from "@/components/organization/organization-user-form-modal";
 import { OrganizationUserModal } from "@/components/organization/organization-user-modal";
+import { OrganizationUsersBulkActions } from "@/components/organization/organization-users-bulk-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+	createSelectionColumn,
 	DataTable,
 	type FilterConfig,
 	SortableColumnHeader,
@@ -97,6 +99,7 @@ const roleColors: Record<string, string> = {
 
 export function OrganizationUsersTable(): React.JSX.Element {
 	const t = useTranslations("users");
+	const [rowSelection, setRowSelection] = React.useState({});
 
 	const [searchQuery, setSearchQuery] = useQueryState(
 		"query",
@@ -298,6 +301,7 @@ export function OrganizationUsersTable(): React.JSX.Element {
 	};
 
 	const columns: ColumnDef<OrganizationUser>[] = [
+		createSelectionColumn<OrganizationUser>(),
 		{
 			accessorKey: "name",
 			header: ({ column }) => (
@@ -633,16 +637,22 @@ export function OrganizationUsersTable(): React.JSX.Element {
 			emptyMessage={t("table.noUsers")}
 			enableFilters
 			enablePagination
+			enableRowSelection
 			enableSearch
 			filters={userFilters}
 			loading={isPending}
 			onFiltersChange={handleFiltersChange}
 			onPageIndexChange={setPageIndex}
 			onPageSizeChange={setPageSize}
+			onRowSelectionChange={setRowSelection}
 			onSearchQueryChange={handleSearchQueryChange}
 			onSortingChange={handleSortingChange}
 			pageIndex={pageIndex || 0}
 			pageSize={pageSize || appConfig.pagination.defaultLimit}
+			renderBulkActions={(table) => (
+				<OrganizationUsersBulkActions table={table} />
+			)}
+			rowSelection={rowSelection}
 			searchPlaceholder={t("search")}
 			searchQuery={searchQuery || ""}
 			defaultSorting={DEFAULT_SORTING}

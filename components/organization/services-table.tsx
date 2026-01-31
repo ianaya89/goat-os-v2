@@ -18,9 +18,13 @@ import { ConfirmationModal } from "@/components/confirmation-modal";
 import { ServiceModal } from "@/components/organization/service-modal";
 import { ServicePriceHistoryModal } from "@/components/organization/service-price-history-modal";
 import { ServicePriceUpdateModal } from "@/components/organization/service-price-update-modal";
+import { ServicesBulkActions } from "@/components/organization/services-bulk-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DataTable } from "@/components/ui/custom/data-table";
+import {
+	createSelectionColumn,
+	DataTable,
+} from "@/components/ui/custom/data-table";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -53,6 +57,7 @@ type ServiceRow = {
 export function ServicesTable(): React.JSX.Element {
 	const t = useTranslations("finance.services");
 	const utils = trpc.useUtils();
+	const [rowSelection, setRowSelection] = React.useState({});
 
 	const [searchQuery, setSearchQuery] = useQueryState("q", {
 		defaultValue: "",
@@ -100,6 +105,7 @@ export function ServicesTable(): React.JSX.Element {
 
 	const columns: ColumnDef<ServiceRow>[] = React.useMemo(
 		() => [
+			createSelectionColumn<ServiceRow>(),
 			{
 				accessorKey: "name",
 				header: t("table.name"),
@@ -211,6 +217,7 @@ export function ServicesTable(): React.JSX.Element {
 			columns={columns}
 			totalCount={data?.total ?? 0}
 			loading={isPending}
+			enableRowSelection
 			enableSearch
 			searchQuery={searchQuery ?? ""}
 			onSearchQueryChange={setSearchQuery}
@@ -220,6 +227,9 @@ export function ServicesTable(): React.JSX.Element {
 			pageSize={pageSize}
 			enablePagination
 			emptyMessage={t("table.noServices")}
+			rowSelection={rowSelection}
+			onRowSelectionChange={setRowSelection}
+			renderBulkActions={(table) => <ServicesBulkActions table={table} />}
 			toolbarActions={
 				<Button size="sm" onClick={() => NiceModal.show(ServiceModal)}>
 					<PlusIcon className="mr-1.5 h-4 w-4" />

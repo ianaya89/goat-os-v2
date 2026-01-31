@@ -195,12 +195,12 @@
 		"viewAllGroups": "Ver todos los grupos"
 	},
 	"locationUsage": {
-		"title": "Uso de Ubicaciones",
+		"title": "Uso de Locaciones",
 		"noData": "No hay datos disponibles",
 		"thisWeek": "Esta semana",
 		"sessions": "Sesiones",
-		"locations": "Ubicaciones",
-		"ranking": "Ubicaciones mas usadas",
+		"locations": "Locaciones",
+		"ranking": "Locaciones mas usadas",
 		"sessionCount": "{count, plural, one {# sesion} other {# sesiones}}",
 		"noSessions": "No hay sesiones esta semana",
 		"viewCalendar": "Ver calendario",
