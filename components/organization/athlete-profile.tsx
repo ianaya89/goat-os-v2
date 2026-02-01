@@ -456,19 +456,6 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 				</div>
 
 				<TabsContent value="sessions" className="space-y-4">
-					<div className="flex justify-end">
-						<Button
-							size="sm"
-							onClick={() =>
-								NiceModal.show(TrainingSessionsModal, {
-									initialAthleteIds: [athleteId],
-								})
-							}
-						>
-							<PlusIcon className="mr-2 size-4" />
-							{t("sessions.newSession")}
-						</Button>
-					</div>
 					<SessionsListTable
 						sessions={sessions}
 						initialAthleteIds={[athleteId]}
@@ -487,22 +474,6 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 								athleteId,
 								athleteName: athlete.user?.name,
 								sessions: completedSessions,
-								initialSessionId: sessionId,
-							});
-						}}
-						onAddAttendance={(sessionId) => {
-							const availableSessions = sessions
-								.filter((s) => s.status !== "cancelled")
-								.map((s) => ({
-									id: s.id,
-									title: s.title,
-									startTime: new Date(s.startTime),
-									status: s.status,
-								}));
-							NiceModal.show(AddAttendanceModal, {
-								athleteId,
-								athleteName: athlete.user?.name,
-								sessions: availableSessions,
 								initialSessionId: sessionId,
 							});
 						}}

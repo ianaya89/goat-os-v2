@@ -19,6 +19,7 @@
 		"byLocation": "By location"
 	},
 	"table": {
+		"searchSessions": "Search sessions...",
 		"title": "Title",
 		"date": "Date",
 		"time": "Time",

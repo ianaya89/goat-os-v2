@@ -525,15 +525,6 @@ export function CoachProfile({ coachId }: CoachProfileProps) {
 				</TabsContent>
 
 				<TabsContent value="sessions" className="space-y-4">
-					<div className="flex justify-end">
-						<Button
-							size="sm"
-							onClick={() => NiceModal.show(TrainingSessionsModal, {})}
-						>
-							<PlusIcon className="mr-2 size-4" />
-							{t("profile.sessions.newSession")}
-						</Button>
-					</div>
 					<SessionsListTable
 						sessions={sessions}
 						emptyStateMessage={t("profile.sessions.noSessions")}

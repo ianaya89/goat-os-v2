@@ -35,7 +35,7 @@ export function AthleteProfileActions({
 	isArchived,
 	onEdit,
 }: AthleteProfileActionsProps) {
-	const t = useTranslations("organization.athletes");
+	const t = useTranslations("athletes");
 	const tCommon = useTranslations("common");
 	const tCommonConfirmation = useTranslations("common.confirmation");
 	const tCommonSuccess = useTranslations("common.success");

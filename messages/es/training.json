@@ -19,6 +19,7 @@
 		"byLocation": "Por ubicación"
 	},
 	"table": {
+		"searchSessions": "Buscar sesiones...",
 		"title": "Título",
 		"date": "Fecha",
 		"time": "Hora",

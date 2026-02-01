@@ -534,12 +534,6 @@ export function GroupProfile({ groupId }: GroupProfileProps) {
 				</TabsContent>
 
 				<TabsContent value="sessions" className="space-y-4">
-					<div className="flex justify-end">
-						<Button onClick={handleCreateSession} size="sm">
-							<PlusIcon className="mr-2 size-4" />
-							{t("profile.newSession")}
-						</Button>
-					</div>
 					<SessionsListTable
 						sessions={sessions}
 						isLoading={isLoadingSessions}

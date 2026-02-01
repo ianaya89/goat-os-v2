@@ -26,6 +26,7 @@ import {
 	PlusCircleIcon,
 	PlusIcon,
 	RefreshCwIcon,
+	SearchIcon,
 	StarIcon,
 	Trash2Icon,
 	XCircleIcon,
@@ -55,6 +56,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Input } from "@/components/ui/input";
 import {
 	Popover,
 	PopoverContent,
@@ -158,8 +160,6 @@ interface SessionsListTableProps {
 	onDeleteSession?: (sessionId: string, sessionTitle: string) => void;
 	/** Optional callback for add evaluation action. If not provided, option won't show. Only shown for completed sessions. */
 	onAddEvaluation?: (sessionId: string) => void;
-	/** Optional callback for add attendance action. If not provided, option won't show. */
-	onAddAttendance?: (sessionId: string) => void;
 	/** Optional callback for status change. If not provided, change status option won't show */
 	onChangeStatus?: (sessionId: string, status: string) => void;
 }
@@ -174,12 +174,12 @@ export function SessionsListTable({
 	maxItems,
 	onDeleteSession,
 	onAddEvaluation,
-	onAddAttendance,
 	onChangeStatus,
 }: SessionsListTableProps) {
 	const t = useTranslations("athletes.groups.profile");
 	const tTraining = useTranslations("training");
 	const [periodFilter, setPeriodFilter] = React.useState<PeriodFilter>("all");
+	const [searchQuery, setSearchQuery] = React.useState("");
 
 	const handleCreateSession = () => {
 		NiceModal.show(TrainingSessionsModal, {
@@ -188,22 +188,35 @@ export function SessionsListTable({
 		});
 	};
 
-	// Filter sessions by period
+	// Filter sessions by period and search query
 	const filteredSessions = React.useMemo(() => {
 		const dateRange = getDateRangeForPeriod(periodFilter);
-		if (!dateRange) return sessions;
+		const normalizedSearch = searchQuery.toLowerCase().trim();
 
 		return sessions.filter((session) => {
-			const sessionDate =
-				typeof session.startTime === "string"
-					? new Date(session.startTime)
-					: session.startTime;
-			return isWithinInterval(sessionDate, {
-				start: dateRange.from,
-				end: dateRange.to,
-			});
+			// Filter by search query
+			if (
+				normalizedSearch &&
+				!session.title.toLowerCase().includes(normalizedSearch)
+			) {
+				return false;
+			}
+
+			// Filter by period
+			if (dateRange) {
+				const sessionDate =
+					typeof session.startTime === "string"
+						? new Date(session.startTime)
+						: session.startTime;
+				return isWithinInterval(sessionDate, {
+					start: dateRange.from,
+					end: dateRange.to,
+				});
+			}
+
+			return true;
 		});
-	}, [sessions, periodFilter]);
+	}, [sessions, periodFilter, searchQuery]);
 
 	if (isLoading) {
 		return (
@@ -246,73 +259,89 @@ export function SessionsListTable({
 
 	return (
 		<div className="space-y-3">
-			{/* Period Filter */}
-			<div className="flex items-center gap-2">
-				<Popover>
-					<PopoverTrigger asChild>
-						<Button
-							variant="outline"
-							size="sm"
-							className="h-8 justify-start border-dashed"
-						>
-							<PlusCircleIcon />
-							{tTraining("table.period")}
-							{periodFilter !== "all" && selectedOption && (
-								<>
-									<Separator orientation="vertical" className="mx-2 h-4" />
-									<Badge
-										variant="secondary"
-										className="rounded-sm px-1 font-normal"
-									>
-										{selectedOption.label}
-									</Badge>
-								</>
-							)}
-						</Button>
-					</PopoverTrigger>
-					<PopoverContent className="w-[200px] p-0" align="start">
-						<Command>
-							<CommandList>
-								<CommandGroup>
-									{periodOptions.map((option) => {
-										const isSelected = periodFilter === option.value;
-										return (
-											<CommandItem
-												key={option.value}
-												onSelect={() => setPeriodFilter(option.value)}
-											>
-												<div
-													className={cn(
-														"flex size-4 items-center justify-center rounded-[4px] border",
-														isSelected
-															? "border-primary bg-primary text-primary-foreground"
-															: "border-input [&_svg]:invisible",
-													)}
-												>
-													<CheckIcon className="size-3.5 text-primary-foreground" />
-												</div>
-												<span>{option.label}</span>
-											</CommandItem>
-										);
-									})}
-								</CommandGroup>
-								{periodFilter !== "all" && (
+			{/* Search, Period Filter, and Create Button */}
+			<div className="flex items-center justify-between gap-2">
+				<div className="flex items-center gap-2">
+					<div className="relative">
+						<SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+						<Input
+							type="text"
+							placeholder={tTraining("table.searchSessions")}
+							value={searchQuery}
+							onChange={(e) => setSearchQuery(e.target.value)}
+							className="h-8 w-[200px] pl-8 text-sm"
+						/>
+					</div>
+					<Popover>
+						<PopoverTrigger asChild>
+							<Button
+								variant="outline"
+								size="sm"
+								className="h-8 justify-start border-dashed"
+							>
+								<PlusCircleIcon />
+								{tTraining("table.period")}
+								{periodFilter !== "all" && selectedOption && (
 									<>
-										<CommandSeparator />
-										<CommandGroup>
-											<CommandItem
-												onSelect={() => setPeriodFilter("all")}
-												className="justify-center text-center"
-											>
-												{tTraining("table.allTime")}
-											</CommandItem>
-										</CommandGroup>
+										<Separator orientation="vertical" className="mx-2 h-4" />
+										<Badge
+											variant="secondary"
+											className="rounded-sm px-1 font-normal"
+										>
+											{selectedOption.label}
+										</Badge>
 									</>
 								)}
-							</CommandList>
-						</Command>
-					</PopoverContent>
-				</Popover>
+							</Button>
+						</PopoverTrigger>
+						<PopoverContent className="w-[200px] p-0" align="start">
+							<Command>
+								<CommandList>
+									<CommandGroup>
+										{periodOptions.map((option) => {
+											const isSelected = periodFilter === option.value;
+											return (
+												<CommandItem
+													key={option.value}
+													onSelect={() => setPeriodFilter(option.value)}
+												>
+													<div
+														className={cn(
+															"flex size-4 items-center justify-center rounded-[4px] border",
+															isSelected
+																? "border-primary bg-primary text-primary-foreground"
+																: "border-input [&_svg]:invisible",
+														)}
+													>
+														<CheckIcon className="size-3.5 text-primary-foreground" />
+													</div>
+													<span>{option.label}</span>
+												</CommandItem>
+											);
+										})}
+									</CommandGroup>
+									{periodFilter !== "all" && (
+										<>
+											<CommandSeparator />
+											<CommandGroup>
+												<CommandItem
+													onSelect={() => setPeriodFilter("all")}
+													className="justify-center text-center"
+												>
+													{tTraining("table.allTime")}
+												</CommandItem>
+											</CommandGroup>
+										</>
+									)}
+								</CommandList>
+							</Command>
+						</PopoverContent>
+					</Popover>
+				</div>
+				<Button onClick={handleCreateSession} size="sm" className="h-8">
+					<PlusIcon className="mr-2 size-4" />
+					{createButtonLabel ?? t("newSession")}
+				</Button>
 			</div>
 
 			{filteredSessions.length === 0 ? (
@@ -531,14 +560,6 @@ export function SessionsListTable({
 																	{t("actions.addEvaluation")}
 																</DropdownMenuItem>
 															)}
-														{onAddAttendance && (
-															<DropdownMenuItem
-																onClick={() => onAddAttendance(session.id)}
-															>
-																<CheckCircleIcon className="mr-2 size-4" />
-																{t("actions.addAttendance")}
-															</DropdownMenuItem>
-														)}
 														{onDeleteSession && (
 															<>
 																<DropdownMenuSeparator />
