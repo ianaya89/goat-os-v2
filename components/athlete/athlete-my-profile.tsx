@@ -38,24 +38,24 @@ import { AthleteAchievementsTab } from "@/components/athlete/athlete-achievement
 import { AthleteBioEditModal } from "@/components/athlete/athlete-bio-edit-modal";
 import { AthleteCareerEditModal } from "@/components/athlete/athlete-career-edit-modal";
 import { AthleteContactEditModal } from "@/components/athlete/athlete-contact-edit-modal";
-import { AthleteCoverPhotoUpload } from "@/components/athlete/athlete-cover-photo-upload";
 import { AthleteEducationEditModal } from "@/components/athlete/athlete-education-edit-modal";
 import { AthleteHealthEditModal } from "@/components/athlete/athlete-health-edit-modal";
 import { AthleteLanguagesModal } from "@/components/athlete/athlete-languages-modal";
 import { AthleteMyMedicalTab } from "@/components/athlete/athlete-my-medical-tab";
 import { AthletePhysicalEditModal } from "@/components/athlete/athlete-physical-edit-modal";
-import { AthleteProfilePhotoUpload } from "@/components/athlete/athlete-profile-photo-upload";
 import { AthleteReferencesTab } from "@/components/athlete/athlete-references-tab";
 import { AthleteResidenceEditModal } from "@/components/athlete/athlete-residence-edit-modal";
 import { AthleteSocialEditModal } from "@/components/athlete/athlete-social-edit-modal";
 import { AthleteSponsorsTab } from "@/components/athlete/athlete-sponsors-tab";
 import { AthleteVideosEditModal } from "@/components/athlete/athlete-videos-edit-modal";
-import { PublicProfileSettings } from "@/components/athlete/public-profile-settings";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CoverPhotoUpload } from "@/components/user/cover-photo-upload";
+import { ProfilePhotoUpload } from "@/components/user/profile-photo-upload";
+import { PublicProfileSettings } from "@/components/user/public-profile-settings";
 import { UserAvatar } from "@/components/user/user-avatar";
 import {
 	type AthleteOpportunityType,
@@ -153,7 +153,8 @@ export function AthleteMyProfile() {
 		<div className="space-y-6">
 			{/* Cover Photo */}
 			<Card className="overflow-hidden p-0">
-				<AthleteCoverPhotoUpload
+				<CoverPhotoUpload
+					variant="athlete"
 					coverPhotoUrl={coverPhotoQuery.data?.signedUrl}
 					editable={true}
 				/>
@@ -163,7 +164,8 @@ export function AthleteMyProfile() {
 					<div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 						<div className="flex items-end gap-4">
 							<div className="rounded-full border-4 border-background bg-background">
-								<AthleteProfilePhotoUpload
+								<ProfilePhotoUpload
+									variant="athlete"
 									userName={athlete.user?.name ?? ""}
 									currentImageUrl={athlete.user?.image}
 									size="lg"
@@ -229,15 +231,15 @@ export function AthleteMyProfile() {
 								</Link>
 							</Button>
 							<Button
-								size="sm"
+								variant="ghost"
+								size="icon"
 								onClick={() =>
 									NiceModal.show(AthleteBioEditModal, {
 										bio: athlete.bio,
 									})
 								}
 							>
-								<PencilIcon className="mr-2 size-4" />
-								Editar
+								<PencilIcon className="size-4" />
 							</Button>
 						</div>
 					</div>
@@ -332,7 +334,8 @@ export function AthleteMyProfile() {
 									Contacto
 								</CardTitle>
 								<Button
-									size="sm"
+									variant="ghost"
+									size="icon"
 									onClick={() =>
 										NiceModal.show(AthleteContactEditModal, {
 											phone: athlete.phone,
@@ -343,8 +346,7 @@ export function AthleteMyProfile() {
 										})
 									}
 								>
-									<PencilIcon className="mr-2 size-4" />
-									Editar
+									<PencilIcon className="size-4" />
 								</Button>
 							</CardHeader>
 							<CardContent className="space-y-3">
@@ -376,7 +378,8 @@ export function AthleteMyProfile() {
 									Residencia
 								</CardTitle>
 								<Button
-									size="sm"
+									variant="ghost"
+									size="icon"
 									onClick={() =>
 										NiceModal.show(AthleteResidenceEditModal, {
 											residenceCity: athlete.residenceCity,
@@ -385,8 +388,7 @@ export function AthleteMyProfile() {
 										})
 									}
 								>
-									<PencilIcon className="mr-2 size-4" />
-									Editar
+									<PencilIcon className="size-4" />
 								</Button>
 							</CardHeader>
 							<CardContent className="space-y-3">
@@ -426,7 +428,8 @@ export function AthleteMyProfile() {
 									Contacto de Padre/Tutor
 								</CardTitle>
 								<Button
-									size="sm"
+									variant="ghost"
+									size="icon"
 									onClick={() =>
 										NiceModal.show(AthleteContactEditModal, {
 											phone: athlete.phone,
@@ -437,8 +440,7 @@ export function AthleteMyProfile() {
 										})
 									}
 								>
-									<PencilIcon className="mr-2 size-4" />
-									Editar
+									<PencilIcon className="size-4" />
 								</Button>
 							</CardHeader>
 							<CardContent className="space-y-3">
@@ -489,7 +491,8 @@ export function AthleteMyProfile() {
 									Salud y Alimentacion
 								</CardTitle>
 								<Button
-									size="sm"
+									variant="ghost"
+									size="icon"
 									onClick={() =>
 										NiceModal.show(AthleteHealthEditModal, {
 											dietaryRestrictions: athlete.dietaryRestrictions,
@@ -497,8 +500,7 @@ export function AthleteMyProfile() {
 										})
 									}
 								>
-									<PencilIcon className="mr-2 size-4" />
-									Editar
+									<PencilIcon className="size-4" />
 								</Button>
 							</CardHeader>
 							<CardContent className="space-y-3">
@@ -535,15 +537,15 @@ export function AthleteMyProfile() {
 										Biografia
 									</CardTitle>
 									<Button
-										size="sm"
+										variant="ghost"
+										size="icon"
 										onClick={() =>
 											NiceModal.show(AthleteBioEditModal, {
 												bio: athlete.bio,
 											})
 										}
 									>
-										<PencilIcon className="mr-2 size-4" />
-										Editar
+										<PencilIcon className="size-4" />
 									</Button>
 								</CardHeader>
 								<CardContent>
@@ -560,7 +562,8 @@ export function AthleteMyProfile() {
 						<CardHeader className="flex flex-row items-center justify-between">
 							<CardTitle>Atributos Fisicos</CardTitle>
 							<Button
-								size="sm"
+								variant="ghost"
+								size="icon"
 								onClick={() =>
 									NiceModal.show(AthletePhysicalEditModal, {
 										height: athlete.height,
@@ -571,8 +574,7 @@ export function AthleteMyProfile() {
 									})
 								}
 							>
-								<PencilIcon className="mr-2 size-4" />
-								Editar
+								<PencilIcon className="size-4" />
 							</Button>
 						</CardHeader>
 						<CardContent>
@@ -764,15 +766,15 @@ export function AthleteMyProfile() {
 									Idiomas
 								</CardTitle>
 								<Button
-									size="sm"
+									variant="ghost"
+									size="icon"
 									onClick={() =>
 										NiceModal.show(AthleteLanguagesModal, {
 											languages: languages ?? [],
 										})
 									}
 								>
-									<PencilIcon className="mr-2 size-4" />
-									Editar
+									<PencilIcon className="size-4" />
 								</Button>
 							</div>
 						</CardHeader>
@@ -822,7 +824,8 @@ export function AthleteMyProfile() {
 										No has agregado ningún idioma
 									</p>
 									<Button
-										size="sm"
+										variant="ghost"
+										size="icon"
 										className="mt-4"
 										onClick={() =>
 											NiceModal.show(AthleteLanguagesModal, {
@@ -830,8 +833,7 @@ export function AthleteMyProfile() {
 											})
 										}
 									>
-										<PencilIcon className="mr-2 size-4" />
-										Editar
+										<PencilIcon className="size-4" />
 									</Button>
 								</div>
 							)}
@@ -849,7 +851,8 @@ export function AthleteMyProfile() {
 									Redes Sociales
 								</CardTitle>
 								<Button
-									size="sm"
+									variant="ghost"
+									size="icon"
 									onClick={() =>
 										NiceModal.show(AthleteSocialEditModal, {
 											socialInstagram: athlete.socialInstagram,
@@ -860,8 +863,7 @@ export function AthleteMyProfile() {
 										})
 									}
 								>
-									<PencilIcon className="mr-2 size-4" />
-									Editar
+									<PencilIcon className="size-4" />
 								</Button>
 							</div>
 						</CardHeader>
@@ -947,7 +949,8 @@ export function AthleteMyProfile() {
 										No has agregado tus redes sociales
 									</p>
 									<Button
-										size="sm"
+										variant="ghost"
+										size="icon"
 										className="mt-4"
 										onClick={() =>
 											NiceModal.show(AthleteSocialEditModal, {
@@ -959,8 +962,7 @@ export function AthleteMyProfile() {
 											})
 										}
 									>
-										<PencilIcon className="mr-2 size-4" />
-										Editar
+										<PencilIcon className="size-4" />
 									</Button>
 								</div>
 							)}
@@ -987,15 +989,15 @@ export function AthleteMyProfile() {
 									Videos Destacados
 								</CardTitle>
 								<Button
-									size="sm"
+									variant="ghost"
+									size="icon"
 									onClick={() =>
 										NiceModal.show(AthleteVideosEditModal, {
 											videos: athlete.youtubeVideos ?? [],
 										})
 									}
 								>
-									<PencilIcon className="mr-2 size-4" />
-									Editar
+									<PencilIcon className="size-4" />
 								</Button>
 							</div>
 						</CardHeader>
@@ -1039,7 +1041,8 @@ export function AthleteMyProfile() {
 										No hay videos destacados
 									</p>
 									<Button
-										size="sm"
+										variant="ghost"
+										size="icon"
 										className="mt-4"
 										onClick={() =>
 											NiceModal.show(AthleteVideosEditModal, {
@@ -1047,8 +1050,7 @@ export function AthleteMyProfile() {
 											})
 										}
 									>
-										<PencilIcon className="mr-2 size-4" />
-										Editar
+										<PencilIcon className="size-4" />
 									</Button>
 								</div>
 							)}
@@ -1074,11 +1076,10 @@ export function AthleteMyProfile() {
 				{/* Public Profile Tab */}
 				<TabsContent value="public">
 					<PublicProfileSettings
-						athleteId={athlete.id}
+						variant="athlete"
+						profileId={athlete.id}
 						initialIsPublic={athlete.isPublicProfile ?? false}
-						initialOpportunities={
-							(athlete.opportunityTypes as AthleteOpportunityType[]) ?? []
-						}
+						initialOpportunities={(athlete.opportunityTypes as string[]) ?? []}
 					/>
 				</TabsContent>
 			</Tabs>

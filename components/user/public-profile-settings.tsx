@@ -18,10 +18,15 @@ import { Switch } from "@/components/ui/switch";
 import {
 	type AthleteOpportunityType,
 	AthleteOpportunityTypes,
+	type CoachOpportunityType,
+	CoachOpportunityTypes,
 } from "@/lib/db/schema/enums";
 import { trpc } from "@/trpc/client";
 
-const opportunityLabels: Record<AthleteOpportunityType, string> = {
+type ProfileVariant = "athlete" | "coach";
+
+// Opportunity labels for athletes
+const athleteOpportunityLabels: Record<AthleteOpportunityType, string> = {
 	professional_team: "Buscando equipo/club profesional",
 	university_scholarship: "Buscando universidad/becas deportivas",
 	tryouts: "Abierto a pruebas/tryouts",
@@ -29,7 +34,7 @@ const opportunityLabels: Record<AthleteOpportunityType, string> = {
 	coaching: "Abierto a coaching",
 };
 
-const opportunityDescriptions: Record<AthleteOpportunityType, string> = {
+const athleteOpportunityDescriptions: Record<AthleteOpportunityType, string> = {
 	professional_team: "Indica que estas buscando unirte a un equipo profesional",
 	university_scholarship:
 		"Para atletas buscando becas deportivas en universidades",
@@ -38,20 +43,51 @@ const opportunityDescriptions: Record<AthleteOpportunityType, string> = {
 	coaching: "Abierto a recibir ofertas de coaching o entrenamiento",
 };
 
+// Opportunity labels for coaches
+const coachOpportunityLabels: Record<CoachOpportunityType, string> = {
+	head_coach: "Buscando posicion de entrenador principal",
+	assistant_coach: "Buscando posicion de asistente",
+	youth_coach: "Interesado en entrenar categorias juveniles",
+	private_coaching: "Disponible para clases particulares",
+	consultancy: "Disponible para consultorias",
+};
+
+const coachOpportunityDescriptions: Record<CoachOpportunityType, string> = {
+	head_coach: "Indica que buscas una posicion como entrenador principal",
+	assistant_coach: "Buscando oportunidades como asistente tecnico",
+	youth_coach: "Interesado en trabajar con categorias formativas",
+	private_coaching: "Disponible para sesiones de entrenamiento individual",
+	consultancy: "Abierto a proyectos de consultoria deportiva",
+};
+
 interface PublicProfileSettingsProps {
-	athleteId: string;
+	/**
+	 * Which profile type this is for
+	 */
+	variant: ProfileVariant;
+	/**
+	 * Profile ID (athlete or coach)
+	 */
+	profileId: string;
+	/**
+	 * Initial value for public profile toggle
+	 */
 	initialIsPublic: boolean;
-	initialOpportunities: AthleteOpportunityType[];
+	/**
+	 * Initial selected opportunities
+	 */
+	initialOpportunities: string[];
 }
 
 export function PublicProfileSettings({
-	athleteId,
+	variant,
+	profileId,
 	initialIsPublic,
 	initialOpportunities,
 }: PublicProfileSettingsProps) {
 	const [isPublic, setIsPublic] = useState(initialIsPublic);
 	const [selectedOpportunities, setSelectedOpportunities] =
-		useState<AthleteOpportunityType[]>(initialOpportunities);
+		useState<string[]>(initialOpportunities);
 
 	// Sync state when initial props change (e.g., after refetch)
 	useEffect(() => {
@@ -64,30 +100,50 @@ export function PublicProfileSettings({
 
 	const utils = trpc.useUtils();
 
-	const updateMutation = trpc.athlete.updateMyProfile.useMutation({
+	// Mutations based on variant
+	const athleteUpdateMutation = trpc.athlete.updateMyProfile.useMutation({
 		onSuccess: () => {
 			utils.athlete.getMyProfile.invalidate();
 		},
 		onError: (error) => {
 			toast.error(error.message);
-			// Revert on error
 			setIsPublic(initialIsPublic);
 			setSelectedOpportunities(initialOpportunities);
 		},
 	});
 
+	const coachUpdateMutation = trpc.coach.updateMyProfile.useMutation({
+		onSuccess: () => {
+			utils.coach.getMyProfile.invalidate();
+		},
+		onError: (error) => {
+			toast.error(error.message);
+			setIsPublic(initialIsPublic);
+			setSelectedOpportunities(initialOpportunities);
+		},
+	});
+
+	const isPending =
+		athleteUpdateMutation.isPending || coachUpdateMutation.isPending;
+
 	const handleTogglePublic = async (checked: boolean) => {
 		setIsPublic(checked);
-		await updateMutation.mutateAsync({
-			isPublicProfile: checked,
-		});
+		if (variant === "athlete") {
+			await athleteUpdateMutation.mutateAsync({
+				isPublicProfile: checked,
+			});
+		} else {
+			await coachUpdateMutation.mutateAsync({
+				isPublicProfile: checked,
+			});
+		}
 		toast.success(
 			checked ? "Tu perfil ahora es publico" : "Tu perfil ahora es privado",
 		);
 	};
 
 	const handleOpportunityToggle = async (
-		opportunity: AthleteOpportunityType,
+		opportunity: string,
 		checked: boolean,
 	) => {
 		const newOpportunities = checked
@@ -95,11 +151,29 @@ export function PublicProfileSettings({
 			: selectedOpportunities.filter((o) => o !== opportunity);
 
 		setSelectedOpportunities(newOpportunities);
-		await updateMutation.mutateAsync({
-			opportunityTypes: newOpportunities,
-		});
+		if (variant === "athlete") {
+			await athleteUpdateMutation.mutateAsync({
+				opportunityTypes:
+					newOpportunities as (typeof AthleteOpportunityTypes)[number][],
+			});
+		} else {
+			await coachUpdateMutation.mutateAsync({
+				opportunityTypes: newOpportunities,
+			});
+		}
 		toast.success("Oportunidades actualizadas");
 	};
+
+	// Get labels and descriptions based on variant
+	const opportunityLabels =
+		variant === "athlete" ? athleteOpportunityLabels : coachOpportunityLabels;
+	const opportunityDescriptions =
+		variant === "athlete"
+			? athleteOpportunityDescriptions
+			: coachOpportunityDescriptions;
+	const opportunityTypes =
+		variant === "athlete" ? AthleteOpportunityTypes : CoachOpportunityTypes;
+	const profilePath = variant === "athlete" ? "athlete" : "coach";
 
 	return (
 		<Card>
@@ -120,14 +194,16 @@ export function PublicProfileSettings({
 							Perfil Publico
 						</Label>
 						<p className="text-muted-foreground text-sm">
-							Permite que scouts, equipos y organizaciones vean tu perfil
+							{variant === "athlete"
+								? "Permite que scouts, equipos y organizaciones vean tu perfil"
+								: "Permite que clubes y organizaciones vean tu perfil"}
 						</p>
 					</div>
 					<Switch
 						id="public-profile"
 						checked={isPublic}
 						onCheckedChange={handleTogglePublic}
-						disabled={updateMutation.isPending}
+						disabled={isPending}
 					/>
 				</div>
 
@@ -148,7 +224,7 @@ export function PublicProfileSettings({
 								</span>
 							</div>
 							<Link
-								href={`/athlete/${athleteId}`}
+								href={`/${profilePath}/${profileId}`}
 								target="_blank"
 								className="flex items-center gap-1 font-medium text-primary text-sm hover:underline"
 							>
@@ -173,7 +249,7 @@ export function PublicProfileSettings({
 					</div>
 
 					<div className="grid gap-3">
-						{AthleteOpportunityTypes.map((opportunity) => (
+						{opportunityTypes.map((opportunity) => (
 							<div
 								key={opportunity}
 								className="flex items-start space-x-3 rounded-lg border p-4 transition-colors hover:bg-muted/50"
@@ -184,7 +260,7 @@ export function PublicProfileSettings({
 									onCheckedChange={(checked) =>
 										handleOpportunityToggle(opportunity, checked === true)
 									}
-									disabled={updateMutation.isPending}
+									disabled={isPending}
 									className="mt-0.5"
 								/>
 								<div className="flex-1 space-y-1">
@@ -192,10 +268,18 @@ export function PublicProfileSettings({
 										htmlFor={opportunity}
 										className="cursor-pointer font-medium"
 									>
-										{opportunityLabels[opportunity]}
+										{
+											opportunityLabels[
+												opportunity as keyof typeof opportunityLabels
+											]
+										}
 									</Label>
 									<p className="text-muted-foreground text-sm">
-										{opportunityDescriptions[opportunity]}
+										{
+											opportunityDescriptions[
+												opportunity as keyof typeof opportunityDescriptions
+											]
+										}
 									</p>
 								</div>
 							</div>
@@ -212,7 +296,11 @@ export function PublicProfileSettings({
 						<div className="flex flex-wrap gap-2">
 							{selectedOpportunities.map((opportunity) => (
 								<Badge key={opportunity} variant="secondary">
-									{opportunityLabels[opportunity]}
+									{
+										opportunityLabels[
+											opportunity as keyof typeof opportunityLabels
+										]
+									}
 								</Badge>
 							))}
 						</div>

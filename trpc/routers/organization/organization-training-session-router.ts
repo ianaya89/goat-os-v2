@@ -1163,6 +1163,77 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 			return { sessions, total: countResult[0]?.count ?? 0, athlete };
 		}),
 
+	// Get athlete IDs for the current coach (used to filter athletes table)
+	getMyAthleteIdsAsCoach: protectedOrganizationProcedure.query(
+		async ({ ctx }) => {
+			// First, find the coach record for the current user
+			const coach = await db.query.coachTable.findFirst({
+				where: and(
+					eq(coachTable.userId, ctx.user.id),
+					eq(coachTable.organizationId, ctx.organization.id),
+				),
+			});
+
+			if (!coach) {
+				return { athleteIds: [], coach: null };
+			}
+
+			// Get sessions assigned to this coach
+			const coachSessions = await db.query.trainingSessionCoachTable.findMany({
+				where: eq(trainingSessionCoachTable.coachId, coach.id),
+				columns: { sessionId: true },
+			});
+
+			if (coachSessions.length === 0) {
+				return { athleteIds: [], coach };
+			}
+
+			const sessionIds = coachSessions.map((cs) => cs.sessionId);
+
+			// Get sessions with their athletes and groups
+			const sessions = await db.query.trainingSessionTable.findMany({
+				where: inArray(trainingSessionTable.id, sessionIds),
+				columns: { id: true, athleteGroupId: true },
+				with: {
+					athletes: {
+						columns: { athleteId: true },
+					},
+				},
+			});
+
+			// Collect unique athlete IDs from sessions
+			const athleteIdSet = new Set<string>();
+
+			for (const session of sessions) {
+				for (const sa of session.athletes) {
+					athleteIdSet.add(sa.athleteId);
+				}
+			}
+
+			// Also get athletes from groups that the coach has trained
+			const groupIds = [
+				...new Set(
+					sessions
+						.filter((s) => s.athleteGroupId)
+						.map((s) => s.athleteGroupId!),
+				),
+			];
+
+			if (groupIds.length > 0) {
+				const groupMembers = await db.query.athleteGroupMemberTable.findMany({
+					where: inArray(athleteGroupMemberTable.groupId, groupIds),
+					columns: { athleteId: true },
+				});
+
+				for (const gm of groupMembers) {
+					athleteIdSet.add(gm.athleteId);
+				}
+			}
+
+			return { athleteIds: Array.from(athleteIdSet), coach };
+		},
+	),
+
 	// Send daily summary to coaches
 	sendDailySummary: protectedOrganizationProcedure
 		.input(

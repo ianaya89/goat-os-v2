@@ -1,7 +1,7 @@
 "use client";
 
 import NiceModal from "@ebay/nice-modal-react";
-import { CameraIcon, Loader2Icon, TrashIcon, UserIcon } from "lucide-react";
+import { CameraIcon, Loader2Icon, UserIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
@@ -10,10 +10,28 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
-interface AthleteProfilePhotoUploadProps {
+type ProfileVariant = "athlete" | "coach";
+
+interface ProfilePhotoUploadProps {
+	/**
+	 * Which profile type this upload is for - determines which tRPC endpoints to use
+	 */
+	variant: ProfileVariant;
+	/**
+	 * User's display name for initials fallback
+	 */
 	userName: string;
+	/**
+	 * Current image URL (OAuth or direct URL)
+	 */
 	currentImageUrl?: string | null;
+	/**
+	 * Callback when image is updated
+	 */
 	onImageUpdated?: () => void;
+	/**
+	 * Size of the avatar
+	 */
 	size?: "sm" | "md" | "lg" | "xl";
 }
 
@@ -24,22 +42,32 @@ const sizeClasses = {
 	xl: "size-40",
 };
 
-export function AthleteProfilePhotoUpload({
+export function ProfilePhotoUpload({
+	variant,
 	userName,
 	currentImageUrl,
 	onImageUpdated,
 	size = "lg",
-}: AthleteProfilePhotoUploadProps) {
+}: ProfilePhotoUploadProps) {
 	const utils = trpc.useUtils();
 	const [isUploading, setIsUploading] = useState(false);
 	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-	// Fetch signed URL for S3 images
-	const profilePhotoQuery = trpc.athlete.getProfilePhotoUrl.useQuery();
+	// Use the appropriate queries/mutations based on variant
+	const athletePhotoQuery = trpc.athlete.getProfilePhotoUrl.useQuery(
+		undefined,
+		{ enabled: variant === "athlete" },
+	);
+	const coachPhotoQuery = trpc.coach.getProfilePhotoUrl.useQuery(undefined, {
+		enabled: variant === "coach",
+	});
 
-	const getUploadUrlMutation =
+	const athleteUploadUrlMutation =
 		trpc.athlete.getProfilePhotoUploadUrl.useMutation();
-	const saveImageMutation = trpc.athlete.saveProfilePhoto.useMutation({
+	const coachUploadUrlMutation =
+		trpc.coach.getProfilePhotoUploadUrl.useMutation();
+
+	const athleteSaveMutation = trpc.athlete.saveProfilePhoto.useMutation({
 		onSuccess: () => {
 			toast.success("Foto de perfil actualizada");
 			utils.athlete.getProfilePhotoUrl.invalidate();
@@ -51,7 +79,19 @@ export function AthleteProfilePhotoUpload({
 		},
 	});
 
-	const removeImageMutation = trpc.athlete.removeProfilePhoto.useMutation({
+	const coachSaveMutation = trpc.coach.saveProfilePhoto.useMutation({
+		onSuccess: () => {
+			toast.success("Foto de perfil actualizada");
+			utils.coach.getProfilePhotoUrl.invalidate();
+			utils.coach.getMyProfile.invalidate();
+			onImageUpdated?.();
+		},
+		onError: (error) => {
+			toast.error(error.message || "Error al guardar la imagen");
+		},
+	});
+
+	const athleteRemoveMutation = trpc.athlete.removeProfilePhoto.useMutation({
 		onSuccess: () => {
 			toast.success("Foto de perfil eliminada");
 			setPreviewUrl(null);
@@ -63,6 +103,43 @@ export function AthleteProfilePhotoUpload({
 			toast.error(error.message || "Error al eliminar la imagen");
 		},
 	});
+
+	const coachRemoveMutation = trpc.coach.removeProfilePhoto.useMutation({
+		onSuccess: () => {
+			toast.success("Foto de perfil eliminada");
+			setPreviewUrl(null);
+			utils.coach.getProfilePhotoUrl.invalidate();
+			utils.coach.getMyProfile.invalidate();
+			onImageUpdated?.();
+		},
+		onError: (error) => {
+			toast.error(error.message || "Error al eliminar la imagen");
+		},
+	});
+
+	// Select the appropriate data based on variant
+	const profilePhotoData =
+		variant === "athlete" ? athletePhotoQuery.data : coachPhotoQuery.data;
+
+	const getUploadUrl =
+		variant === "athlete"
+			? athleteUploadUrlMutation.mutateAsync
+			: coachUploadUrlMutation.mutateAsync;
+
+	const saveImage =
+		variant === "athlete"
+			? athleteSaveMutation.mutateAsync
+			: coachSaveMutation.mutateAsync;
+
+	const removeImage =
+		variant === "athlete"
+			? athleteRemoveMutation.mutateAsync
+			: coachRemoveMutation.mutateAsync;
+
+	const isRemovePending =
+		variant === "athlete"
+			? athleteRemoveMutation.isPending
+			: coachRemoveMutation.isPending;
 
 	const { getRootProps, getInputProps } = useDropzone({
 		onDrop: (acceptedFiles) => {
@@ -82,11 +159,10 @@ export function AthleteProfilePhotoUpload({
 					setIsUploading(true);
 					try {
 						// Get upload URL
-						const { uploadUrl, imageKey } =
-							await getUploadUrlMutation.mutateAsync({
-								fileName: `${Date.now()}.png`,
-								contentType: "image/png",
-							});
+						const { uploadUrl, imageKey } = await getUploadUrl({
+							fileName: `${Date.now()}.png`,
+							contentType: "image/png",
+						});
 
 						// Upload cropped image to S3
 						const uploadResponse = await fetch(uploadUrl, {
@@ -102,7 +178,7 @@ export function AthleteProfilePhotoUpload({
 						}
 
 						// Save to database
-						await saveImageMutation.mutateAsync({ imageKey });
+						await saveImage({ imageKey });
 					} catch (_error) {
 						toast.error("Error al subir la imagen");
 						setPreviewUrl(null);
@@ -122,13 +198,13 @@ export function AthleteProfilePhotoUpload({
 	});
 
 	const handleRemoveImage = async () => {
-		await removeImageMutation.mutateAsync();
+		await removeImage();
 	};
 
 	// Use preview URL first, then S3 signed URL, then OAuth/fallback URL
 	const displayUrl =
-		previewUrl || profilePhotoQuery.data?.signedUrl || currentImageUrl;
-	const hasS3Image = profilePhotoQuery.data?.source === "s3" || !!previewUrl;
+		previewUrl || profilePhotoData?.signedUrl || currentImageUrl;
+	const hasS3Image = profilePhotoData?.source === "s3" || !!previewUrl;
 
 	const initials = userName
 		.split(" ")
@@ -138,7 +214,7 @@ export function AthleteProfilePhotoUpload({
 		.slice(0, 2);
 
 	return (
-		<div className="group relative" {...getRootProps()}>
+		<div className="group/avatar relative" {...getRootProps()}>
 			<input {...getInputProps()} />
 			<Avatar
 				className={cn(
@@ -158,7 +234,7 @@ export function AthleteProfilePhotoUpload({
 				</div>
 			)}
 
-			{/* Upload button overlay */}
+			{/* Upload button overlay - bottom right */}
 			<button
 				type="button"
 				disabled={isUploading}
@@ -174,7 +250,7 @@ export function AthleteProfilePhotoUpload({
 				/>
 			</button>
 
-			{/* Remove button - show on hover only if there's an S3 image */}
+			{/* Remove button overlay - top left, visible on hover */}
 			{hasS3Image && (
 				<button
 					type="button"
@@ -182,15 +258,17 @@ export function AthleteProfilePhotoUpload({
 						e.stopPropagation();
 						handleRemoveImage();
 					}}
-					disabled={isUploading || removeImageMutation.isPending}
-					className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-full bg-destructive/90 px-2 py-1 text-destructive-foreground text-xs opacity-0 shadow-md transition-opacity group-hover:opacity-100 disabled:opacity-50"
+					disabled={isUploading || isRemovePending}
+					className={cn(
+						"absolute top-0 left-0 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-md opacity-0 transition-all hover:scale-110 group-hover/avatar:opacity-100 disabled:pointer-events-none",
+						size === "sm" ? "size-5" : size === "md" ? "size-6" : "size-7",
+					)}
 				>
-					{removeImageMutation.isPending ? (
+					{isRemovePending ? (
 						<Loader2Icon className="size-3 animate-spin" />
 					) : (
-						<TrashIcon className="size-3" />
+						<XIcon className={size === "sm" ? "size-3" : "size-3.5"} />
 					)}
-					Eliminar
 				</button>
 			)}
 		</div>

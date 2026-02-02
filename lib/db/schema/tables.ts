@@ -888,6 +888,19 @@ export const coachTable = pgTable(
 		}).$type<AthleteSport>(),
 		specialty: text("specialty").notNull(),
 		bio: text("bio"),
+		// Social media profiles
+		socialInstagram: text("social_instagram"),
+		socialTwitter: text("social_twitter"),
+		socialTiktok: text("social_tiktok"),
+		socialLinkedin: text("social_linkedin"),
+		socialFacebook: text("social_facebook"),
+		coverPhotoKey: text("cover_photo_key"), // S3 key for cover/banner image
+		// Public profile settings
+		isPublicProfile: boolean("is_public_profile").notNull().default(false),
+		opportunityTypes: jsonb("opportunity_types")
+			.$type<string[]>()
+			.notNull()
+			.default([]),
 		status: text("status", { enum: enumToPgEnum(CoachStatus) })
 			.$type<CoachStatus>()
 			.notNull()
@@ -909,6 +922,7 @@ export const coachTable = pgTable(
 		index("coach_status_idx").on(table.status),
 		index("coach_created_at_idx").on(table.createdAt),
 		index("coach_archived_at_idx").on(table.archivedAt),
+		index("coach_is_public_profile_idx").on(table.isPublicProfile),
 		// Composite index for common query: coaches by organization and status
 		index("coach_org_status_idx").on(table.organizationId, table.status),
 		// Unique constraint: one coach per user per organization
@@ -1068,6 +1082,94 @@ export const coachEducationTable = pgTable(
 			table.coachId,
 			table.displayOrder,
 		),
+	],
+);
+
+// ============================================================================
+// COACH LANGUAGE TABLE
+// ============================================================================
+
+/**
+ * Coach language table - stores languages spoken by coaches
+ * Used for matching coaches with athletes/teams that speak specific languages
+ */
+export const coachLanguageTable = pgTable(
+	"coach_language",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		coachId: uuid("coach_id")
+			.notNull()
+			.references(() => coachTable.id, { onDelete: "cascade" }),
+		language: text("language").notNull(), // ISO 639-1 code (e.g., "es", "en", "pt")
+		level: text("level", { enum: enumToPgEnum(LanguageProficiencyLevel) })
+			.$type<LanguageProficiencyLevel>()
+			.notNull(),
+		notes: text("notes"), // Additional notes (e.g., "regional dialect")
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => [
+		index("coach_language_coach_id_idx").on(table.coachId),
+		index("coach_language_language_idx").on(table.language),
+		// Unique constraint: one entry per language per coach
+		uniqueIndex("coach_language_coach_lang_unique").on(
+			table.coachId,
+			table.language,
+		),
+	],
+);
+
+// ============================================================================
+// COACH REFERENCE TABLE
+// ============================================================================
+
+/**
+ * Coach reference table - professional references for coaches
+ * Used to display testimonials and verify professional background
+ */
+export const coachReferenceTable = pgTable(
+	"coach_reference",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		coachId: uuid("coach_id")
+			.notNull()
+			.references(() => coachTable.id, { onDelete: "cascade" }),
+		// Reference person info
+		name: text("name").notNull(),
+		relationship: text("relationship").notNull(), // e.g., "Director", "Athlete", "Colleague"
+		organization: text("organization"), // Where they work/worked together
+		position: text("position"), // Their current position/title
+		// Contact info (optional)
+		email: text("email"),
+		phone: text("phone"),
+		// Reference content
+		testimonial: text("testimonial"), // Quote/testimonial from the reference
+		skillsHighlighted: jsonb("skills_highlighted")
+			.$type<string[]>()
+			.default([]),
+		// Verification
+		isVerified: boolean("is_verified").notNull().default(false),
+		verifiedAt: timestamp("verified_at", { withTimezone: true }),
+		// Display settings
+		isPublic: boolean("is_public").notNull().default(true),
+		displayOrder: integer("display_order").notNull().default(0),
+		// Timestamps
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => [
+		index("coach_reference_coach_id_idx").on(table.coachId),
+		index("coach_reference_is_public_idx").on(table.isPublic),
 	],
 );
 

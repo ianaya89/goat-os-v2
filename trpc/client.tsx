@@ -133,6 +133,16 @@ export function TRPCProvider({
 				links: [
 					loggerLink({
 						enabled: () => env.NEXT_PUBLIC_NODE_ENV === "development",
+						logger: (opts) => {
+							const { direction, type, path, input } = opts;
+							const prefix = direction === "up" ? ">>" : "<<";
+							const message = `[[ ${prefix} ${type} ]]${path} ${JSON.stringify(input)}`;
+							if (opts.direction === "down" && opts.result instanceof Error) {
+								console.error(message, opts.result);
+							} else {
+								console.log(message);
+							}
+						},
 					}),
 					httpBatchLink({
 						transformer: superjson,

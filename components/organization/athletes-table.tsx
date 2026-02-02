@@ -105,7 +105,19 @@ interface Athlete {
 	groups?: AthleteGroup[];
 }
 
-export function AthletesTable(): React.JSX.Element {
+export type AthletesTableMode = "admin" | "coach";
+
+interface AthletesTableProps {
+	/** Mode determines permissions and data scope */
+	mode?: AthletesTableMode;
+	/** Optional toolbar actions to render */
+	toolbarActions?: React.ReactNode;
+}
+
+export function AthletesTable({
+	mode = "admin",
+	toolbarActions,
+}: AthletesTableProps): React.JSX.Element {
 	const t = useTranslations("athletes");
 	const tCommon = useTranslations("common.sports");
 	const tCommonButtons = useTranslations("common.buttons");
@@ -248,6 +260,15 @@ export function AthletesTable(): React.JSX.Element {
 		return { sortBy, sortOrder };
 	}, [sorting]);
 
+	// For coach mode, first get the athlete IDs this coach has access to
+	const { data: coachAthleteData, isLoading: isLoadingCoachAthletes } =
+		trpc.organization.trainingSession.getMyAthleteIdsAsCoach.useQuery(
+			undefined,
+			{ enabled: mode === "coach" },
+		);
+
+	const coachAthleteIds = coachAthleteData?.athleteIds ?? [];
+
 	const { data, isPending } = trpc.organization.athlete.list.useQuery(
 		{
 			limit: pageSize || appConfig.pagination.defaultLimit,
@@ -256,7 +277,9 @@ export function AthletesTable(): React.JSX.Element {
 			query: searchQuery || "",
 			sortBy: sortParams.sortBy,
 			sortOrder: sortParams.sortOrder,
-			includeArchived: includeArchived ?? false,
+			includeArchived: mode === "admin" ? (includeArchived ?? false) : false,
+			// In coach mode, filter by the coach's athlete IDs
+			athleteIds: mode === "coach" ? coachAthleteIds : undefined,
 			filters: {
 				status: (statusFilter || []) as ("active" | "inactive")[],
 				level: (levelFilter || []) as (
@@ -283,8 +306,12 @@ export function AthletesTable(): React.JSX.Element {
 		},
 		{
 			placeholderData: (prev) => prev,
+			// In coach mode, wait for athlete IDs before querying
+			enabled: mode === "admin" || !isLoadingCoachAthletes,
 		},
 	);
+
+	const isLoading = isPending || (mode === "coach" && isLoadingCoachAthletes);
 
 	const deleteAthleteMutation = trpc.organization.athlete.delete.useMutation({
 		onSuccess: () => {
@@ -343,7 +370,8 @@ export function AthletesTable(): React.JSX.Element {
 	};
 
 	const columns: ColumnDef<Athlete>[] = [
-		createSelectionColumn<Athlete>(),
+		// Selection column only for admin mode
+		...(mode === "admin" ? [createSelectionColumn<Athlete>()] : []),
 		{
 			accessorKey: "name",
 			header: ({ column }) => (
@@ -500,6 +528,24 @@ export function AthletesTable(): React.JSX.Element {
 			enableSorting: false,
 			cell: ({ row }) => {
 				const isArchived = row.original.archivedAt !== null;
+
+				// Coach mode: only show view button
+				if (mode === "coach") {
+					return (
+						<div className="flex justify-end">
+							<Button variant="ghost" size="sm" asChild>
+								<Link
+									href={`/dashboard/organization/athletes/${row.original.id}`}
+								>
+									<EyeIcon className="mr-1 size-4" />
+									{t("table.viewProfile")}
+								</Link>
+							</Button>
+						</div>
+					);
+				}
+
+				// Admin mode: full actions menu
 				return (
 					<div className="flex justify-end">
 						<DropdownMenu>
@@ -617,6 +663,29 @@ export function AthletesTable(): React.JSX.Element {
 		},
 	];
 
+	// Admin toolbar with archive toggle and add button
+	const adminToolbar = (
+		<div className="flex items-center gap-4">
+			<div className="flex items-center gap-2">
+				<Switch
+					id="show-archived"
+					checked={includeArchived ?? false}
+					onCheckedChange={setIncludeArchived}
+				/>
+				<Label
+					htmlFor="show-archived"
+					className="text-sm text-muted-foreground"
+				>
+					{t("showArchived")}
+				</Label>
+			</div>
+			<Button onClick={() => NiceModal.show(AthletesModal)} size="sm">
+				<PlusIcon className="size-4 shrink-0" />
+				{t("add")}
+			</Button>
+		</div>
+	);
+
 	return (
 		<DataTable
 			columnFilters={columnFilters}
@@ -625,44 +694,30 @@ export function AthletesTable(): React.JSX.Element {
 			emptyMessage={t("table.noAthletes")}
 			enableFilters
 			enablePagination
-			enableRowSelection
+			enableRowSelection={mode === "admin"}
 			enableSearch
 			filters={athleteFilters}
-			loading={isPending}
+			loading={isLoading}
 			onFiltersChange={handleFiltersChange}
 			onPageIndexChange={setPageIndex}
 			onPageSizeChange={setPageSize}
-			onRowSelectionChange={setRowSelection}
+			onRowSelectionChange={mode === "admin" ? setRowSelection : undefined}
 			onSearchQueryChange={handleSearchQueryChange}
 			onSortingChange={handleSortingChange}
 			pageIndex={pageIndex || 0}
 			pageSize={pageSize || appConfig.pagination.defaultLimit}
-			renderBulkActions={(table) => <AthletesBulkActions table={table} />}
-			rowSelection={rowSelection}
+			renderBulkActions={
+				mode === "admin"
+					? (table) => <AthletesBulkActions table={table} />
+					: undefined
+			}
+			rowSelection={mode === "admin" ? rowSelection : {}}
 			searchPlaceholder={t("search")}
 			searchQuery={searchQuery || ""}
 			defaultSorting={DEFAULT_SORTING}
 			sorting={sorting}
 			toolbarActions={
-				<div className="flex items-center gap-4">
-					<div className="flex items-center gap-2">
-						<Switch
-							id="show-archived"
-							checked={includeArchived ?? false}
-							onCheckedChange={setIncludeArchived}
-						/>
-						<Label
-							htmlFor="show-archived"
-							className="text-sm text-muted-foreground"
-						>
-							{t("showArchived")}
-						</Label>
-					</div>
-					<Button onClick={() => NiceModal.show(AthletesModal)} size="sm">
-						<PlusIcon className="size-4 shrink-0" />
-						{t("add")}
-					</Button>
-				</div>
+				toolbarActions ?? (mode === "admin" ? adminToolbar : null)
 			}
 			totalCount={data?.total ?? 0}
 		/>

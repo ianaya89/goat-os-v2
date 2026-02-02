@@ -133,6 +133,11 @@ export const organizationAthleteRouter = createTRPCRouter({
 				conditions.push(inArray(athleteTable.sport, input.filters.sport));
 			}
 
+			// Filter by specific athlete IDs (used for coach's athletes view)
+			if (input.athleteIds && input.athleteIds.length > 0) {
+				conditions.push(inArray(athleteTable.id, input.athleteIds));
+			}
+
 			const whereCondition = and(...conditions);
 
 			// Build sort order

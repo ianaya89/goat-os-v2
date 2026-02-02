@@ -147,14 +147,24 @@ const paymentStatusColors: Record<string, string> = {
 	cancelled: "bg-gray-100 dark:bg-gray-800",
 };
 
+export type SessionsTableMode = "admin" | "athlete" | "coach";
+
 type TrainingSessionsTableProps = {
 	toolbarActions?: React.ReactNode;
 	renderToolbarActions?: (periodFilter: string) => React.ReactNode;
+	/**
+	 * Mode determines which data source and features are available:
+	 * - admin: Full access to all sessions and actions
+	 * - athlete: Only sessions where user is an athlete (limited actions)
+	 * - coach: Only sessions where user is a coach (coach actions)
+	 */
+	mode?: SessionsTableMode;
 };
 
 export function TrainingSessionsTable({
 	toolbarActions,
 	renderToolbarActions,
+	mode = "admin",
 }: TrainingSessionsTableProps): React.JSX.Element {
 	const t = useTranslations("training");
 	const [rowSelection, setRowSelection] = React.useState({});
@@ -333,34 +343,81 @@ export function TrainingSessionsTable({
 		return { sortBy, sortOrder };
 	}, [sorting]);
 
-	const { data, isPending } = trpc.organization.trainingSession.list.useQuery(
-		{
-			limit: pageSize || appConfig.pagination.defaultLimit,
-			offset:
-				(pageIndex || 0) * (pageSize || appConfig.pagination.defaultLimit),
-			query: searchQuery || "",
-			sortBy: sortParams.sortBy,
-			sortOrder: sortParams.sortOrder,
-			filters: {
-				status: (statusFilter || []).filter((s) =>
-					TrainingSessionStatuses.includes(s as TrainingSessionStatus),
-				) as TrainingSessionStatus[],
-				locationId: locationFilter || undefined,
-				coachId: coachFilter || undefined,
-				athleteId: athleteFilter || undefined,
-				dateRange: dateRange,
-			},
+	// Query parameters shared across all modes
+	const queryParams = {
+		limit: pageSize || appConfig.pagination.defaultLimit,
+		offset: (pageIndex || 0) * (pageSize || appConfig.pagination.defaultLimit),
+		query: searchQuery || "",
+		sortBy: sortParams.sortBy,
+		sortOrder: sortParams.sortOrder,
+		filters: {
+			status: (statusFilter || []).filter((s) =>
+				TrainingSessionStatuses.includes(s as TrainingSessionStatus),
+			) as TrainingSessionStatus[],
+			locationId: locationFilter || undefined,
+			coachId: mode === "admin" ? coachFilter || undefined : undefined,
+			athleteId: mode === "admin" ? athleteFilter || undefined : undefined,
+			dateRange: dateRange,
 		},
+	};
+
+	// Use different queries based on mode
+	const adminQuery = trpc.organization.trainingSession.list.useQuery(
+		queryParams,
 		{
+			enabled: mode === "admin",
 			placeholderData: (prev) => prev,
 		},
 	);
+
+	const athleteQuery =
+		trpc.organization.trainingSession.listMySessionsAsAthlete.useQuery(
+			queryParams,
+			{
+				enabled: mode === "athlete",
+				placeholderData: (prev) => prev,
+			},
+		);
+
+	const coachQuery =
+		trpc.organization.trainingSession.listMySessionsAsCoach.useQuery(
+			queryParams,
+			{
+				enabled: mode === "coach",
+				placeholderData: (prev) => prev,
+			},
+		);
+
+	// Select the appropriate query result based on mode
+	const data =
+		mode === "admin"
+			? adminQuery.data
+			: mode === "athlete"
+				? athleteQuery.data
+				: coachQuery.data;
+	const isPending =
+		mode === "admin"
+			? adminQuery.isPending
+			: mode === "athlete"
+				? athleteQuery.isPending
+				: coachQuery.isPending;
+
+	// Helper to invalidate the correct query based on mode
+	const invalidateSessionsQuery = React.useCallback(() => {
+		if (mode === "admin") {
+			utils.organization.trainingSession.list.invalidate();
+		} else if (mode === "athlete") {
+			utils.organization.trainingSession.listMySessionsAsAthlete.invalidate();
+		} else {
+			utils.organization.trainingSession.listMySessionsAsCoach.invalidate();
+		}
+	}, [mode, utils]);
 
 	const createSessionMutation =
 		trpc.organization.trainingSession.create.useMutation({
 			onSuccess: () => {
 				toast.success(t("success.duplicated"));
-				utils.organization.trainingSession.list.invalidate();
+				invalidateSessionsQuery();
 			},
 			onError: (error) => {
 				toast.error(error.message || t("error.duplicateFailed"));
@@ -371,7 +428,7 @@ export function TrainingSessionsTable({
 		trpc.organization.trainingSession.delete.useMutation({
 			onSuccess: () => {
 				toast.success(t("success.deleted"));
-				utils.organization.trainingSession.list.invalidate();
+				invalidateSessionsQuery();
 			},
 			onError: (error) => {
 				toast.error(error.message || t("error.deleteFailed"));
@@ -669,73 +726,89 @@ export function TrainingSessionsTable({
 									{t("view")}
 								</Link>
 							</DropdownMenuItem>
-							<DropdownMenuItem
-								onClick={() => {
-									NiceModal.show(TrainingSessionsModal, {
-										session: row.original,
-									});
-								}}
-							>
-								<EditIcon className="mr-2 size-4" />
-								{t("edit")}
-							</DropdownMenuItem>
-							<DropdownMenuItem
-								onClick={() => handleDuplicateSession(row.original)}
-								disabled={createSessionMutation.isPending}
-							>
-								<CopyIcon className="mr-2 size-4" />
-								{t("table.duplicate")}
-							</DropdownMenuItem>
-							<DropdownMenuSub>
-								<DropdownMenuSubTrigger>
-									<SendIcon className="mr-2 size-4" />
-									{t("detail.sendReminder")}
-								</DropdownMenuSubTrigger>
-								<DropdownMenuSubContent>
+							{/* Admin and coach can edit */}
+							{(mode === "admin" || mode === "coach") && (
+								<DropdownMenuItem
+									onClick={() => {
+										NiceModal.show(TrainingSessionsModal, {
+											session: row.original,
+										});
+									}}
+								>
+									<EditIcon className="mr-2 size-4" />
+									{t("edit")}
+								</DropdownMenuItem>
+							)}
+							{/* Only admin can duplicate */}
+							{mode === "admin" && (
+								<DropdownMenuItem
+									onClick={() => handleDuplicateSession(row.original)}
+									disabled={createSessionMutation.isPending}
+								>
+									<CopyIcon className="mr-2 size-4" />
+									{t("table.duplicate")}
+								</DropdownMenuItem>
+							)}
+							{/* Admin and coach can send reminders */}
+							{(mode === "admin" || mode === "coach") && (
+								<DropdownMenuSub>
+									<DropdownMenuSubTrigger>
+										<SendIcon className="mr-2 size-4" />
+										{t("detail.sendReminder")}
+									</DropdownMenuSubTrigger>
+									<DropdownMenuSubContent>
+										<DropdownMenuItem
+											onClick={() =>
+												handleSendConfirmation(row.original, "email")
+											}
+											disabled={sendConfirmationMutation.isPending}
+										>
+											<MailIcon className="mr-2 size-4" />
+											{t("detail.sendViaEmail")}
+										</DropdownMenuItem>
+										<DropdownMenuItem
+											onClick={() =>
+												handleSendConfirmation(row.original, "whatsapp")
+											}
+											disabled={sendConfirmationMutation.isPending}
+										>
+											<MessageSquareIcon className="mr-2 size-4" />
+											{t("detail.sendViaWhatsApp")}
+										</DropdownMenuItem>
+										<DropdownMenuItem
+											onClick={() =>
+												handleSendConfirmation(row.original, "sms")
+											}
+											disabled={sendConfirmationMutation.isPending}
+										>
+											<MessageSquareIcon className="mr-2 size-4" />
+											{t("detail.sendViaSms")}
+										</DropdownMenuItem>
+									</DropdownMenuSubContent>
+								</DropdownMenuSub>
+							)}
+							{/* Only admin can delete */}
+							{mode === "admin" && (
+								<>
+									<DropdownMenuSeparator />
 									<DropdownMenuItem
-										onClick={() =>
-											handleSendConfirmation(row.original, "email")
-										}
-										disabled={sendConfirmationMutation.isPending}
+										onClick={() => {
+											NiceModal.show(ConfirmationModal, {
+												title: t("table.deleteConfirmTitle"),
+												message: t("table.deleteConfirmMessage"),
+												confirmLabel: t("delete"),
+												destructive: true,
+												onConfirm: () =>
+													deleteSessionMutation.mutate({ id: row.original.id }),
+											});
+										}}
+										variant="destructive"
 									>
-										<MailIcon className="mr-2 size-4" />
-										{t("detail.sendViaEmail")}
+										<Trash2Icon className="mr-2 size-4" />
+										{t("delete")}
 									</DropdownMenuItem>
-									<DropdownMenuItem
-										onClick={() =>
-											handleSendConfirmation(row.original, "whatsapp")
-										}
-										disabled={sendConfirmationMutation.isPending}
-									>
-										<MessageSquareIcon className="mr-2 size-4" />
-										{t("detail.sendViaWhatsApp")}
-									</DropdownMenuItem>
-									<DropdownMenuItem
-										onClick={() => handleSendConfirmation(row.original, "sms")}
-										disabled={sendConfirmationMutation.isPending}
-									>
-										<MessageSquareIcon className="mr-2 size-4" />
-										{t("detail.sendViaSms")}
-									</DropdownMenuItem>
-								</DropdownMenuSubContent>
-							</DropdownMenuSub>
-							<DropdownMenuSeparator />
-							<DropdownMenuItem
-								onClick={() => {
-									NiceModal.show(ConfirmationModal, {
-										title: t("table.deleteConfirmTitle"),
-										message: t("table.deleteConfirmMessage"),
-										confirmLabel: t("delete"),
-										destructive: true,
-										onConfirm: () =>
-											deleteSessionMutation.mutate({ id: row.original.id }),
-									});
-								}}
-								variant="destructive"
-							>
-								<Trash2Icon className="mr-2 size-4" />
-								{t("delete")}
-							</DropdownMenuItem>
+								</>
+							)}
 						</DropdownMenuContent>
 					</DropdownMenu>
 				</div>
@@ -772,22 +845,27 @@ export function TrainingSessionsTable({
 				label: loc.name,
 			})),
 		},
-		{
-			key: "coachId",
-			title: t("table.coach"),
-			options: coaches.map((coach) => ({
-				value: coach.id,
-				label: coach.user?.name ?? "Unknown",
-			})),
-		},
-		{
-			key: "athleteId",
-			title: t("table.athlete"),
-			options: athletes.map((athlete) => ({
-				value: athlete.id,
-				label: athlete.user?.name ?? "Unknown",
-			})),
-		},
+		// Only show coach/athlete filters in admin mode
+		...(mode === "admin"
+			? [
+					{
+						key: "coachId",
+						title: t("table.coach"),
+						options: coaches.map((coach) => ({
+							value: coach.id,
+							label: coach.user?.name ?? "Unknown",
+						})),
+					},
+					{
+						key: "athleteId",
+						title: t("table.athlete"),
+						options: athletes.map((athlete) => ({
+							value: athlete.id,
+							label: athlete.user?.name ?? "Unknown",
+						})),
+					},
+				]
+			: []),
 	];
 
 	return (
@@ -811,22 +889,24 @@ export function TrainingSessionsTable({
 				emptyMessage={t("table.empty")}
 				enableFilters
 				enablePagination
-				enableRowSelection
+				enableRowSelection={mode === "admin"}
 				enableSearch
 				filters={sessionFilters}
 				loading={isPending}
 				onFiltersChange={handleFiltersChange}
 				onPageIndexChange={setPageIndex}
 				onPageSizeChange={setPageSize}
-				onRowSelectionChange={setRowSelection}
+				onRowSelectionChange={mode === "admin" ? setRowSelection : undefined}
 				onSearchQueryChange={handleSearchQueryChange}
 				onSortingChange={handleSortingChange}
 				pageIndex={pageIndex || 0}
 				pageSize={pageSize || appConfig.pagination.defaultLimit}
-				renderBulkActions={(table) => (
-					<TrainingSessionsBulkActions table={table} />
-				)}
-				rowSelection={rowSelection}
+				renderBulkActions={
+					mode === "admin"
+						? (table) => <TrainingSessionsBulkActions table={table} />
+						: undefined
+				}
+				rowSelection={mode === "admin" ? rowSelection : {}}
 				searchPlaceholder={t("search")}
 				searchQuery={searchQuery || ""}
 				defaultSorting={DEFAULT_SORTING}

@@ -25,6 +25,8 @@ import {
 	clubTable,
 	coachAchievementTable,
 	coachEducationTable,
+	coachLanguageTable,
+	coachReferenceTable,
 	coachSportsExperienceTable,
 	coachTable,
 	competitionTable,
@@ -357,6 +359,8 @@ export const coachRelations = relations(coachTable, ({ one, many }) => ({
 	sportsExperience: many(coachSportsExperienceTable),
 	achievements: many(coachAchievementTable),
 	education: many(coachEducationTable),
+	languages: many(coachLanguageTable),
+	references: many(coachReferenceTable),
 }));
 
 // Coach sports experience relations
@@ -394,6 +398,28 @@ export const coachEducationRelations = relations(
 	({ one }) => ({
 		coach: one(coachTable, {
 			fields: [coachEducationTable.coachId],
+			references: [coachTable.id],
+		}),
+	}),
+);
+
+// Coach language relations
+export const coachLanguageRelations = relations(
+	coachLanguageTable,
+	({ one }) => ({
+		coach: one(coachTable, {
+			fields: [coachLanguageTable.coachId],
+			references: [coachTable.id],
+		}),
+	}),
+);
+
+// Coach reference relations
+export const coachReferenceRelations = relations(
+	coachReferenceTable,
+	({ one }) => ({
+		coach: one(coachTable, {
+			fields: [coachReferenceTable.coachId],
 			references: [coachTable.id],
 		}),
 	}),

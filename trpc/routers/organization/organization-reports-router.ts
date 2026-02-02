@@ -771,10 +771,16 @@ export const organizationReportsRouter = createTRPCRouter({
 					.groupBy(eventDateTrunc),
 			]);
 
+			// Safely convert period value (Date or string from pg) to an ISO key
+			const toKey = (period: unknown): string => {
+				if (period instanceof Date) return period.toISOString();
+				return new Date(String(period)).toISOString();
+			};
+
 			const periodMap = new Map<string, { training: number; events: number }>();
 
 			for (const r of trainingRevenue) {
-				const key = (r.period as Date).toISOString();
+				const key = toKey(r.period);
 				const existing = periodMap.get(key) ?? {
 					training: 0,
 					events: 0,
@@ -784,7 +790,7 @@ export const organizationReportsRouter = createTRPCRouter({
 			}
 
 			for (const e of eventRevenue) {
-				const key = (e.period as Date).toISOString();
+				const key = toKey(e.period);
 				const existing = periodMap.get(key) ?? {
 					training: 0,
 					events: 0,

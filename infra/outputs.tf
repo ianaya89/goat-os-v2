@@ -1,41 +1,32 @@
-output "bucket_name" {
-  description = "Name of the S3 bucket"
-  value       = aws_s3_bucket.storage.id
+output "buckets" {
+  description = "S3 bucket information"
+  value = {
+    for k, v in aws_s3_bucket.storage : k => {
+      name        = v.id
+      arn         = v.arn
+      region      = v.region
+      domain_name = v.bucket_domain_name
+    }
+  }
 }
 
-output "bucket_arn" {
-  description = "ARN of the S3 bucket"
-  value       = aws_s3_bucket.storage.arn
+output "iam_users" {
+  description = "IAM user information"
+  value = {
+    for k, v in aws_iam_user.storage_user : k => {
+      name = v.name
+      arn  = v.arn
+    }
+  }
 }
 
-output "bucket_region" {
-  description = "Region of the S3 bucket"
-  value       = aws_s3_bucket.storage.region
-}
-
-output "bucket_domain_name" {
-  description = "Domain name of the S3 bucket"
-  value       = aws_s3_bucket.storage.bucket_domain_name
-}
-
-# IAM User outputs
-output "iam_user_name" {
-  description = "Name of the IAM user"
-  value       = aws_iam_user.storage_user.name
-}
-
-output "iam_user_arn" {
-  description = "ARN of the IAM user"
-  value       = aws_iam_user.storage_user.arn
-}
-
-output "access_key_id" {
-  description = "Access key ID for the IAM user"
-  value       = aws_iam_access_key.storage_user_key.id
-}
-
-output "secret_access_key" {
-  description = "Secret access key for the IAM user"
-  value       = aws_iam_access_key.storage_user_key.secret
-  sensitive   = true
+output "access_keys" {
+  description = "IAM access keys"
+  value = {
+    for k, v in aws_iam_access_key.storage_user_key : k => {
+      access_key_id     = v.id
+      secret_access_key = v.secret
+    }
+  }
+  sensitive = true
 }

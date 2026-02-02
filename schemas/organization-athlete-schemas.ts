@@ -27,6 +27,8 @@ export const listAthletesSchema = z.object({
 	sortBy: AthleteSortField.default("createdAt"),
 	sortOrder: z.enum(["asc", "desc"]).default("asc"),
 	includeArchived: z.boolean().default(false),
+	// Optional: filter by specific athlete IDs (used for coach's athletes view)
+	athleteIds: z.array(z.string()).optional(),
 	filters: z
 		.object({
 			status: z.array(z.nativeEnum(AthleteStatus)).optional(),

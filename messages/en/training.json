@@ -199,6 +199,13 @@
 		"addFeedback": "Add Feedback",
 		"unknownCoach": "Unknown Coach"
 	},
+	"coachView": {
+		"noCoachProfile": "No coach profile found for your account in this organization.",
+		"contactAdmin": "Contact your organization administrator to be added as a coach.",
+		"noAthletes": "No athletes assigned",
+		"noAthletesDescription": "You don't have any athletes assigned through training sessions yet.",
+		"sessions": "Sessions"
+	},
 	"viewToggle": {
 		"list": "List",
 		"calendar": "Calendar",

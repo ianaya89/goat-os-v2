@@ -44,10 +44,18 @@ export const Permissions = {
 	/**
 	 * Check if user is a restricted member (athlete-only view).
 	 * Restricted members can only access "My" pages (calendar, sessions, payments, etc.)
-	 * A member with a coach profile is NOT restricted.
+	 * A member with a coach profile is NOT restricted as athlete, but may be restricted as coach.
 	 */
 	isRestrictedMember: (c: UserCapabilities): boolean =>
 		c.role === "member" && !c.isCoach,
+
+	/**
+	 * Check if user is a restricted coach.
+	 * Restricted coaches can only access their own sessions and athletes they coach.
+	 * A coach with admin/owner role is NOT restricted.
+	 */
+	isRestrictedCoach: (c: UserCapabilities): boolean =>
+		c.isCoach && c.role !== "owner" && c.role !== "admin",
 
 	/**
 	 * Check if user is the organization owner.
@@ -130,6 +138,7 @@ export interface ComputedCapabilities {
 	isAdmin: boolean;
 	isStaff: boolean;
 	isRestrictedMember: boolean;
+	isRestrictedCoach: boolean;
 	isOwner: boolean;
 }
 
@@ -142,6 +151,7 @@ export function computeCapabilities(c: UserCapabilities): ComputedCapabilities {
 		isAdmin: Permissions.isOrgAdmin(c),
 		isStaff: Permissions.isStaff(c),
 		isRestrictedMember: Permissions.isRestrictedMember(c),
+		isRestrictedCoach: Permissions.isRestrictedCoach(c),
 		isOwner: Permissions.isOwner(c),
 	};
 }

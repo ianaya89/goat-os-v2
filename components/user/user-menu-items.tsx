@@ -2,6 +2,7 @@
 
 import {
 	ArrowLeftIcon,
+	ClipboardListIcon,
 	HomeIcon,
 	MedalIcon,
 	MonitorSmartphoneIcon,
@@ -20,6 +21,7 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { MySessionsMenuItem } from "@/components/user/my-sessions-menu-item";
 import { authClient } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
@@ -44,22 +46,47 @@ export function UserMenuItems(): React.JSX.Element {
 	// Check if user has an active organization to show "back" link
 	const { data: activeOrganization } = authClient.useActiveOrganization();
 
-	// Check if user is an athlete
+	// Check if user is an athlete or coach
 	const { data: isAthlete } = trpc.athlete.isAthlete.useQuery();
+	const { data: isCoach } = trpc.coach.isCoach.useQuery();
 
-	// Build settings items
-	const settingsItems: MenuItem[] = [];
-
-	// Add athlete profile link first if user is an athlete
+	// Build application items - Home and profiles for athletes/coaches
+	const applicationItems: MenuItem[] = [];
+	if (isAthlete || isCoach) {
+		applicationItems.push({
+			label: t("home"),
+			href: "/dashboard",
+			icon: HomeIcon,
+			exactMatch: true,
+		});
+	}
 	if (isAthlete) {
-		settingsItems.push({
+		applicationItems.push({
 			label: t("athleteProfile"),
 			href: "/dashboard/my-profile",
 			icon: MedalIcon,
 		});
 	}
+	if (isCoach) {
+		applicationItems.push({
+			label: t("coachProfile"),
+			href: "/dashboard/my-profile",
+			icon: ClipboardListIcon,
+		});
+	}
 
-	settingsItems.push(
+	// Sessions items - rendered separately with special handling for org selection
+	// Both athletes and coaches use the unified /sessions URL
+	const mySessionsItem =
+		isAthlete || isCoach
+			? {
+					label: t("mySessions"),
+					href: "/dashboard/organization/sessions",
+				}
+			: null;
+
+	// Build settings items
+	const settingsItems: MenuItem[] = [
 		{
 			label: t("profile"),
 			href: "/dashboard/settings?tab=profile",
@@ -75,21 +102,14 @@ export function UserMenuItems(): React.JSX.Element {
 			href: "/dashboard/settings?tab=sessions",
 			icon: MonitorSmartphoneIcon,
 		},
-	);
+	];
 
-	// Build application items - Home is only shown for athletes/coaches
-	const applicationItems: MenuItem[] = [];
-	if (isAthlete) {
-		applicationItems.push({
-			label: t("home"),
-			href: "/dashboard",
-			icon: HomeIcon,
-			exactMatch: true,
-		});
-	}
+	// Include application group if there are items OR if there's a sessions item
+	const hasApplicationSection =
+		applicationItems.length > 0 || mySessionsItem !== null;
 
 	const menuGroups: MenuGroup[] = [
-		...(applicationItems.length > 0
+		...(hasApplicationSection
 			? [
 					{
 						label: t("application"),
@@ -177,14 +197,24 @@ export function UserMenuItems(): React.JSX.Element {
 					</SidebarMenu>
 				</SidebarGroup>
 			)}
-			{menuGroups.map((group, groupIndex) => (
-				<SidebarGroup key={groupIndex}>
-					<SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-					<SidebarMenu suppressHydrationWarning>
-						{group.items?.map(renderMenuItem)}
-					</SidebarMenu>
-				</SidebarGroup>
-			))}
+			{menuGroups.map((group, groupIndex) => {
+				const isApplicationGroup = group.label === t("application");
+				return (
+					<SidebarGroup key={groupIndex}>
+						<SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+						<SidebarMenu suppressHydrationWarning>
+							{group.items?.map(renderMenuItem)}
+							{isApplicationGroup && mySessionsItem && (
+								<MySessionsMenuItem
+									label={mySessionsItem.label}
+									href={mySessionsItem.href}
+									isActive={pathname.startsWith(mySessionsItem.href)}
+								/>
+							)}
+						</SidebarMenu>
+					</SidebarGroup>
+				);
+			})}
 		</ScrollArea>
 	);
 }

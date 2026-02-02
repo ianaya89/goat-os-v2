@@ -7,27 +7,37 @@ import {
 	AlertCircleIcon,
 	BriefcaseIcon,
 	CalendarIcon,
+	GlobeIcon,
 	GraduationCapIcon,
+	LanguagesIcon,
 	MailIcon,
 	MedalIcon,
 	PencilIcon,
 	PhoneIcon,
 	PlusIcon,
+	Share2Icon,
 	TrashIcon,
 	TrophyIcon,
 	UserIcon,
 } from "lucide-react";
 import Link from "next/link";
 import * as React from "react";
+import { CoachAchievementEditModal } from "@/components/coach/coach-achievement-edit-modal";
 import { CoachBioEditModal } from "@/components/coach/coach-bio-edit-modal";
 import { CoachContactEditModal } from "@/components/coach/coach-contact-edit-modal";
+import { CoachEducationEditModal } from "@/components/coach/coach-education-edit-modal";
+import { CoachExperienceEditModal } from "@/components/coach/coach-experience-edit-modal";
 import { CoachProfessionalEditModal } from "@/components/coach/coach-professional-edit-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserAvatar } from "@/components/user/user-avatar";
+import { CoverPhotoUpload } from "@/components/user/cover-photo-upload";
+import { LanguagesModal } from "@/components/user/languages-modal";
+import { ProfilePhotoUpload } from "@/components/user/profile-photo-upload";
+import { PublicProfileSettings } from "@/components/user/public-profile-settings";
+import { SocialEditModal } from "@/components/user/social-edit-modal";
 import { AthleteSport, CoachStatus } from "@/lib/db/schema/enums";
 import { capitalize } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
@@ -62,6 +72,7 @@ const sportLabels: Record<AthleteSport, string> = {
 
 export function CoachMyProfile() {
 	const { data, isLoading, error } = trpc.coach.getMyProfile.useQuery();
+	const coverPhotoQuery = trpc.coach.getCoverPhotoUrl.useQuery();
 
 	if (isLoading) {
 		return <CoachMyProfileSkeleton />;
@@ -100,8 +111,14 @@ export function CoachMyProfile() {
 		);
 	}
 
-	const { coach, sportsExperience, achievements, education, organizations } =
-		data;
+	const {
+		coach,
+		sportsExperience,
+		achievements,
+		education,
+		organizations,
+		languages,
+	} = data;
 
 	if (!coach) {
 		return (
@@ -132,17 +149,27 @@ export function CoachMyProfile() {
 
 	return (
 		<div className="space-y-6">
-			{/* Profile Header */}
-			<Card>
-				<CardContent className="pt-6">
-					<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-						<div className="flex items-start gap-4">
-							<UserAvatar
-								name={coach.user?.name ?? ""}
-								src={coach.user?.image}
-								className="size-20"
-							/>
-							<div>
+			{/* Cover Photo */}
+			<Card className="overflow-hidden p-0">
+				<CoverPhotoUpload
+					variant="coach"
+					coverPhotoUrl={coverPhotoQuery.data?.signedUrl}
+					editable={true}
+				/>
+
+				{/* Profile info overlaying cover photo */}
+				<div className="-mt-12 px-6 pb-6">
+					<div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+						<div className="flex items-end gap-4">
+							<div className="rounded-full border-4 border-background bg-background">
+								<ProfilePhotoUpload
+									variant="coach"
+									userName={coach.user?.name ?? ""}
+									currentImageUrl={coach.user?.image}
+									size="lg"
+								/>
+							</div>
+							<div className="mb-2">
 								<div className="flex items-center gap-3">
 									<h1 className="font-bold text-2xl">
 										{coach.user?.name ?? "Sin nombre"}
@@ -187,17 +214,18 @@ export function CoachMyProfile() {
 							</div>
 						</div>
 						<Button
+							variant="ghost"
+							size="icon"
 							onClick={() =>
 								NiceModal.show(CoachBioEditModal, {
 									bio: coach.bio,
 								})
 							}
 						>
-							<PencilIcon className="mr-2 size-4" />
-							Editar
+							<PencilIcon className="size-4" />
 						</Button>
 					</div>
-				</CardContent>
+				</div>
 			</Card>
 
 			{/* Organizations */}
@@ -226,7 +254,7 @@ export function CoachMyProfile() {
 
 			{/* Tabs */}
 			<Tabs defaultValue="info" className="space-y-4">
-				<TabsList>
+				<TabsList className="flex-wrap">
 					<TabsTrigger value="info">
 						<UserIcon className="mr-1 size-3.5" />
 						Informacion
@@ -243,6 +271,18 @@ export function CoachMyProfile() {
 						<GraduationCapIcon className="mr-1 size-3.5" />
 						Educacion ({education?.length ?? 0})
 					</TabsTrigger>
+					<TabsTrigger value="languages">
+						<LanguagesIcon className="mr-1 size-3.5" />
+						Idiomas ({languages?.length ?? 0})
+					</TabsTrigger>
+					<TabsTrigger value="social">
+						<Share2Icon className="mr-1 size-3.5" />
+						Social
+					</TabsTrigger>
+					<TabsTrigger value="public">
+						<GlobeIcon className="mr-1 size-3.5" />
+						Publico
+					</TabsTrigger>
 				</TabsList>
 
 				{/* Info Tab */}
@@ -256,7 +296,8 @@ export function CoachMyProfile() {
 									Contacto
 								</CardTitle>
 								<Button
-									size="sm"
+									variant="ghost"
+									size="icon"
 									onClick={() =>
 										NiceModal.show(CoachContactEditModal, {
 											phone: coach.phone,
@@ -264,8 +305,7 @@ export function CoachMyProfile() {
 										})
 									}
 								>
-									<PencilIcon className="mr-2 size-4" />
-									Editar
+									<PencilIcon className="size-4" />
 								</Button>
 							</CardHeader>
 							<CardContent className="space-y-3">
@@ -294,7 +334,8 @@ export function CoachMyProfile() {
 									Profesional
 								</CardTitle>
 								<Button
-									size="sm"
+									variant="ghost"
+									size="icon"
 									onClick={() =>
 										NiceModal.show(CoachProfessionalEditModal, {
 											sport: coach.sport,
@@ -302,8 +343,7 @@ export function CoachMyProfile() {
 										})
 									}
 								>
-									<PencilIcon className="mr-2 size-4" />
-									Editar
+									<PencilIcon className="size-4" />
 								</Button>
 							</CardHeader>
 							<CardContent className="space-y-3">
@@ -344,15 +384,15 @@ export function CoachMyProfile() {
 									Biografia
 								</CardTitle>
 								<Button
-									size="sm"
+									variant="ghost"
+									size="icon"
 									onClick={() =>
 										NiceModal.show(CoachBioEditModal, {
 											bio: coach.bio,
 										})
 									}
 								>
-									<PencilIcon className="mr-2 size-4" />
-									Editar
+									<PencilIcon className="size-4" />
 								</Button>
 							</CardHeader>
 							<CardContent>
@@ -377,7 +417,13 @@ export function CoachMyProfile() {
 								<BriefcaseIcon className="size-4" />
 								Experiencia Deportiva
 							</CardTitle>
-							{/* TODO: Add experience modal */}
+							<Button
+								variant="ghost"
+								size="icon"
+								onClick={() => NiceModal.show(CoachExperienceEditModal)}
+							>
+								<PlusIcon className="size-4" />
+							</Button>
 						</CardHeader>
 						<CardContent>
 							{sportsExperience && sportsExperience.length > 0 ? (
@@ -385,9 +431,36 @@ export function CoachMyProfile() {
 									{sportsExperience.map((exp) => (
 										<div
 											key={exp.id}
-											className="rounded-lg border p-4 space-y-2"
+											className="group relative rounded-lg border p-4 space-y-2"
 										>
-											<div className="flex items-start justify-between">
+											<Button
+												variant="ghost"
+												size="icon"
+												className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+												onClick={() =>
+													NiceModal.show(CoachExperienceEditModal, {
+														entry: {
+															id: exp.id,
+															clubId: exp.clubId,
+															nationalTeamId: exp.nationalTeamId,
+															role: exp.role,
+															sport: exp.sport,
+															level: exp.level,
+															startDate: exp.startDate
+																? new Date(exp.startDate)
+																: null,
+															endDate: exp.endDate
+																? new Date(exp.endDate)
+																: null,
+															achievements: exp.achievements,
+															description: exp.description,
+														},
+													})
+												}
+											>
+												<PencilIcon className="size-4" />
+											</Button>
+											<div className="flex items-start justify-between pr-8">
 												<div>
 													<h4 className="font-medium">{exp.role}</h4>
 													{exp.sport && (
@@ -432,6 +505,15 @@ export function CoachMyProfile() {
 									<p className="mt-2 text-muted-foreground text-sm">
 										No has agregado experiencia deportiva aun.
 									</p>
+									<Button
+										variant="outline"
+										size="sm"
+										className="mt-4"
+										onClick={() => NiceModal.show(CoachExperienceEditModal)}
+									>
+										<PlusIcon className="mr-2 size-4" />
+										Agregar experiencia
+									</Button>
 								</div>
 							)}
 						</CardContent>
@@ -446,7 +528,13 @@ export function CoachMyProfile() {
 								<TrophyIcon className="size-4" />
 								Logros y Reconocimientos
 							</CardTitle>
-							{/* TODO: Add achievement modal */}
+							<Button
+								variant="ghost"
+								size="icon"
+								onClick={() => NiceModal.show(CoachAchievementEditModal)}
+							>
+								<PlusIcon className="size-4" />
+							</Button>
 						</CardHeader>
 						<CardContent>
 							{achievements && achievements.length > 0 ? (
@@ -454,9 +542,32 @@ export function CoachMyProfile() {
 									{achievements.map((achievement) => (
 										<div
 											key={achievement.id}
-											className="rounded-lg border p-4 space-y-2"
+											className="group relative rounded-lg border p-4 space-y-2"
 										>
-											<div className="flex items-start justify-between">
+											<Button
+												variant="ghost"
+												size="icon"
+												className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+												onClick={() =>
+													NiceModal.show(CoachAchievementEditModal, {
+														entry: {
+															id: achievement.id,
+															title: achievement.title,
+															type: achievement.type,
+															scope: achievement.scope,
+															year: achievement.year,
+															organization: achievement.organization,
+															team: achievement.team,
+															competition: achievement.competition,
+															position: achievement.position,
+															description: achievement.description,
+														},
+													})
+												}
+											>
+												<PencilIcon className="size-4" />
+											</Button>
+											<div className="flex items-start justify-between pr-8">
 												<div>
 													<h4 className="font-medium">{achievement.title}</h4>
 													<p className="text-muted-foreground text-sm">
@@ -487,6 +598,15 @@ export function CoachMyProfile() {
 									<p className="mt-2 text-muted-foreground text-sm">
 										No has agregado logros aun.
 									</p>
+									<Button
+										variant="outline"
+										size="sm"
+										className="mt-4"
+										onClick={() => NiceModal.show(CoachAchievementEditModal)}
+									>
+										<PlusIcon className="mr-2 size-4" />
+										Agregar logro
+									</Button>
 								</div>
 							)}
 						</CardContent>
@@ -501,7 +621,13 @@ export function CoachMyProfile() {
 								<GraduationCapIcon className="size-4" />
 								Formacion Academica
 							</CardTitle>
-							{/* TODO: Add education modal */}
+							<Button
+								variant="ghost"
+								size="icon"
+								onClick={() => NiceModal.show(CoachEducationEditModal)}
+							>
+								<PlusIcon className="size-4" />
+							</Button>
 						</CardHeader>
 						<CardContent>
 							{education && education.length > 0 ? (
@@ -509,9 +635,35 @@ export function CoachMyProfile() {
 									{education.map((edu) => (
 										<div
 											key={edu.id}
-											className="rounded-lg border p-4 space-y-2"
+											className="group relative rounded-lg border p-4 space-y-2"
 										>
-											<div className="flex items-start justify-between">
+											<Button
+												variant="ghost"
+												size="icon"
+												className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+												onClick={() =>
+													NiceModal.show(CoachEducationEditModal, {
+														entry: {
+															id: edu.id,
+															institution: edu.institution,
+															degree: edu.degree,
+															fieldOfStudy: edu.fieldOfStudy,
+															startDate: edu.startDate
+																? new Date(edu.startDate)
+																: null,
+															endDate: edu.endDate
+																? new Date(edu.endDate)
+																: null,
+															gpa: edu.gpa,
+															isCurrent: edu.isCurrent,
+															notes: edu.notes,
+														},
+													})
+												}
+											>
+												<PencilIcon className="size-4" />
+											</Button>
+											<div className="flex items-start justify-between pr-8">
 												<div>
 													<h4 className="font-medium">{edu.institution}</h4>
 													{edu.degree && (
@@ -559,10 +711,197 @@ export function CoachMyProfile() {
 									<p className="mt-2 text-muted-foreground text-sm">
 										No has agregado formacion academica aun.
 									</p>
+									<Button
+										variant="outline"
+										size="sm"
+										className="mt-4"
+										onClick={() => NiceModal.show(CoachEducationEditModal)}
+									>
+										<PlusIcon className="mr-2 size-4" />
+										Agregar educacion
+									</Button>
 								</div>
 							)}
 						</CardContent>
 					</Card>
+				</TabsContent>
+
+				{/* Languages Tab */}
+				<TabsContent value="languages">
+					<Card>
+						<CardHeader className="flex flex-row items-center justify-between space-y-0">
+							<CardTitle className="flex items-center gap-2 text-base">
+								<LanguagesIcon className="size-4" />
+								Idiomas
+							</CardTitle>
+							<Button
+								variant="ghost"
+								size="icon"
+								onClick={() =>
+									NiceModal.show(LanguagesModal, {
+										variant: "coach",
+									})
+								}
+							>
+								<PencilIcon className="size-4" />
+							</Button>
+						</CardHeader>
+						<CardContent>
+							{languages && languages.length > 0 ? (
+								<div className="flex flex-wrap gap-2">
+									{languages.map((lang) => (
+										<Badge
+											key={lang.id}
+											variant="secondary"
+											className="px-3 py-1.5"
+										>
+											<span className="font-medium">{lang.language}</span>
+											<span className="ml-2 text-muted-foreground text-xs">
+												({lang.level})
+											</span>
+										</Badge>
+									))}
+								</div>
+							) : (
+								<div className="py-8 text-center">
+									<LanguagesIcon className="mx-auto size-10 text-muted-foreground/50" />
+									<p className="mt-2 text-muted-foreground text-sm">
+										No has agregado idiomas aun.
+									</p>
+									<Button
+										variant="outline"
+										size="sm"
+										className="mt-4"
+										onClick={() =>
+											NiceModal.show(LanguagesModal, {
+												variant: "coach",
+											})
+										}
+									>
+										<PlusIcon className="mr-2 size-4" />
+										Agregar idioma
+									</Button>
+								</div>
+							)}
+						</CardContent>
+					</Card>
+				</TabsContent>
+
+				{/* Social Tab */}
+				<TabsContent value="social">
+					<Card>
+						<CardHeader className="flex flex-row items-center justify-between space-y-0">
+							<CardTitle className="flex items-center gap-2 text-base">
+								<Share2Icon className="size-4" />
+								Redes Sociales
+							</CardTitle>
+							<Button
+								variant="ghost"
+								size="icon"
+								onClick={() =>
+									NiceModal.show(SocialEditModal, {
+										variant: "coach",
+										socialInstagram: coach.socialInstagram,
+										socialTwitter: coach.socialTwitter,
+										socialTiktok: coach.socialTiktok,
+										socialLinkedin: coach.socialLinkedin,
+										socialFacebook: coach.socialFacebook,
+									})
+								}
+							>
+								<PencilIcon className="size-4" />
+							</Button>
+						</CardHeader>
+						<CardContent>
+							{coach.socialInstagram ||
+							coach.socialTwitter ||
+							coach.socialTiktok ||
+							coach.socialLinkedin ||
+							coach.socialFacebook ? (
+								<div className="space-y-3">
+									{coach.socialInstagram && (
+										<div className="flex items-center gap-3">
+											<div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-pink-500 to-purple-500 text-white">
+												<span className="font-bold text-xs">IG</span>
+											</div>
+											<span className="text-sm">@{coach.socialInstagram}</span>
+										</div>
+									)}
+									{coach.socialTwitter && (
+										<div className="flex items-center gap-3">
+											<div className="flex size-8 items-center justify-center rounded-lg bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900">
+												<span className="font-bold text-xs">X</span>
+											</div>
+											<span className="text-sm">@{coach.socialTwitter}</span>
+										</div>
+									)}
+									{coach.socialTiktok && (
+										<div className="flex items-center gap-3">
+											<div className="flex size-8 items-center justify-center rounded-lg bg-zinc-900 text-white">
+												<span className="font-bold text-xs">TT</span>
+											</div>
+											<span className="text-sm">@{coach.socialTiktok}</span>
+										</div>
+									)}
+									{coach.socialLinkedin && (
+										<div className="flex items-center gap-3">
+											<div className="flex size-8 items-center justify-center rounded-lg bg-blue-600 text-white">
+												<span className="font-bold text-xs">in</span>
+											</div>
+											<span className="truncate text-sm">
+												{coach.socialLinkedin}
+											</span>
+										</div>
+									)}
+									{coach.socialFacebook && (
+										<div className="flex items-center gap-3">
+											<div className="flex size-8 items-center justify-center rounded-lg bg-blue-500 text-white">
+												<span className="font-bold text-xs">f</span>
+											</div>
+											<span className="truncate text-sm">
+												{coach.socialFacebook}
+											</span>
+										</div>
+									)}
+								</div>
+							) : (
+								<div className="py-8 text-center">
+									<Share2Icon className="mx-auto size-10 text-muted-foreground/50" />
+									<p className="mt-2 text-muted-foreground text-sm">
+										No has agregado redes sociales aun.
+									</p>
+									<Button
+										variant="outline"
+										size="sm"
+										className="mt-4"
+										onClick={() =>
+											NiceModal.show(SocialEditModal, {
+												variant: "coach",
+												socialInstagram: coach.socialInstagram,
+												socialTwitter: coach.socialTwitter,
+												socialTiktok: coach.socialTiktok,
+												socialLinkedin: coach.socialLinkedin,
+												socialFacebook: coach.socialFacebook,
+											})
+										}
+									>
+										<PlusIcon className="mr-2 size-4" />
+										Agregar redes
+									</Button>
+								</div>
+							)}
+						</CardContent>
+					</Card>
+				</TabsContent>
+
+				{/* Public Profile Tab */}
+				<TabsContent value="public">
+					<PublicProfileSettings
+						variant="coach"
+						profileId={coach.id}
+						initialIsPublic={coach.isPublicProfile ?? false}
+						initialOpportunities={(coach.opportunityTypes as string[]) ?? []}
+					/>
 				</TabsContent>
 			</Tabs>
 		</div>

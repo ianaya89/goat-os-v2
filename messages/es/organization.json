@@ -14,6 +14,7 @@
 		"inventoryAudit": "Auditoría de Inventario",
 		"mySessionsCoach": "Mis Sesiones (Entrenador)",
 		"mySessionsAthlete": "Mis Sesiones (Atleta)",
+		"myAthletes": "Mis Atletas",
 		"myCalendar": "Mi Calendario",
 		"mySessions": "Mis Sesiones",
 		"myGroups": "Mis Grupos",
@@ -77,6 +78,10 @@
 		"myEvents": {
 			"title": "Mis Eventos",
 			"pageTitle": "Mis Eventos"
+		},
+		"myAthletes": {
+			"title": "Mis Atletas",
+			"pageTitle": "Mis Atletas"
 		},
 		"waitlist": {
 			"title": "Lista de Espera",

@@ -43,12 +43,13 @@ const ROUTE_FEATURE_MAP: Record<string, OrganizationFeature> = {
 	"/dashboard/organization/sponsors": OrganizationFeature.sponsors,
 	"/dashboard/organization/chatbot": OrganizationFeature.chatbot,
 
-	// My Area (for athletes) - these depend on the underlying feature
-	"/dashboard/organization/my-sessions": OrganizationFeature.trainingSessions,
+	// My Area (for athletes/coaches) - these depend on the underlying feature
+	"/dashboard/organization/sessions": OrganizationFeature.trainingSessions,
 	"/dashboard/organization/my-groups": OrganizationFeature.athleteGroups,
 	"/dashboard/organization/my-payments": OrganizationFeature.payments,
 	"/dashboard/organization/my-events": OrganizationFeature.events,
 	"/dashboard/organization/my-calendar": OrganizationFeature.trainingSessions,
+	"/dashboard/organization/my-athletes": OrganizationFeature.athletes,
 
 	// Competitions
 	"/dashboard/organization/teams": OrganizationFeature.teams,

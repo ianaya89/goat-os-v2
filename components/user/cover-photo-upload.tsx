@@ -7,30 +7,53 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
-interface AthleteCoverPhotoUploadProps {
+type CoverPhotoVariant = "athlete" | "coach";
+
+interface CoverPhotoUploadProps {
+	/**
+	 * Which profile type this upload is for - determines which tRPC endpoints to use
+	 */
+	variant: CoverPhotoVariant;
+	/**
+	 * Initial cover photo URL (if already loaded)
+	 */
 	coverPhotoUrl?: string | null;
+	/**
+	 * Callback when image is updated
+	 */
 	onImageUpdated?: () => void;
+	/**
+	 * Whether the cover photo is editable
+	 */
 	editable?: boolean;
 }
 
-export function AthleteCoverPhotoUpload({
+export function CoverPhotoUpload({
+	variant,
 	coverPhotoUrl: initialCoverUrl,
 	onImageUpdated,
 	editable = true,
-}: AthleteCoverPhotoUploadProps) {
+}: CoverPhotoUploadProps) {
 	const utils = trpc.useUtils();
 	const [isUploading, setIsUploading] = useState(false);
 	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	// Fetch signed URL for cover photo
-	const coverPhotoQuery = trpc.athlete.getCoverPhotoUrl.useQuery(undefined, {
-		enabled: !initialCoverUrl,
+	// Fetch signed URL for cover photo based on variant
+	const athleteCoverQuery = trpc.athlete.getCoverPhotoUrl.useQuery(undefined, {
+		enabled: variant === "athlete" && !initialCoverUrl,
+	});
+	const coachCoverQuery = trpc.coach.getCoverPhotoUrl.useQuery(undefined, {
+		enabled: variant === "coach" && !initialCoverUrl,
 	});
 
-	const getUploadUrlMutation =
+	// Mutations based on variant
+	const athleteUploadUrlMutation =
 		trpc.athlete.getCoverPhotoUploadUrl.useMutation();
-	const saveCoverPhotoMutation = trpc.athlete.saveCoverPhoto.useMutation({
+	const coachUploadUrlMutation =
+		trpc.coach.getCoverPhotoUploadUrl.useMutation();
+
+	const athleteSaveMutation = trpc.athlete.saveCoverPhoto.useMutation({
 		onSuccess: () => {
 			toast.success("Foto de portada actualizada");
 			utils.athlete.getCoverPhotoUrl.invalidate();
@@ -42,7 +65,19 @@ export function AthleteCoverPhotoUpload({
 		},
 	});
 
-	const removeCoverPhotoMutation = trpc.athlete.removeCoverPhoto.useMutation({
+	const coachSaveMutation = trpc.coach.saveCoverPhoto.useMutation({
+		onSuccess: () => {
+			toast.success("Foto de portada actualizada");
+			utils.coach.getCoverPhotoUrl.invalidate();
+			utils.coach.getMyProfile.invalidate();
+			onImageUpdated?.();
+		},
+		onError: (error) => {
+			toast.error(error.message || "Error al guardar la foto de portada");
+		},
+	});
+
+	const athleteRemoveMutation = trpc.athlete.removeCoverPhoto.useMutation({
 		onSuccess: () => {
 			toast.success("Foto de portada eliminada");
 			setPreviewUrl(null);
@@ -54,6 +89,43 @@ export function AthleteCoverPhotoUpload({
 			toast.error(error.message || "Error al eliminar la foto de portada");
 		},
 	});
+
+	const coachRemoveMutation = trpc.coach.removeCoverPhoto.useMutation({
+		onSuccess: () => {
+			toast.success("Foto de portada eliminada");
+			setPreviewUrl(null);
+			utils.coach.getCoverPhotoUrl.invalidate();
+			utils.coach.getMyProfile.invalidate();
+			onImageUpdated?.();
+		},
+		onError: (error) => {
+			toast.error(error.message || "Error al eliminar la foto de portada");
+		},
+	});
+
+	// Select the appropriate data/functions based on variant
+	const coverPhotoData =
+		variant === "athlete" ? athleteCoverQuery.data : coachCoverQuery.data;
+
+	const getUploadUrl =
+		variant === "athlete"
+			? athleteUploadUrlMutation.mutateAsync
+			: coachUploadUrlMutation.mutateAsync;
+
+	const saveCoverPhoto =
+		variant === "athlete"
+			? athleteSaveMutation.mutateAsync
+			: coachSaveMutation.mutateAsync;
+
+	const removeCoverPhoto =
+		variant === "athlete"
+			? athleteRemoveMutation.mutateAsync
+			: coachRemoveMutation.mutateAsync;
+
+	const isRemovePending =
+		variant === "athlete"
+			? athleteRemoveMutation.isPending
+			: coachRemoveMutation.isPending;
 
 	const handleFileSelect = async (
 		event: React.ChangeEvent<HTMLInputElement>,
@@ -80,7 +152,7 @@ export function AthleteCoverPhotoUpload({
 		setIsUploading(true);
 		try {
 			// Get upload URL
-			const { uploadUrl, fileKey } = await getUploadUrlMutation.mutateAsync({
+			const { uploadUrl, fileKey } = await getUploadUrl({
 				fileName: file.name,
 				contentType: file.type,
 			});
@@ -99,7 +171,7 @@ export function AthleteCoverPhotoUpload({
 			}
 
 			// Save to database
-			await saveCoverPhotoMutation.mutateAsync({ fileKey });
+			await saveCoverPhoto({ fileKey });
 		} catch (_error) {
 			toast.error("Error al subir la imagen");
 			setPreviewUrl(null);
@@ -112,14 +184,13 @@ export function AthleteCoverPhotoUpload({
 	};
 
 	const handleRemoveCoverPhoto = async () => {
-		await removeCoverPhotoMutation.mutateAsync();
+		await removeCoverPhoto();
 	};
 
 	// Use preview URL first, then passed URL, then query URL
-	const displayUrl =
-		previewUrl || initialCoverUrl || coverPhotoQuery.data?.signedUrl;
+	const displayUrl = previewUrl || initialCoverUrl || coverPhotoData?.signedUrl;
 	const hasCoverPhoto =
-		!!previewUrl || !!initialCoverUrl || coverPhotoQuery.data?.hasCoverPhoto;
+		!!previewUrl || !!initialCoverUrl || coverPhotoData?.hasCoverPhoto;
 
 	return (
 		<div className="relative">
@@ -179,10 +250,10 @@ export function AthleteCoverPhotoUpload({
 							size="sm"
 							variant="secondary"
 							onClick={handleRemoveCoverPhoto}
-							disabled={isUploading || removeCoverPhotoMutation.isPending}
+							disabled={isUploading || isRemovePending}
 							className="bg-background/90 text-destructive shadow-md backdrop-blur-sm hover:bg-background"
 						>
-							{removeCoverPhotoMutation.isPending ? (
+							{isRemovePending ? (
 								<Loader2Icon className="size-4 animate-spin" />
 							) : (
 								<TrashIcon className="size-4" />

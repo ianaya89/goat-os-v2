@@ -7,17 +7,29 @@ import { useOrganizationUserProfile } from "@/app/(saas)/dashboard/(sidebar)/org
 // Routes that restricted members (athletes) CAN access
 const RESTRICTED_MEMBER_ALLOWED_ROUTES = [
 	"/dashboard/organization", // Dashboard home (exact match)
-	"/dashboard/organization/my-calendar",
-	"/dashboard/organization/my-sessions",
+	"/dashboard/organization/sessions",
 	"/dashboard/organization/my-groups",
 	"/dashboard/organization/my-payments",
-	"/dashboard/organization/my-events",
+	"/dashboard/organization/my-profile",
+	// Calendar and events temporarily hidden
+	// "/dashboard/organization/my-calendar",
+	// "/dashboard/organization/my-events",
+];
+
+// Routes that restricted coaches CAN access
+const RESTRICTED_COACH_ALLOWED_ROUTES = [
+	"/dashboard/organization", // Dashboard home (exact match)
+	"/dashboard/organization/sessions",
+	"/dashboard/organization/my-athletes",
 	"/dashboard/organization/my-profile",
 ];
 
 // Pattern for session detail pages (athletes can view their session details)
 const SESSION_DETAIL_PATTERN =
 	/^\/dashboard\/organization\/training-sessions\/[^/]+$/;
+
+// Pattern for athlete detail pages (coaches can view their athlete details)
+const ATHLETE_DETAIL_PATTERN = /^\/dashboard\/organization\/athletes\/[^/]+$/;
 
 // Check if a path is allowed for restricted members
 function isRestrictedMemberAllowedRoute(pathname: string): boolean {
@@ -38,12 +50,36 @@ function isRestrictedMemberAllowedRoute(pathname: string): boolean {
 	);
 }
 
+// Check if a path is allowed for restricted coaches
+function isRestrictedCoachAllowedRoute(pathname: string): boolean {
+	// Exact match for dashboard home
+	if (pathname === "/dashboard/organization") {
+		return true;
+	}
+
+	// Allow viewing individual training session details
+	if (SESSION_DETAIL_PATTERN.test(pathname)) {
+		return true;
+	}
+
+	// Allow viewing individual athlete details (for their athletes)
+	if (ATHLETE_DETAIL_PATTERN.test(pathname)) {
+		return true;
+	}
+
+	// Check if path starts with any allowed route
+	return RESTRICTED_COACH_ALLOWED_ROUTES.some(
+		(route) =>
+			route !== "/dashboard/organization" && pathname.startsWith(route),
+	);
+}
+
 interface AthleteRouteGuardProps {
 	children: React.ReactNode;
 }
 
 /**
- * Route guard for restricted members (athletes without staff access).
+ * Route guard for restricted members (athletes and coaches without admin access).
  * Restricts access to only "My" pages and allowed routes.
  *
  * Uses pre-computed capabilities from context instead of manual role checks.
@@ -53,18 +89,27 @@ export function AthleteRouteGuard({ children }: AthleteRouteGuardProps) {
 	const router = useRouter();
 	const userProfile = useOrganizationUserProfile();
 
-	// Use pre-computed capability from context
+	// Use pre-computed capabilities from context
 	const isRestrictedMember = userProfile.capabilities.isRestrictedMember;
+	const isRestrictedCoach = userProfile.capabilities.isRestrictedCoach;
 
 	useEffect(() => {
 		if (isRestrictedMember && !isRestrictedMemberAllowedRoute(pathname)) {
 			// Redirect restricted members to dashboard if they try to access restricted routes
 			router.replace("/dashboard/organization");
+		} else if (isRestrictedCoach && !isRestrictedCoachAllowedRoute(pathname)) {
+			// Redirect restricted coaches to dashboard if they try to access restricted routes
+			router.replace("/dashboard/organization");
 		}
-	}, [isRestrictedMember, pathname, router]);
+	}, [isRestrictedMember, isRestrictedCoach, pathname, router]);
 
 	// If restricted member is trying to access a restricted route, show nothing while redirecting
 	if (isRestrictedMember && !isRestrictedMemberAllowedRoute(pathname)) {
+		return null;
+	}
+
+	// If restricted coach is trying to access a restricted route, show nothing while redirecting
+	if (isRestrictedCoach && !isRestrictedCoachAllowedRoute(pathname)) {
 		return null;
 	}
 

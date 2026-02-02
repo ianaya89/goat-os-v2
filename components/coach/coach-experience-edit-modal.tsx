@@ -2,12 +2,7 @@
 
 import NiceModal from "@ebay/nice-modal-react";
 import { format } from "date-fns";
-import {
-	BriefcaseIcon,
-	CalendarIcon,
-	FlagIcon,
-	TrophyIcon,
-} from "lucide-react";
+import { BriefcaseIcon, CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod/v4";
 import {
@@ -33,66 +28,108 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 import { useZodForm } from "@/hooks/use-zod-form";
+import { AthleteSport, CoachExperienceLevel } from "@/lib/db/schema/enums";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
-const careerSchema = z.object({
+const experienceSchema = z.object({
 	clubId: z.string().uuid().optional().nullable(),
 	nationalTeamId: z.string().uuid().optional().nullable(),
+	role: z.string().trim().max(100),
+	sport: z.nativeEnum(AthleteSport).optional().nullable(),
+	level: z.nativeEnum(CoachExperienceLevel).optional().nullable(),
 	startDate: z.date().optional().nullable(),
 	endDate: z.date().optional().nullable(),
-	position: z.string().max(100).optional().nullable(),
-	achievements: z.string().max(1000).optional().nullable(),
-	notes: z.string().max(500).optional().nullable(),
+	achievements: z.string().trim().max(2000).optional().nullable(),
+	description: z.string().trim().max(2000).optional().nullable(),
 });
 
-type CareerFormData = z.infer<typeof careerSchema>;
+type ExperienceFormData = z.infer<typeof experienceSchema>;
 
-interface CareerEntry {
+interface ExperienceEntry {
 	id: string;
 	clubId: string | null;
 	nationalTeamId: string | null;
+	role: string;
+	sport: AthleteSport | null;
+	level: CoachExperienceLevel | null;
 	startDate: Date | null;
 	endDate: Date | null;
-	position: string | null;
 	achievements: string | null;
-	notes: string | null;
+	description: string | null;
 }
 
-interface AthleteCareerEditModalProps {
-	athleteId: string;
-	entry?: CareerEntry;
+interface CoachExperienceEditModalProps {
+	entry?: ExperienceEntry;
 }
 
-export const AthleteCareerEditModal = NiceModal.create(
-	({ entry }: AthleteCareerEditModalProps) => {
+const sportLabels: Record<AthleteSport, string> = {
+	[AthleteSport.soccer]: "Futbol",
+	[AthleteSport.basketball]: "Basquetbol",
+	[AthleteSport.volleyball]: "Voleibol",
+	[AthleteSport.tennis]: "Tenis",
+	[AthleteSport.swimming]: "Natacion",
+	[AthleteSport.athletics]: "Atletismo",
+	[AthleteSport.rugby]: "Rugby",
+	[AthleteSport.hockey]: "Hockey",
+	[AthleteSport.baseball]: "Beisbol",
+	[AthleteSport.handball]: "Handball",
+	[AthleteSport.padel]: "Padel",
+	[AthleteSport.golf]: "Golf",
+	[AthleteSport.boxing]: "Boxeo",
+	[AthleteSport.martialArts]: "Artes Marciales",
+	[AthleteSport.gymnastics]: "Gimnasia",
+	[AthleteSport.cycling]: "Ciclismo",
+	[AthleteSport.running]: "Running",
+	[AthleteSport.fitness]: "Fitness",
+	[AthleteSport.crossfit]: "CrossFit",
+	[AthleteSport.other]: "Otro",
+};
+
+const levelLabels: Record<CoachExperienceLevel, string> = {
+	[CoachExperienceLevel.amateur]: "Amateur",
+	[CoachExperienceLevel.professional]: "Profesional",
+	[CoachExperienceLevel.nationalTeam]: "Seleccion Nacional",
+};
+
+export const CoachExperienceEditModal = NiceModal.create(
+	({ entry }: CoachExperienceEditModalProps) => {
 		const modal = useEnhancedModal();
 		const utils = trpc.useUtils();
 		const isEditing = !!entry;
 
 		const form = useZodForm({
-			schema: careerSchema,
+			schema: experienceSchema,
 			defaultValues: {
 				clubId: entry?.clubId ?? null,
 				nationalTeamId: entry?.nationalTeamId ?? null,
+				role: entry?.role ?? "",
+				sport: entry?.sport ?? null,
+				level: entry?.level ?? null,
 				startDate: entry?.startDate ?? null,
 				endDate: entry?.endDate ?? null,
-				position: entry?.position ?? "",
 				achievements: entry?.achievements ?? "",
-				notes: entry?.notes ?? "",
+				description: entry?.description ?? "",
 			},
 		});
 
 		const isNationalTeam = !!form.watch("nationalTeamId");
 
-		const createMutation = trpc.athlete.addCareerHistory.useMutation({
+		const createMutation = trpc.coach.addSportsExperience.useMutation({
 			onSuccess: () => {
-				toast.success("Historial de carrera agregado");
-				utils.athlete.getMyProfile.invalidate();
+				toast.success("Experiencia agregada");
+				utils.coach.getMyProfile.invalidate();
 				modal.handleClose();
 			},
 			onError: (error) => {
@@ -100,10 +137,10 @@ export const AthleteCareerEditModal = NiceModal.create(
 			},
 		});
 
-		const updateMutation = trpc.athlete.updateCareerHistory.useMutation({
+		const updateMutation = trpc.coach.updateSportsExperience.useMutation({
 			onSuccess: () => {
-				toast.success("Historial de carrera actualizado");
-				utils.athlete.getMyProfile.invalidate();
+				toast.success("Experiencia actualizada");
+				utils.coach.getMyProfile.invalidate();
 				modal.handleClose();
 			},
 			onError: (error) => {
@@ -111,10 +148,10 @@ export const AthleteCareerEditModal = NiceModal.create(
 			},
 		});
 
-		const deleteMutation = trpc.athlete.deleteCareerHistory.useMutation({
+		const deleteMutation = trpc.coach.deleteSportsExperience.useMutation({
 			onSuccess: () => {
-				toast.success("Historial de carrera eliminado");
-				utils.athlete.getMyProfile.invalidate();
+				toast.success("Experiencia eliminada");
+				utils.coach.getMyProfile.invalidate();
 				modal.handleClose();
 			},
 			onError: (error) => {
@@ -122,15 +159,17 @@ export const AthleteCareerEditModal = NiceModal.create(
 			},
 		});
 
-		const onSubmit = form.handleSubmit((data: CareerFormData) => {
+		const onSubmit = form.handleSubmit((data: ExperienceFormData) => {
 			const payload = {
 				clubId: data.clubId ?? undefined,
 				nationalTeamId: data.nationalTeamId ?? undefined,
+				role: data.role,
+				sport: data.sport ?? undefined,
+				level: data.level ?? undefined,
 				startDate: data.startDate ?? undefined,
 				endDate: data.endDate ?? undefined,
-				position: data.position || undefined,
 				achievements: data.achievements || undefined,
-				notes: data.notes || undefined,
+				description: data.description || undefined,
 			};
 
 			if (isEditing && entry) {
@@ -141,7 +180,7 @@ export const AthleteCareerEditModal = NiceModal.create(
 		});
 
 		const handleDelete = () => {
-			if (entry && confirm("Eliminar este historial de carrera?")) {
+			if (entry && confirm("Eliminar esta experiencia?")) {
 				deleteMutation.mutate({ id: entry.id });
 			}
 		};
@@ -163,8 +202,8 @@ export const AthleteCareerEditModal = NiceModal.create(
 			<ProfileEditSheet
 				open={modal.visible}
 				onClose={modal.handleClose}
-				title={isEditing ? "Editar Historial" : "Agregar Historial"}
-				subtitle="Registra tu trayectoria en clubes y selecciones"
+				title={isEditing ? "Editar Experiencia" : "Agregar Experiencia"}
+				subtitle="Registra tu experiencia como entrenador"
 				icon={<BriefcaseIcon className="size-5" />}
 				accentColor="primary"
 				form={form}
@@ -205,7 +244,7 @@ export const AthleteCareerEditModal = NiceModal.create(
 				}
 			>
 				<div className="space-y-6">
-					{/* Type Selector */}
+					{/* Institution Type Selector */}
 					<Tabs
 						defaultValue={isNationalTeam ? "national" : "club"}
 						onValueChange={handleTabChange}
@@ -216,7 +255,6 @@ export const AthleteCareerEditModal = NiceModal.create(
 								Club / Equipo
 							</TabsTrigger>
 							<TabsTrigger value="national" className="gap-2">
-								<FlagIcon className="size-4" />
 								Seleccion Nacional
 							</TabsTrigger>
 						</TabsList>
@@ -247,7 +285,7 @@ export const AthleteCareerEditModal = NiceModal.create(
 							/>
 						</TabsContent>
 
-						<TabsContent value="national" className="mt-4 space-y-4">
+						<TabsContent value="national" className="mt-4">
 							<FormField
 								control={form.control}
 								name="nationalTeamId"
@@ -273,6 +311,89 @@ export const AthleteCareerEditModal = NiceModal.create(
 							/>
 						</TabsContent>
 					</Tabs>
+
+					<ProfileEditSection title="Detalles del Rol">
+						<ProfileEditGrid cols={2}>
+							<FormField
+								control={form.control}
+								name="role"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>Rol / Posicion</FormLabel>
+											<FormControl>
+												<Input
+													placeholder="Entrenador Principal, Asistente..."
+													{...field}
+												/>
+											</FormControl>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
+
+							<FormField
+								control={form.control}
+								name="sport"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>Deporte</FormLabel>
+											<Select
+												value={field.value ?? ""}
+												onValueChange={(v) => field.onChange(v || null)}
+											>
+												<FormControl>
+													<SelectTrigger>
+														<SelectValue placeholder="Seleccionar deporte" />
+													</SelectTrigger>
+												</FormControl>
+												<SelectContent>
+													{Object.entries(sportLabels).map(([value, label]) => (
+														<SelectItem key={value} value={value}>
+															{label}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
+
+							<FormField
+								control={form.control}
+								name="level"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>Nivel</FormLabel>
+											<Select
+												value={field.value ?? ""}
+												onValueChange={(v) => field.onChange(v || null)}
+											>
+												<FormControl>
+													<SelectTrigger>
+														<SelectValue placeholder="Seleccionar nivel" />
+													</SelectTrigger>
+												</FormControl>
+												<SelectContent>
+													{Object.entries(levelLabels).map(([value, label]) => (
+														<SelectItem key={value} value={value}>
+															{label}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
+						</ProfileEditGrid>
+					</ProfileEditSection>
 
 					<ProfileEditSection title="Periodo">
 						<ProfileEditGrid cols={2}>
@@ -365,40 +486,17 @@ export const AthleteCareerEditModal = NiceModal.create(
 						</ProfileEditGrid>
 					</ProfileEditSection>
 
-					<ProfileEditSection title="Detalles">
-						<FormField
-							control={form.control}
-							name="position"
-							render={({ field }) => (
-								<FormItem asChild>
-									<Field>
-										<FormLabel>Posicion / Rol</FormLabel>
-										<FormControl>
-											<Input
-												placeholder="Mediocampista, Delantero, Base..."
-												{...field}
-												value={field.value ?? ""}
-											/>
-										</FormControl>
-										<FormMessage />
-									</Field>
-								</FormItem>
-							)}
-						/>
-
+					<ProfileEditSection title="Informacion Adicional">
 						<FormField
 							control={form.control}
 							name="achievements"
 							render={({ field }) => (
 								<FormItem asChild>
 									<Field>
-										<FormLabel className="flex items-center gap-2">
-											<TrophyIcon className="size-4 text-amber-500" />
-											Logros
-										</FormLabel>
+										<FormLabel>Logros</FormLabel>
 										<FormControl>
 											<Textarea
-												placeholder="Campeon liga 2024, Goleador, MVP, Mejor defensor..."
+												placeholder="Campeonatos ganados, records, etc..."
 												className="resize-none"
 												rows={3}
 												{...field}
@@ -413,16 +511,16 @@ export const AthleteCareerEditModal = NiceModal.create(
 
 						<FormField
 							control={form.control}
-							name="notes"
+							name="description"
 							render={({ field }) => (
 								<FormItem asChild>
 									<Field>
-										<FormLabel>Notas Adicionales</FormLabel>
+										<FormLabel>Descripcion</FormLabel>
 										<FormControl>
 											<Textarea
-												placeholder="Cualquier informacion adicional..."
+												placeholder="Describe tus responsabilidades y logros..."
 												className="resize-none"
-												rows={2}
+												rows={3}
 												{...field}
 												value={field.value ?? ""}
 											/>

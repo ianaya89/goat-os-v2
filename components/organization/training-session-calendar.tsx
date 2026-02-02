@@ -40,12 +40,22 @@ import {
 } from "@/lib/utils/location-colors";
 import { trpc } from "@/trpc/client";
 
+export type SessionsCalendarMode = "admin" | "athlete" | "coach";
+
 type TrainingSessionCalendarProps = {
 	toolbarActions?: React.ReactNode;
+	/**
+	 * Mode determines which data source is used:
+	 * - admin: All sessions in the organization
+	 * - athlete: Only sessions where user is an athlete
+	 * - coach: Only sessions where user is a coach
+	 */
+	mode?: SessionsCalendarMode;
 };
 
 export function TrainingSessionCalendar({
 	toolbarActions,
+	mode = "admin",
 }: TrainingSessionCalendarProps) {
 	const t = useTranslations("training");
 	const calendarRef = React.useRef<FullCalendar>(null);
@@ -91,18 +101,73 @@ export function TrainingSessionCalendar({
 	const coaches = coachesData?.coaches ?? [];
 	const athletes = athletesData?.athletes ?? [];
 
-	const { data: sessions, isLoading } =
-		trpc.organization.trainingSession.listForCalendar.useQuery({
+	// Use different queries based on mode
+	const adminQuery = trpc.organization.trainingSession.listForCalendar.useQuery(
+		{
 			from: dateRange.from,
 			to: dateRange.to,
 			...filters,
-		});
+		},
+		{ enabled: mode === "admin" },
+	);
 
-	// Delete mutation
+	// For athlete/coach modes, use their specific queries with date range filter
+	const athleteQuery =
+		trpc.organization.trainingSession.listMySessionsAsAthlete.useQuery(
+			{
+				limit: 500, // Large limit for calendar
+				offset: 0,
+				filters: {
+					dateRange: { from: dateRange.from, to: dateRange.to },
+					locationId: filters.locationId,
+				},
+			},
+			{ enabled: mode === "athlete" },
+		);
+
+	const coachQuery =
+		trpc.organization.trainingSession.listMySessionsAsCoach.useQuery(
+			{
+				limit: 500, // Large limit for calendar
+				offset: 0,
+				filters: {
+					dateRange: { from: dateRange.from, to: dateRange.to },
+					locationId: filters.locationId,
+				},
+			},
+			{ enabled: mode === "coach" },
+		);
+
+	// Select the appropriate data based on mode
+	const sessions =
+		mode === "admin"
+			? adminQuery.data
+			: mode === "athlete"
+				? athleteQuery.data?.sessions
+				: coachQuery.data?.sessions;
+	const isLoading =
+		mode === "admin"
+			? adminQuery.isLoading
+			: mode === "athlete"
+				? athleteQuery.isLoading
+				: coachQuery.isLoading;
+
+	// Helper to invalidate the correct query based on mode
+	const invalidateSessionsQuery = React.useCallback(() => {
+		if (mode === "admin") {
+			utils.organization.trainingSession.listForCalendar.invalidate();
+		} else if (mode === "athlete") {
+			utils.organization.trainingSession.listMySessionsAsAthlete.invalidate();
+		} else {
+			utils.organization.trainingSession.listMySessionsAsCoach.invalidate();
+		}
+	}, [mode, utils]);
+
+	// Delete mutation - only available in admin mode
 	const deleteMutation = trpc.organization.trainingSession.delete.useMutation({
 		onSuccess: () => {
 			toast.success(t("success.deleted"));
-			utils.organization.trainingSession.listForCalendar.invalidate();
+			invalidateSessionsQuery();
 			setIsPreviewOpen(false);
 			setSelectedSession(null);
 		},
@@ -116,27 +181,61 @@ export function TrainingSessionCalendar({
 		if (!sessions) return [];
 
 		return sessions.map((session) => {
+			// Cast to unknown first to handle different query return types
+			const s = session as {
+				id: string;
+				title: string;
+				startTime: Date;
+				endTime: Date;
+				status: string;
+				isRecurring?: boolean;
+				location?: { id: string; name: string; color?: string | null } | null;
+				athleteGroup?: {
+					id: string;
+					name: string;
+					members?: Array<{
+						athlete: {
+							id: string;
+							user?: { id: string; name: string; image: string | null } | null;
+						};
+					}>;
+				} | null;
+				athletes?: Array<{
+					athlete: {
+						id: string;
+						user?: { id: string; name: string; image: string | null } | null;
+					};
+				}>;
+				coaches: Array<{
+					isPrimary: boolean;
+					coach: {
+						id: string;
+						user?: { id: string; name: string; image: string | null } | null;
+					};
+				}>;
+			};
+
 			// Get location color, then normalize for safe calendar display
-			const rawColor = session.location?.id
-				? getLocationColor(session.location.id, session.location.color)
+			const rawColor = s.location?.id
+				? getLocationColor(s.location.id, s.location.color)
 				: "#6b7280"; // Default gray for no location
 			const locationColor = getSafeEventColor(rawColor);
 
 			// Get athletes from group or direct assignment
-			const athletesList = session.athleteGroup?.members
-				? session.athleteGroup.members.map((m) => ({
+			const athletesList = s.athleteGroup?.members
+				? s.athleteGroup.members.map((m) => ({
 						id: m.athlete.id,
 						name: m.athlete.user?.name ?? "Unknown",
 						image: m.athlete.user?.image ?? null,
 					}))
-				: (session.athletes?.map((a) => ({
+				: (s.athletes?.map((a) => ({
 						id: a.athlete.id,
 						name: a.athlete.user?.name ?? "Unknown",
 						image: a.athlete.user?.image ?? null,
 					})) ?? []);
 
 			// Get coach info
-			const coachesList = session.coaches.map((c) => ({
+			const coachesList = s.coaches.map((c) => ({
 				id: c.coach.id,
 				name: c.coach.user?.name ?? "Unknown",
 				image: c.coach.user?.image ?? null,
@@ -150,26 +249,26 @@ export function TrainingSessionCalendar({
 			const textColor = getContrastTextColor(locationColor);
 
 			return {
-				id: session.id,
-				title: session.title,
-				start: session.startTime,
-				end: session.endTime,
+				id: s.id,
+				title: s.title,
+				start: s.startTime,
+				end: s.endTime,
 				backgroundColor: locationColor,
 				borderColor: locationColor,
 				textColor,
 				classNames: [
-					session.status === "cancelled" ? "opacity-60" : "",
-					session.status === "pending" ? "border-dashed" : "",
+					s.status === "cancelled" ? "opacity-60" : "",
+					s.status === "pending" ? "border-dashed" : "",
 				].filter(Boolean),
 				extendedProps: {
-					status: session.status,
-					location: session.location?.name,
-					locationId: session.location?.id,
-					athleteGroup: session.athleteGroup?.name,
+					status: s.status,
+					location: s.location?.name,
+					locationId: s.location?.id,
+					athleteGroup: s.athleteGroup?.name,
 					athletes: athletesList,
 					coaches: coachesList,
 					primaryCoach,
-					isRecurring: session.isRecurring,
+					isRecurring: s.isRecurring,
 					textColor,
 				},
 			};
@@ -217,7 +316,12 @@ export function TrainingSessionCalendar({
 				(s) => s.id === selectedSession.id,
 			);
 			if (sessionForModal) {
-				NiceModal.show(TrainingSessionsModal, { session: sessionForModal });
+				// Cast to the expected type for the modal
+				NiceModal.show(TrainingSessionsModal, {
+					session: sessionForModal as Parameters<
+						typeof TrainingSessionsModal
+					>[0]["session"],
+				});
 			}
 		}
 	}, [selectedSession, sessions]);
@@ -229,9 +333,12 @@ export function TrainingSessionCalendar({
 		}
 	}, [selectedSession, deleteMutation]);
 
-	// Handle date click - create new session
+	// Handle date click - create new session (only in admin mode)
 	const handleDateClick = React.useCallback(
 		(arg: { date: Date; dateStr: string; allDay: boolean }) => {
+			// Only allow creating sessions in admin mode
+			if (mode !== "admin") return;
+
 			// Set start time to the clicked date at current hour
 			const startTime = new Date(arg.date);
 			if (arg.allDay) {
@@ -242,7 +349,7 @@ export function TrainingSessionCalendar({
 			// Open modal
 			NiceModal.show(TrainingSessionsModal, {});
 		},
-		[],
+		[mode],
 	);
 
 	// Update filter
@@ -368,43 +475,48 @@ export function TrainingSessionCalendar({
 					</SelectContent>
 				</Select>
 
-				<Select
-					value={filters.coachId ?? "all"}
-					onValueChange={(v) =>
-						updateFilter("coachId", v === "all" ? undefined : v)
-					}
-				>
-					<SelectTrigger size="sm">
-						<SelectValue placeholder={t("calendar.allCoaches")} />
-					</SelectTrigger>
-					<SelectContent>
-						<SelectItem value="all">{t("calendar.allCoaches")}</SelectItem>
-						{coaches.map((coach) => (
-							<SelectItem key={coach.id} value={coach.id}>
-								{coach.user?.name ?? "Unknown"}
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
+				{/* Only show coach/athlete filters in admin mode */}
+				{mode === "admin" && (
+					<>
+						<Select
+							value={filters.coachId ?? "all"}
+							onValueChange={(v) =>
+								updateFilter("coachId", v === "all" ? undefined : v)
+							}
+						>
+							<SelectTrigger size="sm">
+								<SelectValue placeholder={t("calendar.allCoaches")} />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="all">{t("calendar.allCoaches")}</SelectItem>
+								{coaches.map((coach) => (
+									<SelectItem key={coach.id} value={coach.id}>
+										{coach.user?.name ?? "Unknown"}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
 
-				<Select
-					value={filters.athleteId ?? "all"}
-					onValueChange={(v) =>
-						updateFilter("athleteId", v === "all" ? undefined : v)
-					}
-				>
-					<SelectTrigger size="sm">
-						<SelectValue placeholder={t("calendar.allAthletes")} />
-					</SelectTrigger>
-					<SelectContent>
-						<SelectItem value="all">{t("calendar.allAthletes")}</SelectItem>
-						{athletes.map((athlete) => (
-							<SelectItem key={athlete.id} value={athlete.id}>
-								{athlete.user?.name ?? "Unknown"}
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
+						<Select
+							value={filters.athleteId ?? "all"}
+							onValueChange={(v) =>
+								updateFilter("athleteId", v === "all" ? undefined : v)
+							}
+						>
+							<SelectTrigger size="sm">
+								<SelectValue placeholder={t("calendar.allAthletes")} />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="all">{t("calendar.allAthletes")}</SelectItem>
+								{athletes.map((athlete) => (
+									<SelectItem key={athlete.id} value={athlete.id}>
+										{athlete.user?.name ?? "Unknown"}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</>
+				)}
 
 				{hasActiveFilters && (
 					<Button
@@ -432,11 +544,11 @@ export function TrainingSessionCalendar({
 					}}
 					events={events}
 					eventClick={handleEventClick}
-					dateClick={handleDateClick}
+					dateClick={mode === "admin" ? handleDateClick : undefined}
 					datesSet={handleDatesSet}
 					editable={false}
-					selectable={true}
-					selectMirror={true}
+					selectable={mode === "admin"}
+					selectMirror={mode === "admin"}
 					dayMaxEvents={3}
 					weekends={true}
 					nowIndicator={true}
@@ -645,8 +757,12 @@ export function TrainingSessionCalendar({
 				session={selectedSession}
 				open={isPreviewOpen}
 				onOpenChange={setIsPreviewOpen}
-				onEdit={handleEditFromPreview}
-				onDelete={handleDeleteFromPreview}
+				onEdit={
+					mode === "admin" || mode === "coach"
+						? handleEditFromPreview
+						: undefined
+				}
+				onDelete={mode === "admin" ? handleDeleteFromPreview : undefined}
 				isDeleting={deleteMutation.isPending}
 			/>
 		</div>

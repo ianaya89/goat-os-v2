@@ -111,7 +111,9 @@
 		"profile": "Perfil",
 		"security": "Seguridad",
 		"sessions": "Sesiones",
+		"mySessions": "Mis Sesiones",
 		"athleteProfile": "Perfil Deportivo",
+		"coachProfile": "Perfil Entrenador",
 		"backToOrganization": "Volver a la organizacion"
 	},
 	"orgSwitcher": {

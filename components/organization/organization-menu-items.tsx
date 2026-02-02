@@ -90,21 +90,16 @@ export function OrganizationMenuItems(): React.JSX.Element {
 
 	const basePath = "/dashboard/organization";
 
-	// Use pre-computed capability from context
+	// Use pre-computed capabilities from context
 	const isRestrictedMember = userProfile.capabilities.isRestrictedMember;
+	const isRestrictedCoach = userProfile.capabilities.isRestrictedCoach;
 
 	// Menu items for restricted members (athletes) - no "My" prefix needed
 	// since they can only see their own data anyway
 	const restrictedMemberMenuItems: MenuItem[] = [
 		{
-			label: t("calendar"),
-			href: `${basePath}/my-calendar`,
-			icon: CalendarIcon,
-			feature: OrganizationFeature.trainingSessions,
-		},
-		{
 			label: t("sessions"),
-			href: `${basePath}/my-sessions/athlete`,
+			href: `${basePath}/sessions`,
 			icon: ClipboardListIcon,
 			feature: OrganizationFeature.trainingSessions,
 		},
@@ -120,12 +115,13 @@ export function OrganizationMenuItems(): React.JSX.Element {
 			icon: BanknoteIcon,
 			feature: OrganizationFeature.payments,
 		},
-		{
-			label: t("eventsSimple"),
-			href: `${basePath}/my-events`,
-			icon: CalendarDaysIcon,
-			feature: OrganizationFeature.events,
-		},
+		// Events temporarily hidden
+		// {
+		// 	label: t("eventsSimple"),
+		// 	href: `${basePath}/my-events`,
+		// 	icon: CalendarDaysIcon,
+		// 	feature: OrganizationFeature.events,
+		// },
 	];
 
 	// Build sports items conditionally (for admin/owner view)
@@ -192,22 +188,16 @@ export function OrganizationMenuItems(): React.JSX.Element {
 		},
 	];
 
-	// Add coach sessions if user is a coach
-	if (userProfile.isCoach) {
+	// Add "My Sessions" if user is a coach or athlete (but not restricted - they have their own menu)
+	if (
+		(userProfile.isCoach || userProfile.isAthlete) &&
+		!isRestrictedMember &&
+		!isRestrictedCoach
+	) {
 		sportsItems.push({
-			label: t("mySessionsCoach"),
-			href: `${basePath}/my-sessions/coach`,
+			label: t("mySessions"),
+			href: `${basePath}/sessions`,
 			icon: ClipboardListIcon,
-			feature: OrganizationFeature.trainingSessions,
-		});
-	}
-
-	// Add athlete sessions if user is an athlete (but not restricted - they have their own menu)
-	if (userProfile.isAthlete && !isRestrictedMember) {
-		sportsItems.push({
-			label: t("mySessionsAthlete"),
-			href: `${basePath}/my-sessions/athlete`,
-			icon: UserIcon,
 			feature: OrganizationFeature.trainingSessions,
 		});
 	}
@@ -218,6 +208,32 @@ export function OrganizationMenuItems(): React.JSX.Element {
 			label: t("groups.activity"),
 			icon: CalendarIcon,
 			items: restrictedMemberMenuItems,
+			defaultOpen: true,
+		},
+	];
+
+	// Menu items for restricted coaches - only their sessions and athletes
+	const restrictedCoachMenuItems: MenuItem[] = [
+		{
+			label: t("sessions"),
+			href: `${basePath}/sessions`,
+			icon: ClipboardListIcon,
+			feature: OrganizationFeature.trainingSessions,
+		},
+		{
+			label: t("myAthletes"),
+			href: `${basePath}/my-athletes`,
+			icon: MedalIcon,
+			feature: OrganizationFeature.athletes,
+		},
+	];
+
+	// Restricted coach menu groups
+	const restrictedCoachMenuGroups: MenuGroup[] = [
+		{
+			label: t("groups.activity"),
+			icon: CalendarIcon,
+			items: restrictedCoachMenuItems,
 			defaultOpen: true,
 		},
 	];
@@ -399,10 +415,21 @@ export function OrganizationMenuItems(): React.JSX.Element {
 			}))
 			.filter((group) => group.items.length > 0);
 
-	// Use restricted member menu if user has restricted access, otherwise use admin menu
-	const menuGroups: MenuGroup[] = filterMenuGroups(
-		isRestrictedMember ? restrictedMemberMenuGroups : adminMenuGroups,
-	);
+	// Select the appropriate menu based on user's access level:
+	// 1. Restricted member (athlete without coach profile) -> athlete menu
+	// 2. Restricted coach (coach without admin/owner role) -> coach menu
+	// 3. Admin/Owner -> full admin menu
+	const getMenuGroups = (): MenuGroup[] => {
+		if (isRestrictedMember) {
+			return restrictedMemberMenuGroups;
+		}
+		if (isRestrictedCoach) {
+			return restrictedCoachMenuGroups;
+		}
+		return adminMenuGroups;
+	};
+
+	const menuGroups: MenuGroup[] = filterMenuGroups(getMenuGroups());
 
 	// Initialize open groups with defaults (consistent for SSR and client hydration)
 	const [openGroups, setOpenGroups] = React.useState<Set<string>>(

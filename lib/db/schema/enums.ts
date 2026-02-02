@@ -130,6 +130,18 @@ export type CoachExperienceLevel =
 	(typeof CoachExperienceLevel)[keyof typeof CoachExperienceLevel];
 export const CoachExperienceLevels = Object.values(CoachExperienceLevel);
 
+// Coach opportunity type enum (LinkedIn-style "Open to Work" for coaches)
+export const CoachOpportunityType = {
+	headCoach: "head_coach", // Buscando posición de entrenador principal
+	assistantCoach: "assistant_coach", // Buscando posición de asistente
+	youthCoach: "youth_coach", // Interesado en entrenar categorías juveniles
+	privateCoaching: "private_coaching", // Disponible para clases particulares
+	consultancy: "consultancy", // Disponible para consultorías
+} as const;
+export type CoachOpportunityType =
+	(typeof CoachOpportunityType)[keyof typeof CoachOpportunityType];
+export const CoachOpportunityTypes = Object.values(CoachOpportunityType);
+
 // Athlete status enum
 export const AthleteStatus = {
 	active: "active",
