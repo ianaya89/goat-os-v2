@@ -277,6 +277,21 @@
 			"notesPlaceholderDefault": "Any additional notes...",
 			"selectSessionError": "Please select a session",
 			"savedSuccess": "Attendance recorded successfully"
+		},
+		"matrix": {
+			"noSessions": "No sessions recorded",
+			"month": "Month",
+			"sessionsHeader": "Sessions",
+			"session": "session",
+			"sessions": "sessions",
+			"moreSessions": "more session(s)",
+			"loadMore": "Load more",
+			"moreMonths": "more months",
+			"present": "Present",
+			"absent": "Absent",
+			"late": "Late",
+			"excused": "Excused",
+			"pending": "Pending"
 		}
 	},
 	"physical": {

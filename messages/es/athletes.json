@@ -277,6 +277,21 @@
 			"notesPlaceholderDefault": "Notas adicionales...",
 			"selectSessionError": "Por favor selecciona una sesión",
 			"savedSuccess": "Asistencia registrada correctamente"
+		},
+		"matrix": {
+			"noSessions": "No hay sesiones registradas",
+			"month": "Mes",
+			"sessionsHeader": "Sesiones",
+			"session": "sesión",
+			"sessions": "sesiones",
+			"moreSessions": "sesión(es) más",
+			"loadMore": "Cargar más",
+			"moreMonths": "meses más",
+			"present": "Presente",
+			"absent": "Ausente",
+			"late": "Tarde",
+			"excused": "Justificado",
+			"pending": "Pendiente"
 		}
 	},
 	"physical": {

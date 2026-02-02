@@ -36,13 +36,13 @@ import { useTranslations } from "next-intl";
 import * as React from "react";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/confirmation-modal";
-import { AddAttendanceModal } from "@/components/organization/add-attendance-modal";
 import { AddCareerHistoryModal } from "@/components/organization/add-career-history-modal";
 import { AddEvaluationModal } from "@/components/organization/add-evaluation-modal";
 import { AddFitnessTestModal } from "@/components/organization/add-fitness-test-modal";
 import { AddPhysicalMetricsModal } from "@/components/organization/add-physical-metrics-modal";
 import { AddWellnessModal } from "@/components/organization/add-wellness-modal";
 import { AssignTeamModal } from "@/components/organization/assign-team-modal";
+import { AthleteAttendanceMatrix } from "@/components/organization/athlete-attendance-matrix";
 import { OrgAthleteBioEditModal } from "@/components/organization/athlete-info/org-athlete-bio-edit-modal";
 import { OrgAthleteContactEditModal } from "@/components/organization/athlete-info/org-athlete-contact-edit-modal";
 import { OrgAthleteEducationEditModal } from "@/components/organization/athlete-info/org-athlete-education-edit-modal";
@@ -81,14 +81,6 @@ import { trpc } from "@/trpc/client";
 interface AthleteProfileProps {
 	athleteId: string;
 }
-
-const attendanceStatusColors: Record<string, string> = {
-	present: "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100",
-	absent: "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100",
-	late: "bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100",
-	excused: "bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100",
-	pending: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100",
-};
 
 export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 	const t = useTranslations("athletes");
@@ -133,6 +125,16 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 		trpc.organization.attendance.delete.useMutation({
 			onSuccess: () => {
 				toast.success(t("attendance.deleted"));
+				utils.organization.athlete.getProfile.invalidate({ id: athleteId });
+			},
+			onError: (error) => {
+				toast.error(error.message);
+			},
+		});
+
+	const recordAttendanceMutation =
+		trpc.organization.attendance.record.useMutation({
+			onSuccess: () => {
 				utils.organization.athlete.getProfile.invalidate({ id: athleteId });
 			},
 			onError: (error) => {
@@ -524,179 +526,21 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 				</TabsContent>
 
 				<TabsContent value="attendance" className="space-y-4">
-					<div className="flex justify-end">
-						<Button
-							size="sm"
-							onClick={() => {
-								const availableSessions = sessions
-									.filter((s) => s.status !== "cancelled")
-									.map((s) => ({
-										id: s.id,
-										title: s.title,
-										startTime: new Date(s.startTime),
-										status: s.status,
-									}));
-								NiceModal.show(AddAttendanceModal, {
-									athleteId,
-									athleteName: athlete.user?.name,
-									sessions: availableSessions,
-								});
-							}}
-						>
-							<PlusIcon className="mr-2 size-4" />
-							{t("attendance.addAttendance")}
-						</Button>
-					</div>
-					{attendanceRecords.length === 0 ? (
-						<EmptyState
-							icon={CheckCircleIcon}
-							title={t("attendance.noRecords")}
-						/>
-					) : (
-						<div className="rounded-lg border">
-							<table className="w-full">
-								<thead>
-									<tr className="border-b bg-muted/50">
-										<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
-											{t("attendance.table.session")}
-										</th>
-										<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
-											{t("attendance.table.date")}
-										</th>
-										<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
-											{t("attendance.table.status")}
-										</th>
-										<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground sm:table-cell">
-											{t("attendance.table.checkedIn")}
-										</th>
-										<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground md:table-cell">
-											{t("attendance.table.notes")}
-										</th>
-										<th className="w-[50px] px-4 py-3 text-right text-xs font-medium text-muted-foreground">
-											<span className="sr-only">
-												{t("attendance.table.actions")}
-											</span>
-										</th>
-									</tr>
-								</thead>
-								<tbody className="divide-y">
-									{attendanceRecords.map((record) => (
-										<tr key={record.id} className="hover:bg-muted/30">
-											<td className="px-4 py-3">
-												<Link
-													href={`/dashboard/organization/training-sessions/${record.session.id}`}
-													className="font-medium text-sm hover:underline"
-												>
-													{record.session.title}
-												</Link>
-											</td>
-											<td className="px-4 py-3 text-sm">
-												{format(
-													new Date(record.session.startTime),
-													"dd MMM yyyy",
-												)}
-											</td>
-											<td className="px-4 py-3">
-												<Badge
-													className={cn(
-														"border-none",
-														attendanceStatusColors[record.status],
-													)}
-												>
-													{t(`attendance.statuses.${record.status}`)}
-												</Badge>
-											</td>
-											<td className="hidden px-4 py-3 text-sm sm:table-cell">
-												{record.checkedInAt ? (
-													<span className="flex items-center gap-1 text-muted-foreground">
-														<ClockIcon className="size-3.5" />
-														{format(new Date(record.checkedInAt), "h:mm a")}
-													</span>
-												) : (
-													<span className="text-muted-foreground">-</span>
-												)}
-											</td>
-											<td className="hidden px-4 py-3 text-sm md:table-cell">
-												{record.notes ? (
-													<span className="max-w-[200px] truncate block text-muted-foreground">
-														{record.notes}
-													</span>
-												) : (
-													<span className="text-muted-foreground">-</span>
-												)}
-											</td>
-											<td className="px-4 py-3">
-												<div className="flex justify-end">
-													<DropdownMenu>
-														<DropdownMenuTrigger asChild>
-															<Button
-																className="size-8 text-muted-foreground data-[state=open]:bg-muted"
-																size="icon"
-																variant="ghost"
-															>
-																<MoreHorizontalIcon className="shrink-0" />
-															</Button>
-														</DropdownMenuTrigger>
-														<DropdownMenuContent align="end">
-															<DropdownMenuItem
-																onClick={() => {
-																	const availableSessions = sessions
-																		.filter((s) => s.status !== "cancelled")
-																		.map((s) => ({
-																			id: s.id,
-																			title: s.title,
-																			startTime: new Date(s.startTime),
-																			status: s.status,
-																		}));
-																	NiceModal.show(AddAttendanceModal, {
-																		athleteId,
-																		athleteName: athlete.user?.name,
-																		sessions: availableSessions,
-																		initialSessionId: record.session.id,
-																		initialValues: {
-																			status: record.status,
-																			notes: record.notes ?? "",
-																		},
-																	});
-																}}
-															>
-																<PencilIcon className="mr-2 size-4" />
-																{t("attendance.actions.edit")}
-															</DropdownMenuItem>
-															<DropdownMenuSeparator />
-															<DropdownMenuItem
-																variant="destructive"
-																onClick={() => {
-																	NiceModal.show(ConfirmationModal, {
-																		title: t("attendance.deleteConfirm.title"),
-																		message: t(
-																			"attendance.deleteConfirm.message",
-																			{ name: record.session.title },
-																		),
-																		confirmLabel: t(
-																			"attendance.deleteConfirm.confirm",
-																		),
-																		destructive: true,
-																		onConfirm: () =>
-																			deleteAttendanceMutation.mutate({
-																				id: record.id,
-																			}),
-																	});
-																}}
-															>
-																<Trash2Icon className="mr-2 size-4" />
-																{t("attendance.actions.delete")}
-															</DropdownMenuItem>
-														</DropdownMenuContent>
-													</DropdownMenu>
-												</div>
-											</td>
-										</tr>
-									))}
-								</tbody>
-							</table>
-						</div>
-					)}
+					<AthleteAttendanceMatrix
+						sessions={sessions.filter((s) => s.status !== "cancelled")}
+						attendanceRecords={attendanceRecords}
+						onStatusChange={(sessionId, status) => {
+							recordAttendanceMutation.mutate({
+								sessionId,
+								athleteId,
+								status,
+							});
+						}}
+						isMutating={recordAttendanceMutation.isPending}
+						mutatingSessionId={
+							recordAttendanceMutation.variables?.sessionId ?? null
+						}
+					/>
 				</TabsContent>
 
 				{/* Physical Metrics Tab */}
