@@ -162,6 +162,8 @@ interface SessionsListTableProps {
 	onAddEvaluation?: (sessionId: string) => void;
 	/** Optional callback for status change. If not provided, change status option won't show */
 	onChangeStatus?: (sessionId: string, status: string) => void;
+	/** If true, limits actions to view and change status only (for coaches) */
+	isCoachView?: boolean;
 }
 
 export function SessionsListTable({
@@ -175,6 +177,7 @@ export function SessionsListTable({
 	onDeleteSession,
 	onAddEvaluation,
 	onChangeStatus,
+	isCoachView = false,
 }: SessionsListTableProps) {
 	const t = useTranslations("athletes.groups.profile");
 	const tTraining = useTranslations("training");
@@ -379,7 +382,7 @@ export function SessionsListTable({
 									{t("status")}
 								</th>
 								<th className="w-[50px] px-4 py-3 text-right text-xs font-medium text-muted-foreground">
-									<span className="sr-only">{t("actions")}</span>
+									<span className="sr-only">{t("actionsColumn")}</span>
 								</th>
 							</tr>
 						</thead>
@@ -455,127 +458,145 @@ export function SessionsListTable({
 										</td>
 										<td className="px-4 py-3">
 											<div className="flex justify-end">
-												<DropdownMenu>
-													<DropdownMenuTrigger asChild>
-														<Button
-															className="size-8 text-muted-foreground data-[state=open]:bg-muted"
-															size="icon"
-															variant="ghost"
+												{isCoachView ? (
+													<Button variant="ghost" size="icon" asChild>
+														<Link
+															href={`/dashboard/organization/training-sessions/${session.id}`}
 														>
-															<MoreHorizontalIcon className="shrink-0" />
-															<span className="sr-only">Open menu</span>
-														</Button>
-													</DropdownMenuTrigger>
-													<DropdownMenuContent align="end">
-														<DropdownMenuItem asChild>
-															<Link
-																href={`/dashboard/organization/training-sessions/${session.id}`}
-															>
-																<EyeIcon className="mr-2 size-4" />
+															<EyeIcon className="size-4" />
+															<span className="sr-only">
 																{t("actions.viewSession")}
-															</Link>
-														</DropdownMenuItem>
-														{session.endTime &&
-															session.coaches &&
-															session.athletes && (
-																<DropdownMenuItem
-																	onClick={() => {
-																		const sessionData = {
-																			id: session.id,
-																			title: session.title,
-																			description: session.description ?? null,
-																			startTime: new Date(session.startTime),
-																			endTime: new Date(
-																				session.endTime as
-																					| string
-																					| number
-																					| Date,
-																			),
-																			status: session.status,
-																			location: session.location ?? null,
-																			athleteGroup:
-																				session.athleteGroup ?? null,
-																			coaches: session.coaches!,
-																			athletes: session.athletes!,
-																			objectives: session.objectives ?? null,
-																			planning: session.planning ?? null,
-																			postSessionNotes:
-																				session.postSessionNotes ?? null,
-																			isRecurring: session.isRecurring,
-																			rrule: session.rrule ?? null,
-																			attachmentKey:
-																				session.attachmentKey ?? null,
-																		};
-																		NiceModal.show(TrainingSessionsModal, {
-																			session: sessionData,
-																		});
-																	}}
+															</span>
+														</Link>
+													</Button>
+												) : (
+													<DropdownMenu>
+														<DropdownMenuTrigger asChild>
+															<Button
+																className="size-8 text-muted-foreground data-[state=open]:bg-muted"
+																size="icon"
+																variant="ghost"
+															>
+																<MoreHorizontalIcon className="shrink-0" />
+																<span className="sr-only">Open menu</span>
+															</Button>
+														</DropdownMenuTrigger>
+														<DropdownMenuContent align="end">
+															<DropdownMenuItem asChild>
+																<Link
+																	href={`/dashboard/organization/training-sessions/${session.id}`}
 																>
-																	<EditIcon className="mr-2 size-4" />
-																	{t("actions.editSession")}
-																</DropdownMenuItem>
-															)}
-														<DropdownMenuItem
-															onClick={() =>
-																NiceModal.show(SessionAttendanceModal, {
-																	sessionId: session.id,
-																	sessionTitle: session.title,
-																	sessionDate,
-																	locationName: session.location?.name,
-																})
-															}
-														>
-															<CalendarCheckIcon className="mr-2 size-4" />
-															{t("attendance")}
-														</DropdownMenuItem>
-														{onChangeStatus && (
-															<DropdownMenuSub>
-																<DropdownMenuSubTrigger>
-																	<RefreshCwIcon className="mr-2 size-4" />
-																	{t("actions.changeStatus")}
-																</DropdownMenuSubTrigger>
-																<DropdownMenuSubContent>
-																	{SESSION_STATUSES.filter(
-																		(s) => s !== session.status,
-																	).map((status) => (
-																		<DropdownMenuItem
-																			key={status}
-																			onClick={() =>
-																				onChangeStatus(session.id, status)
-																			}
-																		>
-																			{sessionStatusIcons[status]}
-																			{t(`actions.statuses.${status}`)}
-																		</DropdownMenuItem>
-																	))}
-																</DropdownMenuSubContent>
-															</DropdownMenuSub>
-														)}
-														{onAddEvaluation &&
-															session.status === "completed" && (
-																<DropdownMenuItem
-																	onClick={() => onAddEvaluation(session.id)}
-																>
-																	<StarIcon className="mr-2 size-4" />
-																	{t("actions.addEvaluation")}
-																</DropdownMenuItem>
-															)}
-														{onDeleteSession && (
-															<>
-																<DropdownMenuSeparator />
+																	<EyeIcon className="mr-2 size-4" />
+																	{t("actions.viewSession")}
+																</Link>
+															</DropdownMenuItem>
+															{!isCoachView &&
+																session.endTime &&
+																session.coaches &&
+																session.athletes && (
+																	<DropdownMenuItem
+																		onClick={() => {
+																			const sessionData = {
+																				id: session.id,
+																				title: session.title,
+																				description:
+																					session.description ?? null,
+																				startTime: new Date(session.startTime),
+																				endTime: new Date(
+																					session.endTime as
+																						| string
+																						| number
+																						| Date,
+																				),
+																				status: session.status,
+																				location: session.location ?? null,
+																				athleteGroup:
+																					session.athleteGroup ?? null,
+																				coaches: session.coaches!,
+																				athletes: session.athletes!,
+																				objectives: session.objectives ?? null,
+																				planning: session.planning ?? null,
+																				postSessionNotes:
+																					session.postSessionNotes ?? null,
+																				isRecurring: session.isRecurring,
+																				rrule: session.rrule ?? null,
+																				attachmentKey:
+																					session.attachmentKey ?? null,
+																			};
+																			NiceModal.show(TrainingSessionsModal, {
+																				session: sessionData,
+																			});
+																		}}
+																	>
+																		<EditIcon className="mr-2 size-4" />
+																		{t("actions.editSession")}
+																	</DropdownMenuItem>
+																)}
+															{!isCoachView && (
 																<DropdownMenuItem
 																	onClick={() =>
-																		onDeleteSession(session.id, session.title)
+																		NiceModal.show(SessionAttendanceModal, {
+																			sessionId: session.id,
+																			sessionTitle: session.title,
+																			sessionDate,
+																			locationName: session.location?.name,
+																		})
 																	}
-																	variant="destructive"
 																>
-																	<Trash2Icon className="mr-2 size-4" />
-																	{t("actions.deleteSession")}
+																	<CalendarCheckIcon className="mr-2 size-4" />
+																	{t("attendance")}
 																</DropdownMenuItem>
-															</>
-														)}
-													</DropdownMenuContent>
-												</DropdownMenu>
+															)}
+															{onChangeStatus && (
+																<DropdownMenuSub>
+																	<DropdownMenuSubTrigger>
+																		<RefreshCwIcon className="mr-2 size-4" />
+																		{t("actions.changeStatus")}
+																	</DropdownMenuSubTrigger>
+																	<DropdownMenuSubContent>
+																		{SESSION_STATUSES.filter(
+																			(s) => s !== session.status,
+																		).map((status) => (
+																			<DropdownMenuItem
+																				key={status}
+																				onClick={() =>
+																					onChangeStatus(session.id, status)
+																				}
+																			>
+																				{sessionStatusIcons[status]}
+																				{t(`actions.statuses.${status}`)}
+																			</DropdownMenuItem>
+																		))}
+																	</DropdownMenuSubContent>
+																</DropdownMenuSub>
+															)}
+															{!isCoachView &&
+																onAddEvaluation &&
+																session.status === "completed" && (
+																	<DropdownMenuItem
+																		onClick={() => onAddEvaluation(session.id)}
+																	>
+																		<StarIcon className="mr-2 size-4" />
+																		{t("actions.addEvaluation")}
+																	</DropdownMenuItem>
+																)}
+															{!isCoachView && onDeleteSession && (
+																<>
+																	<DropdownMenuSeparator />
+																	<DropdownMenuItem
+																		onClick={() =>
+																			onDeleteSession(session.id, session.title)
+																		}
+																		variant="destructive"
+																	>
+																		<Trash2Icon className="mr-2 size-4" />
+																		{t("actions.deleteSession")}
+																	</DropdownMenuItem>
+																</>
+															)}
+														</DropdownMenuContent>
+													</DropdownMenu>
+												)}
 											</div>
 										</td>
 									</tr>

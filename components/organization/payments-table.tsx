@@ -114,7 +114,15 @@ const methodKeys: Record<string, string> = {
 	other: "other",
 };
 
-export function PaymentsTable(): React.JSX.Element {
+interface PaymentsTableProps {
+	readOnly?: boolean;
+	athleteId?: string;
+}
+
+export function PaymentsTable({
+	readOnly = false,
+	athleteId,
+}: PaymentsTableProps): React.JSX.Element {
 	const t = useTranslations("finance.payments");
 	const [rowSelection, setRowSelection] = React.useState({});
 
@@ -230,6 +238,7 @@ export function PaymentsTable(): React.JSX.Element {
 				paymentMethod: (methodFilter || []).filter((m) =>
 					TrainingPaymentMethods.includes(m as TrainingPaymentMethod),
 				) as TrainingPaymentMethod[],
+				athleteId: athleteId,
 			},
 		},
 		{
@@ -265,7 +274,8 @@ export function PaymentsTable(): React.JSX.Element {
 	};
 
 	const columns: ColumnDef<TrainingPayment>[] = [
-		createSelectionColumn<TrainingPayment>(),
+		// Selection column only for admin mode
+		...(readOnly ? [] : [createSelectionColumn<TrainingPayment>()]),
 		{
 			accessorKey: "description",
 			header: t("table.description"),
@@ -278,55 +288,98 @@ export function PaymentsTable(): React.JSX.Element {
 				</span>
 			),
 		},
-		{
-			id: "athleteSession",
-			header: t("table.athlete"),
-			cell: ({ row }) => {
-				const { athlete, session, sessions } = row.original;
-				const linkedSessionsCount = sessions?.length ?? 0;
-				const hasLinkedSessions = linkedSessionsCount > 0;
+		// In readonly mode (athlete view), show only session info. In admin mode, show athlete + session
+		...(readOnly
+			? [
+					{
+						id: "session",
+						header: t("table.session"),
+						cell: ({ row }: { row: { original: TrainingPayment } }) => {
+							const { session, sessions } = row.original;
+							const linkedSessionsCount = sessions?.length ?? 0;
+							const hasLinkedSessions = linkedSessionsCount > 0;
 
-				if (!athlete && !session && !hasLinkedSessions) {
-					return <span className="text-muted-foreground">-</span>;
-				}
-				return (
-					<div className="flex flex-col gap-0.5">
-						{athlete && (
-							<Link
-								href={`/dashboard/organization/athletes/${athlete.id}`}
-								className="flex items-center gap-1.5 text-foreground/80 hover:text-foreground hover:underline"
-							>
-								<UserIcon className="size-3.5 shrink-0" />
-								<span className="max-w-[140px] truncate">
-									{athlete.user?.name ?? t("table.unknown")}
-								</span>
-							</Link>
-						)}
-						{/* Show package indicator if multiple sessions */}
-						{hasLinkedSessions ? (
-							<div className="flex items-center gap-1.5 text-foreground/60 text-xs">
-								<LayersIcon className="size-3 shrink-0" />
-								<span>
-									{t("table.sessionsCount", { count: linkedSessionsCount })}
-								</span>
-							</div>
-						) : (
-							session && (
-								<Link
-									href={`/dashboard/organization/training-sessions/${session.id}`}
-									className="flex items-center gap-1.5 text-foreground/60 text-xs hover:text-foreground hover:underline"
-								>
-									<CalendarIcon className="size-3 shrink-0" />
-									<span className="max-w-[140px] truncate">
-										{session.title}
-									</span>
-								</Link>
-							)
-						)}
-					</div>
-				);
-			},
-		},
+							if (!session && !hasLinkedSessions) {
+								return <span className="text-muted-foreground">-</span>;
+							}
+							return (
+								<div className="flex flex-col gap-0.5">
+									{hasLinkedSessions ? (
+										<div className="flex items-center gap-1.5 text-foreground/80">
+											<LayersIcon className="size-3.5 shrink-0" />
+											<span>
+												{t("table.sessionsCount", {
+													count: linkedSessionsCount,
+												})}
+											</span>
+										</div>
+									) : (
+										session && (
+											<div className="flex items-center gap-1.5 text-foreground/80">
+												<CalendarIcon className="size-3.5 shrink-0" />
+												<span className="max-w-[160px] truncate">
+													{session.title}
+												</span>
+											</div>
+										)
+									)}
+								</div>
+							);
+						},
+					} as ColumnDef<TrainingPayment>,
+				]
+			: [
+					{
+						id: "athleteSession",
+						header: t("table.athlete"),
+						cell: ({ row }: { row: { original: TrainingPayment } }) => {
+							const { athlete, session, sessions } = row.original;
+							const linkedSessionsCount = sessions?.length ?? 0;
+							const hasLinkedSessions = linkedSessionsCount > 0;
+
+							if (!athlete && !session && !hasLinkedSessions) {
+								return <span className="text-muted-foreground">-</span>;
+							}
+							return (
+								<div className="flex flex-col gap-0.5">
+									{athlete && (
+										<Link
+											href={`/dashboard/organization/athletes/${athlete.id}`}
+											className="flex items-center gap-1.5 text-foreground/80 hover:text-foreground hover:underline"
+										>
+											<UserIcon className="size-3.5 shrink-0" />
+											<span className="max-w-[140px] truncate">
+												{athlete.user?.name ?? t("table.unknown")}
+											</span>
+										</Link>
+									)}
+									{hasLinkedSessions ? (
+										<div className="flex items-center gap-1.5 text-foreground/60 text-xs">
+											<LayersIcon className="size-3 shrink-0" />
+											<span>
+												{t("table.sessionsCount", {
+													count: linkedSessionsCount,
+												})}
+											</span>
+										</div>
+									) : (
+										session && (
+											<Link
+												href={`/dashboard/organization/training-sessions/${session.id}`}
+												className="flex items-center gap-1.5 text-foreground/60 text-xs hover:text-foreground hover:underline"
+											>
+												<CalendarIcon className="size-3 shrink-0" />
+												<span className="max-w-[140px] truncate">
+													{session.title}
+												</span>
+											</Link>
+										)
+									)}
+								</div>
+							);
+						},
+					} as ColumnDef<TrainingPayment>,
+				]),
 		{
 			accessorKey: "amount",
 			header: ({ column }) => (
@@ -384,64 +437,73 @@ export function PaymentsTable(): React.JSX.Element {
 				</span>
 			),
 		},
-		{
-			id: "actions",
-			enableSorting: false,
-			cell: ({ row }) => (
-				<div className="flex justify-end">
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button
-								className="flex size-8 text-muted-foreground data-[state=open]:bg-muted"
-								size="icon"
-								variant="ghost"
-							>
-								<MoreHorizontalIcon className="shrink-0" />
-								<span className="sr-only">{t("table.openMenu")}</span>
-							</Button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end">
-							<DropdownMenuItem
-								onClick={() => {
-									NiceModal.show(PaymentsModal, { payment: row.original });
-								}}
-							>
-								<PencilIcon className="mr-2 size-4" />
-								{t("edit")}
-							</DropdownMenuItem>
-							<DropdownMenuItem
-								onClick={() => {
-									NiceModal.show(PaymentReceiptModal, {
-										paymentId: row.original.id,
-										hasReceipt: !!row.original.receiptImageKey,
-									});
-								}}
-							>
-								<FileTextIcon className="mr-2 size-4" />
-								{t("receipt.manage")}
-							</DropdownMenuItem>
-							<DropdownMenuSeparator />
-							<DropdownMenuItem
-								onClick={() => {
-									NiceModal.show(ConfirmationModal, {
-										title: t("deleteConfirm.title"),
-										message: t("deleteConfirm.message"),
-										confirmLabel: t("deleteConfirm.confirm"),
-										destructive: true,
-										onConfirm: () =>
-											deletePaymentMutation.mutate({ id: row.original.id }),
-									});
-								}}
-								variant="destructive"
-							>
-								<Trash2Icon className="mr-2 size-4" />
-								{t("delete")}
-							</DropdownMenuItem>
-						</DropdownMenuContent>
-					</DropdownMenu>
-				</div>
-			),
-		},
+		// Actions column only for admin mode
+		...(readOnly
+			? []
+			: [
+					{
+						id: "actions",
+						enableSorting: false,
+						cell: ({ row }: { row: { original: TrainingPayment } }) => (
+							<div className="flex justify-end">
+								<DropdownMenu>
+									<DropdownMenuTrigger asChild>
+										<Button
+											className="flex size-8 text-muted-foreground data-[state=open]:bg-muted"
+											size="icon"
+											variant="ghost"
+										>
+											<MoreHorizontalIcon className="shrink-0" />
+											<span className="sr-only">{t("table.openMenu")}</span>
+										</Button>
+									</DropdownMenuTrigger>
+									<DropdownMenuContent align="end">
+										<DropdownMenuItem
+											onClick={() => {
+												NiceModal.show(PaymentsModal, {
+													payment: row.original,
+												});
+											}}
+										>
+											<PencilIcon className="mr-2 size-4" />
+											{t("edit")}
+										</DropdownMenuItem>
+										<DropdownMenuItem
+											onClick={() => {
+												NiceModal.show(PaymentReceiptModal, {
+													paymentId: row.original.id,
+													hasReceipt: !!row.original.receiptImageKey,
+												});
+											}}
+										>
+											<FileTextIcon className="mr-2 size-4" />
+											{t("receipt.manage")}
+										</DropdownMenuItem>
+										<DropdownMenuSeparator />
+										<DropdownMenuItem
+											onClick={() => {
+												NiceModal.show(ConfirmationModal, {
+													title: t("deleteConfirm.title"),
+													message: t("deleteConfirm.message"),
+													confirmLabel: t("deleteConfirm.confirm"),
+													destructive: true,
+													onConfirm: () =>
+														deletePaymentMutation.mutate({
+															id: row.original.id,
+														}),
+												});
+											}}
+											variant="destructive"
+										>
+											<Trash2Icon className="mr-2 size-4" />
+											{t("delete")}
+										</DropdownMenuItem>
+									</DropdownMenuContent>
+								</DropdownMenu>
+							</div>
+						),
+					} as ColumnDef<TrainingPayment>,
+				]),
 	];
 
 	const paymentFilters: FilterConfig[] = [
@@ -471,29 +533,33 @@ export function PaymentsTable(): React.JSX.Element {
 			emptyMessage={t("table.noPayments")}
 			enableFilters
 			enablePagination
-			enableRowSelection
+			enableRowSelection={!readOnly}
 			enableSearch
 			filters={paymentFilters}
 			loading={isPending}
 			onFiltersChange={handleFiltersChange}
 			onPageIndexChange={setPageIndex}
 			onPageSizeChange={setPageSize}
-			onRowSelectionChange={setRowSelection}
+			onRowSelectionChange={readOnly ? undefined : setRowSelection}
 			onSearchQueryChange={handleSearchQueryChange}
 			onSortingChange={handleSortingChange}
 			pageIndex={pageIndex || 0}
 			pageSize={pageSize || appConfig.pagination.defaultLimit}
-			renderBulkActions={(table) => <PaymentsBulkActions table={table} />}
-			rowSelection={rowSelection}
+			renderBulkActions={
+				readOnly ? undefined : (table) => <PaymentsBulkActions table={table} />
+			}
+			rowSelection={readOnly ? {} : rowSelection}
 			searchPlaceholder={t("search")}
 			searchQuery={searchQuery || ""}
 			defaultSorting={DEFAULT_SORTING}
 			sorting={sorting}
 			toolbarActions={
-				<Button onClick={() => NiceModal.show(PaymentsModal)} size="sm">
-					<PlusIcon className="size-4 shrink-0" />
-					{t("add")}
-				</Button>
+				readOnly ? undefined : (
+					<Button onClick={() => NiceModal.show(PaymentsModal)} size="sm">
+						<PlusIcon className="size-4 shrink-0" />
+						{t("add")}
+					</Button>
+				)
 			}
 			totalCount={data?.total ?? 0}
 		/>

@@ -1,41 +1,34 @@
 "use client";
 
-import NiceModal, { useModal } from "@ebay/nice-modal-react";
-import {
-	ActivityIcon,
-	Loader2Icon,
-	MessageSquareIcon,
-	SmileIcon,
-} from "lucide-react";
+import NiceModal from "@ebay/nice-modal-react";
+import { ActivityIcon, MessageSquareIcon, SmileIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { z } from "zod/v4";
 import {
-	Form,
+	ProfileEditSection,
+	ProfileEditSheet,
+} from "@/components/athlete/profile-edit-sheet";
+import { Field } from "@/components/ui/field";
+import {
 	FormControl,
 	FormField,
 	FormItem,
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
-import {
-	Sheet,
-	SheetContent,
-	SheetDescription,
-	SheetFooter,
-	SheetHeader,
-	SheetTitle,
-} from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
+import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
+import { useZodForm } from "@/hooks/use-zod-form";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
-interface FormValues {
-	rpeRating: number | null;
-	satisfactionRating: number | null;
-	notes: string;
-}
+const feedbackSchema = z.object({
+	rpeRating: z.number().min(1).max(10).nullable(),
+	satisfactionRating: z.number().min(1).max(10).nullable(),
+	notes: z.string().trim().max(2000).optional(),
+});
 
 interface SessionFeedbackModalProps {
 	sessionId: string;
@@ -185,7 +178,8 @@ function RatingButtons({
 
 export const SessionFeedbackModal = NiceModal.create(
 	({ sessionId, sessionTitle }: SessionFeedbackModalProps) => {
-		const modal = useModal();
+		const t = useTranslations("training");
+		const modal = useEnhancedModal();
 		const utils = trpc.useUtils();
 
 		const { data, isLoading } =
@@ -193,7 +187,8 @@ export const SessionFeedbackModal = NiceModal.create(
 				sessionId,
 			});
 
-		const form = useForm<FormValues>({
+		const form = useZodForm({
+			schema: feedbackSchema,
 			defaultValues: {
 				rpeRating: null,
 				satisfactionRating: null,
@@ -215,7 +210,7 @@ export const SessionFeedbackModal = NiceModal.create(
 		const upsertMutation = trpc.organization.sessionFeedback.upsert.useMutation(
 			{
 				onSuccess: () => {
-					toast.success("Feedback enviado correctamente");
+					toast.success(t("feedback.success"));
 					utils.organization.sessionFeedback.getMyFeedback.invalidate({
 						sessionId,
 					});
@@ -223,7 +218,7 @@ export const SessionFeedbackModal = NiceModal.create(
 						sessionId,
 					});
 					utils.organization.trainingSession.listMySessionsAsAthlete.invalidate();
-					modal.hide();
+					modal.handleClose();
 				},
 				onError: (error) => {
 					toast.error(error.message);
@@ -231,146 +226,111 @@ export const SessionFeedbackModal = NiceModal.create(
 			},
 		);
 
-		const onSubmit = (values: FormValues) => {
+		const onSubmit = form.handleSubmit((values) => {
 			upsertMutation.mutate({
 				sessionId,
 				rpeRating: values.rpeRating,
 				satisfactionRating: values.satisfactionRating,
 				notes: values.notes || undefined,
 			});
-		};
+		});
 
 		const canSubmitRpe = data?.canSubmitRpe ?? false;
 		const hasExistingFeedback = !!data?.feedback;
 
 		return (
-			<Sheet
+			<ProfileEditSheet
 				open={modal.visible}
-				onOpenChange={(open) => {
-					if (!open) modal.hide();
-				}}
+				onClose={modal.handleClose}
+				title={
+					hasExistingFeedback
+						? t("feedback.editTitle")
+						: t("feedback.createTitle")
+				}
+				subtitle={sessionTitle}
+				icon={<ActivityIcon className="size-5" />}
+				accentColor="amber"
+				form={form}
+				onSubmit={onSubmit}
+				isPending={upsertMutation.isPending || isLoading}
+				maxWidth="lg"
+				onAnimationEndCapture={modal.handleAnimationEndCapture}
 			>
-				<SheetContent className="overflow-y-auto sm:max-w-lg">
-					<SheetHeader className="pb-4 border-b">
-						<SheetTitle className="flex items-center gap-2 text-lg">
-							<ActivityIcon className="size-5 text-primary" />
-							{hasExistingFeedback ? "Editar Feedback" : "Dar Feedback"}
-						</SheetTitle>
-						<SheetDescription className="text-base">
-							{sessionTitle}
-						</SheetDescription>
-					</SheetHeader>
-
-					{isLoading ? (
-						<div className="flex items-center justify-center py-16">
-							<Loader2Icon className="size-8 animate-spin text-muted-foreground" />
-						</div>
-					) : (
-						<Form {...form}>
-							<form
-								onSubmit={form.handleSubmit(onSubmit)}
-								className="mt-8 space-y-8"
-							>
-								{/* RPE Section */}
-								<FormField
-									control={form.control}
-									name="rpeRating"
-									render={({ field }) => (
-										<FormItem className="space-y-4 p-4 rounded-xl bg-orange-50/50 dark:bg-orange-950/20 border border-orange-200/50 dark:border-orange-900/30">
-											<FormLabel className="flex items-center gap-2 text-base font-semibold">
-												<ActivityIcon className="size-5 text-orange-500" />
-												Esfuerzo Percibido (RPE)
-											</FormLabel>
-											{!canSubmitRpe && (
-												<p className="text-muted-foreground text-sm bg-muted/50 p-3 rounded-lg">
-													El RPE solo se puede enviar después de que la sesión
-													haya comenzado.
-												</p>
-											)}
-											<FormControl>
-												<RatingButtons
-													value={field.value}
-													onChange={field.onChange}
-													disabled={!canSubmitRpe}
-													type="rpe"
-												/>
-											</FormControl>
-											<FormMessage />
-										</FormItem>
+				<div className="space-y-6">
+					{/* RPE Section */}
+					<ProfileEditSection title={t("feedback.rpeTitle")}>
+						<FormField
+							control={form.control}
+							name="rpeRating"
+							render={({ field }) => (
+								<FormItem>
+									{!canSubmitRpe && (
+										<p className="text-muted-foreground text-sm bg-muted/50 p-3 rounded-lg mb-4">
+											{t("feedback.rpeDisabledMessage")}
+										</p>
 									)}
-								/>
+									<FormControl>
+										<RatingButtons
+											value={field.value}
+											onChange={field.onChange}
+											disabled={!canSubmitRpe}
+											type="rpe"
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+					</ProfileEditSection>
 
-								{/* Satisfaction Section */}
-								<FormField
-									control={form.control}
-									name="satisfactionRating"
-									render={({ field }) => (
-										<FormItem className="space-y-4 p-4 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-900/30">
-											<FormLabel className="flex items-center gap-2 text-base font-semibold">
-												<SmileIcon className="size-5 text-blue-500" />
-												Satisfacción
-											</FormLabel>
-											<FormControl>
-												<RatingButtons
-													value={field.value}
-													onChange={field.onChange}
-													type="satisfaction"
-												/>
-											</FormControl>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
+					{/* Satisfaction Section */}
+					<ProfileEditSection title={t("feedback.satisfactionTitle")}>
+						<FormField
+							control={form.control}
+							name="satisfactionRating"
+							render={({ field }) => (
+								<FormItem>
+									<FormControl>
+										<RatingButtons
+											value={field.value}
+											onChange={field.onChange}
+											type="satisfaction"
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+					</ProfileEditSection>
 
-								{/* Notes */}
-								<FormField
-									control={form.control}
-									name="notes"
-									render={({ field }) => (
-										<FormItem className="space-y-3">
-											<FormLabel className="flex items-center gap-2 text-base">
-												<MessageSquareIcon className="size-4 text-muted-foreground" />
-												Comentarios (Opcional)
-											</FormLabel>
-											<FormControl>
-												<Textarea
-													placeholder="¿Cómo te sentiste? ¿Algún comentario sobre los ejercicios?"
-													className="resize-none min-h-[100px]"
-													rows={4}
-													{...field}
-												/>
-											</FormControl>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-
-								<SheetFooter className="gap-3 pt-6 border-t">
-									<Button
-										type="button"
-										variant="outline"
-										onClick={() => modal.hide()}
-										disabled={upsertMutation.isPending}
-										className="flex-1 sm:flex-none"
-									>
-										Cancelar
-									</Button>
-									<Button
-										type="submit"
-										disabled={upsertMutation.isPending}
-										className="flex-1 sm:flex-none"
-									>
-										{upsertMutation.isPending && (
-											<Loader2Icon className="mr-2 size-4 animate-spin" />
-										)}
-										{hasExistingFeedback ? "Actualizar" : "Enviar Feedback"}
-									</Button>
-								</SheetFooter>
-							</form>
-						</Form>
-					)}
-				</SheetContent>
-			</Sheet>
+					{/* Notes */}
+					<ProfileEditSection>
+						<FormField
+							control={form.control}
+							name="notes"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel className="flex items-center gap-2">
+											<MessageSquareIcon className="size-4 text-muted-foreground" />
+											{t("feedback.notesLabel")}
+										</FormLabel>
+										<FormControl>
+											<Textarea
+												placeholder={t("feedback.notesPlaceholder")}
+												className="resize-none min-h-[100px]"
+												rows={4}
+												{...field}
+											/>
+										</FormControl>
+										<FormMessage />
+									</Field>
+								</FormItem>
+							)}
+						/>
+					</ProfileEditSection>
+				</div>
+			</ProfileEditSheet>
 		);
 	},
 );

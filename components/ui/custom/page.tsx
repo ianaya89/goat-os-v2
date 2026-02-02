@@ -207,12 +207,15 @@ export type PageContentProps = React.PropsWithChildren<{
 	title: string;
 	action?: React.ReactNode;
 	leftAction?: React.ReactNode;
+	/** Optional icon to display before the title */
+	icon?: React.ReactNode;
 }>;
 
 function PageContent({
 	title,
 	action,
 	leftAction,
+	icon,
 	children,
 }: PageContentProps): React.JSX.Element {
 	return (
@@ -220,13 +223,14 @@ function PageContent({
 			<div className="mx-auto w-full space-y-4">
 				<div
 					className={
-						action || leftAction
+						action || leftAction || icon
 							? "flex flex-row items-center justify-between"
 							: undefined
 					}
 				>
 					<div className="flex items-center gap-2">
 						{leftAction}
+						{icon && <span className="text-muted-foreground">{icon}</span>}
 						<PageTitle>{title}</PageTitle>
 					</div>
 					{action}

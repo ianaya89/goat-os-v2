@@ -451,7 +451,7 @@ export function TrainingSessionsTable({
 		session: TrainingSession,
 		channel: NotificationChannel,
 	) => {
-		const athleteCount = session.athletes.length;
+		const athleteCount = session.athletes?.length ?? 0;
 		const channelLabel =
 			channel === "email"
 				? "Email"
@@ -578,7 +578,7 @@ export function TrainingSessionsTable({
 			header: t("table.coaches"),
 			cell: ({ row }) => {
 				const coaches = row.original.coaches;
-				if (coaches.length === 0) return "-";
+				if (!coaches || coaches.length === 0) return "-";
 
 				const primaryCoach = coaches.find((c) => c.isPrimary)?.coach;
 				const displayCoach = primaryCoach ?? coaches[0]?.coach;
@@ -618,7 +618,7 @@ export function TrainingSessionsTable({
 					);
 				}
 
-				if (athletesList.length > 0) {
+				if (athletesList && athletesList.length > 0) {
 					const first = athletesList[0]?.athlete;
 					const remaining = athletesList.length - 1;
 
@@ -661,7 +661,7 @@ export function TrainingSessionsTable({
 			header: t("table.payment"),
 			cell: ({ row }) => {
 				const payments = row.original.payments;
-				if (payments.length === 0) {
+				if (!payments || payments.length === 0) {
 					return (
 						<div className="flex items-center gap-1.5 text-muted-foreground">
 							<BanknoteIcon className="size-4" />

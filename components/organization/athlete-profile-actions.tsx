@@ -27,6 +27,8 @@ interface AthleteProfileActionsProps {
 	athleteName: string;
 	isArchived: boolean;
 	onEdit?: () => void;
+	/** If true, hides archive and delete actions (for coaches) */
+	isCoachView?: boolean;
 }
 
 export function AthleteProfileActions({
@@ -34,6 +36,7 @@ export function AthleteProfileActions({
 	athleteName,
 	isArchived,
 	onEdit,
+	isCoachView = false,
 }: AthleteProfileActionsProps) {
 	const t = useTranslations("athletes");
 	const tCommon = useTranslations("common");
@@ -100,6 +103,11 @@ export function AthleteProfileActions({
 			onConfirm: () => unarchiveAthleteMutation.mutate({ id: athleteId }),
 		});
 	};
+
+	// Coach view: no actions menu (read-only)
+	if (isCoachView) {
+		return null;
+	}
 
 	return (
 		<DropdownMenu>

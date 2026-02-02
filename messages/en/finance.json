@@ -174,7 +174,8 @@
 			"empty": {
 				"title": "No payments recorded",
 				"description": "You don't have any payments recorded in this organization yet."
-			}
+			},
+			"notAthlete": "You are not registered as an athlete in this organization."
 		},
 		"success": {
 			"created": "Payment recorded successfully.",

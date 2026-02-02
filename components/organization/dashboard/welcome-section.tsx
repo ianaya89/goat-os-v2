@@ -26,7 +26,7 @@ import {
 import { useSession } from "@/hooks/use-session";
 
 type WelcomeSectionProps = {
-	variant: "admin" | "athlete";
+	variant: "admin" | "athlete" | "coach";
 };
 
 export function WelcomeSection({
@@ -65,6 +65,24 @@ export function WelcomeSection({
 		},
 	];
 
+	const coachActions = [
+		{
+			label: t("createSession"),
+			href: "/dashboard/organization/training-sessions",
+			icon: CalendarPlusIcon,
+		},
+		{
+			label: t("myAthletes"),
+			href: "/dashboard/organization/my-athletes",
+			icon: UsersIcon,
+		},
+		{
+			label: t("mySessions"),
+			href: "/dashboard/organization/my-sessions/coach",
+			icon: CalendarDaysIcon,
+		},
+	];
+
 	const athleteActions = [
 		{
 			label: t("myCalendar"),
@@ -83,7 +101,15 @@ export function WelcomeSection({
 		},
 	];
 
-	const actions = variant === "admin" ? adminActions : athleteActions;
+	const actions =
+		variant === "admin"
+			? adminActions
+			: variant === "coach"
+				? coachActions
+				: athleteActions;
+
+	// Only show quick actions for admin
+	const showQuickActions = variant === "admin";
 
 	return (
 		<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -94,24 +120,26 @@ export function WelcomeSection({
 				</h1>
 				<p className="text-muted-foreground text-sm capitalize">{today}</p>
 			</div>
-			<DropdownMenu>
-				<DropdownMenuTrigger asChild>
-					<Button variant="default" size="sm" className="gap-1.5">
-						<MoreHorizontalIcon className="size-4" />
-						{t("quickActions")}
-					</Button>
-				</DropdownMenuTrigger>
-				<DropdownMenuContent align="end" className="w-48">
-					{actions.map((action) => (
-						<DropdownMenuItem key={action.href} asChild>
-							<Link href={action.href} className="flex items-center gap-2">
-								<action.icon className="size-4" />
-								{action.label}
-							</Link>
-						</DropdownMenuItem>
-					))}
-				</DropdownMenuContent>
-			</DropdownMenu>
+			{showQuickActions && (
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button variant="default" size="sm" className="gap-1.5">
+							<MoreHorizontalIcon className="size-4" />
+							{t("quickActions")}
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="end" className="w-48">
+						{actions.map((action) => (
+							<DropdownMenuItem key={action.href} asChild>
+								<Link href={action.href} className="flex items-center gap-2">
+									<action.icon className="size-4" />
+									{action.label}
+								</Link>
+							</DropdownMenuItem>
+						))}
+					</DropdownMenuContent>
+				</DropdownMenu>
+			)}
 		</div>
 	);
 }

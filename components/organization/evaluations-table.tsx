@@ -204,12 +204,15 @@ export function SessionEvaluationsTable({
 	evaluations,
 	athletes,
 	onEvaluationDeleted,
+	readOnly = false,
 }: {
 	sessionId: string;
 	sessionTitle: string;
 	evaluations: SessionEvaluation[];
 	athletes: SessionAthlete[];
 	onEvaluationDeleted?: () => void;
+	/** If true, hides add/edit/delete buttons (for athlete view) */
+	readOnly?: boolean;
 }) {
 	const t = useTranslations("athletes.evaluations");
 
@@ -275,41 +278,43 @@ export function SessionEvaluationsTable({
 
 	return (
 		<div className="space-y-4">
-			<div className="flex justify-end">
-				{unevaluatedAthletes.length > 0 ? (
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button size="sm">
-								<PlusIcon className="mr-2 size-4" />
-								{t("addEvaluation")}
-							</Button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end" className="w-56">
-							<DropdownMenuLabel>{t("table.athlete")}</DropdownMenuLabel>
-							<DropdownMenuSeparator />
-							{unevaluatedAthletes.map((athlete) => (
-								<DropdownMenuItem
-									key={athlete.id}
-									onClick={() => handleAddForAthlete(athlete)}
-									className="gap-2"
-								>
-									<UserAvatar
-										className="size-5"
-										name={athlete.name}
-										src={athlete.image ?? undefined}
-									/>
-									{athlete.name}
-								</DropdownMenuItem>
-							))}
-						</DropdownMenuContent>
-					</DropdownMenu>
-				) : (
-					<Button size="sm" disabled>
-						<PlusIcon className="mr-2 size-4" />
-						{t("addEvaluation")}
-					</Button>
-				)}
-			</div>
+			{!readOnly && (
+				<div className="flex justify-end">
+					{unevaluatedAthletes.length > 0 ? (
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<Button size="sm">
+									<PlusIcon className="mr-2 size-4" />
+									{t("addEvaluation")}
+								</Button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent align="end" className="w-56">
+								<DropdownMenuLabel>{t("table.athlete")}</DropdownMenuLabel>
+								<DropdownMenuSeparator />
+								{unevaluatedAthletes.map((athlete) => (
+									<DropdownMenuItem
+										key={athlete.id}
+										onClick={() => handleAddForAthlete(athlete)}
+										className="gap-2"
+									>
+										<UserAvatar
+											className="size-5"
+											name={athlete.name}
+											src={athlete.image ?? undefined}
+										/>
+										{athlete.name}
+									</DropdownMenuItem>
+								))}
+							</DropdownMenuContent>
+						</DropdownMenu>
+					) : (
+						<Button size="sm" disabled>
+							<PlusIcon className="mr-2 size-4" />
+							{t("addEvaluation")}
+						</Button>
+					)}
+				</div>
+			)}
 			{evaluations.length === 0 ? (
 				<EmptyState icon={StarIcon} title={t("noEvaluations")} />
 			) : (
@@ -326,9 +331,11 @@ export function SessionEvaluationsTable({
 								<th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground sm:table-cell">
 									{t("table.evaluator")}
 								</th>
-								<th className="w-[50px] px-4 py-3 text-right text-xs font-medium text-muted-foreground">
-									<span className="sr-only">{t("table.actions")}</span>
-								</th>
+								{!readOnly && (
+									<th className="w-[50px] px-4 py-3 text-right text-xs font-medium text-muted-foreground">
+										<span className="sr-only">{t("table.actions")}</span>
+									</th>
+								)}
 							</tr>
 						</thead>
 						<tbody className="divide-y">
@@ -349,11 +356,13 @@ export function SessionEvaluationsTable({
 									</td>
 									<RatingsCell evaluation={evaluation} t={t} />
 									<EvaluatorCell evaluatedByUser={evaluation.evaluatedByUser} />
-									<ActionsCell
-										onEdit={() => handleEdit(evaluation)}
-										onDelete={() => handleDelete(evaluation)}
-										t={t}
-									/>
+									{!readOnly && (
+										<ActionsCell
+											onEdit={() => handleEdit(evaluation)}
+											onDelete={() => handleDelete(evaluation)}
+											t={t}
+										/>
+									)}
 								</tr>
 							))}
 						</tbody>

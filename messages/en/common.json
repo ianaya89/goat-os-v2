@@ -8,6 +8,7 @@
 	"notes": "Notes",
 	"close": "Close",
 	"openMenu": "Open menu",
+	"loading": "Loading...",
 	"buttons": {
 		"save": "Save",
 		"cancel": "Cancel",

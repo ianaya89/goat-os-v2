@@ -529,20 +529,9 @@ export function AthletesTable({
 			cell: ({ row }) => {
 				const isArchived = row.original.archivedAt !== null;
 
-				// Coach mode: only show view button
+				// Coach mode: no actions (access via name click only)
 				if (mode === "coach") {
-					return (
-						<div className="flex justify-end">
-							<Button variant="ghost" size="sm" asChild>
-								<Link
-									href={`/dashboard/organization/athletes/${row.original.id}`}
-								>
-									<EyeIcon className="mr-1 size-4" />
-									{t("table.viewProfile")}
-								</Link>
-							</Button>
-						</div>
-					);
+					return null;
 				}
 
 				// Admin mode: full actions menu

@@ -7,7 +7,7 @@ import { useOrganizationUserProfile } from "@/app/(saas)/dashboard/(sidebar)/org
 // Routes that restricted members (athletes) CAN access
 const RESTRICTED_MEMBER_ALLOWED_ROUTES = [
 	"/dashboard/organization", // Dashboard home (exact match)
-	"/dashboard/organization/sessions",
+	"/dashboard/organization/my-sessions",
 	"/dashboard/organization/my-groups",
 	"/dashboard/organization/my-payments",
 	"/dashboard/organization/my-profile",
@@ -19,7 +19,7 @@ const RESTRICTED_MEMBER_ALLOWED_ROUTES = [
 // Routes that restricted coaches CAN access
 const RESTRICTED_COACH_ALLOWED_ROUTES = [
 	"/dashboard/organization", // Dashboard home (exact match)
-	"/dashboard/organization/sessions",
+	"/dashboard/organization/my-sessions",
 	"/dashboard/organization/my-athletes",
 	"/dashboard/organization/my-profile",
 ];

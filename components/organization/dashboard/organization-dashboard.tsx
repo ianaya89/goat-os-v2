@@ -2,6 +2,7 @@
 
 import { useOrganizationUserProfile } from "@/app/(saas)/dashboard/(sidebar)/organization/providers";
 import { AthleteDashboard } from "@/components/organization/dashboard/athlete-dashboard";
+import { CoachDashboard } from "@/components/organization/dashboard/coach-dashboard";
 import { DailySummaryCard } from "@/components/organization/dashboard/daily-summary-card";
 import { GroupOccupancyCard } from "@/components/organization/dashboard/group-occupancy-card";
 import { LocationUsageCard } from "@/components/organization/dashboard/location-usage-card";
@@ -14,15 +15,21 @@ export function OrganizationDashboard() {
 	// Get user profile from context (set by server-side layout)
 	const userProfile = useOrganizationUserProfile();
 
-	// Use pre-computed capability from context
+	// Use pre-computed capabilities from context
 	const isRestrictedMember = userProfile.capabilities.isRestrictedMember;
+	const isRestrictedCoach = userProfile.capabilities.isRestrictedCoach;
 
-	// Render athlete dashboard for restricted members
+	// Render athlete dashboard for restricted members (athletes without coach/staff role)
 	if (isRestrictedMember) {
 		return <AthleteDashboard />;
 	}
 
-	// Render admin dashboard for owners, admins, and coaches
+	// Render coach dashboard for coaches who are not admins
+	if (isRestrictedCoach) {
+		return <CoachDashboard />;
+	}
+
+	// Render admin dashboard for owners and admins
 	return (
 		<div className="fade-in flex animate-in flex-col space-y-4 duration-500">
 			{/* Row 0: Welcome Section */}

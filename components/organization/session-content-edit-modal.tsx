@@ -35,6 +35,8 @@ interface SessionContentEditModalProps {
 	planning: string | null;
 	description: string | null;
 	postSessionNotes: string | null;
+	/** If true, only shows objectives and post-session notes (for coaches) */
+	isCoachView?: boolean;
 }
 
 export const SessionContentEditModal = NiceModal.create(
@@ -44,6 +46,7 @@ export const SessionContentEditModal = NiceModal.create(
 		planning,
 		description,
 		postSessionNotes,
+		isCoachView = false,
 	}: SessionContentEditModalProps) => {
 		const t = useTranslations("training");
 		const modal = useEnhancedModal();
@@ -100,26 +103,28 @@ export const SessionContentEditModal = NiceModal.create(
 			>
 				<div className="space-y-6">
 					<ProfileEditSection>
-						<FormField
-							control={form.control}
-							name="planning"
-							render={({ field }) => (
-								<FormItem asChild>
-									<Field>
-										<FormLabel>{t("modal.planning")}</FormLabel>
-										<FormControl>
-											<Textarea
-												placeholder={t("modal.planningPlaceholder")}
-												className="min-h-[100px] resize-none"
-												{...field}
-												value={field.value ?? ""}
-											/>
-										</FormControl>
-										<FormMessage />
-									</Field>
-								</FormItem>
-							)}
-						/>
+						{!isCoachView && (
+							<FormField
+								control={form.control}
+								name="planning"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("modal.planning")}</FormLabel>
+											<FormControl>
+												<Textarea
+													placeholder={t("modal.planningPlaceholder")}
+													className="min-h-[100px] resize-none"
+													{...field}
+													value={field.value ?? ""}
+												/>
+											</FormControl>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
+						)}
 
 						<FormField
 							control={form.control}
@@ -142,26 +147,28 @@ export const SessionContentEditModal = NiceModal.create(
 							)}
 						/>
 
-						<FormField
-							control={form.control}
-							name="description"
-							render={({ field }) => (
-								<FormItem asChild>
-									<Field>
-										<FormLabel>{t("form.description")}</FormLabel>
-										<FormControl>
-											<Textarea
-												placeholder={t("modal.descriptionPlaceholder")}
-												className="min-h-[80px] resize-none"
-												{...field}
-												value={field.value ?? ""}
-											/>
-										</FormControl>
-										<FormMessage />
-									</Field>
-								</FormItem>
-							)}
-						/>
+						{!isCoachView && (
+							<FormField
+								control={form.control}
+								name="description"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("form.description")}</FormLabel>
+											<FormControl>
+												<Textarea
+													placeholder={t("modal.descriptionPlaceholder")}
+													className="min-h-[80px] resize-none"
+													{...field}
+													value={field.value ?? ""}
+												/>
+											</FormControl>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
+						)}
 
 						<FormField
 							control={form.control}

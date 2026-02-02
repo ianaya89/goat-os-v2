@@ -35,6 +35,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import * as React from "react";
 import { toast } from "sonner";
+import { useOrganizationUserProfile } from "@/app/(saas)/dashboard/(sidebar)/organization/providers";
 import { ConfirmationModal } from "@/components/confirmation-modal";
 import { AddCareerHistoryModal } from "@/components/organization/add-career-history-modal";
 import { AddEvaluationModal } from "@/components/organization/add-evaluation-modal";
@@ -85,6 +86,9 @@ interface AthleteProfileProps {
 export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 	const t = useTranslations("athletes");
 	const utils = trpc.useUtils();
+	const userProfile = useOrganizationUserProfile();
+	const isCoachView = userProfile.capabilities.isRestrictedCoach;
+
 	const { data, isLoading, error } =
 		trpc.organization.athlete.getProfile.useQuery({ id: athleteId });
 
@@ -323,6 +327,7 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 					athleteId={athleteId}
 					athleteName={athlete.user?.name ?? ""}
 					isArchived={athlete.archivedAt !== null}
+					isCoachView={isCoachView}
 				/>
 			</div>
 
@@ -463,6 +468,7 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 						initialAthleteIds={[athleteId]}
 						emptyStateMessage={t("sessions.noSessions")}
 						maxItems={20}
+						isCoachView={isCoachView}
 						onAddEvaluation={(sessionId) => {
 							const completedSessions = sessions
 								.filter((s) => s.status === "completed")

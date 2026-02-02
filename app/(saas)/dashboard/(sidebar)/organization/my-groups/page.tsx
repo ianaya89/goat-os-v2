@@ -1,3 +1,4 @@
+import { UsersIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -39,7 +40,10 @@ export default async function AthleteGroupsPage(): Promise<React.JSX.Element> {
 				</PagePrimaryBar>
 			</PageHeader>
 			<PageBody>
-				<PageContent title={t("myGroups.pageTitle")}>
+				<PageContent
+					title={t("myGroups.pageTitle")}
+					icon={<UsersIcon className="size-5" />}
+				>
 					<AthleteGroupsView />
 				</PageContent>
 			</PageBody>

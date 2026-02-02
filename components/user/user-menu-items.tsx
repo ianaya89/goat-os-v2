@@ -21,7 +21,6 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { MySessionsMenuItem } from "@/components/user/my-sessions-menu-item";
 import { authClient } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
@@ -63,27 +62,17 @@ export function UserMenuItems(): React.JSX.Element {
 	if (isAthlete) {
 		applicationItems.push({
 			label: t("athleteProfile"),
-			href: "/dashboard/my-profile",
+			href: "/dashboard/my-profile?view=athlete",
 			icon: MedalIcon,
 		});
 	}
 	if (isCoach) {
 		applicationItems.push({
 			label: t("coachProfile"),
-			href: "/dashboard/my-profile",
+			href: "/dashboard/my-profile?view=coach",
 			icon: ClipboardListIcon,
 		});
 	}
-
-	// Sessions items - rendered separately with special handling for org selection
-	// Both athletes and coaches use the unified /sessions URL
-	const mySessionsItem =
-		isAthlete || isCoach
-			? {
-					label: t("mySessions"),
-					href: "/dashboard/organization/sessions",
-				}
-			: null;
 
 	// Build settings items
 	const settingsItems: MenuItem[] = [
@@ -104,9 +93,8 @@ export function UserMenuItems(): React.JSX.Element {
 		},
 	];
 
-	// Include application group if there are items OR if there's a sessions item
-	const hasApplicationSection =
-		applicationItems.length > 0 || mySessionsItem !== null;
+	// Include application group if there are items
+	const hasApplicationSection = applicationItems.length > 0;
 
 	const menuGroups: MenuGroup[] = [
 		...(hasApplicationSection
@@ -201,16 +189,12 @@ export function UserMenuItems(): React.JSX.Element {
 				const isApplicationGroup = group.label === t("application");
 				return (
 					<SidebarGroup key={groupIndex}>
-						<SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+						{/* Hide label for application group, show for others */}
+						{!isApplicationGroup && (
+							<SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+						)}
 						<SidebarMenu suppressHydrationWarning>
 							{group.items?.map(renderMenuItem)}
-							{isApplicationGroup && mySessionsItem && (
-								<MySessionsMenuItem
-									label={mySessionsItem.label}
-									href={mySessionsItem.href}
-									isActive={pathname.startsWith(mySessionsItem.href)}
-								/>
-							)}
 						</SidebarMenu>
 					</SidebarGroup>
 				);

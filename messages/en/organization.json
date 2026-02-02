@@ -69,11 +69,11 @@
 		},
 		"myGroups": {
 			"title": "My Groups",
-			"pageTitle": "My Training Groups"
+			"pageTitle": "Training Groups"
 		},
 		"myPayments": {
 			"title": "My Payments",
-			"pageTitle": "My Payments"
+			"pageTitle": "Payments"
 		},
 		"myEvents": {
 			"title": "My Events",
@@ -191,11 +191,11 @@
 		"mySessions": {
 			"coach": {
 				"title": "My Sessions (Coach)",
-				"pageTitle": "My Sessions"
+				"pageTitle": "Sessions"
 			},
 			"athlete": {
 				"title": "My Sessions (Athlete)",
-				"pageTitle": "My Training Sessions"
+				"pageTitle": "Training Sessions"
 			}
 		},
 		"settings": {

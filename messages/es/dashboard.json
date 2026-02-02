@@ -141,7 +141,9 @@
 		"viewReports": "Ver reportes",
 		"myCalendar": "Mi calendario",
 		"myGroups": "Mis grupos",
-		"myPayments": "Mis pagos"
+		"myPayments": "Mis pagos",
+		"myAthletes": "Mis atletas",
+		"mySessions": "Mis sesiones"
 	},
 	"pendingPayments": {
 		"title": "Pagos Pendientes",

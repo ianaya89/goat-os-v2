@@ -99,7 +99,7 @@ export function OrganizationMenuItems(): React.JSX.Element {
 	const restrictedMemberMenuItems: MenuItem[] = [
 		{
 			label: t("sessions"),
-			href: `${basePath}/sessions`,
+			href: `${basePath}/my-sessions`,
 			icon: ClipboardListIcon,
 			feature: OrganizationFeature.trainingSessions,
 		},
@@ -196,7 +196,7 @@ export function OrganizationMenuItems(): React.JSX.Element {
 	) {
 		sportsItems.push({
 			label: t("mySessions"),
-			href: `${basePath}/sessions`,
+			href: `${basePath}/my-sessions`,
 			icon: ClipboardListIcon,
 			feature: OrganizationFeature.trainingSessions,
 		});
@@ -216,12 +216,12 @@ export function OrganizationMenuItems(): React.JSX.Element {
 	const restrictedCoachMenuItems: MenuItem[] = [
 		{
 			label: t("sessions"),
-			href: `${basePath}/sessions`,
+			href: `${basePath}/my-sessions`,
 			icon: ClipboardListIcon,
 			feature: OrganizationFeature.trainingSessions,
 		},
 		{
-			label: t("myAthletes"),
+			label: t("athletes"),
 			href: `${basePath}/my-athletes`,
 			icon: MedalIcon,
 			feature: OrganizationFeature.athletes,

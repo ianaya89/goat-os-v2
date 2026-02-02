@@ -98,8 +98,9 @@ export function TrainingSessionDetail({
 	const [postNotes, setPostNotes] = React.useState("");
 	const [isCompletingSession, setIsCompletingSession] = React.useState(false);
 
-	// Use pre-computed capability from context
+	// Use pre-computed capabilities from context
 	const isRestrictedMember = userProfile.capabilities.isRestrictedMember;
+	const isRestrictedCoach = userProfile.capabilities.isRestrictedCoach;
 
 	const {
 		data: session,
@@ -327,55 +328,56 @@ export function TrainingSessionDetail({
 								</Button>
 							</DropdownMenuTrigger>
 							<DropdownMenuContent align="end" className="w-56">
-								{/* Send Confirmation - available for non-cancelled sessions */}
-								{session.status !== TrainingSessionStatus.cancelled && (
-									<>
-										<DropdownMenuSub>
-											<DropdownMenuSubTrigger
-												disabled={sendConfirmationMutation.isPending}
-											>
-												<BellIcon className="mr-2 size-4" />
-												{sendConfirmationMutation.isPending
-													? t("detail.sending")
-													: t("detail.sendReminder")}
-											</DropdownMenuSubTrigger>
-											<DropdownMenuPortal>
-												<DropdownMenuSubContent>
-													<DropdownMenuItem
-														onClick={() => handleSendReminder("all")}
-														disabled={sendConfirmationMutation.isPending}
-													>
-														<LayersIcon className="mr-2 size-4" />
-														{t("detail.sendViaAllChannels")}
-													</DropdownMenuItem>
-													<DropdownMenuSeparator />
-													<DropdownMenuItem
-														onClick={() => handleSendReminder("email")}
-														disabled={sendConfirmationMutation.isPending}
-													>
-														<MailIcon className="mr-2 size-4" />
-														{t("detail.sendViaEmail")}
-													</DropdownMenuItem>
-													<DropdownMenuItem
-														onClick={() => handleSendReminder("whatsapp")}
-														disabled={sendConfirmationMutation.isPending}
-													>
-														<MessageSquareIcon className="mr-2 size-4" />
-														{t("detail.sendViaWhatsApp")}
-													</DropdownMenuItem>
-													<DropdownMenuItem
-														onClick={() => handleSendReminder("sms")}
-														disabled={sendConfirmationMutation.isPending}
-													>
-														<PhoneIcon className="mr-2 size-4" />
-														{t("detail.sendViaSms")}
-													</DropdownMenuItem>
-												</DropdownMenuSubContent>
-											</DropdownMenuPortal>
-										</DropdownMenuSub>
-										<DropdownMenuSeparator />
-									</>
-								)}
+								{/* Send Confirmation - available for non-cancelled sessions (admin only) */}
+								{!isRestrictedCoach &&
+									session.status !== TrainingSessionStatus.cancelled && (
+										<>
+											<DropdownMenuSub>
+												<DropdownMenuSubTrigger
+													disabled={sendConfirmationMutation.isPending}
+												>
+													<BellIcon className="mr-2 size-4" />
+													{sendConfirmationMutation.isPending
+														? t("detail.sending")
+														: t("detail.sendReminder")}
+												</DropdownMenuSubTrigger>
+												<DropdownMenuPortal>
+													<DropdownMenuSubContent>
+														<DropdownMenuItem
+															onClick={() => handleSendReminder("all")}
+															disabled={sendConfirmationMutation.isPending}
+														>
+															<LayersIcon className="mr-2 size-4" />
+															{t("detail.sendViaAllChannels")}
+														</DropdownMenuItem>
+														<DropdownMenuSeparator />
+														<DropdownMenuItem
+															onClick={() => handleSendReminder("email")}
+															disabled={sendConfirmationMutation.isPending}
+														>
+															<MailIcon className="mr-2 size-4" />
+															{t("detail.sendViaEmail")}
+														</DropdownMenuItem>
+														<DropdownMenuItem
+															onClick={() => handleSendReminder("whatsapp")}
+															disabled={sendConfirmationMutation.isPending}
+														>
+															<MessageSquareIcon className="mr-2 size-4" />
+															{t("detail.sendViaWhatsApp")}
+														</DropdownMenuItem>
+														<DropdownMenuItem
+															onClick={() => handleSendReminder("sms")}
+															disabled={sendConfirmationMutation.isPending}
+														>
+															<PhoneIcon className="mr-2 size-4" />
+															{t("detail.sendViaSms")}
+														</DropdownMenuItem>
+													</DropdownMenuSubContent>
+												</DropdownMenuPortal>
+											</DropdownMenuSub>
+											<DropdownMenuSeparator />
+										</>
+									)}
 
 								{/* Change Status */}
 								<DropdownMenuSub>
@@ -403,13 +405,19 @@ export function TrainingSessionDetail({
 									</DropdownMenuPortal>
 								</DropdownMenuSub>
 
-								<DropdownMenuSeparator />
-
-								{/* Delete */}
-								<DropdownMenuItem onClick={handleDelete} variant="destructive">
-									<Trash2Icon className="mr-2 size-4" />
-									{t("delete")}
-								</DropdownMenuItem>
+								{/* Delete - admin only */}
+								{!isRestrictedCoach && (
+									<>
+										<DropdownMenuSeparator />
+										<DropdownMenuItem
+											onClick={handleDelete}
+											variant="destructive"
+										>
+											<Trash2Icon className="mr-2 size-4" />
+											{t("delete")}
+										</DropdownMenuItem>
+									</>
+								)}
 							</DropdownMenuContent>
 						</DropdownMenu>
 					)}
@@ -481,7 +489,7 @@ export function TrainingSessionDetail({
 								<CalendarIcon className="size-4" />
 								{t("detail.schedule")}
 							</CardTitle>
-							{!isRestrictedMember && (
+							{!isRestrictedMember && !isRestrictedCoach && (
 								<Button
 									variant="ghost"
 									size="icon"
@@ -551,7 +559,7 @@ export function TrainingSessionDetail({
 								<UserIcon className="size-4" />
 								{t("detail.coaches", { count: coaches.length })}
 							</CardTitle>
-							{!isRestrictedMember && (
+							{!isRestrictedMember && !isRestrictedCoach && (
 								<Button
 									variant="ghost"
 									size="icon"
@@ -616,7 +624,7 @@ export function TrainingSessionDetail({
 									</Badge>
 								)}
 							</CardTitle>
-							{!isRestrictedMember && (
+							{!isRestrictedMember && !isRestrictedCoach && (
 								<Button
 									variant="ghost"
 									size="icon"
@@ -654,33 +662,35 @@ export function TrainingSessionDetail({
 										/>
 										<span className="font-medium text-sm">{athlete.name}</span>
 									</Link>
-									<DropdownMenu>
-										<DropdownMenuTrigger asChild>
-											<Button
-												variant="ghost"
-												size="icon"
-												className="size-7 text-muted-foreground"
-											>
-												<MoreHorizontalIcon className="size-4" />
-											</Button>
-										</DropdownMenuTrigger>
-										<DropdownMenuContent align="end">
-											<DropdownMenuItem
-												onClick={() =>
-													NiceModal.show(PaymentsModal, {
-														fixedSessionId: sessionId,
-														fixedSessionIds: [sessionId],
-														fixedAthletes: [
-															{ id: athlete.id, name: athlete.name },
-														],
-													})
-												}
-											>
-												<BanknoteIcon className="mr-2 size-4" />
-												{t("detail.recordPayment")}
-											</DropdownMenuItem>
-										</DropdownMenuContent>
-									</DropdownMenu>
+									{!isRestrictedMember && (
+										<DropdownMenu>
+											<DropdownMenuTrigger asChild>
+												<Button
+													variant="ghost"
+													size="icon"
+													className="size-7 text-muted-foreground"
+												>
+													<MoreHorizontalIcon className="size-4" />
+												</Button>
+											</DropdownMenuTrigger>
+											<DropdownMenuContent align="end">
+												<DropdownMenuItem
+													onClick={() =>
+														NiceModal.show(PaymentsModal, {
+															fixedSessionId: sessionId,
+															fixedSessionIds: [sessionId],
+															fixedAthletes: [
+																{ id: athlete.id, name: athlete.name },
+															],
+														})
+													}
+												>
+													<BanknoteIcon className="mr-2 size-4" />
+													{t("detail.recordPayment")}
+												</DropdownMenuItem>
+											</DropdownMenuContent>
+										</DropdownMenu>
+									)}
 								</div>
 							))}
 							{athletes.length === 0 && (
@@ -695,12 +705,15 @@ export function TrainingSessionDetail({
 
 			{/* Tabs: Info, Attendance, Evaluations, Feedback */}
 			{isRestrictedMember ? (
-				/* Athlete view - only show info and feedback */
+				/* Athlete view - show info, evaluations (read-only) and feedback */
 				<Tabs defaultValue="info" className="space-y-4">
 					<TabsList>
 						<TabsTrigger value="info">
 							<InfoIcon className="mr-1 size-3.5" />
 							{t("detail.info")}
+						</TabsTrigger>
+						<TabsTrigger value="evaluations">
+							{t("detail.myEvaluation")}
 						</TabsTrigger>
 						<TabsTrigger value="feedback">{t("detail.myFeedback")}</TabsTrigger>
 					</TabsList>
@@ -710,14 +723,22 @@ export function TrainingSessionDetail({
 							sessionId={sessionId}
 							t={t}
 							isRestrictedMember={isRestrictedMember}
+							isRestrictedCoach={isRestrictedCoach}
+						/>
+					</TabsContent>
+					<TabsContent value="evaluations">
+						<SessionEvaluationsTable
+							sessionId={sessionId}
+							sessionTitle={session.title}
+							evaluations={(sessionEvaluations ?? []).filter(
+								(e) => e.athlete.user?.id === userProfile.userId,
+							)}
+							athletes={[]}
+							readOnly
 						/>
 					</TabsContent>
 					<TabsContent value="feedback">
-						<Card>
-							<CardContent className="pt-6">
-								<SessionFeedbackView sessionId={sessionId} athleteView />
-							</CardContent>
-						</Card>
+						<SessionFeedbackView sessionId={sessionId} athleteView />
 					</TabsContent>
 				</Tabs>
 			) : (
@@ -745,6 +766,7 @@ export function TrainingSessionDetail({
 							sessionId={sessionId}
 							t={t}
 							isRestrictedMember={isRestrictedMember}
+							isRestrictedCoach={isRestrictedCoach}
 						/>
 					</TabsContent>
 					<TabsContent value="attendance">
@@ -785,6 +807,7 @@ function SessionInfoGrid({
 	sessionId,
 	t,
 	isRestrictedMember,
+	isRestrictedCoach,
 }: {
 	session: {
 		title: string;
@@ -797,6 +820,7 @@ function SessionInfoGrid({
 	sessionId: string;
 	t: ReturnType<typeof useTranslations<"training">>;
 	isRestrictedMember: boolean;
+	isRestrictedCoach: boolean;
 }) {
 	const utils = trpc.useUtils();
 
@@ -840,7 +864,7 @@ function SessionInfoGrid({
 								<InfoIcon className="size-4" />
 								{t("detail.sessionInfo")}
 							</CardTitle>
-							{!isRestrictedMember && (
+							{!isRestrictedMember && !isRestrictedCoach && (
 								<Button
 									variant="ghost"
 									size="icon"
@@ -901,6 +925,7 @@ function SessionInfoGrid({
 											planning: session.planning,
 											description: session.description,
 											postSessionNotes: session.postSessionNotes,
+											isCoachView: isRestrictedCoach,
 										})
 									}
 								>
@@ -996,6 +1021,7 @@ function SessionInfoGrid({
 					<AttachmentPreview
 						sessionId={sessionId}
 						attachmentKey={session.attachmentKey}
+						isRestrictedMember={isRestrictedMember}
 					/>
 				</CardContent>
 			</Card>
@@ -1007,9 +1033,11 @@ function SessionInfoGrid({
 function AttachmentPreview({
 	sessionId,
 	attachmentKey,
+	isRestrictedMember,
 }: {
 	sessionId: string;
 	attachmentKey: string | null;
+	isRestrictedMember: boolean;
 }) {
 	const t = useTranslations("training");
 	const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
@@ -1054,10 +1082,12 @@ function AttachmentPreview({
 				size="sm"
 				className="flex-1 rounded-md border bg-muted/30"
 				action={
-					<SessionAttachmentUpload
-						sessionId={sessionId}
-						hasAttachment={false}
-					/>
+					!isRestrictedMember ? (
+						<SessionAttachmentUpload
+							sessionId={sessionId}
+							hasAttachment={false}
+						/>
+					) : undefined
 				}
 			/>
 		);

@@ -174,7 +174,8 @@
 			"empty": {
 				"title": "Sin pagos registrados",
 				"description": "Aún no tienes pagos registrados en esta organización."
-			}
+			},
+			"notAthlete": "No estás registrado como atleta en esta organización."
 		},
 		"success": {
 			"created": "Pago registrado correctamente.",

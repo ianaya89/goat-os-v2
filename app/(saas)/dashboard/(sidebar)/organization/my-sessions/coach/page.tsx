@@ -1,3 +1,4 @@
+import { CalendarDaysIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -40,7 +41,10 @@ export default async function CoachSessionsPage(): Promise<React.JSX.Element> {
 				</PagePrimaryBar>
 			</PageHeader>
 			<PageBody>
-				<PageContent title={t("mySessions.coach.pageTitle")}>
+				<PageContent
+					title={t("mySessions.coach.pageTitle")}
+					icon={<CalendarDaysIcon className="size-5" />}
+				>
 					<CoachSessionsView />
 				</PageContent>
 			</PageBody>
