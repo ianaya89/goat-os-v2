@@ -398,7 +398,7 @@ export const AthletesModal = NiceModal.create<AthletesModalProps>(
 				onOpenChange={(open) => !open && modal.handleClose()}
 			>
 				<SheetContent
-					className="sm:max-w-lg"
+					className="sm:max-w-lg overflow-hidden"
 					onAnimationEndCapture={modal.handleAnimationEndCapture}
 					hideDefaultHeader
 				>
@@ -440,11 +440,8 @@ export const AthletesModal = NiceModal.create<AthletesModalProps>(
 					</div>
 
 					<Form {...form}>
-						<form
-							onSubmit={onSubmit}
-							className="flex flex-1 flex-col overflow-hidden"
-						>
-							<ScrollArea className="flex-1" type="always">
+						<form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
+							<ScrollArea className="min-h-0 flex-1">
 								<div className="space-y-4 px-6 py-4">
 									{!isEditing && (
 										<>

@@ -93,7 +93,7 @@ function SheetContent({
 				data-slot="sheet-content"
 				// Sharp & Bold: stronger shadow, snappier animation
 				className={cn(
-					"fixed z-50 flex flex-col gap-4 bg-background fill-mode-forwards! shadow-xl transition ease-in-out data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:duration-200 data-[state=open]:duration-300",
+					"fixed z-50 flex flex-col gap-4 overflow-hidden bg-background fill-mode-forwards! shadow-xl transition ease-in-out data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:duration-200 data-[state=open]:duration-300",
 					side === "right" &&
 						"data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 border-l-2 border-border sm:max-w-md",
 					side === "left" &&

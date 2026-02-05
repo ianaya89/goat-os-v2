@@ -8,6 +8,7 @@ import {
 	UploadIcon,
 	XIcon,
 } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
@@ -41,7 +42,11 @@ const MAX_IMAGES = 5;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
+/** Routes where the feedback button should be hidden */
+const HIDDEN_ROUTES = ["/auth", "/sign-in", "/sign-up"];
+
 export function FeedbackButton() {
+	const pathname = usePathname();
 	const t = useTranslations("common.feedback");
 	const tCommon = useTranslations("common.buttons");
 	const [isOpen, setIsOpen] = React.useState(false);
@@ -51,6 +56,11 @@ export function FeedbackButton() {
 	const [submitStatus, setSubmitStatus] = React.useState<SubmitStatus>("idle");
 	const [isDragging, setIsDragging] = React.useState(false);
 	const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+	// Hide on auth and public routes
+	const isHiddenRoute = HIDDEN_ROUTES.some((route) =>
+		pathname?.startsWith(route),
+	);
 
 	// Handle dialog open/close
 	const handleOpenChange = (open: boolean) => {
@@ -201,6 +211,11 @@ export function FeedbackButton() {
 		const timeoutId = setTimeout(() => setSubmitStatus("idle"), 3000);
 		return () => clearTimeout(timeoutId);
 	}, [submitStatus]);
+
+	// Hide on auth and public routes (after hooks to comply with rules of hooks)
+	if (isHiddenRoute) {
+		return null;
+	}
 
 	const isSubmitDisabled =
 		!title.trim() ||

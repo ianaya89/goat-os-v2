@@ -418,7 +418,7 @@ export const TrainingSessionsModal =
 					onOpenChange={(open) => !open && modal.handleClose()}
 				>
 					<SheetContent
-						className="sm:max-w-xl"
+						className="sm:max-w-xl overflow-hidden"
 						onAnimationEndCapture={modal.handleAnimationEndCapture}
 						hideDefaultHeader
 					>
@@ -464,9 +464,9 @@ export const TrainingSessionsModal =
 						<Form {...form}>
 							<form
 								onSubmit={onSubmit}
-								className="flex flex-1 flex-col overflow-hidden"
+								className="flex min-h-0 flex-1 flex-col"
 							>
-								<ScrollArea className="flex-1" type="always">
+								<ScrollArea className="min-h-0 flex-1">
 									<Tabs defaultValue="basic" className="w-full">
 										<TabsList className="mx-6 mt-4 grid w-auto grid-cols-4">
 											<TabsTrigger value="basic">
