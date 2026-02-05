@@ -466,7 +466,7 @@ export const TrainingSessionsModal =
 								onSubmit={onSubmit}
 								className="flex flex-1 flex-col overflow-hidden"
 							>
-								<ScrollArea className="flex-1">
+								<ScrollArea className="flex-1" type="always">
 									<Tabs defaultValue="basic" className="w-full">
 										<TabsList className="mx-6 mt-4 grid w-auto grid-cols-4">
 											<TabsTrigger value="basic">

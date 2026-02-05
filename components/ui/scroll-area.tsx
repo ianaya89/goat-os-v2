@@ -12,11 +12,14 @@ export type ScrollAreaProps = React.ComponentPropsWithoutRef<
 > & {
 	verticalScrollBar?: boolean;
 	horizontalScrollBar?: boolean;
+	/** When true, scrollbars are always visible. Default is "scroll" (visible when content overflows) */
+	type?: "auto" | "always" | "scroll" | "hover";
 };
 
 function ScrollArea({
 	verticalScrollBar = true,
 	horizontalScrollBar = false,
+	type = "scroll",
 	className,
 	children,
 	...props
@@ -24,6 +27,7 @@ function ScrollArea({
 	return (
 		<ScrollAreaPrimitive.Root
 			data-slot="scroll-area"
+			type={type}
 			className={cn("relative", className)}
 			{...props}
 		>

@@ -26,6 +26,7 @@ const ROOT_USER_EMAIL = "root@goat.ar";
 // Additional admin users
 const ADMIN_USER_G_EMAIL = "g@goat.ar";
 const ADMIN_USER_S_EMAIL = "s@goat.ar";
+const ADMIN_USER_C_EMAIL = "clara@goat.ar";
 const ADMIN_USER_PASSWORD = "g04t5p0rt5";
 
 // Deterministic UUIDs for real-life entities (using prefix 200 to avoid conflicts)
@@ -35,13 +36,16 @@ const REAL_LIFE_MEMBER_ID = "20000000-0000-4000-8000-000000000003";
 const REAL_LIFE_ACCOUNT_ID = "20000000-0000-4000-8000-000000000004";
 const ROOT_MEMBER_ID = "20000000-0000-4000-8000-000000000005";
 
-// Admin users G and S
+// Admin users G, S, and Clara
 const ADMIN_USER_G_ID = "20000000-0000-4000-8000-000000000006";
 const ADMIN_USER_G_MEMBER_ID = "20000000-0000-4000-8000-000000000007";
 const ADMIN_USER_G_ACCOUNT_ID = "20000000-0000-4000-8000-000000000008";
 const ADMIN_USER_S_ID = "20000000-0000-4000-8000-000000000009";
 const ADMIN_USER_S_MEMBER_ID = "20000000-0000-4000-8000-00000000000a";
 const ADMIN_USER_S_ACCOUNT_ID = "20000000-0000-4000-8000-00000000000b";
+const ADMIN_USER_C_ID = "20000000-0000-4000-8000-00000000000c";
+const ADMIN_USER_C_MEMBER_ID = "20000000-0000-4000-8000-00000000000d";
+const ADMIN_USER_C_ACCOUNT_ID = "20000000-0000-4000-8000-00000000000e";
 
 // Locations
 const LOCATION_CAMPO_VERDE_ID = "20000000-0000-4000-8000-000000000010";
@@ -579,9 +583,11 @@ export async function runRealLifeSeed(): Promise<void> {
 		rootSpinner.stop("User root@goat.ar not found - skipping membership");
 	}
 
-	// 4b. Create admin users g@goat.ar and s@goat.ar
+	// 4b. Create admin users g@goat.ar, s@goat.ar, and clara@goat.ar
 	const adminUsersSpinner = p.spinner();
-	adminUsersSpinner.start("Setting up admin users g@goat.ar and s@goat.ar...");
+	adminUsersSpinner.start(
+		"Setting up admin users g@goat.ar, s@goat.ar, and clara@goat.ar...",
+	);
 
 	const { hashPassword: hashAdminPassword } = await import(
 		"better-auth/crypto"
@@ -678,7 +684,54 @@ export async function runRealLifeSeed(): Promise<void> {
 		});
 	}
 
-	adminUsersSpinner.stop("Admin users g@goat.ar and s@goat.ar configured");
+	// Create clara@goat.ar
+	const existingCUser = await db.query.userTable.findFirst({
+		where: eq(schema.userTable.email, ADMIN_USER_C_EMAIL),
+	});
+
+	let cUserId = ADMIN_USER_C_ID;
+
+	if (!existingCUser) {
+		await db.insert(schema.userTable).values({
+			id: ADMIN_USER_C_ID,
+			name: "Clara",
+			email: ADMIN_USER_C_EMAIL,
+			emailVerified: true,
+			role: "admin",
+			onboardingComplete: true,
+		});
+
+		await db.insert(schema.accountTable).values({
+			id: ADMIN_USER_C_ACCOUNT_ID,
+			userId: ADMIN_USER_C_ID,
+			accountId: ADMIN_USER_C_ID,
+			providerId: "credential",
+			password: adminHashedPassword,
+		});
+	} else {
+		cUserId = existingCUser.id;
+	}
+
+	// Ensure clara@goat.ar membership
+	const existingCMembership = await db.query.memberTable.findFirst({
+		where: and(
+			eq(schema.memberTable.userId, cUserId),
+			eq(schema.memberTable.organizationId, organizationId),
+		),
+	});
+
+	if (!existingCMembership) {
+		await db.insert(schema.memberTable).values({
+			id: ADMIN_USER_C_MEMBER_ID,
+			organizationId,
+			userId: cUserId,
+			role: "admin",
+		});
+	}
+
+	adminUsersSpinner.stop(
+		"Admin users g@goat.ar, s@goat.ar, and clara@goat.ar configured",
+	);
 
 	// 5. Create locations
 	const locSpinner = p.spinner();
@@ -1182,7 +1235,7 @@ export async function runRealLifeSeed(): Promise<void> {
 		`Organization: ${REAL_LIFE_ORG_NAME} (${REAL_LIFE_ORG_SLUG})
 User: ${REAL_LIFE_USER_EMAIL} (password: ${REAL_LIFE_USER_PASSWORD})
 Root user: ${ROOT_USER_EMAIL} (added to org if exists)
-Admin users: ${ADMIN_USER_G_EMAIL}, ${ADMIN_USER_S_EMAIL} (password: ${ADMIN_USER_PASSWORD})
+Admin users: ${ADMIN_USER_G_EMAIL}, ${ADMIN_USER_S_EMAIL}, ${ADMIN_USER_C_EMAIL} (password: ${ADMIN_USER_PASSWORD})
 Locations: Campo Verde, Campo Azul
 Groups: Pretemporada Hockey 2026, Sub 10 Hockey
 Age Categories: Sub 10, Sub 12, Sub 14, Sub 16, Sub 18

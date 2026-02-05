@@ -444,7 +444,7 @@ export const AthletesModal = NiceModal.create<AthletesModalProps>(
 							onSubmit={onSubmit}
 							className="flex flex-1 flex-col overflow-hidden"
 						>
-							<ScrollArea className="flex-1">
+							<ScrollArea className="flex-1" type="always">
 								<div className="space-y-4 px-6 py-4">
 									{!isEditing && (
 										<>
