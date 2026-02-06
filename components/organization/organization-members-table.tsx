@@ -188,7 +188,10 @@ export function OrganizationMembersTable({
 
 	const filteredMembers = React.useMemo(() => {
 		const excluded = new Set(excludedUserIds ?? []);
-		return (organization?.members ?? []).filter((m) => !excluded.has(m.userId));
+		return (organization?.members ?? []).filter(
+			(m) =>
+				m.role === "owner" || m.role === "admin" || !excluded.has(m.userId),
+		);
 	}, [organization?.members, excludedUserIds]);
 
 	const table = useReactTable({
