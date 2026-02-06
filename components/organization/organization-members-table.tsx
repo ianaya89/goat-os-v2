@@ -184,8 +184,16 @@ export function OrganizationMembersTable({
 		},
 	];
 
+	const filteredMembers = React.useMemo(
+		() =>
+			(organization?.members ?? []).filter(
+				(m) => m.role === "owner" || m.role === "admin",
+			),
+		[organization?.members],
+	);
+
 	const table = useReactTable({
-		data: organization?.members ?? [],
+		data: filteredMembers,
 		columns,
 		manualPagination: true,
 		onSortingChange: setSorting,

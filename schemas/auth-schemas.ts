@@ -147,6 +147,9 @@ export const athleteSignUpSchema = z
 			}),
 		parentRelationship: z.string().trim().max(50).optional(),
 
+		// Optional signup link token (for organization-linked registration)
+		signupToken: z.string().max(50).optional(),
+
 		// Legal consents (all required)
 		acceptTerms: z.boolean().refine((val) => val === true, {
 			message: v.acceptTermsRequired,

@@ -1,10 +1,16 @@
-import { eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { CAPTCHA_RESPONSE_HEADER } from "@/lib/auth/constants";
 import { db } from "@/lib/db";
-import { athleteTable, userTable } from "@/lib/db/schema";
-import { AthleteStatus } from "@/lib/db/schema/enums";
+import {
+	athleteGroupMemberTable,
+	athleteSignupLinkTable,
+	athleteTable,
+	memberTable,
+	userTable,
+} from "@/lib/db/schema";
+import { AthleteStatus, MemberRole } from "@/lib/db/schema/enums";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { getBaseUrl } from "@/lib/utils";
@@ -67,6 +73,38 @@ export async function POST(request: Request) {
 
 		const data = validationResult.data;
 
+		// Validate signup token if provided
+		let signupLink: {
+			id: string;
+			organizationId: string;
+			athleteGroupId: string | null;
+		} | null = null;
+
+		if (data.signupToken) {
+			const link = await db.query.athleteSignupLinkTable.findFirst({
+				where: and(
+					eq(athleteSignupLinkTable.token, data.signupToken),
+					eq(athleteSignupLinkTable.isActive, true),
+				),
+				columns: {
+					id: true,
+					organizationId: true,
+					athleteGroupId: true,
+				},
+			});
+
+			if (!link) {
+				return NextResponse.json(
+					{
+						error: "El enlace de registro no es válido o está desactivado",
+					},
+					{ status: 400 },
+				);
+			}
+
+			signupLink = link;
+		}
+
 		// Check if email already exists
 		const existingUser = await db.query.userTable.findFirst({
 			where: eq(userTable.email, data.email.toLowerCase()),
@@ -103,13 +141,12 @@ export async function POST(request: Request) {
 			.insert(athleteTable)
 			.values({
 				userId: newUser.id,
-				organizationId: null, // Athlete registers without organization
+				organizationId: signupLink?.organizationId ?? null,
 				sport: data.sport,
 				birthDate: data.birthDate,
 				level: data.level,
 				status: AthleteStatus.active,
 				phone: data.phone,
-				// Club is assigned after joining an organization
 				category: data.category,
 				position: data.position,
 				secondaryPosition: null,
@@ -126,10 +163,53 @@ export async function POST(request: Request) {
 			);
 		}
 
-		logger.info(
-			{ userId: newUser.id, athleteId: newAthlete.id },
-			"New athlete registered",
-		);
+		// If signup link is valid, add user to organization
+		if (signupLink) {
+			// Add as organization member
+			await db
+				.insert(memberTable)
+				.values({
+					organizationId: signupLink.organizationId,
+					userId: newUser.id,
+					role: MemberRole.member,
+				})
+				.onConflictDoNothing();
+
+			// If link specifies a group, add athlete to group
+			if (signupLink.athleteGroupId) {
+				await db
+					.insert(athleteGroupMemberTable)
+					.values({
+						groupId: signupLink.athleteGroupId,
+						athleteId: newAthlete.id,
+					})
+					.onConflictDoNothing();
+			}
+
+			// Increment usage count
+			await db
+				.update(athleteSignupLinkTable)
+				.set({
+					usageCount: sql`${athleteSignupLinkTable.usageCount} + 1`,
+				})
+				.where(eq(athleteSignupLinkTable.id, signupLink.id));
+
+			logger.info(
+				{
+					userId: newUser.id,
+					athleteId: newAthlete.id,
+					organizationId: signupLink.organizationId,
+					signupLinkId: signupLink.id,
+					athleteGroupId: signupLink.athleteGroupId,
+				},
+				"Athlete registered via signup link",
+			);
+		} else {
+			logger.info(
+				{ userId: newUser.id, athleteId: newAthlete.id },
+				"New athlete registered",
+			);
+		}
 
 		return NextResponse.json({
 			success: true,

@@ -5,6 +5,7 @@ import { es } from "date-fns/locale";
 import {
 	ArrowLeftIcon,
 	ArrowRightIcon,
+	BuildingIcon,
 	CalendarIcon,
 	CheckCircle2Icon,
 	LockIcon,
@@ -103,7 +104,19 @@ const STEPS = [
 	{ id: 4, name: "Legal" },
 ];
 
-export function AthleteSignUpCard() {
+type AthleteSignUpCardProps = {
+	signupToken?: string;
+	organizationName?: string;
+	organizationLogo?: string | null;
+	athleteGroupName?: string | null;
+};
+
+export function AthleteSignUpCard({
+	signupToken,
+	organizationName,
+	organizationLogo,
+	athleteGroupName,
+}: AthleteSignUpCardProps = {}) {
 	const [currentStep, setCurrentStep] = useState(1);
 	const [direction, setDirection] = useState(0);
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -158,7 +171,7 @@ export function AthleteSignUpCard() {
 							? { [CAPTCHA_RESPONSE_HEADER]: captchaToken }
 							: {}),
 					},
-					body: JSON.stringify(data),
+					body: JSON.stringify({ ...data, signupToken }),
 				});
 
 				const result = await response.json();
@@ -300,6 +313,41 @@ export function AthleteSignUpCard() {
 	return (
 		<Card className="w-full border-0 bg-white/70 px-6 py-8 shadow-2xl shadow-primary/10 backdrop-blur-md transition-all duration-300 hover:shadow-primary/15 dark:bg-card/70 dark:shadow-primary/5">
 			<div className="space-y-6">
+				{/* Organization Banner */}
+				{organizationName && (
+					<motion.div
+						className="flex items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3"
+						initial={{ opacity: 0, y: -10 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.3 }}
+					>
+						{organizationLogo ? (
+							<img
+								src={organizationLogo}
+								alt=""
+								className="size-10 rounded-full object-cover"
+							/>
+						) : (
+							<div className="flex size-10 items-center justify-center rounded-full bg-primary/10">
+								<BuildingIcon className="size-5 text-primary" />
+							</div>
+						)}
+						<div className="min-w-0 flex-1">
+							<p className="text-sm font-medium text-primary">
+								Te registrarás en
+							</p>
+							<p className="truncate text-sm font-semibold">
+								{organizationName}
+							</p>
+							{athleteGroupName && (
+								<p className="text-xs text-muted-foreground">
+									Grupo: {athleteGroupName}
+								</p>
+							)}
+						</div>
+					</motion.div>
+				)}
+
 				{/* Header */}
 				<motion.div
 					className="space-y-2"

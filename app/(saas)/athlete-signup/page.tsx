@@ -10,6 +10,16 @@ export const metadata: Metadata = {
 	description: "Crea tu cuenta como atleta en GOAT OS",
 };
 
-export default function AthleteSignupPage(): React.JSX.Element {
-	return <AthleteSignupContent />;
+type AthleteSignupPageProps = {
+	searchParams: Promise<{
+		[key: string]: string | string[] | undefined;
+		token?: string;
+	}>;
+};
+
+export default async function AthleteSignupPage({
+	searchParams,
+}: AthleteSignupPageProps): Promise<React.JSX.Element> {
+	const params = await searchParams;
+	return <AthleteSignupContent token={params.token} />;
 }

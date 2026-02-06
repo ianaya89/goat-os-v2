@@ -238,6 +238,7 @@
 		"tabs": {
 			"general": "General",
 			"members": "Members",
+			"signupLinks": "Signup Links",
 			"features": "Features",
 			"subscription": "Subscription",
 			"credits": "Credits"
@@ -269,6 +270,35 @@
 			"balance": "Current balance",
 			"buy": "Buy credits",
 			"history": "History"
+		},
+		"signupLinks": {
+			"title": "Athlete Signup Links",
+			"description": "Create and manage links for athletes to register directly in your organization.",
+			"create": "Create link",
+			"name": "Link name",
+			"namePlaceholder": "E.g.: Link for U-17 group",
+			"group": "Athlete group",
+			"groupNone": "Organization only (no group)",
+			"active": "Active",
+			"inactive": "Inactive",
+			"copyUrl": "Copy link",
+			"copied": "Link copied to clipboard",
+			"delete": "Delete",
+			"deleteTitle": "Delete link",
+			"deleteConfirm": "Are you sure you want to delete this link? Athletes who already signed up will not be affected.",
+			"usageCount": "{count, plural, one {# use} other {# uses}}",
+			"noLinks": "No signup links created",
+			"noLinksDescription": "Create a link for athletes to register directly in your organization.",
+			"created": "Link created successfully",
+			"updated": "Link updated successfully",
+			"deleted": "Link deleted successfully",
+			"orgOnly": "Organization only",
+			"targetGroup": "Group: {name}",
+			"createDialog": {
+				"title": "Create signup link",
+				"description": "Generate a unique link that you can share with your athletes."
+			},
+			"cancel": "Cancel"
 		},
 		"features": {
 			"title": "Organization Features",

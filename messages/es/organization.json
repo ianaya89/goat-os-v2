@@ -238,6 +238,7 @@
 		"tabs": {
 			"general": "General",
 			"members": "Miembros",
+			"signupLinks": "Enlaces de Registro",
 			"features": "Funcionalidades",
 			"subscription": "Suscripción",
 			"credits": "Créditos"
@@ -269,6 +270,35 @@
 			"balance": "Saldo actual",
 			"buy": "Comprar créditos",
 			"history": "Historial"
+		},
+		"signupLinks": {
+			"title": "Enlaces de Registro de Atletas",
+			"description": "Crea y gestiona enlaces para que los atletas se registren directamente en tu organización.",
+			"create": "Crear enlace",
+			"name": "Nombre del enlace",
+			"namePlaceholder": "Ej: Enlace para Sub-17",
+			"group": "Grupo de atletas",
+			"groupNone": "Solo organización (sin grupo)",
+			"active": "Activo",
+			"inactive": "Inactivo",
+			"copyUrl": "Copiar enlace",
+			"copied": "Enlace copiado al portapapeles",
+			"delete": "Eliminar",
+			"deleteTitle": "Eliminar enlace",
+			"deleteConfirm": "¿Estás seguro de que quieres eliminar este enlace? Los atletas que ya se registraron no serán afectados.",
+			"usageCount": "{count, plural, one {# uso} other {# usos}}",
+			"noLinks": "No hay enlaces de registro creados",
+			"noLinksDescription": "Crea un enlace para que los atletas se registren directamente en tu organización.",
+			"created": "Enlace creado correctamente",
+			"updated": "Enlace actualizado correctamente",
+			"deleted": "Enlace eliminado correctamente",
+			"orgOnly": "Solo organización",
+			"targetGroup": "Grupo: {name}",
+			"createDialog": {
+				"title": "Crear enlace de registro",
+				"description": "Genera un enlace único que podrás compartir con tus atletas."
+			},
+			"cancel": "Cancelar"
 		},
 		"features": {
 			"title": "Funcionalidades de la Organización",

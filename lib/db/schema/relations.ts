@@ -15,6 +15,7 @@ import {
 	athletePhysicalMetricsTable,
 	athleteReferenceTable,
 	athleteSessionFeedbackTable,
+	athleteSignupLinkTable,
 	athleteSponsorTable,
 	athleteTable,
 	athleteWellnessSurveyTable,
@@ -130,6 +131,24 @@ export const invitationRelations = relations(invitationTable, ({ one }) => ({
 	}),
 }));
 
+export const athleteSignupLinkRelations = relations(
+	athleteSignupLinkTable,
+	({ one }) => ({
+		organization: one(organizationTable, {
+			fields: [athleteSignupLinkTable.organizationId],
+			references: [organizationTable.id],
+		}),
+		athleteGroup: one(athleteGroupTable, {
+			fields: [athleteSignupLinkTable.athleteGroupId],
+			references: [athleteGroupTable.id],
+		}),
+		createdByUser: one(userTable, {
+			fields: [athleteSignupLinkTable.createdBy],
+			references: [userTable.id],
+		}),
+	}),
+);
+
 export const memberRelations = relations(memberTable, ({ one }) => ({
 	organization: one(organizationTable, {
 		fields: [memberTable.organizationId],
@@ -175,6 +194,8 @@ export const organizationRelations = relations(
 		eventTemplates: many(eventTemplateTable),
 		// Feature flags
 		features: many(organizationFeatureTable),
+		// Athlete signup links
+		athleteSignupLinks: many(athleteSignupLinkTable),
 	}),
 );
 

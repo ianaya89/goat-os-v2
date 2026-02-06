@@ -173,6 +173,39 @@ export const invitationTable = pgTable(
 	],
 );
 
+export const athleteSignupLinkTable = pgTable(
+	"athlete_signup_link",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizationTable.id, { onDelete: "cascade" }),
+		token: text("token").notNull().unique(),
+		name: text("name").notNull(),
+		athleteGroupId: uuid("athlete_group_id").references(
+			() => athleteGroupTable.id,
+			{ onDelete: "set null" },
+		),
+		isActive: boolean("is_active").notNull().default(true),
+		createdBy: uuid("created_by")
+			.notNull()
+			.references(() => userTable.id, { onDelete: "cascade" }),
+		usageCount: integer("usage_count").notNull().default(0),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+	},
+	(table) => [
+		index("athlete_signup_link_organization_id_idx").on(table.organizationId),
+		index("athlete_signup_link_is_active_idx").on(table.isActive),
+		index("athlete_signup_link_athlete_group_id_idx").on(table.athleteGroupId),
+	],
+);
+
 export const memberTable = pgTable(
 	"member",
 	{

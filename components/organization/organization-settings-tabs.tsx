@@ -1,9 +1,11 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import type * as React from "react";
 import { CreditsSettingsTab } from "@/components/billing/credits-settings-tab";
 import { SubscriptionSettingsTab } from "@/components/billing/subscription-settings-tab";
+import { AthleteSignupLinksTab } from "@/components/organization/athlete-signup-links-tab";
 import { DeleteOrganizationCard } from "@/components/organization/delete-organization-card";
 import { FeaturesSettingsTab } from "@/components/organization/features-settings-tab";
 import { OrganizationChangeNameCard } from "@/components/organization/organization-change-name-card";
@@ -21,6 +23,7 @@ import { billingConfig } from "@/config/billing.config";
 const tabValues = [
 	"general",
 	"members",
+	"signupLinks",
 	"features",
 	"subscription",
 	"credits",
@@ -34,6 +37,7 @@ type OrganizationSettingsTabsProps = {
 export function OrganizationSettingsTabs({
 	isAdmin,
 }: OrganizationSettingsTabsProps): React.JSX.Element {
+	const t = useTranslations("organization.settings.tabs");
 	const [tab, setTab] = useQueryState(
 		"tab",
 		parseAsStringLiteral(tabValues).withDefault("general"),
@@ -46,20 +50,31 @@ export function OrganizationSettingsTabs({
 			onValueChange={(value) => setTab(value as TabValue)}
 		>
 			<UnderlinedTabsList className="mb-6 sm:-ml-4">
-				<UnderlinedTabsTrigger value="general">General</UnderlinedTabsTrigger>
-				<UnderlinedTabsTrigger value="members">Members</UnderlinedTabsTrigger>
+				<UnderlinedTabsTrigger value="general">
+					{t("general")}
+				</UnderlinedTabsTrigger>
+				<UnderlinedTabsTrigger value="members">
+					{t("members")}
+				</UnderlinedTabsTrigger>
+				{isAdmin && (
+					<UnderlinedTabsTrigger value="signupLinks">
+						{t("signupLinks")}
+					</UnderlinedTabsTrigger>
+				)}
 				{isAdmin && (
 					<UnderlinedTabsTrigger value="features">
-						Features
+						{t("features")}
 					</UnderlinedTabsTrigger>
 				)}
 				{billingConfig.enabled && (
 					<UnderlinedTabsTrigger value="subscription">
-						Subscription
+						{t("subscription")}
 					</UnderlinedTabsTrigger>
 				)}
 				{billingConfig.enabled && (
-					<UnderlinedTabsTrigger value="credits">Credits</UnderlinedTabsTrigger>
+					<UnderlinedTabsTrigger value="credits">
+						{t("credits")}
+					</UnderlinedTabsTrigger>
 				)}
 			</UnderlinedTabsList>
 			<UnderlinedTabsContent value="general">
@@ -75,6 +90,11 @@ export function OrganizationSettingsTabs({
 					<OrganizationMembersCard />
 				</div>
 			</UnderlinedTabsContent>
+			{isAdmin && (
+				<UnderlinedTabsContent value="signupLinks">
+					<AthleteSignupLinksTab />
+				</UnderlinedTabsContent>
+			)}
 			{isAdmin && (
 				<UnderlinedTabsContent value="features">
 					<FeaturesSettingsTab isAdmin={isAdmin} />
