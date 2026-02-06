@@ -45,6 +45,8 @@ export function OrganizationMembersTable({
 	const { data: organization } = trpc.organization.get.useQuery({
 		id: organizationId,
 	});
+	const { data: excludedUserIds } =
+		trpc.organization.excludedMemberUserIds.useQuery();
 	const [sorting, setSorting] = React.useState<SortingState>([]);
 	const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
 		[],
@@ -184,13 +186,10 @@ export function OrganizationMembersTable({
 		},
 	];
 
-	const filteredMembers = React.useMemo(
-		() =>
-			(organization?.members ?? []).filter(
-				(m) => m.role === "owner" || m.role === "admin",
-			),
-		[organization?.members],
-	);
+	const filteredMembers = React.useMemo(() => {
+		const excluded = new Set(excludedUserIds ?? []);
+		return (organization?.members ?? []).filter((m) => !excluded.has(m.userId));
+	}, [organization?.members, excludedUserIds]);
 
 	const table = useReactTable({
 		data: filteredMembers,

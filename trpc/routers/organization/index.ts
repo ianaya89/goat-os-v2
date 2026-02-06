@@ -6,13 +6,17 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { assertUserIsOrgMember } from "@/lib/auth/server";
 import { db, memberTable, organizationTable } from "@/lib/db";
-import { creditBalanceTable } from "@/lib/db/schema";
+import { athleteTable, coachTable, creditBalanceTable } from "@/lib/db/schema";
 import { logger } from "@/lib/logger";
 import {
 	createOrganizationSchema,
 	getOrganizationByIdSchema,
 } from "@/schemas/organization-schemas";
-import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
+import {
+	createTRPCRouter,
+	protectedOrganizationProcedure,
+	protectedProcedure,
+} from "@/trpc/init";
 import { organizationAiRouter } from "@/trpc/routers/organization/organization-ai-router";
 import { organizationAthleteEvaluationRouter } from "@/trpc/routers/organization/organization-athlete-evaluation-router";
 import { organizationAthleteGroupRouter } from "@/trpc/routers/organization/organization-athlete-group-router";
@@ -121,6 +125,30 @@ export const organizationRouter = createTRPCRouter({
 
 			return organization;
 		}),
+	excludedMemberUserIds: protectedOrganizationProcedure.query(
+		async ({ ctx }) => {
+			const [athletes, coaches] = await Promise.all([
+				db
+					.select({ userId: athleteTable.userId })
+					.from(athleteTable)
+					.where(eq(athleteTable.organizationId, ctx.organization.id)),
+				db
+					.select({ userId: coachTable.userId })
+					.from(coachTable)
+					.where(eq(coachTable.organizationId, ctx.organization.id)),
+			]);
+
+			const userIds = new Set<string>();
+			for (const a of athletes) {
+				if (a.userId) userIds.add(a.userId);
+			}
+			for (const c of coaches) {
+				if (c.userId) userIds.add(c.userId);
+			}
+
+			return [...userIds];
+		},
+	),
 	create: protectedProcedure
 		.input(createOrganizationSchema)
 		.mutation(async ({ input }) => {
