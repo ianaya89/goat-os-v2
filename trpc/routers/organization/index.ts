@@ -1,6 +1,6 @@
 import slugify from "@sindresorhus/slugify";
 import { TRPCError } from "@trpc/server";
-import { asc, eq, getTableColumns } from "drizzle-orm";
+import { and, asc, eq, getTableColumns, inArray, isNotNull } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
@@ -127,26 +127,51 @@ export const organizationRouter = createTRPCRouter({
 		}),
 	excludedMemberUserIds: protectedOrganizationProcedure.query(
 		async ({ ctx }) => {
+			const orgId = ctx.organization.id;
+
+			// Get userIds of athletes and coaches in this org
 			const [athletes, coaches] = await Promise.all([
 				db
 					.select({ userId: athleteTable.userId })
 					.from(athleteTable)
-					.where(eq(athleteTable.organizationId, ctx.organization.id)),
+					.where(
+						and(
+							eq(athleteTable.organizationId, orgId),
+							isNotNull(athleteTable.userId),
+						),
+					),
 				db
 					.select({ userId: coachTable.userId })
 					.from(coachTable)
-					.where(eq(coachTable.organizationId, ctx.organization.id)),
+					.where(
+						and(
+							eq(coachTable.organizationId, orgId),
+							isNotNull(coachTable.userId),
+						),
+					),
 			]);
 
-			const userIds = new Set<string>();
-			for (const a of athletes) {
-				if (a.userId) userIds.add(a.userId);
-			}
-			for (const c of coaches) {
-				if (c.userId) userIds.add(c.userId);
-			}
+			const candidateUserIds = [
+				...athletes.map((a) => a.userId!),
+				...coaches.map((c) => c.userId!),
+			];
 
-			return [...userIds];
+			if (candidateUserIds.length === 0) return [];
+
+			// Keep users who are owner or admin — they should stay visible
+			const admins = await db
+				.select({ userId: memberTable.userId })
+				.from(memberTable)
+				.where(
+					and(
+						eq(memberTable.organizationId, orgId),
+						inArray(memberTable.userId, candidateUserIds),
+						inArray(memberTable.role, ["owner", "admin"]),
+					),
+				);
+
+			const adminUserIds = new Set(admins.map((a) => a.userId));
+			return candidateUserIds.filter((id) => !adminUserIds.has(id));
 		},
 	),
 	create: protectedProcedure

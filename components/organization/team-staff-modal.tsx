@@ -70,12 +70,12 @@ export const TeamStaffModal = NiceModal.create<TeamStaffModalProps>(
 		const utils = trpc.useUtils();
 
 		const { data: coaches } = trpc.organization.coach.list.useQuery({
-			limit: 500,
+			limit: 100,
 			offset: 0,
 		});
 
 		const { data: members } = trpc.organization.user.list.useQuery({
-			limit: 500,
+			limit: 100,
 			offset: 0,
 		});
 

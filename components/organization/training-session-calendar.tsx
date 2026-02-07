@@ -93,7 +93,7 @@ export function TrainingSessionCalendar({
 		offset: 0,
 	});
 	const { data: athletesData } = trpc.organization.athlete.list.useQuery({
-		limit: 100,
+		limit: 500,
 		offset: 0,
 	});
 
@@ -115,7 +115,7 @@ export function TrainingSessionCalendar({
 	const athleteQuery =
 		trpc.organization.trainingSession.listMySessionsAsAthlete.useQuery(
 			{
-				limit: 500, // Large limit for calendar
+				limit: 100,
 				offset: 0,
 				filters: {
 					dateRange: { from: dateRange.from, to: dateRange.to },
@@ -128,7 +128,7 @@ export function TrainingSessionCalendar({
 	const coachQuery =
 		trpc.organization.trainingSession.listMySessionsAsCoach.useQuery(
 			{
-				limit: 500, // Large limit for calendar
+				limit: 100,
 				offset: 0,
 				filters: {
 					dateRange: { from: dateRange.from, to: dateRange.to },

@@ -125,7 +125,7 @@ export const WaitlistModal = NiceModal.create<WaitlistModalProps>(
 		// Get all athletes for selection (no status filter to include all athletes)
 		const { data: athletesData } = trpc.organization.athlete.list.useQuery(
 			{
-				limit: 100,
+				limit: 500,
 				offset: 0,
 			},
 			{

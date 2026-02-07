@@ -253,6 +253,8 @@
 		"members": "miembros",
 		"selectAthletes": "Seleccionar atletas...",
 		"searchAthletes": "Buscar atletas...",
+		"searchAthletesHint": "Escribí al menos 2 caracteres para buscar...",
+		"searching": "Buscando...",
 		"noAthletesAvailable": "No hay atletas disponibles. Crea un atleta primero.",
 		"noAthletesFound": "No se encontraron atletas.",
 		"objectives": "Objetivos",

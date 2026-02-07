@@ -63,6 +63,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { UserAvatar } from "@/components/user/user-avatar";
+import { useDebounce } from "@/hooks/use-debounce";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 import { useZodForm } from "@/hooks/use-zod-form";
 import {
@@ -161,6 +162,8 @@ export const TrainingSessionsModal =
 			);
 			const [coachPopoverOpen, setCoachPopoverOpen] = React.useState(false);
 			const [athletePopoverOpen, setAthletePopoverOpen] = React.useState(false);
+			const [athleteSearchQuery, setAthleteSearchQuery] = React.useState("");
+			const debouncedAthleteQuery = useDebounce(athleteSearchQuery, 300);
 			const [isRecurring, setIsRecurring] = React.useState(
 				session?.isRecurring ?? false,
 			);
@@ -189,15 +192,41 @@ export const TrainingSessionsModal =
 				limit: 100,
 				offset: 0,
 			});
-			const { data: athletesData } = trpc.organization.athlete.list.useQuery({
-				limit: 100,
-				offset: 0,
-			});
+
+			// Server-side athlete search
+			const shouldSearchAthletes = debouncedAthleteQuery.length >= 2;
+			const { data: athletesData, isFetching: isSearchingAthletes } =
+				trpc.organization.athlete.list.useQuery(
+					{
+						limit: 20,
+						offset: 0,
+						query: debouncedAthleteQuery,
+					},
+					{
+						enabled: shouldSearchAthletes,
+						staleTime: 10000,
+					},
+				);
 
 			const locations = locationsData ?? [];
 			const groups = groupsData ?? [];
 			const coaches = coachesData?.coaches ?? [];
-			const athletes = athletesData?.athletes ?? [];
+			const athleteSearchResults = athletesData?.athletes ?? [];
+
+			// Track selected athlete objects for badge display
+			type AthleteItem = (typeof athleteSearchResults)[number];
+			const [selectedAthleteMap, setSelectedAthleteMap] = React.useState<
+				Map<string, AthleteItem>
+			>(() => {
+				// Initialize with pre-selected athletes from session (edit mode)
+				const map = new Map<string, AthleteItem>();
+				if (session?.athletes) {
+					for (const sa of session.athletes) {
+						map.set(sa.athlete.id, sa.athlete as unknown as AthleteItem);
+					}
+				}
+				return map;
+			});
 
 			const createSessionMutation =
 				trpc.organization.trainingSession.create.useMutation({
@@ -398,19 +427,28 @@ export const TrainingSessionsModal =
 			};
 
 			const toggleAthlete = (athleteId: string) => {
-				setSelectedAthleteIds((prev) =>
-					prev.includes(athleteId)
-						? prev.filter((id) => id !== athleteId)
-						: [...prev, athleteId],
-				);
+				setSelectedAthleteIds((prev) => {
+					if (prev.includes(athleteId)) {
+						setSelectedAthleteMap((m) => {
+							const next = new Map(m);
+							next.delete(athleteId);
+							return next;
+						});
+						return prev.filter((id) => id !== athleteId);
+					}
+					// Add athlete object from search results to the map
+					const athlete = athleteSearchResults.find((a) => a.id === athleteId);
+					if (athlete) {
+						setSelectedAthleteMap((m) => new Map(m).set(athleteId, athlete));
+					}
+					return [...prev, athleteId];
+				});
 			};
 
 			const selectedCoaches = coaches.filter((c) =>
 				selectedCoachIds.includes(c.id),
 			);
-			const selectedAthletes = athletes.filter((a) =>
-				selectedAthleteIds.includes(a.id),
-			);
+			const selectedAthletes = Array.from(selectedAthleteMap.values());
 
 			return (
 				<Sheet
@@ -994,7 +1032,10 @@ export const TrainingSessionsModal =
 													<FormLabel>{t("form.athletes")}</FormLabel>
 													<Popover
 														open={athletePopoverOpen}
-														onOpenChange={setAthletePopoverOpen}
+														onOpenChange={(open) => {
+															setAthletePopoverOpen(open);
+															if (!open) setAthleteSearchQuery("");
+														}}
 													>
 														<PopoverTrigger asChild>
 															<Button
@@ -1012,69 +1053,70 @@ export const TrainingSessionsModal =
 															className="w-[300px] p-0"
 															align="start"
 														>
-															<Command>
+															<Command shouldFilter={false}>
 																<CommandInput
 																	placeholder={t("modal.searchAthletes")}
+																	value={athleteSearchQuery}
+																	onValueChange={setAthleteSearchQuery}
 																/>
 																<CommandList>
-																	{athletes.length === 0 ? (
+																	{!shouldSearchAthletes ? (
 																		<div className="px-4 py-6 text-center text-muted-foreground text-sm">
-																			{t("modal.noAthletesAvailable")}
+																			{t("modal.searchAthletesHint")}
 																		</div>
+																	) : isSearchingAthletes ? (
+																		<div className="px-4 py-6 text-center text-muted-foreground text-sm">
+																			{t("modal.searching")}
+																		</div>
+																	) : athleteSearchResults.length === 0 ? (
+																		<CommandEmpty>
+																			{t("modal.noAthletesFound")}
+																		</CommandEmpty>
 																	) : (
-																		<>
-																			<CommandEmpty>
-																				{t("modal.noAthletesFound")}
-																			</CommandEmpty>
-																			<CommandGroup>
-																				{athletes.map((athlete) => {
-																					const isSelected =
-																						selectedAthleteIds.includes(
-																							athlete.id,
-																						);
-																					return (
-																						<CommandItem
-																							key={athlete.id}
-																							value={
-																								athlete.user?.name ?? athlete.id
-																							}
-																							onSelect={() =>
-																								toggleAthlete(athlete.id)
-																							}
-																						>
-																							<div className="flex items-center gap-2">
-																								<div
-																									className={cn(
-																										"flex size-4 items-center justify-center rounded-sm border",
-																										isSelected
-																											? "border-primary bg-primary text-primary-foreground"
-																											: "border-muted-foreground",
-																									)}
-																								>
-																									{isSelected && (
-																										<CheckIcon className="size-3" />
-																									)}
-																								</div>
-																								<UserAvatar
-																									className="size-6"
-																									name={
-																										athlete.user?.name ?? ""
-																									}
-																									src={
-																										athlete.user?.image ??
-																										undefined
-																									}
-																								/>
-																								<span className="truncate">
-																									{athlete.user?.name ??
-																										"Unknown"}
-																								</span>
-																							</div>
-																						</CommandItem>
+																		<CommandGroup>
+																			{athleteSearchResults.map((athlete) => {
+																				const isSelected =
+																					selectedAthleteIds.includes(
+																						athlete.id,
 																					);
-																				})}
-																			</CommandGroup>
-																		</>
+																				return (
+																					<CommandItem
+																						key={athlete.id}
+																						value={athlete.id}
+																						onSelect={() =>
+																							toggleAthlete(athlete.id)
+																						}
+																					>
+																						<div className="flex items-center gap-2">
+																							<div
+																								className={cn(
+																									"flex size-4 items-center justify-center rounded-sm border",
+																									isSelected
+																										? "border-primary bg-primary text-primary-foreground"
+																										: "border-muted-foreground",
+																								)}
+																							>
+																								{isSelected && (
+																									<CheckIcon className="size-3" />
+																								)}
+																							</div>
+																							<UserAvatar
+																								className="size-6"
+																								name={athlete.user?.name ?? ""}
+																								src={
+																									athlete.user?.image ??
+																									undefined
+																								}
+																							/>
+																							<span className="truncate">
+																								{athlete.user?.name ??
+																									"Unknown"}
+																							</span>
+																						</div>
+																					</CommandItem>
+																				);
+																			})}
+																		</CommandGroup>
 																	)}
 																</CommandList>
 															</Command>

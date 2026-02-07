@@ -65,7 +65,7 @@ export const SessionAthletesEditModal = NiceModal.create(
 		const [popoverOpen, setPopoverOpen] = React.useState(false);
 
 		const { data: athletesData } = trpc.organization.athlete.list.useQuery({
-			limit: 100,
+			limit: 500,
 			offset: 0,
 		});
 		const { data: groupsData } =
