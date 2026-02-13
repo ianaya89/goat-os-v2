@@ -112,6 +112,15 @@ export const auth = betterAuth({
 				resetPasswordLink: url,
 			});
 		},
+		onPasswordReset: async ({ user }, _request) => {
+			if (!user.emailVerified) {
+				await db
+					.update(userTable)
+					.set({ emailVerified: true })
+					.where(eq(userTable.id, user.id));
+				logger.info({ userId: user.id }, "Email verified after password reset");
+			}
+		},
 	},
 	emailVerification: {
 		sendOnSignUp: true,
