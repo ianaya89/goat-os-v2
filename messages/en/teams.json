@@ -138,6 +138,20 @@
 		"staffAdded": "Staff added to the team.",
 		"staffRemoved": "Staff removed from the team."
 	},
+	"modal": {
+		"createTitle": "New team",
+		"createSubtitle": "Create a new team for competitions",
+		"editTitle": "Edit team",
+		"editSubtitle": "Modify the team details",
+		"namePlaceholder": "U-15 A",
+		"descriptionPlaceholder": "Team description...",
+		"select": "Select",
+		"homeVenueDescription": "Where the team plays home games",
+		"homeVenuePlaceholder": "Stadium / Field",
+		"cancel": "Cancel",
+		"create": "Create team",
+		"update": "Save changes"
+	},
 	"error": {
 		"notFound": "Team not found.",
 		"createFailed": "Could not create the team.",

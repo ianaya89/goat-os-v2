@@ -144,7 +144,10 @@ function SheetFooter({
 	return (
 		<div
 			data-slot="sheet-footer"
-			className={cn("mt-auto flex flex-col gap-2 p-4", className)}
+			className={cn(
+				"mt-auto flex flex-col gap-2 border-t bg-muted/30 px-6 py-4",
+				className,
+			)}
 			{...props}
 		/>
 	);

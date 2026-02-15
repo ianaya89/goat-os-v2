@@ -4,11 +4,16 @@ import NiceModal from "@ebay/nice-modal-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import {
+	ProfileEditSection,
+	ProfileEditSheet,
+} from "@/components/athlete/profile-edit-sheet";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { Field } from "@/components/ui/field";
 import {
-	Form,
 	FormControl,
 	FormDescription,
 	FormField,
@@ -22,14 +27,6 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-	Sheet,
-	SheetContent,
-	SheetDescription,
-	SheetFooter,
-	SheetHeader,
-	SheetTitle,
-} from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 import { useZodForm } from "@/hooks/use-zod-form";
@@ -56,6 +53,7 @@ interface SeasonsModalProps {
 export const SeasonsModal = NiceModal.create<SeasonsModalProps>(
 	({ season }) => {
 		const modal = useEnhancedModal();
+		const t = useTranslations("seasons");
 		const isEditing = !!season;
 		const utils = trpc.useUtils();
 
@@ -73,25 +71,25 @@ export const SeasonsModal = NiceModal.create<SeasonsModalProps>(
 
 		const createMutation = trpc.organization.season.create.useMutation({
 			onSuccess: () => {
-				toast.success("Temporada creada");
+				toast.success(t("success.created"));
 				utils.organization.season.list.invalidate();
 				utils.organization.season.listActive.invalidate();
-				modal.hide();
+				modal.handleClose();
 			},
 			onError: (error) => {
-				toast.error(error.message || "Error al crear temporada");
+				toast.error(error.message || t("error.createFailed"));
 			},
 		});
 
 		const updateMutation = trpc.organization.season.update.useMutation({
 			onSuccess: () => {
-				toast.success("Temporada actualizada");
+				toast.success(t("success.updated"));
 				utils.organization.season.list.invalidate();
 				utils.organization.season.listActive.invalidate();
-				modal.hide();
+				modal.handleClose();
 			},
 			onError: (error) => {
-				toast.error(error.message || "Error al actualizar temporada");
+				toast.error(error.message || t("error.updateFailed"));
 			},
 		});
 
@@ -123,50 +121,58 @@ export const SeasonsModal = NiceModal.create<SeasonsModalProps>(
 		const isPending = createMutation.isPending || updateMutation.isPending;
 
 		return (
-			<Sheet
+			<ProfileEditSheet
 				open={modal.visible}
-				onOpenChange={(open) => !open && modal.hide()}
+				onClose={modal.handleClose}
+				title={isEditing ? t("modal.editTitle") : t("modal.createTitle")}
+				subtitle={
+					isEditing ? t("modal.editSubtitle") : t("modal.createSubtitle")
+				}
+				icon={<CalendarIcon className="size-5" />}
+				accentColor="emerald"
+				form={form}
+				onSubmit={onSubmit}
+				isPending={isPending}
+				submitLabel={isEditing ? t("modal.update") : t("modal.create")}
+				cancelLabel={t("modal.cancel")}
+				maxWidth="md"
+				onAnimationEndCapture={modal.handleAnimationEndCapture}
 			>
-				<SheetContent className="sm:max-w-md">
-					<SheetHeader>
-						<SheetTitle>
-							{isEditing ? "Editar temporada" : "Nueva temporada"}
-						</SheetTitle>
-						<SheetDescription>
-							{isEditing
-								? "Modifica los datos de la temporada"
-								: "Crea una nueva temporada para organizar equipos y competencias"}
-						</SheetDescription>
-					</SheetHeader>
-
-					<Form {...form}>
-						<form onSubmit={onSubmit} className="mt-6 space-y-6">
-							<FormField
-								control={form.control}
-								name="name"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Nombre</FormLabel>
+				<div className="space-y-6">
+					<ProfileEditSection>
+						<FormField
+							control={form.control}
+							name="name"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel>{t("form.name")}</FormLabel>
 										<FormControl>
-											<Input placeholder="2024-2025" {...field} />
+											<Input
+												placeholder={t("form.namePlaceholder")}
+												autoComplete="off"
+												{...field}
+											/>
 										</FormControl>
 										<FormDescription>
-											Por ejemplo: "2024-2025" o "Verano 2024"
+											{t("form.nameDescription")}
 										</FormDescription>
 										<FormMessage />
-									</FormItem>
-								)}
-							/>
+									</Field>
+								</FormItem>
+							)}
+						/>
 
-							<FormField
-								control={form.control}
-								name="startDate"
-								render={({ field }) => {
-									const dateValue =
-										field.value instanceof Date ? field.value : undefined;
-									return (
-										<FormItem className="flex flex-col">
-											<FormLabel>Fecha de inicio</FormLabel>
+						<FormField
+							control={form.control}
+							name="startDate"
+							render={({ field }) => {
+								const dateValue =
+									field.value instanceof Date ? field.value : undefined;
+								return (
+									<FormItem asChild>
+										<Field className="flex flex-col">
+											<FormLabel>{t("form.startDate")}</FormLabel>
 											<Popover>
 												<PopoverTrigger asChild>
 													<FormControl>
@@ -180,7 +186,7 @@ export const SeasonsModal = NiceModal.create<SeasonsModalProps>(
 															{dateValue ? (
 																format(dateValue, "PPP", { locale: es })
 															) : (
-																<span>Seleccionar fecha</span>
+																<span>{t("form.selectDate")}</span>
 															)}
 															<CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
 														</Button>
@@ -196,20 +202,22 @@ export const SeasonsModal = NiceModal.create<SeasonsModalProps>(
 												</PopoverContent>
 											</Popover>
 											<FormMessage />
-										</FormItem>
-									);
-								}}
-							/>
+										</Field>
+									</FormItem>
+								);
+							}}
+						/>
 
-							<FormField
-								control={form.control}
-								name="endDate"
-								render={({ field }) => {
-									const dateValue =
-										field.value instanceof Date ? field.value : undefined;
-									return (
-										<FormItem className="flex flex-col">
-											<FormLabel>Fecha de fin</FormLabel>
+						<FormField
+							control={form.control}
+							name="endDate"
+							render={({ field }) => {
+								const dateValue =
+									field.value instanceof Date ? field.value : undefined;
+								return (
+									<FormItem asChild>
+										<Field className="flex flex-col">
+											<FormLabel>{t("form.endDate")}</FormLabel>
 											<Popover>
 												<PopoverTrigger asChild>
 													<FormControl>
@@ -223,7 +231,7 @@ export const SeasonsModal = NiceModal.create<SeasonsModalProps>(
 															{dateValue ? (
 																format(dateValue, "PPP", { locale: es })
 															) : (
-																<span>Seleccionar fecha</span>
+																<span>{t("form.selectDate")}</span>
 															)}
 															<CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
 														</Button>
@@ -239,76 +247,62 @@ export const SeasonsModal = NiceModal.create<SeasonsModalProps>(
 												</PopoverContent>
 											</Popover>
 											<FormMessage />
-										</FormItem>
-									);
-								}}
-							/>
-
-							<FormField
-								control={form.control}
-								name="isActive"
-								render={({ field }) => (
-									<FormItem className="flex items-center justify-between rounded-lg border p-4">
-										<div className="space-y-0.5">
-											<FormLabel className="text-base">Activa</FormLabel>
-											<FormDescription>
-												La temporada está disponible para uso
-											</FormDescription>
-										</div>
-										<FormControl>
-											<Switch
-												checked={field.value}
-												onCheckedChange={field.onChange}
-											/>
-										</FormControl>
+										</Field>
 									</FormItem>
-								)}
-							/>
+								);
+							}}
+						/>
+					</ProfileEditSection>
 
-							<FormField
-								control={form.control}
-								name="isCurrent"
-								render={({ field }) => (
-									<FormItem className="flex items-center justify-between rounded-lg border p-4">
-										<div className="space-y-0.5">
-											<FormLabel className="text-base">
-												Temporada actual
-											</FormLabel>
-											<FormDescription>
-												Marcar como la temporada en curso
-											</FormDescription>
-										</div>
-										<FormControl>
-											<Switch
-												checked={field.value}
-												onCheckedChange={field.onChange}
-											/>
-										</FormControl>
-									</FormItem>
-								)}
-							/>
+					<ProfileEditSection>
+						<FormField
+							control={form.control}
+							name="isActive"
+							render={({ field }) => (
+								<FormItem className="flex items-center justify-between rounded-lg border p-4">
+									<div className="space-y-0.5">
+										<FormLabel className="text-base">
+											{t("form.isActive")}
+										</FormLabel>
+										<FormDescription>
+											{t("form.isActiveDescription")}
+										</FormDescription>
+									</div>
+									<FormControl>
+										<Switch
+											checked={field.value}
+											onCheckedChange={field.onChange}
+										/>
+									</FormControl>
+								</FormItem>
+							)}
+						/>
 
-							<SheetFooter>
-								<Button
-									type="button"
-									variant="outline"
-									onClick={() => modal.hide()}
-									disabled={isPending}
-								>
-									Cancelar
-								</Button>
-								<Button type="submit" disabled={isPending}>
-									{isPending
-										? "Guardando..."
-										: isEditing
-											? "Guardar cambios"
-											: "Crear temporada"}
-								</Button>
-							</SheetFooter>
-						</form>
-					</Form>
-				</SheetContent>
-			</Sheet>
+						<FormField
+							control={form.control}
+							name="isCurrent"
+							render={({ field }) => (
+								<FormItem className="flex items-center justify-between rounded-lg border p-4">
+									<div className="space-y-0.5">
+										<FormLabel className="text-base">
+											{t("form.isCurrent")}
+										</FormLabel>
+										<FormDescription>
+											{t("form.isCurrentDescription")}
+										</FormDescription>
+									</div>
+									<FormControl>
+										<Switch
+											checked={field.value}
+											onCheckedChange={field.onChange}
+										/>
+									</FormControl>
+								</FormItem>
+							)}
+						/>
+					</ProfileEditSection>
+				</div>
+			</ProfileEditSheet>
 		);
 	},
 );

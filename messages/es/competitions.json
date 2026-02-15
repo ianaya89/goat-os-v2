@@ -1,0 +1,51 @@
+{
+	"modal": {
+		"createTitle": "Nueva competencia",
+		"createSubtitle": "Crea una nueva competencia (torneo, liga, copa, etc.)",
+		"editTitle": "Editar competencia",
+		"editSubtitle": "Modifica los datos de la competencia",
+		"cancel": "Cancelar",
+		"create": "Crear competencia",
+		"update": "Guardar cambios"
+	},
+	"form": {
+		"name": "Nombre de la competencia",
+		"namePlaceholder": "Liga Juvenil 2026",
+		"description": "Descripción",
+		"descriptionPlaceholder": "Descripción de la competencia...",
+		"type": "Tipo",
+		"status": "Estado",
+		"sport": "Deporte",
+		"season": "Temporada",
+		"startDate": "Fecha de inicio",
+		"endDate": "Fecha de fin",
+		"selectDate": "Seleccionar",
+		"venue": "Sede",
+		"venuePlaceholder": "Estadio / Complejo deportivo",
+		"venueDescription": "Lugar principal donde se desarrolla la competencia",
+		"select": "Seleccionar"
+	},
+	"type": {
+		"league": "Liga",
+		"tournament": "Torneo",
+		"cup": "Copa",
+		"friendly": "Amistoso",
+		"championship": "Campeonato",
+		"playoff": "Playoff",
+		"other": "Otro"
+	},
+	"status": {
+		"upcoming": "Próximo",
+		"in_progress": "En curso",
+		"completed": "Completado",
+		"cancelled": "Cancelado"
+	},
+	"success": {
+		"created": "Competencia creada correctamente.",
+		"updated": "Competencia actualizada correctamente."
+	},
+	"error": {
+		"createFailed": "No se pudo crear la competencia.",
+		"updateFailed": "No se pudo actualizar la competencia."
+	}
+}

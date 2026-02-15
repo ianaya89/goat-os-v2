@@ -3,12 +3,18 @@
 import NiceModal from "@ebay/nice-modal-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, TrophyIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import {
+	ProfileEditGrid,
+	ProfileEditSection,
+	ProfileEditSheet,
+} from "@/components/athlete/profile-edit-sheet";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { Field } from "@/components/ui/field";
 import {
-	Form,
 	FormControl,
 	FormDescription,
 	FormField,
@@ -29,21 +35,16 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import {
-	Sheet,
-	SheetContent,
-	SheetDescription,
-	SheetFooter,
-	SheetHeader,
-	SheetTitle,
-} from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 import { useZodForm } from "@/hooks/use-zod-form";
 import {
 	type AthleteSport,
+	AthleteSports,
 	CompetitionStatus,
+	CompetitionStatuses,
 	CompetitionType,
+	CompetitionTypes,
 } from "@/lib/db/schema/enums";
 import { cn } from "@/lib/utils";
 import {
@@ -51,46 +52,6 @@ import {
 	updateCompetitionSchema,
 } from "@/schemas/organization-competition-schemas";
 import { trpc } from "@/trpc/client";
-
-const typeLabels: Record<string, string> = {
-	league: "Liga",
-	tournament: "Torneo",
-	cup: "Copa",
-	friendly: "Amistoso",
-	championship: "Campeonato",
-	playoff: "Playoff",
-	other: "Otro",
-};
-
-const statusLabels: Record<string, string> = {
-	upcoming: "Próximo",
-	in_progress: "En curso",
-	completed: "Completado",
-	cancelled: "Cancelado",
-};
-
-const sportLabels: Record<string, string> = {
-	soccer: "Fútbol",
-	basketball: "Básquetbol",
-	volleyball: "Vóley",
-	tennis: "Tenis",
-	swimming: "Natación",
-	athletics: "Atletismo",
-	rugby: "Rugby",
-	hockey: "Hockey",
-	baseball: "Béisbol",
-	handball: "Handball",
-	padel: "Pádel",
-	golf: "Golf",
-	boxing: "Boxeo",
-	martial_arts: "Artes marciales",
-	gymnastics: "Gimnasia",
-	cycling: "Ciclismo",
-	running: "Running",
-	fitness: "Fitness",
-	crossfit: "CrossFit",
-	other: "Otro",
-};
 
 interface Competition {
 	id: string;
@@ -112,6 +73,8 @@ interface CompetitionsModalProps {
 export const CompetitionsModal = NiceModal.create<CompetitionsModalProps>(
 	({ competition }) => {
 		const modal = useEnhancedModal();
+		const t = useTranslations("competitions");
+		const tc = useTranslations("common");
 		const isEditing = !!competition;
 		const utils = trpc.useUtils();
 
@@ -145,24 +108,24 @@ export const CompetitionsModal = NiceModal.create<CompetitionsModalProps>(
 
 		const createMutation = trpc.organization.competition.create.useMutation({
 			onSuccess: () => {
-				toast.success("Competencia creada");
+				toast.success(t("success.created"));
 				utils.organization.competition.list.invalidate();
-				modal.hide();
+				modal.handleClose();
 			},
 			onError: (error) => {
-				toast.error(error.message || "Error al crear competencia");
+				toast.error(error.message || t("error.createFailed"));
 			},
 		});
 
 		const updateMutation = trpc.organization.competition.update.useMutation({
 			onSuccess: () => {
-				toast.success("Competencia actualizada");
+				toast.success(t("success.updated"));
 				utils.organization.competition.list.invalidate();
 				utils.organization.competition.get.invalidate();
-				modal.hide();
+				modal.handleClose();
 			},
 			onError: (error) => {
-				toast.error(error.message || "Error al actualizar competencia");
+				toast.error(error.message || t("error.updateFailed"));
 			},
 		});
 
@@ -208,158 +171,174 @@ export const CompetitionsModal = NiceModal.create<CompetitionsModalProps>(
 		const isPending = createMutation.isPending || updateMutation.isPending;
 
 		return (
-			<Sheet
+			<ProfileEditSheet
 				open={modal.visible}
-				onOpenChange={(open) => !open && modal.hide()}
+				onClose={modal.handleClose}
+				title={isEditing ? t("modal.editTitle") : t("modal.createTitle")}
+				subtitle={
+					isEditing ? t("modal.editSubtitle") : t("modal.createSubtitle")
+				}
+				icon={<TrophyIcon className="size-5" />}
+				accentColor="amber"
+				form={form}
+				onSubmit={onSubmit}
+				isPending={isPending}
+				submitLabel={isEditing ? t("modal.update") : t("modal.create")}
+				cancelLabel={t("modal.cancel")}
+				maxWidth="lg"
+				onAnimationEndCapture={modal.handleAnimationEndCapture}
 			>
-				<SheetContent className="sm:max-w-lg overflow-y-auto">
-					<SheetHeader>
-						<SheetTitle>
-							{isEditing ? "Editar competencia" : "Nueva competencia"}
-						</SheetTitle>
-						<SheetDescription>
-							{isEditing
-								? "Modifica los datos de la competencia"
-								: "Crea una nueva competencia (torneo, liga, copa, etc.)"}
-						</SheetDescription>
-					</SheetHeader>
-
-					<Form {...form}>
-						<form onSubmit={onSubmit} className="mt-6 space-y-6">
-							<FormField
-								control={form.control}
-								name="name"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Nombre de la competencia</FormLabel>
+				<div className="space-y-6">
+					<ProfileEditSection>
+						<FormField
+							control={form.control}
+							name="name"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel>{t("form.name")}</FormLabel>
 										<FormControl>
-											<Input placeholder="Liga Juvenil 2026" {...field} />
+											<Input
+												placeholder={t("form.namePlaceholder")}
+												autoComplete="off"
+												{...field}
+											/>
 										</FormControl>
 										<FormMessage />
-									</FormItem>
-								)}
-							/>
+									</Field>
+								</FormItem>
+							)}
+						/>
 
-							<FormField
-								control={form.control}
-								name="description"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Descripción</FormLabel>
+						<FormField
+							control={form.control}
+							name="description"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel>{t("form.description")}</FormLabel>
 										<FormControl>
 											<Textarea
-												placeholder="Descripción de la competencia..."
+												placeholder={t("form.descriptionPlaceholder")}
 												{...field}
 												value={field.value ?? ""}
 											/>
 										</FormControl>
 										<FormMessage />
+									</Field>
+								</FormItem>
+							)}
+						/>
+					</ProfileEditSection>
+
+					<ProfileEditSection>
+						<ProfileEditGrid cols={2}>
+							<FormField
+								control={form.control}
+								name="type"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("form.type")}</FormLabel>
+											<Select
+												onValueChange={field.onChange}
+												defaultValue={field.value}
+											>
+												<FormControl>
+													<SelectTrigger className="w-full">
+														<SelectValue placeholder={t("form.select")} />
+													</SelectTrigger>
+												</FormControl>
+												<SelectContent>
+													{CompetitionTypes.map((type) => (
+														<SelectItem key={type} value={type}>
+															{t(`type.${type}`)}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+											<FormMessage />
+										</Field>
 									</FormItem>
 								)}
 							/>
 
-							<div className="grid grid-cols-2 gap-4">
-								<FormField
-									control={form.control}
-									name="type"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>Tipo</FormLabel>
+							<FormField
+								control={form.control}
+								name="status"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("form.status")}</FormLabel>
 											<Select
 												onValueChange={field.onChange}
 												defaultValue={field.value}
 											>
 												<FormControl>
-													<SelectTrigger>
-														<SelectValue placeholder="Seleccionar" />
+													<SelectTrigger className="w-full">
+														<SelectValue placeholder={t("form.select")} />
 													</SelectTrigger>
 												</FormControl>
 												<SelectContent>
-													{Object.entries(typeLabels).map(([value, label]) => (
-														<SelectItem key={value} value={value}>
-															{label}
+													{CompetitionStatuses.map((status) => (
+														<SelectItem key={status} value={status}>
+															{t(`status.${status}`)}
 														</SelectItem>
 													))}
 												</SelectContent>
 											</Select>
 											<FormMessage />
-										</FormItem>
-									)}
-								/>
+										</Field>
+									</FormItem>
+								)}
+							/>
+						</ProfileEditGrid>
 
-								<FormField
-									control={form.control}
-									name="status"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>Estado</FormLabel>
-											<Select
-												onValueChange={field.onChange}
-												defaultValue={field.value}
-											>
-												<FormControl>
-													<SelectTrigger>
-														<SelectValue placeholder="Seleccionar" />
-													</SelectTrigger>
-												</FormControl>
-												<SelectContent>
-													{Object.entries(statusLabels).map(
-														([value, label]) => (
-															<SelectItem key={value} value={value}>
-																{label}
-															</SelectItem>
-														),
-													)}
-												</SelectContent>
-											</Select>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-							</div>
-
-							<div className="grid grid-cols-2 gap-4">
-								<FormField
-									control={form.control}
-									name="sport"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>Deporte</FormLabel>
+						<ProfileEditGrid cols={2}>
+							<FormField
+								control={form.control}
+								name="sport"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("form.sport")}</FormLabel>
 											<Select
 												onValueChange={field.onChange}
 												defaultValue={field.value ?? undefined}
 											>
 												<FormControl>
-													<SelectTrigger>
-														<SelectValue placeholder="Seleccionar" />
+													<SelectTrigger className="w-full">
+														<SelectValue placeholder={t("form.select")} />
 													</SelectTrigger>
 												</FormControl>
 												<SelectContent>
-													{Object.entries(sportLabels).map(([value, label]) => (
-														<SelectItem key={value} value={value}>
-															{label}
+													{AthleteSports.map((sport) => (
+														<SelectItem key={sport} value={sport}>
+															{tc(`sports.${sport}`)}
 														</SelectItem>
 													))}
 												</SelectContent>
 											</Select>
 											<FormMessage />
-										</FormItem>
-									)}
-								/>
+										</Field>
+									</FormItem>
+								)}
+							/>
 
-								<FormField
-									control={form.control}
-									name="seasonId"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel>Temporada</FormLabel>
+							<FormField
+								control={form.control}
+								name="seasonId"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("form.season")}</FormLabel>
 											<Select
 												onValueChange={field.onChange}
 												defaultValue={field.value ?? undefined}
 											>
 												<FormControl>
-													<SelectTrigger>
-														<SelectValue placeholder="Seleccionar" />
+													<SelectTrigger className="w-full">
+														<SelectValue placeholder={t("form.select")} />
 													</SelectTrigger>
 												</FormControl>
 												<SelectContent>
@@ -371,18 +350,22 @@ export const CompetitionsModal = NiceModal.create<CompetitionsModalProps>(
 												</SelectContent>
 											</Select>
 											<FormMessage />
-										</FormItem>
-									)}
-								/>
-							</div>
+										</Field>
+									</FormItem>
+								)}
+							/>
+						</ProfileEditGrid>
+					</ProfileEditSection>
 
-							<div className="grid grid-cols-2 gap-4">
-								<FormField
-									control={form.control}
-									name="startDate"
-									render={({ field }) => (
-										<FormItem className="flex flex-col">
-											<FormLabel>Fecha de inicio</FormLabel>
+					<ProfileEditSection>
+						<ProfileEditGrid cols={2}>
+							<FormField
+								control={form.control}
+								name="startDate"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field className="flex flex-col">
+											<FormLabel>{t("form.startDate")}</FormLabel>
 											<Popover>
 												<PopoverTrigger asChild>
 													<FormControl>
@@ -396,7 +379,7 @@ export const CompetitionsModal = NiceModal.create<CompetitionsModalProps>(
 															{field.value instanceof Date ? (
 																format(field.value, "PPP", { locale: es })
 															) : (
-																<span>Seleccionar</span>
+																<span>{t("form.selectDate")}</span>
 															)}
 															<CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
 														</Button>
@@ -416,96 +399,83 @@ export const CompetitionsModal = NiceModal.create<CompetitionsModalProps>(
 												</PopoverContent>
 											</Popover>
 											<FormMessage />
-										</FormItem>
-									)}
-								/>
-
-								<FormField
-									control={form.control}
-									name="endDate"
-									render={({ field }) => (
-										<FormItem className="flex flex-col">
-											<FormLabel>Fecha de fin</FormLabel>
-											<Popover>
-												<PopoverTrigger asChild>
-													<FormControl>
-														<Button
-															variant="outline"
-															className={cn(
-																"w-full pl-3 text-left font-normal",
-																!field.value && "text-muted-foreground",
-															)}
-														>
-															{field.value instanceof Date ? (
-																format(field.value, "PPP", { locale: es })
-															) : (
-																<span>Seleccionar</span>
-															)}
-															<CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-														</Button>
-													</FormControl>
-												</PopoverTrigger>
-												<PopoverContent className="w-auto p-0" align="start">
-													<Calendar
-														mode="single"
-														selected={
-															field.value instanceof Date
-																? field.value
-																: undefined
-														}
-														onSelect={field.onChange}
-														initialFocus
-													/>
-												</PopoverContent>
-											</Popover>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-							</div>
+										</Field>
+									</FormItem>
+								)}
+							/>
 
 							<FormField
 								control={form.control}
-								name="venue"
+								name="endDate"
 								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Sede</FormLabel>
+									<FormItem asChild>
+										<Field className="flex flex-col">
+											<FormLabel>{t("form.endDate")}</FormLabel>
+											<Popover>
+												<PopoverTrigger asChild>
+													<FormControl>
+														<Button
+															variant="outline"
+															className={cn(
+																"w-full pl-3 text-left font-normal",
+																!field.value && "text-muted-foreground",
+															)}
+														>
+															{field.value instanceof Date ? (
+																format(field.value, "PPP", { locale: es })
+															) : (
+																<span>{t("form.selectDate")}</span>
+															)}
+															<CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+														</Button>
+													</FormControl>
+												</PopoverTrigger>
+												<PopoverContent className="w-auto p-0" align="start">
+													<Calendar
+														mode="single"
+														selected={
+															field.value instanceof Date
+																? field.value
+																: undefined
+														}
+														onSelect={field.onChange}
+														initialFocus
+													/>
+												</PopoverContent>
+											</Popover>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
+						</ProfileEditGrid>
+
+						<FormField
+							control={form.control}
+							name="venue"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel>{t("form.venue")}</FormLabel>
 										<FormControl>
 											<Input
-												placeholder="Estadio / Complejo deportivo"
+												placeholder={t("form.venuePlaceholder")}
+												autoComplete="off"
 												{...field}
 												value={field.value ?? ""}
 											/>
 										</FormControl>
 										<FormDescription>
-											Lugar principal donde se desarrolla la competencia
+											{t("form.venueDescription")}
 										</FormDescription>
 										<FormMessage />
-									</FormItem>
-								)}
-							/>
-
-							<SheetFooter>
-								<Button
-									type="button"
-									variant="outline"
-									onClick={() => modal.hide()}
-									disabled={isPending}
-								>
-									Cancelar
-								</Button>
-								<Button type="submit" disabled={isPending}>
-									{isPending
-										? "Guardando..."
-										: isEditing
-											? "Guardar cambios"
-											: "Crear competencia"}
-								</Button>
-							</SheetFooter>
-						</form>
-					</Form>
-				</SheetContent>
-			</Sheet>
+									</Field>
+								</FormItem>
+							)}
+						/>
+					</ProfileEditSection>
+				</div>
+			</ProfileEditSheet>
 		);
 	},
 );

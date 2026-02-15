@@ -538,7 +538,7 @@ export const ProductsModal = NiceModal.create<ProductsModalProps>(
 								</div>
 							</ScrollArea>
 
-							<SheetFooter className="shrink-0 flex-row justify-end gap-3 border-t bg-muted/30 px-6 py-4 pb-6">
+							<SheetFooter className="shrink-0 flex-row justify-end gap-3 pb-6">
 								<Button
 									type="button"
 									variant="ghost"

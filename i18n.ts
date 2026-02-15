@@ -50,6 +50,10 @@ export default getRequestConfig(async () => {
 		achievements: (await import(`./messages/${locale}/achievements.json`))
 			.default,
 		teams: (await import(`./messages/${locale}/teams.json`)).default,
+		seasons: (await import(`./messages/${locale}/seasons.json`)).default,
+		competitions: (await import(`./messages/${locale}/competitions.json`))
+			.default,
+		sponsors: (await import(`./messages/${locale}/sponsors.json`)).default,
 		confirmations: (await import(`./messages/${locale}/confirmations.json`))
 			.default,
 		institutions: (await import(`./messages/${locale}/institutions.json`))

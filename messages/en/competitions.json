@@ -1,0 +1,51 @@
+{
+	"modal": {
+		"createTitle": "New competition",
+		"createSubtitle": "Create a new competition (tournament, league, cup, etc.)",
+		"editTitle": "Edit competition",
+		"editSubtitle": "Modify the competition details",
+		"cancel": "Cancel",
+		"create": "Create competition",
+		"update": "Save changes"
+	},
+	"form": {
+		"name": "Competition name",
+		"namePlaceholder": "Youth League 2026",
+		"description": "Description",
+		"descriptionPlaceholder": "Competition description...",
+		"type": "Type",
+		"status": "Status",
+		"sport": "Sport",
+		"season": "Season",
+		"startDate": "Start date",
+		"endDate": "End date",
+		"selectDate": "Select",
+		"venue": "Venue",
+		"venuePlaceholder": "Stadium / Sports complex",
+		"venueDescription": "Main venue where the competition takes place",
+		"select": "Select"
+	},
+	"type": {
+		"league": "League",
+		"tournament": "Tournament",
+		"cup": "Cup",
+		"friendly": "Friendly",
+		"championship": "Championship",
+		"playoff": "Playoff",
+		"other": "Other"
+	},
+	"status": {
+		"upcoming": "Upcoming",
+		"in_progress": "In progress",
+		"completed": "Completed",
+		"cancelled": "Cancelled"
+	},
+	"success": {
+		"created": "Competition created successfully.",
+		"updated": "Competition updated successfully."
+	},
+	"error": {
+		"createFailed": "Could not create the competition.",
+		"updateFailed": "Could not update the competition."
+	}
+}

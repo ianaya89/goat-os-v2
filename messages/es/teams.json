@@ -138,6 +138,20 @@
 		"staffAdded": "Staff agregado al equipo.",
 		"staffRemoved": "Staff eliminado del equipo."
 	},
+	"modal": {
+		"createTitle": "Nuevo equipo",
+		"createSubtitle": "Crea un nuevo equipo para competencias",
+		"editTitle": "Editar equipo",
+		"editSubtitle": "Modifica los datos del equipo",
+		"namePlaceholder": "Sub-15 A",
+		"descriptionPlaceholder": "Descripción del equipo...",
+		"select": "Seleccionar",
+		"homeVenueDescription": "Donde juega de local el equipo",
+		"homeVenuePlaceholder": "Estadio / Cancha",
+		"cancel": "Cancelar",
+		"create": "Crear equipo",
+		"update": "Guardar cambios"
+	},
 	"error": {
 		"notFound": "Equipo no encontrado.",
 		"createFailed": "No se pudo crear el equipo.",

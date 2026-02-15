@@ -662,7 +662,7 @@ export const WaitlistModal = NiceModal.create<WaitlistModalProps>(
 								</div>
 							</ScrollArea>
 
-							<SheetFooter className="flex-row justify-end gap-3 border-t bg-muted/30 px-6 py-4">
+							<SheetFooter className="flex-row justify-end gap-3">
 								<Button
 									type="button"
 									variant="ghost"

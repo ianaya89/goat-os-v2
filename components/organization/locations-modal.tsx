@@ -487,7 +487,7 @@ export const LocationsModal = NiceModal.create<LocationsModalProps>(
 								</div>
 							</ScrollArea>
 
-							<SheetFooter className="shrink-0 flex-row justify-end gap-3 border-t bg-muted/30 px-6 py-4">
+							<SheetFooter className="shrink-0 flex-row justify-end gap-3">
 								<Button
 									type="button"
 									variant="ghost"

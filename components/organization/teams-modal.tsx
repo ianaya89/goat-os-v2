@@ -1,11 +1,16 @@
 "use client";
 
 import NiceModal from "@ebay/nice-modal-react";
-import { CheckIcon, PlusIcon, XIcon } from "lucide-react";
+import { UsersIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import {
-	Form,
+	ProfileEditGrid,
+	ProfileEditSection,
+	ProfileEditSheet,
+} from "@/components/athlete/profile-edit-sheet";
+import { Field } from "@/components/ui/field";
+import {
 	FormControl,
 	FormDescription,
 	FormField,
@@ -21,52 +26,20 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import {
-	Sheet,
-	SheetContent,
-	SheetDescription,
-	SheetFooter,
-	SheetHeader,
-	SheetTitle,
-} from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 import { useZodForm } from "@/hooks/use-zod-form";
-import { type AthleteSport, TeamStatus } from "@/lib/db/schema/enums";
+import {
+	type AthleteSport,
+	AthleteSports,
+	TeamStatus,
+	TeamStatuses,
+} from "@/lib/db/schema/enums";
 import {
 	createTeamSchema,
 	updateTeamSchema,
 } from "@/schemas/organization-team-schemas";
 import { trpc } from "@/trpc/client";
-
-const sportLabels: Record<string, string> = {
-	soccer: "Fútbol",
-	basketball: "Básquetbol",
-	volleyball: "Vóley",
-	tennis: "Tenis",
-	swimming: "Natación",
-	athletics: "Atletismo",
-	rugby: "Rugby",
-	hockey: "Hockey",
-	baseball: "Béisbol",
-	handball: "Handball",
-	padel: "Pádel",
-	golf: "Golf",
-	boxing: "Boxeo",
-	martial_arts: "Artes marciales",
-	gymnastics: "Gimnasia",
-	cycling: "Ciclismo",
-	running: "Running",
-	fitness: "Fitness",
-	crossfit: "CrossFit",
-	other: "Otro",
-};
-
-const statusLabels: Record<string, string> = {
-	active: "Activo",
-	inactive: "Inactivo",
-	archived: "Archivado",
-};
 
 interface Team {
 	id: string;
@@ -87,6 +60,8 @@ interface TeamsModalProps {
 
 export const TeamsModal = NiceModal.create<TeamsModalProps>(({ team }) => {
 	const modal = useEnhancedModal();
+	const t = useTranslations("teams");
+	const tc = useTranslations("common");
 	const isEditing = !!team;
 	const utils = trpc.useUtils();
 
@@ -116,26 +91,26 @@ export const TeamsModal = NiceModal.create<TeamsModalProps>(({ team }) => {
 
 	const createMutation = trpc.organization.team.create.useMutation({
 		onSuccess: () => {
-			toast.success("Equipo creado");
+			toast.success(t("success.created"));
 			utils.organization.team.list.invalidate();
 			utils.organization.team.listActive.invalidate();
-			modal.hide();
+			modal.handleClose();
 		},
 		onError: (error) => {
-			toast.error(error.message || "Error al crear equipo");
+			toast.error(error.message || t("error.createFailed"));
 		},
 	});
 
 	const updateMutation = trpc.organization.team.update.useMutation({
 		onSuccess: () => {
-			toast.success("Equipo actualizado");
+			toast.success(t("success.updated"));
 			utils.organization.team.list.invalidate();
 			utils.organization.team.listActive.invalidate();
 			utils.organization.team.get.invalidate();
-			modal.hide();
+			modal.handleClose();
 		},
 		onError: (error) => {
-			toast.error(error.message || "Error al actualizar equipo");
+			toast.error(error.message || t("error.updateFailed"));
 		},
 	});
 
@@ -173,125 +148,142 @@ export const TeamsModal = NiceModal.create<TeamsModalProps>(({ team }) => {
 	const isPending = createMutation.isPending || updateMutation.isPending;
 
 	return (
-		<Sheet open={modal.visible} onOpenChange={(open) => !open && modal.hide()}>
-			<SheetContent className="sm:max-w-lg overflow-y-auto">
-				<SheetHeader>
-					<SheetTitle>
-						{isEditing ? "Editar equipo" : "Nuevo equipo"}
-					</SheetTitle>
-					<SheetDescription>
-						{isEditing
-							? "Modifica los datos del equipo"
-							: "Crea un nuevo equipo para competencias"}
-					</SheetDescription>
-				</SheetHeader>
-
-				<Form {...form}>
-					<form onSubmit={onSubmit} className="mt-6 space-y-6">
-						<FormField
-							control={form.control}
-							name="name"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Nombre del equipo</FormLabel>
+		<ProfileEditSheet
+			open={modal.visible}
+			onClose={modal.handleClose}
+			title={isEditing ? t("modal.editTitle") : t("modal.createTitle")}
+			subtitle={isEditing ? t("modal.editSubtitle") : t("modal.createSubtitle")}
+			icon={<UsersIcon className="size-5" />}
+			accentColor="primary"
+			form={form}
+			onSubmit={onSubmit}
+			isPending={isPending}
+			submitLabel={isEditing ? t("modal.update") : t("modal.create")}
+			cancelLabel={t("modal.cancel")}
+			maxWidth="lg"
+			onAnimationEndCapture={modal.handleAnimationEndCapture}
+		>
+			<div className="space-y-6">
+				<ProfileEditSection>
+					<FormField
+						control={form.control}
+						name="name"
+						render={({ field }) => (
+							<FormItem asChild>
+								<Field>
+									<FormLabel>{t("form.name")}</FormLabel>
 									<FormControl>
-										<Input placeholder="Sub-15 A" {...field} />
+										<Input
+											placeholder={t("modal.namePlaceholder")}
+											autoComplete="off"
+											{...field}
+										/>
 									</FormControl>
 									<FormMessage />
-								</FormItem>
-							)}
-						/>
+								</Field>
+							</FormItem>
+						)}
+					/>
 
-						<FormField
-							control={form.control}
-							name="description"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Descripción</FormLabel>
+					<FormField
+						control={form.control}
+						name="description"
+						render={({ field }) => (
+							<FormItem asChild>
+								<Field>
+									<FormLabel>{t("form.description")}</FormLabel>
 									<FormControl>
 										<Textarea
-											placeholder="Descripción del equipo..."
+											placeholder={t("modal.descriptionPlaceholder")}
 											{...field}
 											value={field.value ?? ""}
 										/>
 									</FormControl>
 									<FormMessage />
-								</FormItem>
-							)}
-						/>
+								</Field>
+							</FormItem>
+						)}
+					/>
+				</ProfileEditSection>
 
-						<div className="grid grid-cols-2 gap-4">
-							<FormField
-								control={form.control}
-								name="sport"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Deporte</FormLabel>
+				<ProfileEditSection>
+					<ProfileEditGrid cols={2}>
+						<FormField
+							control={form.control}
+							name="sport"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel>{t("form.sport")}</FormLabel>
 										<Select
 											onValueChange={field.onChange}
 											defaultValue={field.value ?? undefined}
 										>
 											<FormControl>
-												<SelectTrigger>
-													<SelectValue placeholder="Seleccionar" />
+												<SelectTrigger className="w-full">
+													<SelectValue placeholder={t("modal.select")} />
 												</SelectTrigger>
 											</FormControl>
 											<SelectContent>
-												{Object.entries(sportLabels).map(([value, label]) => (
-													<SelectItem key={value} value={value}>
-														{label}
+												{AthleteSports.map((sport) => (
+													<SelectItem key={sport} value={sport}>
+														{tc(`sports.${sport}`)}
 													</SelectItem>
 												))}
 											</SelectContent>
 										</Select>
 										<FormMessage />
-									</FormItem>
-								)}
-							/>
+									</Field>
+								</FormItem>
+							)}
+						/>
 
-							<FormField
-								control={form.control}
-								name="status"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Estado</FormLabel>
+						<FormField
+							control={form.control}
+							name="status"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel>{t("table.status")}</FormLabel>
 										<Select
 											onValueChange={field.onChange}
 											defaultValue={field.value}
 										>
 											<FormControl>
-												<SelectTrigger>
-													<SelectValue placeholder="Seleccionar" />
+												<SelectTrigger className="w-full">
+													<SelectValue placeholder={t("modal.select")} />
 												</SelectTrigger>
 											</FormControl>
 											<SelectContent>
-												{Object.entries(statusLabels).map(([value, label]) => (
-													<SelectItem key={value} value={value}>
-														{label}
+												{TeamStatuses.map((status) => (
+													<SelectItem key={status} value={status}>
+														{t(`status.${status}`)}
 													</SelectItem>
 												))}
 											</SelectContent>
 										</Select>
 										<FormMessage />
-									</FormItem>
-								)}
-							/>
-						</div>
+									</Field>
+								</FormItem>
+							)}
+						/>
+					</ProfileEditGrid>
 
-						<div className="grid grid-cols-2 gap-4">
-							<FormField
-								control={form.control}
-								name="seasonId"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Temporada</FormLabel>
+					<ProfileEditGrid cols={2}>
+						<FormField
+							control={form.control}
+							name="seasonId"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel>{t("form.season")}</FormLabel>
 										<Select
 											onValueChange={field.onChange}
 											defaultValue={field.value ?? undefined}
 										>
 											<FormControl>
-												<SelectTrigger>
-													<SelectValue placeholder="Seleccionar" />
+												<SelectTrigger className="w-full">
+													<SelectValue placeholder={t("modal.select")} />
 												</SelectTrigger>
 											</FormControl>
 											<SelectContent>
@@ -303,23 +295,25 @@ export const TeamsModal = NiceModal.create<TeamsModalProps>(({ team }) => {
 											</SelectContent>
 										</Select>
 										<FormMessage />
-									</FormItem>
-								)}
-							/>
+									</Field>
+								</FormItem>
+							)}
+						/>
 
-							<FormField
-								control={form.control}
-								name="ageCategoryId"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Categoría</FormLabel>
+						<FormField
+							control={form.control}
+							name="ageCategoryId"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel>{t("form.ageCategory")}</FormLabel>
 										<Select
 											onValueChange={field.onChange}
 											defaultValue={field.value ?? undefined}
 										>
 											<FormControl>
-												<SelectTrigger>
-													<SelectValue placeholder="Seleccionar" />
+												<SelectTrigger className="w-full">
+													<SelectValue placeholder={t("modal.select")} />
 												</SelectTrigger>
 											</FormControl>
 											<SelectContent>
@@ -331,39 +325,46 @@ export const TeamsModal = NiceModal.create<TeamsModalProps>(({ team }) => {
 											</SelectContent>
 										</Select>
 										<FormMessage />
-									</FormItem>
-								)}
-							/>
-						</div>
+									</Field>
+								</FormItem>
+							)}
+						/>
+					</ProfileEditGrid>
+				</ProfileEditSection>
 
-						<FormField
-							control={form.control}
-							name="homeVenue"
-							render={({ field }) => (
-								<FormItem>
-									<FormLabel>Sede local</FormLabel>
+				<ProfileEditSection>
+					<FormField
+						control={form.control}
+						name="homeVenue"
+						render={({ field }) => (
+							<FormItem asChild>
+								<Field>
+									<FormLabel>{t("form.homeVenue")}</FormLabel>
 									<FormControl>
 										<Input
-											placeholder="Estadio / Cancha"
+											placeholder={t("modal.homeVenuePlaceholder")}
+											autoComplete="off"
 											{...field}
 											value={field.value ?? ""}
 										/>
 									</FormControl>
 									<FormDescription>
-										Donde juega de local el equipo
+										{t("modal.homeVenueDescription")}
 									</FormDescription>
 									<FormMessage />
-								</FormItem>
-							)}
-						/>
+								</Field>
+							</FormItem>
+						)}
+					/>
 
-						<div className="grid grid-cols-2 gap-4">
-							<FormField
-								control={form.control}
-								name="primaryColor"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Color primario</FormLabel>
+					<ProfileEditGrid cols={2}>
+						<FormField
+							control={form.control}
+							name="primaryColor"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel>{t("form.primaryColor")}</FormLabel>
 										<FormControl>
 											<div className="flex gap-2">
 												<Input
@@ -380,16 +381,18 @@ export const TeamsModal = NiceModal.create<TeamsModalProps>(({ team }) => {
 											</div>
 										</FormControl>
 										<FormMessage />
-									</FormItem>
-								)}
-							/>
+									</Field>
+								</FormItem>
+							)}
+						/>
 
-							<FormField
-								control={form.control}
-								name="secondaryColor"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Color secundario</FormLabel>
+						<FormField
+							control={form.control}
+							name="secondaryColor"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel>{t("form.secondaryColor")}</FormLabel>
 										<FormControl>
 											<div className="flex gap-2">
 												<Input
@@ -406,33 +409,13 @@ export const TeamsModal = NiceModal.create<TeamsModalProps>(({ team }) => {
 											</div>
 										</FormControl>
 										<FormMessage />
-									</FormItem>
-								)}
-							/>
-						</div>
-
-						<SheetFooter>
-							<Button
-								type="button"
-								variant="ghost"
-								onClick={() => modal.hide()}
-								disabled={isPending}
-							>
-								<XIcon className="size-4" />
-								Cancelar
-							</Button>
-							<Button type="submit" disabled={isPending} loading={isPending}>
-								{isEditing ? (
-									<CheckIcon className="size-4" />
-								) : (
-									<PlusIcon className="size-4" />
-								)}
-								{isEditing ? "Guardar cambios" : "Crear equipo"}
-							</Button>
-						</SheetFooter>
-					</form>
-				</Form>
-			</SheetContent>
-		</Sheet>
+									</Field>
+								</FormItem>
+							)}
+						/>
+					</ProfileEditGrid>
+				</ProfileEditSection>
+			</div>
+		</ProfileEditSheet>
 	);
 });

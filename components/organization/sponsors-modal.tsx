@@ -1,12 +1,16 @@
 "use client";
 
 import NiceModal, { type NiceModalHocProps } from "@ebay/nice-modal-react";
-import * as React from "react";
+import { HeartHandshakeIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import {
+	ProfileEditGrid,
+	ProfileEditSection,
+	ProfileEditSheet,
+} from "@/components/athlete/profile-edit-sheet";
 import { Field } from "@/components/ui/field";
 import {
-	Form,
 	FormControl,
 	FormField,
 	FormItem,
@@ -14,7 +18,6 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
 	Select,
 	SelectContent,
@@ -22,21 +25,13 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import {
-	Sheet,
-	SheetContent,
-	SheetDescription,
-	SheetFooter,
-	SheetHeader,
-	SheetTitle,
-} from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 import { useZodForm } from "@/hooks/use-zod-form";
 import {
-	EventSponsorTier,
+	type EventSponsorTier,
 	EventSponsorTiers,
-	SponsorStatus,
+	type SponsorStatus,
 	SponsorStatuses,
 } from "@/lib/db/schema/enums";
 import {
@@ -44,21 +39,6 @@ import {
 	updateSponsorOrgSchema,
 } from "@/schemas/organization-sponsor-schemas";
 import { trpc } from "@/trpc/client";
-
-const tierLabels: Record<string, string> = {
-	platinum: "Platino",
-	gold: "Oro",
-	silver: "Plata",
-	bronze: "Bronce",
-	partner: "Partner",
-	supporter: "Supporter",
-};
-
-const statusLabels: Record<string, string> = {
-	active: "Activo",
-	inactive: "Inactivo",
-	pending: "Pendiente",
-};
 
 export type SponsorsModalProps = NiceModalHocProps & {
 	sponsor?: {
@@ -85,28 +65,29 @@ export type SponsorsModalProps = NiceModalHocProps & {
 export const SponsorsModal = NiceModal.create<SponsorsModalProps>(
 	({ sponsor }) => {
 		const modal = useEnhancedModal();
+		const t = useTranslations("sponsors");
 		const utils = trpc.useUtils();
 		const isEditing = !!sponsor;
 
 		const createSponsorMutation = trpc.organization.sponsor.create.useMutation({
 			onSuccess: () => {
-				toast.success("Sponsor creado exitosamente");
+				toast.success(t("success.created"));
 				utils.organization.sponsor.list.invalidate();
 				modal.handleClose();
 			},
 			onError: (error) => {
-				toast.error(error.message || "Error al crear el sponsor");
+				toast.error(error.message || t("error.createFailed"));
 			},
 		});
 
 		const updateSponsorMutation = trpc.organization.sponsor.update.useMutation({
 			onSuccess: () => {
-				toast.success("Sponsor actualizado exitosamente");
+				toast.success(t("success.updated"));
 				utils.organization.sponsor.list.invalidate();
 				modal.handleClose();
 			},
 			onError: (error) => {
-				toast.error(error.message || "Error al actualizar el sponsor");
+				toast.error(error.message || t("error.updateFailed"));
 			},
 		});
 
@@ -138,8 +119,8 @@ export const SponsorsModal = NiceModal.create<SponsorsModalProps>(
 						contactName: "",
 						contactEmail: "",
 						contactPhone: "",
-						tier: EventSponsorTier.partner,
-						status: SponsorStatus.pending,
+						tier: "partner" as EventSponsorTier,
+						status: "pending" as SponsorStatus,
 						currency: "ARS",
 					},
 		});
@@ -160,347 +141,321 @@ export const SponsorsModal = NiceModal.create<SponsorsModalProps>(
 			createSponsorMutation.isPending || updateSponsorMutation.isPending;
 
 		return (
-			<Sheet
+			<ProfileEditSheet
 				open={modal.visible}
-				onOpenChange={(open) => !open && modal.handleClose()}
+				onClose={modal.handleClose}
+				title={isEditing ? t("modal.editTitle") : t("modal.createTitle")}
+				subtitle={
+					isEditing ? t("modal.editSubtitle") : t("modal.createSubtitle")
+				}
+				icon={<HeartHandshakeIcon className="size-5" />}
+				accentColor="rose"
+				form={form}
+				onSubmit={onSubmit}
+				isPending={isPending}
+				submitLabel={isEditing ? t("modal.update") : t("modal.create")}
+				cancelLabel={t("modal.cancel")}
+				maxWidth="lg"
+				onAnimationEndCapture={modal.handleAnimationEndCapture}
 			>
-				<SheetContent
-					className="sm:max-w-lg"
-					onAnimationEndCapture={modal.handleAnimationEndCapture}
-				>
-					<SheetHeader>
-						<SheetTitle>
-							{isEditing ? "Editar Sponsor" : "Agregar Sponsor"}
-						</SheetTitle>
-						<SheetDescription className="sr-only">
-							{isEditing
-								? "Actualiza la informacion del sponsor."
-								: "Completa los detalles del nuevo sponsor."}
-						</SheetDescription>
-					</SheetHeader>
-
-					<Form {...form}>
-						<form
-							onSubmit={onSubmit}
-							className="flex flex-1 flex-col overflow-hidden"
-						>
-							<ScrollArea className="flex-1">
-								<div className="space-y-4 px-6 py-4">
-									<FormField
-										control={form.control}
-										name="name"
-										render={({ field }) => (
-											<FormItem asChild>
-												<Field>
-													<FormLabel>Nombre *</FormLabel>
-													<FormControl>
-														<Input
-															placeholder="ej. Nike Argentina"
-															autoComplete="off"
-															{...field}
-														/>
-													</FormControl>
-													<FormMessage />
-												</Field>
-											</FormItem>
-										)}
-									/>
-
-									<div className="grid grid-cols-2 gap-4">
-										<FormField
-											control={form.control}
-											name="tier"
-											render={({ field }) => (
-												<FormItem asChild>
-													<Field>
-														<FormLabel>Nivel</FormLabel>
-														<Select
-															onValueChange={field.onChange}
-															value={field.value}
-														>
-															<FormControl>
-																<SelectTrigger className="w-full">
-																	<SelectValue placeholder="Seleccionar nivel" />
-																</SelectTrigger>
-															</FormControl>
-															<SelectContent>
-																{EventSponsorTiers.map((tier) => (
-																	<SelectItem key={tier} value={tier}>
-																		{tierLabels[tier] ?? tier}
-																	</SelectItem>
-																))}
-															</SelectContent>
-														</Select>
-														<FormMessage />
-													</Field>
-												</FormItem>
-											)}
-										/>
-
-										<FormField
-											control={form.control}
-											name="status"
-											render={({ field }) => (
-												<FormItem asChild>
-													<Field>
-														<FormLabel>Estado</FormLabel>
-														<Select
-															onValueChange={field.onChange}
-															value={field.value}
-														>
-															<FormControl>
-																<SelectTrigger className="w-full">
-																	<SelectValue placeholder="Seleccionar estado" />
-																</SelectTrigger>
-															</FormControl>
-															<SelectContent>
-																{SponsorStatuses.map((status) => (
-																	<SelectItem key={status} value={status}>
-																		{statusLabels[status] ?? status}
-																	</SelectItem>
-																))}
-															</SelectContent>
-														</Select>
-														<FormMessage />
-													</Field>
-												</FormItem>
-											)}
-										/>
-									</div>
-
-									<FormField
-										control={form.control}
-										name="contactName"
-										render={({ field }) => (
-											<FormItem asChild>
-												<Field>
-													<FormLabel>Nombre de Contacto</FormLabel>
-													<FormControl>
-														<Input
-															placeholder="ej. Juan Perez"
-															autoComplete="off"
-															{...field}
-															value={field.value ?? ""}
-														/>
-													</FormControl>
-													<FormMessage />
-												</Field>
-											</FormItem>
-										)}
-									/>
-
-									<div className="grid grid-cols-2 gap-4">
-										<FormField
-											control={form.control}
-											name="contactEmail"
-											render={({ field }) => (
-												<FormItem asChild>
-													<Field>
-														<FormLabel>Email</FormLabel>
-														<FormControl>
-															<Input
-																type="email"
-																placeholder="contacto@sponsor.com"
-																autoComplete="off"
-																{...field}
-																value={field.value ?? ""}
-															/>
-														</FormControl>
-														<FormMessage />
-													</Field>
-												</FormItem>
-											)}
-										/>
-
-										<FormField
-											control={form.control}
-											name="contactPhone"
-											render={({ field }) => (
-												<FormItem asChild>
-													<Field>
-														<FormLabel>Telefono</FormLabel>
-														<FormControl>
-															<Input
-																placeholder="+54 11 1234-5678"
-																autoComplete="off"
-																{...field}
-																value={field.value ?? ""}
-															/>
-														</FormControl>
-														<FormMessage />
-													</Field>
-												</FormItem>
-											)}
-										/>
-									</div>
-
-									<div className="border-t pt-4">
-										<h4 className="text-sm font-medium mb-3">
-											Informacion del Contrato
-										</h4>
-
-										<div className="space-y-4">
-											<div className="grid grid-cols-2 gap-4">
-												<FormField
-													control={form.control}
-													name="contractStartDate"
-													render={({ field }) => (
-														<FormItem asChild>
-															<Field>
-																<FormLabel>Fecha Inicio</FormLabel>
-																<FormControl>
-																	<Input
-																		type="date"
-																		{...field}
-																		value={
-																			field.value instanceof Date
-																				? field.value
-																						.toISOString()
-																						.split("T")[0]
-																				: ""
-																		}
-																		onChange={(e) =>
-																			field.onChange(
-																				e.target.value
-																					? new Date(e.target.value)
-																					: undefined,
-																			)
-																		}
-																	/>
-																</FormControl>
-																<FormMessage />
-															</Field>
-														</FormItem>
-													)}
-												/>
-
-												<FormField
-													control={form.control}
-													name="contractEndDate"
-													render={({ field }) => (
-														<FormItem asChild>
-															<Field>
-																<FormLabel>Fecha Fin</FormLabel>
-																<FormControl>
-																	<Input
-																		type="date"
-																		{...field}
-																		value={
-																			field.value instanceof Date
-																				? field.value
-																						.toISOString()
-																						.split("T")[0]
-																				: ""
-																		}
-																		onChange={(e) =>
-																			field.onChange(
-																				e.target.value
-																					? new Date(e.target.value)
-																					: undefined,
-																			)
-																		}
-																	/>
-																</FormControl>
-																<FormMessage />
-															</Field>
-														</FormItem>
-													)}
-												/>
-											</div>
-
-											<FormField
-												control={form.control}
-												name="contractValue"
-												render={({ field }) => (
-													<FormItem asChild>
-														<Field>
-															<FormLabel>Valor del Contrato</FormLabel>
-															<FormControl>
-																<Input
-																	type="number"
-																	placeholder="0"
-																	{...field}
-																	value={field.value ?? ""}
-																	onChange={(e) =>
-																		field.onChange(
-																			e.target.value
-																				? parseInt(e.target.value, 10)
-																				: undefined,
-																		)
-																	}
-																/>
-															</FormControl>
-															<FormMessage />
-														</Field>
-													</FormItem>
-												)}
+				<div className="space-y-6">
+					<ProfileEditSection>
+						<FormField
+							control={form.control}
+							name="name"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel>{t("form.name")} *</FormLabel>
+										<FormControl>
+											<Input
+												placeholder={t("form.namePlaceholder")}
+												autoComplete="off"
+												{...field}
 											/>
+										</FormControl>
+										<FormMessage />
+									</Field>
+								</FormItem>
+							)}
+						/>
 
-											<FormField
-												control={form.control}
-												name="contractNotes"
-												render={({ field }) => (
-													<FormItem asChild>
-														<Field>
-															<FormLabel>Notas del Contrato</FormLabel>
-															<FormControl>
-																<Textarea
-																	placeholder="Detalles del contrato, prestaciones acordadas..."
-																	className="resize-none"
-																	rows={3}
-																	{...field}
-																	value={field.value ?? ""}
-																/>
-															</FormControl>
-															<FormMessage />
-														</Field>
-													</FormItem>
-												)}
-											/>
-										</div>
-									</div>
-
-									<FormField
-										control={form.control}
-										name="description"
-										render={({ field }) => (
-											<FormItem asChild>
-												<Field>
-													<FormLabel>Descripcion</FormLabel>
-													<FormControl>
-														<Textarea
-															placeholder="Descripcion del sponsor..."
-															className="resize-none"
-															rows={2}
-															{...field}
-															value={field.value ?? ""}
+						<ProfileEditGrid cols={2}>
+							<FormField
+								control={form.control}
+								name="tier"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("form.tier")}</FormLabel>
+											<Select
+												onValueChange={field.onChange}
+												value={field.value}
+											>
+												<FormControl>
+													<SelectTrigger className="w-full">
+														<SelectValue
+															placeholder={t("form.tierPlaceholder")}
 														/>
-													</FormControl>
-													<FormMessage />
-												</Field>
-											</FormItem>
-										)}
-									/>
-								</div>
-							</ScrollArea>
+													</SelectTrigger>
+												</FormControl>
+												<SelectContent>
+													{EventSponsorTiers.map((tier) => (
+														<SelectItem key={tier} value={tier}>
+															{t(`tier.${tier}`)}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
 
-							<SheetFooter className="flex-row justify-end gap-2 border-t">
-								<Button
-									type="button"
-									variant="outline"
-									onClick={modal.handleClose}
-									disabled={isPending}
-								>
-									Cancelar
-								</Button>
-								<Button type="submit" disabled={isPending} loading={isPending}>
-									{isEditing ? "Actualizar" : "Crear"}
-								</Button>
-							</SheetFooter>
-						</form>
-					</Form>
-				</SheetContent>
-			</Sheet>
+							<FormField
+								control={form.control}
+								name="status"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("form.status")}</FormLabel>
+											<Select
+												onValueChange={field.onChange}
+												value={field.value}
+											>
+												<FormControl>
+													<SelectTrigger className="w-full">
+														<SelectValue
+															placeholder={t("form.statusPlaceholder")}
+														/>
+													</SelectTrigger>
+												</FormControl>
+												<SelectContent>
+													{SponsorStatuses.map((status) => (
+														<SelectItem key={status} value={status}>
+															{t(`status.${status}`)}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
+						</ProfileEditGrid>
+					</ProfileEditSection>
+
+					<ProfileEditSection>
+						<FormField
+							control={form.control}
+							name="contactName"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel>{t("form.contactName")}</FormLabel>
+										<FormControl>
+											<Input
+												placeholder={t("form.contactNamePlaceholder")}
+												autoComplete="off"
+												{...field}
+												value={field.value ?? ""}
+											/>
+										</FormControl>
+										<FormMessage />
+									</Field>
+								</FormItem>
+							)}
+						/>
+
+						<ProfileEditGrid cols={2}>
+							<FormField
+								control={form.control}
+								name="contactEmail"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("form.contactEmail")}</FormLabel>
+											<FormControl>
+												<Input
+													type="email"
+													placeholder={t("form.contactEmailPlaceholder")}
+													autoComplete="off"
+													{...field}
+													value={field.value ?? ""}
+												/>
+											</FormControl>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
+
+							<FormField
+								control={form.control}
+								name="contactPhone"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("form.contactPhone")}</FormLabel>
+											<FormControl>
+												<Input
+													placeholder={t("form.contactPhonePlaceholder")}
+													autoComplete="off"
+													{...field}
+													value={field.value ?? ""}
+												/>
+											</FormControl>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
+						</ProfileEditGrid>
+					</ProfileEditSection>
+
+					<ProfileEditSection title={t("form.contractSection")}>
+						<ProfileEditGrid cols={2}>
+							<FormField
+								control={form.control}
+								name="contractStartDate"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("form.contractStartDate")}</FormLabel>
+											<FormControl>
+												<Input
+													type="date"
+													{...field}
+													value={
+														field.value instanceof Date
+															? field.value.toISOString().split("T")[0]
+															: ""
+													}
+													onChange={(e) =>
+														field.onChange(
+															e.target.value
+																? new Date(e.target.value)
+																: undefined,
+														)
+													}
+												/>
+											</FormControl>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
+
+							<FormField
+								control={form.control}
+								name="contractEndDate"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("form.contractEndDate")}</FormLabel>
+											<FormControl>
+												<Input
+													type="date"
+													{...field}
+													value={
+														field.value instanceof Date
+															? field.value.toISOString().split("T")[0]
+															: ""
+													}
+													onChange={(e) =>
+														field.onChange(
+															e.target.value
+																? new Date(e.target.value)
+																: undefined,
+														)
+													}
+												/>
+											</FormControl>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
+						</ProfileEditGrid>
+
+						<FormField
+							control={form.control}
+							name="contractValue"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel>{t("form.contractValue")}</FormLabel>
+										<FormControl>
+											<Input
+												type="number"
+												placeholder="0"
+												{...field}
+												value={field.value ?? ""}
+												onChange={(e) =>
+													field.onChange(
+														e.target.value
+															? parseInt(e.target.value, 10)
+															: undefined,
+													)
+												}
+											/>
+										</FormControl>
+										<FormMessage />
+									</Field>
+								</FormItem>
+							)}
+						/>
+
+						<FormField
+							control={form.control}
+							name="contractNotes"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel>{t("form.contractNotes")}</FormLabel>
+										<FormControl>
+											<Textarea
+												placeholder={t("form.contractNotesPlaceholder")}
+												className="resize-none"
+												rows={3}
+												{...field}
+												value={field.value ?? ""}
+											/>
+										</FormControl>
+										<FormMessage />
+									</Field>
+								</FormItem>
+							)}
+						/>
+					</ProfileEditSection>
+
+					<ProfileEditSection>
+						<FormField
+							control={form.control}
+							name="description"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel>{t("form.description")}</FormLabel>
+										<FormControl>
+											<Textarea
+												placeholder={t("form.descriptionPlaceholder")}
+												className="resize-none"
+												rows={2}
+												{...field}
+												value={field.value ?? ""}
+											/>
+										</FormControl>
+										<FormMessage />
+									</Field>
+								</FormItem>
+							)}
+						/>
+					</ProfileEditSection>
+				</div>
+			</ProfileEditSheet>
 		);
 	},
 );

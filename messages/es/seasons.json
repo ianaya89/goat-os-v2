@@ -1,0 +1,31 @@
+{
+	"modal": {
+		"createTitle": "Nueva temporada",
+		"createSubtitle": "Crea una nueva temporada para organizar equipos y competencias",
+		"editTitle": "Editar temporada",
+		"editSubtitle": "Modifica los datos de la temporada",
+		"cancel": "Cancelar",
+		"create": "Crear temporada",
+		"update": "Guardar cambios"
+	},
+	"form": {
+		"name": "Nombre",
+		"namePlaceholder": "2024-2025",
+		"nameDescription": "Por ejemplo: \"2024-2025\" o \"Verano 2024\"",
+		"startDate": "Fecha de inicio",
+		"endDate": "Fecha de fin",
+		"selectDate": "Seleccionar fecha",
+		"isActive": "Activa",
+		"isActiveDescription": "La temporada está disponible para uso",
+		"isCurrent": "Temporada actual",
+		"isCurrentDescription": "Marcar como la temporada en curso"
+	},
+	"success": {
+		"created": "Temporada creada correctamente.",
+		"updated": "Temporada actualizada correctamente."
+	},
+	"error": {
+		"createFailed": "No se pudo crear la temporada.",
+		"updateFailed": "No se pudo actualizar la temporada."
+	}
+}

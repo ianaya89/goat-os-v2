@@ -1,0 +1,54 @@
+{
+	"modal": {
+		"createTitle": "Agregar sponsor",
+		"createSubtitle": "Completa los detalles del nuevo sponsor",
+		"editTitle": "Editar sponsor",
+		"editSubtitle": "Actualiza la información del sponsor",
+		"cancel": "Cancelar",
+		"create": "Crear",
+		"update": "Actualizar"
+	},
+	"form": {
+		"name": "Nombre",
+		"namePlaceholder": "ej. Nike Argentina",
+		"tier": "Nivel",
+		"tierPlaceholder": "Seleccionar nivel",
+		"status": "Estado",
+		"statusPlaceholder": "Seleccionar estado",
+		"contactName": "Nombre de contacto",
+		"contactNamePlaceholder": "ej. Juan Perez",
+		"contactEmail": "Email",
+		"contactEmailPlaceholder": "contacto@sponsor.com",
+		"contactPhone": "Teléfono",
+		"contactPhonePlaceholder": "+54 11 1234-5678",
+		"contractSection": "Información del contrato",
+		"contractStartDate": "Fecha inicio",
+		"contractEndDate": "Fecha fin",
+		"contractValue": "Valor del contrato",
+		"contractNotes": "Notas del contrato",
+		"contractNotesPlaceholder": "Detalles del contrato, prestaciones acordadas...",
+		"description": "Descripción",
+		"descriptionPlaceholder": "Descripción del sponsor..."
+	},
+	"tier": {
+		"platinum": "Platino",
+		"gold": "Oro",
+		"silver": "Plata",
+		"bronze": "Bronce",
+		"partner": "Partner",
+		"supporter": "Supporter"
+	},
+	"status": {
+		"active": "Activo",
+		"inactive": "Inactivo",
+		"pending": "Pendiente"
+	},
+	"success": {
+		"created": "Sponsor creado correctamente.",
+		"updated": "Sponsor actualizado correctamente."
+	},
+	"error": {
+		"createFailed": "No se pudo crear el sponsor.",
+		"updateFailed": "No se pudo actualizar el sponsor."
+	}
+}

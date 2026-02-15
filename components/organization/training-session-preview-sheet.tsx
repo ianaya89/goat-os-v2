@@ -449,7 +449,7 @@ export function TrainingSessionPreviewSheet({
 				</ScrollArea>
 
 				{/* Footer */}
-				<SheetFooter className="flex-row justify-end border-t bg-muted/30 px-6 py-4">
+				<SheetFooter className="flex-row justify-end">
 					<Button variant="outline" onClick={() => onOpenChange(false)}>
 						{t("preview.close")}
 					</Button>
