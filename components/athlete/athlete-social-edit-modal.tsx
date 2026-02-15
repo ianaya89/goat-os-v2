@@ -160,10 +160,12 @@ export const AthleteSocialEditModal = NiceModal.create(
 				title={t("socialModal.title")}
 				subtitle={t("socialModal.subtitle")}
 				icon={<Share2Icon className="size-5" />}
-				accentColor="rose"
+				accentColor="primary"
 				form={form}
 				onSubmit={onSubmit}
 				isPending={updateMutation.isPending}
+				submitLabel={t("common.save")}
+				cancelLabel={t("common.cancel")}
 				maxWidth="md"
 				onAnimationEndCapture={modal.handleAnimationEndCapture}
 			>

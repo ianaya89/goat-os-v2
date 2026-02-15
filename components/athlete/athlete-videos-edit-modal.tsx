@@ -21,7 +21,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
-import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
 // Helper function to extract YouTube video ID
@@ -99,7 +98,7 @@ export const AthleteVideosEditModal = NiceModal.create(
 				title={t("videosModal.title")}
 				subtitle={t("videosModal.subtitle")}
 				icon={<VideoIcon className="size-5" />}
-				accentColor="amber"
+				accentColor="primary"
 				maxWidth="lg"
 				onAnimationEndCapture={modal.handleAnimationEndCapture}
 				customFooter={
@@ -166,7 +165,6 @@ export const AthleteVideosEditModal = NiceModal.create(
 								type="button"
 								onClick={handleAddVideo}
 								disabled={videos.length >= 10 || !newVideoUrl.trim()}
-								className="bg-amber-500 hover:bg-amber-600"
 							>
 								<PlusIcon className="size-4" />
 							</Button>

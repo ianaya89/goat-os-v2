@@ -106,6 +106,8 @@ export const AthletePhysicalEditModal = NiceModal.create(
 				form={form}
 				onSubmit={onSubmit}
 				isPending={updateMutation.isPending}
+				submitLabel={t("common.save")}
+				cancelLabel={t("common.cancel")}
 				maxWidth="md"
 				onAnimationEndCapture={modal.handleAnimationEndCapture}
 			>
@@ -196,13 +198,19 @@ export const AthletePhysicalEditModal = NiceModal.create(
 											>
 												<FormControl>
 													<SelectTrigger>
-														<SelectValue placeholder="Seleccionar" />
+														<SelectValue placeholder={t("common.select")} />
 													</SelectTrigger>
 												</FormControl>
 												<SelectContent>
-													<SelectItem value="right">Derecho</SelectItem>
-													<SelectItem value="left">Izquierdo</SelectItem>
-													<SelectItem value="both">Ambos</SelectItem>
+													<SelectItem value="right">
+														{t("physicalModal.right")}
+													</SelectItem>
+													<SelectItem value="left">
+														{t("physicalModal.left")}
+													</SelectItem>
+													<SelectItem value="both">
+														{t("physicalModal.both")}
+													</SelectItem>
 												</SelectContent>
 											</Select>
 											<FormMessage />
@@ -224,13 +232,19 @@ export const AthletePhysicalEditModal = NiceModal.create(
 											>
 												<FormControl>
 													<SelectTrigger>
-														<SelectValue placeholder="Seleccionar" />
+														<SelectValue placeholder={t("common.select")} />
 													</SelectTrigger>
 												</FormControl>
 												<SelectContent>
-													<SelectItem value="right">Derecha</SelectItem>
-													<SelectItem value="left">Izquierda</SelectItem>
-													<SelectItem value="both">Ambas</SelectItem>
+													<SelectItem value="right">
+														{t("physicalModal.rightHand")}
+													</SelectItem>
+													<SelectItem value="left">
+														{t("physicalModal.leftHand")}
+													</SelectItem>
+													<SelectItem value="both">
+														{t("physicalModal.bothHands")}
+													</SelectItem>
 												</SelectContent>
 											</Select>
 											<FormMessage />

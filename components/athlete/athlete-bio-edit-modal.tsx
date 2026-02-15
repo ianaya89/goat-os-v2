@@ -72,10 +72,12 @@ export const AthleteBioEditModal = NiceModal.create(
 				title={t("bioModal.title")}
 				subtitle={t("bioModal.subtitle")}
 				icon={<UserIcon className="size-5" />}
-				accentColor="violet"
+				accentColor="primary"
 				form={form}
 				onSubmit={onSubmit}
 				isPending={updateMutation.isPending}
+				submitLabel={t("common.save")}
+				cancelLabel={t("common.cancel")}
 				maxWidth="lg"
 				onAnimationEndCapture={modal.handleAnimationEndCapture}
 			>
@@ -98,8 +100,7 @@ export const AthleteBioEditModal = NiceModal.create(
 										</FormControl>
 										<div className="flex items-center justify-between">
 											<FormDescription>
-												Una buena biografia ayuda a scouts y reclutadores a
-												conocerte mejor.
+												{t("bioModal.description")}
 											</FormDescription>
 											<span className="text-muted-foreground text-xs">
 												{bioValue.length}/2000

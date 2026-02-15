@@ -103,6 +103,8 @@ export const AthleteContactEditModal = NiceModal.create(
 				form={form}
 				onSubmit={onSubmit}
 				isPending={updateMutation.isPending}
+				submitLabel={t("common.save")}
+				cancelLabel={t("common.cancel")}
 				maxWidth="md"
 				onAnimationEndCapture={modal.handleAnimationEndCapture}
 			>
@@ -114,10 +116,10 @@ export const AthleteContactEditModal = NiceModal.create(
 							render={({ field }) => (
 								<FormItem asChild>
 									<Field>
-										<FormLabel>Telefono</FormLabel>
+										<FormLabel>{t("contactModal.phone")}</FormLabel>
 										<FormControl>
 											<Input
-												placeholder="+54 11 1234-5678"
+												placeholder={t("contactModal.phonePlaceholder")}
 												{...field}
 												value={field.value ?? ""}
 											/>
@@ -130,8 +132,8 @@ export const AthleteContactEditModal = NiceModal.create(
 					</ProfileEditSection>
 
 					<ProfileEditSection
-						title="Contacto de Padre/Tutor"
-						description="Informacion de contacto de emergencia"
+						title={t("contactModal.parentSection")}
+						description={t("contactModal.parentDescription")}
 					>
 						<ProfileEditGrid cols={2}>
 							<FormField
@@ -199,10 +201,10 @@ export const AthleteContactEditModal = NiceModal.create(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Telefono</FormLabel>
+											<FormLabel>{t("contactModal.parentPhone")}</FormLabel>
 											<FormControl>
 												<Input
-													placeholder="+54 11 1234-5678"
+													placeholder={t("contactModal.parentPhonePlaceholder")}
 													{...field}
 													value={field.value ?? ""}
 												/>

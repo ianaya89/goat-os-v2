@@ -170,7 +170,7 @@ export const AthleteLanguagesModal = NiceModal.create(
 				title={t("languagesModal.title")}
 				subtitle={t("languagesModal.subtitle")}
 				icon={<GlobeIcon className="size-5" />}
-				accentColor="sky"
+				accentColor="primary"
 				maxWidth="md"
 				onAnimationEndCapture={modal.handleAnimationEndCapture}
 				customFooter={
@@ -250,7 +250,7 @@ export const AthleteLanguagesModal = NiceModal.create(
 					{/* Add new language form */}
 					{isAddingNew ? (
 						<ProfileEditSection title={t("languagesModal.addNew")}>
-							<div className="space-y-4 rounded-xl border-2 border-dashed border-sky-200 bg-sky-50/50 p-4 dark:border-sky-800 dark:bg-sky-950/30">
+							<div className="space-y-4 rounded-xl border-2 border-dashed p-4">
 								<Field>
 									<FieldLabel>{t("languagesModal.language")}</FieldLabel>
 									<div className="flex flex-wrap gap-2">
@@ -272,10 +272,6 @@ export const AthleteLanguagesModal = NiceModal.create(
 														newLanguage === lang.name ? "default" : "outline"
 													}
 													size="sm"
-													className={cn(
-														newLanguage === lang.name &&
-															"bg-sky-500 hover:bg-sky-600",
-													)}
 													onClick={() => setNewLanguage(lang.name)}
 												>
 													{lang.name}
@@ -346,7 +342,6 @@ export const AthleteLanguagesModal = NiceModal.create(
 										size="sm"
 										onClick={handleAddLanguage}
 										disabled={addMutation.isPending || !newLanguage.trim()}
-										className="bg-sky-500 hover:bg-sky-600"
 									>
 										{addMutation.isPending ? (
 											<Loader2Icon className="mr-2 size-4 animate-spin" />

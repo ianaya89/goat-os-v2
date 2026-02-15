@@ -74,10 +74,12 @@ export const AthleteHealthEditModal = NiceModal.create(
 				title={t("healthModal.title")}
 				subtitle={t("healthModal.subtitle")}
 				icon={<HeartPulseIcon className="size-5" />}
-				accentColor="rose"
+				accentColor="primary"
 				form={form}
 				onSubmit={onSubmit}
 				isPending={updateMutation.isPending}
+				submitLabel={t("common.save")}
+				cancelLabel={t("common.cancel")}
 				maxWidth="md"
 				onAnimationEndCapture={modal.handleAnimationEndCapture}
 			>
@@ -102,8 +104,7 @@ export const AthleteHealthEditModal = NiceModal.create(
 											/>
 										</FormControl>
 										<FormDescription>
-											Indica si sigues alguna dieta especial o tienes
-											restricciones alimenticias.
+											{t("healthModal.dietaryDescription")}
 										</FormDescription>
 										<FormMessage />
 									</Field>
@@ -119,21 +120,18 @@ export const AthleteHealthEditModal = NiceModal.create(
 							render={({ field }) => (
 								<FormItem asChild>
 									<Field>
-										<FormLabel className="text-rose-600 dark:text-rose-400">
-											{t("healthModal.allergies")}
-										</FormLabel>
+										<FormLabel>{t("healthModal.allergies")}</FormLabel>
 										<FormControl>
 											<Textarea
 												placeholder={t("healthModal.allergiesPlaceholder")}
-												className="resize-none border-rose-200 focus-visible:ring-rose-500 dark:border-rose-800"
+												className="resize-none"
 												rows={3}
 												{...field}
 												value={field.value ?? ""}
 											/>
 										</FormControl>
 										<FormDescription>
-											Es importante registrar cualquier alergia para tu
-											seguridad.
+											{t("healthModal.allergiesDescription")}
 										</FormDescription>
 										<FormMessage />
 									</Field>

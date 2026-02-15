@@ -82,10 +82,12 @@ export const AthleteResidenceEditModal = NiceModal.create(
 				title={t("residenceModal.title")}
 				subtitle={t("residenceModal.subtitle")}
 				icon={<HomeIcon className="size-5" />}
-				accentColor="sky"
+				accentColor="primary"
 				form={form}
 				onSubmit={onSubmit}
 				isPending={updateMutation.isPending}
+				submitLabel={t("common.save")}
+				cancelLabel={t("common.cancel")}
 				maxWidth="md"
 				onAnimationEndCapture={modal.handleAnimationEndCapture}
 			>
@@ -136,7 +138,7 @@ export const AthleteResidenceEditModal = NiceModal.create(
 						</ProfileEditGrid>
 					</ProfileEditSection>
 
-					<ProfileEditSection title="Nacionalidad">
+					<ProfileEditSection title={t("residenceModal.nationalitySection")}>
 						<FormField
 							control={form.control}
 							name="nationality"

@@ -468,14 +468,16 @@ export function AthleteMyProfile() {
 										{athlete.parentPhone && (
 											<div>
 												<p className="text-muted-foreground text-xs">
-													Telefono
+													{t("info.parent.phone")}
 												</p>
 												<p className="font-medium">{athlete.parentPhone}</p>
 											</div>
 										)}
 										{athlete.parentEmail && (
 											<div>
-												<p className="text-muted-foreground text-xs">Email</p>
+												<p className="text-muted-foreground text-xs">
+													{t("info.parent.email")}
+												</p>
 												<p className="font-medium">{athlete.parentEmail}</p>
 											</div>
 										)}
@@ -541,7 +543,7 @@ export function AthleteMyProfile() {
 								<CardHeader className="flex flex-row items-center justify-between space-y-0">
 									<CardTitle className="flex items-center gap-2 text-base">
 										<UserIcon className="size-4" />
-										Biografia
+										{t("info.bio.title")}
 									</CardTitle>
 									<Button
 										variant="ghost"
@@ -566,7 +568,7 @@ export function AthleteMyProfile() {
 				{/* Physical Tab */}
 				<TabsContent value="physical">
 					<Card>
-						<CardHeader className="flex flex-row items-center justify-between">
+						<CardHeader className="flex flex-row items-center justify-between space-y-0">
 							<CardTitle>{t("physical.title")}</CardTitle>
 							<Button
 								variant="ghost"
@@ -669,9 +671,10 @@ export function AthleteMyProfile() {
 				{/* Career Tab */}
 				<TabsContent value="career">
 					<Card>
-						<CardHeader className="flex flex-row items-center justify-between">
+						<CardHeader className="flex flex-row items-center justify-between space-y-0">
 							<CardTitle>{t("career.title")}</CardTitle>
 							<Button
+								variant="outline"
 								size="sm"
 								onClick={() => {
 									NiceModal.show(AthleteCareerEditModal, {
@@ -690,6 +693,19 @@ export function AthleteMyProfile() {
 									<p className="mt-3 text-muted-foreground">
 										{t("career.empty")}
 									</p>
+									<Button
+										variant="outline"
+										size="sm"
+										className="mt-4"
+										onClick={() =>
+											NiceModal.show(AthleteCareerEditModal, {
+												athleteId: athlete.id,
+											})
+										}
+									>
+										<PlusIcon className="mr-2 size-4" />
+										{t("career.add")}
+									</Button>
 								</div>
 							) : (
 								<div className="space-y-8">
@@ -774,24 +790,22 @@ export function AthleteMyProfile() {
 				{/* Languages Tab */}
 				<TabsContent value="languages">
 					<Card>
-						<CardHeader>
-							<div className="flex items-center justify-between">
-								<CardTitle className="flex items-center gap-2">
-									<GlobeIcon className="size-5" />
-									Idiomas
-								</CardTitle>
-								<Button
-									variant="ghost"
-									size="icon"
-									onClick={() =>
-										NiceModal.show(AthleteLanguagesModal, {
-											languages: languages ?? [],
-										})
-									}
-								>
-									<PencilIcon className="size-4" />
-								</Button>
-							</div>
+						<CardHeader className="flex flex-row items-center justify-between space-y-0">
+							<CardTitle className="flex items-center gap-2">
+								<GlobeIcon className="size-5" />
+								{t("languages.title")}
+							</CardTitle>
+							<Button
+								variant="ghost"
+								size="icon"
+								onClick={() =>
+									NiceModal.show(AthleteLanguagesModal, {
+										languages: languages ?? [],
+									})
+								}
+							>
+								<PencilIcon className="size-4" />
+							</Button>
 						</CardHeader>
 						<CardContent>
 							{languages && languages.length > 0 ? (
@@ -859,28 +873,26 @@ export function AthleteMyProfile() {
 				{/* Social Media Tab */}
 				<TabsContent value="social">
 					<Card>
-						<CardHeader>
-							<div className="flex items-center justify-between">
-								<CardTitle className="flex items-center gap-2">
-									<Share2Icon className="size-5" />
-									Redes Sociales
-								</CardTitle>
-								<Button
-									variant="ghost"
-									size="icon"
-									onClick={() =>
-										NiceModal.show(AthleteSocialEditModal, {
-											socialInstagram: athlete.socialInstagram,
-											socialTwitter: athlete.socialTwitter,
-											socialTiktok: athlete.socialTiktok,
-											socialLinkedin: athlete.socialLinkedin,
-											socialFacebook: athlete.socialFacebook,
-										})
-									}
-								>
-									<PencilIcon className="size-4" />
-								</Button>
-							</div>
+						<CardHeader className="flex flex-row items-center justify-between space-y-0">
+							<CardTitle className="flex items-center gap-2">
+								<Share2Icon className="size-5" />
+								{t("social.title")}
+							</CardTitle>
+							<Button
+								variant="ghost"
+								size="icon"
+								onClick={() =>
+									NiceModal.show(AthleteSocialEditModal, {
+										socialInstagram: athlete.socialInstagram,
+										socialTwitter: athlete.socialTwitter,
+										socialTiktok: athlete.socialTiktok,
+										socialLinkedin: athlete.socialLinkedin,
+										socialFacebook: athlete.socialFacebook,
+									})
+								}
+							>
+								<PencilIcon className="size-4" />
+							</Button>
 						</CardHeader>
 						<CardContent>
 							{athlete.socialInstagram ||
@@ -997,24 +1009,22 @@ export function AthleteMyProfile() {
 				{/* Videos Tab */}
 				<TabsContent value="videos">
 					<Card>
-						<CardHeader>
-							<div className="flex items-center justify-between">
-								<CardTitle className="flex items-center gap-2">
-									<VideoIcon className="size-5" />
-									Videos Destacados
-								</CardTitle>
-								<Button
-									variant="ghost"
-									size="icon"
-									onClick={() =>
-										NiceModal.show(AthleteVideosEditModal, {
-											videos: athlete.youtubeVideos ?? [],
-										})
-									}
-								>
-									<PencilIcon className="size-4" />
-								</Button>
-							</div>
+						<CardHeader className="flex flex-row items-center justify-between space-y-0">
+							<CardTitle className="flex items-center gap-2">
+								<VideoIcon className="size-5" />
+								{t("videos.title")}
+							</CardTitle>
+							<Button
+								variant="ghost"
+								size="icon"
+								onClick={() =>
+									NiceModal.show(AthleteVideosEditModal, {
+										videos: athlete.youtubeVideos ?? [],
+									})
+								}
+							>
+								<PencilIcon className="size-4" />
+							</Button>
 						</CardHeader>
 						<CardContent>
 							{athlete.youtubeVideos && athlete.youtubeVideos.length > 0 ? (
@@ -1223,19 +1233,20 @@ function EducationTabContent() {
 
 	return (
 		<Card>
-			<CardHeader className="flex flex-row items-center justify-between">
+			<CardHeader className="flex flex-row items-center justify-between space-y-0">
 				<CardTitle className="flex items-center gap-2">
 					<GraduationCapIcon className="size-5" />
-					Historial Educativo
+					{t("education.title")}
 				</CardTitle>
 				<Button
+					variant="outline"
 					size="sm"
 					onClick={() => {
 						NiceModal.show(AthleteEducationEditModal, {});
 					}}
 				>
 					<PlusIcon className="mr-2 size-4" />
-					Agregar
+					{t("education.add")}
 				</Button>
 			</CardHeader>
 			<CardContent>
@@ -1249,12 +1260,13 @@ function EducationTabContent() {
 						<GraduationCapIcon className="mx-auto size-12 text-muted-foreground/50" />
 						<p className="mt-3 text-muted-foreground">{t("education.empty")}</p>
 						<Button
+							variant="outline"
 							size="sm"
 							className="mt-4"
 							onClick={() => NiceModal.show(AthleteEducationEditModal, {})}
 						>
 							<PlusIcon className="mr-2 size-4" />
-							Agregar
+							{t("education.add")}
 						</Button>
 					</div>
 				) : (
@@ -1299,7 +1311,7 @@ function EducationEntryCard({ entry }: EducationEntryProps) {
 								variant="outline"
 								className="border-violet-500/50 bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-400"
 							>
-								Actual
+								{t("education.current")}
 							</Badge>
 						)}
 					</div>
@@ -1364,7 +1376,7 @@ function EducationEntryCard({ entry }: EducationEntryProps) {
 				<div className="mt-2 flex items-center gap-2 text-sm">
 					<CalendarIcon className="size-4 text-muted-foreground" />
 					<span className="text-muted-foreground">
-						Graduacion estimada:{" "}
+						{t("education.expectedGraduation")}{" "}
 						{format(new Date(entry.expectedGraduationDate), "MMMM yyyy")}
 					</span>
 				</div>

@@ -171,7 +171,7 @@ export const AthleteEducationEditModal = NiceModal.create(
 				}
 				subtitle={t("educationModal.subtitle")}
 				icon={<GraduationCapIcon className="size-5" />}
-				accentColor="violet"
+				accentColor="primary"
 				form={form}
 				onSubmit={onSubmit}
 				isPending={isPending}
@@ -334,8 +334,7 @@ export const AthleteEducationEditModal = NiceModal.create(
 									<div className="space-y-1 leading-none">
 										<FormLabel>{t("educationModal.isCurrent")}</FormLabel>
 										<FormDescription>
-											Marca esta opcion si aun estas estudiando en esta
-											institucion
+											{t("educationModal.isCurrentDescription")}
 										</FormDescription>
 									</div>
 								</FormItem>

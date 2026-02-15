@@ -41,7 +41,7 @@ import {
 import { trpc } from "@/trpc/client";
 
 const achievementSchema = z.object({
-	title: z.string().min(2, "El titulo es requerido").max(200),
+	title: z.string().min(2).max(200),
 	type: z.nativeEnum(AchievementType),
 	scope: z.nativeEnum(AchievementScope),
 	year: z.coerce.number().int().min(1900).max(2100),
@@ -71,31 +71,31 @@ interface AthleteAchievementsEditModalProps {
 	entry?: AchievementEntry;
 }
 
-// Type label mappings
-const typeLabels: Record<AchievementType, string> = {
-	championship: "Campeonato / Titulo",
-	award: "Premio Individual",
-	selection: "Seleccion",
-	record: "Record",
-	recognition: "Reconocimiento",
-	mvp: "MVP",
-	top_scorer: "Goleador / Max. Anotador",
-	best_player: "Mejor Jugador",
-	all_star: "All-Star / Seleccion de Estrellas",
-	scholarship: "Beca Deportiva",
-	other: "Otro",
-};
-
-const scopeLabels: Record<AchievementScope, string> = {
-	individual: "Individual",
-	collective: "Colectivo (Equipo)",
-};
-
 export const AthleteAchievementsEditModal = NiceModal.create(
 	({ entry }: AthleteAchievementsEditModalProps) => {
 		const modal = useEnhancedModal();
+		const t = useTranslations("myProfile");
 		const utils = trpc.useUtils();
 		const isEditing = !!entry;
+
+		const typeLabels: Record<AchievementType, string> = {
+			championship: t("achievementsModal.types.championship"),
+			award: t("achievementsModal.types.award"),
+			selection: t("achievementsModal.types.selection"),
+			record: t("achievementsModal.types.record"),
+			recognition: t("achievementsModal.types.recognition"),
+			mvp: t("achievementsModal.types.mvp"),
+			top_scorer: t("achievementsModal.types.top_scorer"),
+			best_player: t("achievementsModal.types.best_player"),
+			all_star: t("achievementsModal.types.all_star"),
+			scholarship: t("achievementsModal.types.scholarship"),
+			other: t("achievementsModal.types.other"),
+		};
+
+		const scopeLabels: Record<AchievementScope, string> = {
+			individual: t("achievementsModal.scopes.individual"),
+			collective: t("achievementsModal.scopes.collective"),
+		};
 
 		const form = useZodForm({
 			schema: achievementSchema,
@@ -117,7 +117,7 @@ export const AthleteAchievementsEditModal = NiceModal.create(
 
 		const addMutation = trpc.athlete.addAchievement.useMutation({
 			onSuccess: () => {
-				toast.success("Logro agregado");
+				toast.success(t("achievementsModal.addSuccess"));
 				utils.athlete.listMyAchievements.invalidate();
 				utils.athlete.getMyProfile.invalidate();
 				modal.handleClose();
@@ -129,7 +129,7 @@ export const AthleteAchievementsEditModal = NiceModal.create(
 
 		const updateMutation = trpc.athlete.updateAchievement.useMutation({
 			onSuccess: () => {
-				toast.success("Logro actualizado");
+				toast.success(t("achievementsModal.updateSuccess"));
 				utils.athlete.listMyAchievements.invalidate();
 				utils.athlete.getMyProfile.invalidate();
 				modal.handleClose();
@@ -141,7 +141,7 @@ export const AthleteAchievementsEditModal = NiceModal.create(
 
 		const deleteMutation = trpc.athlete.deleteAchievement.useMutation({
 			onSuccess: () => {
-				toast.success("Logro eliminado");
+				toast.success(t("achievementsModal.deleteSuccess"));
 				utils.athlete.listMyAchievements.invalidate();
 				utils.athlete.getMyProfile.invalidate();
 				modal.handleClose();
@@ -173,7 +173,7 @@ export const AthleteAchievementsEditModal = NiceModal.create(
 		});
 
 		const handleDelete = () => {
-			if (entry && confirm("Eliminar este logro?")) {
+			if (entry && confirm(t("achievementsModal.deleteConfirm"))) {
 				deleteMutation.mutate({ id: entry.id });
 			}
 		};
@@ -194,14 +194,18 @@ export const AthleteAchievementsEditModal = NiceModal.create(
 			<ProfileEditSheet
 				open={modal.visible}
 				onClose={modal.handleClose}
-				title={isEditing ? "Editar Logro" : "Agregar Logro"}
-				subtitle="Registra tus logros y reconocimientos deportivos"
+				title={
+					isEditing
+						? t("achievementsModal.editTitle")
+						: t("achievementsModal.addTitle")
+				}
+				subtitle={t("achievementsModal.subtitle")}
 				icon={<TrophyIcon className="size-5" />}
-				accentColor="amber"
+				accentColor="primary"
 				form={form}
 				onSubmit={onSubmit}
 				isPending={isPending}
-				submitLabel={isEditing ? "Guardar" : "Agregar"}
+				submitLabel={isEditing ? t("common.save") : t("common.add")}
 				maxWidth="lg"
 				onAnimationEndCapture={modal.handleAnimationEndCapture}
 				customFooter={
@@ -214,7 +218,7 @@ export const AthleteAchievementsEditModal = NiceModal.create(
 								onClick={handleDelete}
 								disabled={isPending}
 							>
-								Eliminar
+								{t("common.delete")}
 							</Button>
 						) : (
 							<div />
@@ -226,27 +230,27 @@ export const AthleteAchievementsEditModal = NiceModal.create(
 								onClick={modal.handleClose}
 								disabled={isPending}
 							>
-								Cancelar
+								{t("common.cancel")}
 							</Button>
 							<Button type="submit" disabled={isPending} loading={isPending}>
-								{isEditing ? "Guardar" : "Agregar"}
+								{isEditing ? t("common.save") : t("common.add")}
 							</Button>
 						</div>
 					</div>
 				}
 			>
 				<div className="space-y-6">
-					<ProfileEditSection title="Informacion del Logro">
+					<ProfileEditSection title={t("achievementsModal.infoSection")}>
 						<FormField
 							control={form.control}
 							name="title"
 							render={({ field }) => (
 								<FormItem asChild>
 									<Field>
-										<FormLabel>Titulo del Logro</FormLabel>
+										<FormLabel>{t("achievementsModal.titleLabel")}</FormLabel>
 										<FormControl>
 											<Input
-												placeholder="Campeon Liga Nacional, MVP del Torneo..."
+												placeholder={t("achievementsModal.titlePlaceholder")}
 												{...field}
 											/>
 										</FormControl>
@@ -263,14 +267,18 @@ export const AthleteAchievementsEditModal = NiceModal.create(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Tipo de Logro</FormLabel>
+											<FormLabel>{t("achievementsModal.typeLabel")}</FormLabel>
 											<Select
 												onValueChange={field.onChange}
 												defaultValue={field.value}
 											>
 												<FormControl>
 													<SelectTrigger>
-														<SelectValue placeholder="Seleccionar tipo" />
+														<SelectValue
+															placeholder={t(
+																"achievementsModal.typePlaceholder",
+															)}
+														/>
 													</SelectTrigger>
 												</FormControl>
 												<SelectContent>
@@ -293,14 +301,18 @@ export const AthleteAchievementsEditModal = NiceModal.create(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Alcance</FormLabel>
+											<FormLabel>{t("achievementsModal.scopeLabel")}</FormLabel>
 											<Select
 												onValueChange={field.onChange}
 												defaultValue={field.value}
 											>
 												<FormControl>
 													<SelectTrigger>
-														<SelectValue placeholder="Seleccionar alcance" />
+														<SelectValue
+															placeholder={t(
+																"achievementsModal.scopePlaceholder",
+															)}
+														/>
 													</SelectTrigger>
 												</FormControl>
 												<SelectContent>
@@ -312,7 +324,7 @@ export const AthleteAchievementsEditModal = NiceModal.create(
 												</SelectContent>
 											</Select>
 											<FormDescription>
-												Individual o logro de equipo
+												{t("achievementsModal.scopeDescription")}
 											</FormDescription>
 											<FormMessage />
 										</Field>
@@ -328,14 +340,18 @@ export const AthleteAchievementsEditModal = NiceModal.create(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Ano</FormLabel>
+											<FormLabel>{t("achievementsModal.yearLabel")}</FormLabel>
 											<Select
 												onValueChange={(v) => field.onChange(Number(v))}
 												defaultValue={String(field.value)}
 											>
 												<FormControl>
 													<SelectTrigger>
-														<SelectValue placeholder="Seleccionar ano" />
+														<SelectValue
+															placeholder={t(
+																"achievementsModal.yearPlaceholder",
+															)}
+														/>
 													</SelectTrigger>
 												</FormControl>
 												<SelectContent>
@@ -358,10 +374,14 @@ export const AthleteAchievementsEditModal = NiceModal.create(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Posicion / Lugar</FormLabel>
+											<FormLabel>
+												{t("achievementsModal.positionLabel")}
+											</FormLabel>
 											<FormControl>
 												<Input
-													placeholder="1er lugar, Medalla de Oro..."
+													placeholder={t(
+														"achievementsModal.positionPlaceholder",
+													)}
 													{...field}
 													value={field.value ?? ""}
 												/>
@@ -374,17 +394,21 @@ export const AthleteAchievementsEditModal = NiceModal.create(
 						</ProfileEditGrid>
 					</ProfileEditSection>
 
-					<ProfileEditSection title="Contexto">
+					<ProfileEditSection title={t("achievementsModal.contextSection")}>
 						<FormField
 							control={form.control}
 							name="competition"
 							render={({ field }) => (
 								<FormItem asChild>
 									<Field>
-										<FormLabel>Competencia / Torneo</FormLabel>
+										<FormLabel>
+											{t("achievementsModal.competitionLabel")}
+										</FormLabel>
 										<FormControl>
 											<Input
-												placeholder="Copa America Sub-20, Liga Nacional..."
+												placeholder={t(
+													"achievementsModal.competitionPlaceholder",
+												)}
 												{...field}
 												value={field.value ?? ""}
 											/>
@@ -402,16 +426,20 @@ export const AthleteAchievementsEditModal = NiceModal.create(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Organizacion</FormLabel>
+											<FormLabel>
+												{t("achievementsModal.organizationLabel")}
+											</FormLabel>
 											<FormControl>
 												<Input
-													placeholder="FIFA, CONMEBOL, Liga Nacional..."
+													placeholder={t(
+														"achievementsModal.organizationPlaceholder",
+													)}
 													{...field}
 													value={field.value ?? ""}
 												/>
 											</FormControl>
 											<FormDescription>
-												Entidad que otorgo el reconocimiento
+												{t("achievementsModal.organizationDescription")}
 											</FormDescription>
 											<FormMessage />
 										</Field>
@@ -426,16 +454,18 @@ export const AthleteAchievementsEditModal = NiceModal.create(
 									render={({ field }) => (
 										<FormItem asChild>
 											<Field>
-												<FormLabel>Equipo</FormLabel>
+												<FormLabel>
+													{t("achievementsModal.teamLabel")}
+												</FormLabel>
 												<FormControl>
 													<Input
-														placeholder="Seleccion Argentina, Club Atletico..."
+														placeholder={t("achievementsModal.teamPlaceholder")}
 														{...field}
 														value={field.value ?? ""}
 													/>
 												</FormControl>
 												<FormDescription>
-													Equipo con el que se obtuvo el logro
+													{t("achievementsModal.teamDescription")}
 												</FormDescription>
 												<FormMessage />
 											</Field>
@@ -446,17 +476,21 @@ export const AthleteAchievementsEditModal = NiceModal.create(
 						</ProfileEditGrid>
 					</ProfileEditSection>
 
-					<ProfileEditSection title="Detalles">
+					<ProfileEditSection title={t("achievementsModal.detailsSection")}>
 						<FormField
 							control={form.control}
 							name="description"
 							render={({ field }) => (
 								<FormItem asChild>
 									<Field>
-										<FormLabel>Descripcion</FormLabel>
+										<FormLabel>
+											{t("achievementsModal.descriptionLabel")}
+										</FormLabel>
 										<FormControl>
 											<Textarea
-												placeholder="Describe brevemente este logro..."
+												placeholder={t(
+													"achievementsModal.descriptionPlaceholder",
+												)}
 												className="resize-none"
 												rows={3}
 												{...field}
@@ -481,9 +515,11 @@ export const AthleteAchievementsEditModal = NiceModal.create(
 										/>
 									</FormControl>
 									<div className="space-y-1 leading-none">
-										<FormLabel>Mostrar en perfil publico</FormLabel>
+										<FormLabel>
+											{t("achievementsModal.isPublicLabel")}
+										</FormLabel>
 										<FormDescription>
-											Este logro sera visible en tu perfil publico
+											{t("achievementsModal.isPublicDescription")}
 										</FormDescription>
 									</div>
 								</FormItem>

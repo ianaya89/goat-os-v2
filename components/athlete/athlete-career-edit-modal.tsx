@@ -217,11 +217,11 @@ export const AthleteCareerEditModal = NiceModal.create(
 						<TabsList className="grid w-full grid-cols-2">
 							<TabsTrigger value="club" className="gap-2">
 								<BriefcaseIcon className="size-4" />
-								Club / Equipo
+								{t("careerModal.clubTab")}
 							</TabsTrigger>
 							<TabsTrigger value="national" className="gap-2">
 								<FlagIcon className="size-4" />
-								Seleccion Nacional
+								{t("careerModal.nationalTab")}
 							</TabsTrigger>
 						</TabsList>
 

@@ -8,6 +8,7 @@ import {
 	UserIcon,
 	UsersIcon,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { AthleteAchievementsEditModal } from "@/components/athlete/athlete-achievements-edit-modal";
 import { Badge } from "@/components/ui/badge";
@@ -15,21 +16,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AchievementScope, type AchievementType } from "@/lib/db/schema/enums";
 import { trpc } from "@/trpc/client";
-
-// Type label mappings
-const typeLabels: Record<AchievementType, string> = {
-	championship: "Campeonato",
-	award: "Premio",
-	selection: "Seleccion",
-	record: "Record",
-	recognition: "Reconocimiento",
-	mvp: "MVP",
-	top_scorer: "Goleador",
-	best_player: "Mejor Jugador",
-	all_star: "All-Star",
-	scholarship: "Beca",
-	other: "Otro",
-};
 
 const typeColors: Record<AchievementType, string> = {
 	championship:
@@ -67,14 +53,29 @@ interface Achievement {
 }
 
 export function AthleteAchievementsTab() {
+	const t = useTranslations("myProfile");
 	const { data: achievements, isLoading } =
 		trpc.athlete.listMyAchievements.useQuery();
 	const utils = trpc.useUtils();
 
+	const typeLabels: Record<AchievementType, string> = {
+		championship: t("achievementsTab.types.championship"),
+		award: t("achievementsTab.types.award"),
+		selection: t("achievementsTab.types.selection"),
+		record: t("achievementsTab.types.record"),
+		recognition: t("achievementsTab.types.recognition"),
+		mvp: t("achievementsTab.types.mvp"),
+		top_scorer: t("achievementsTab.types.top_scorer"),
+		best_player: t("achievementsTab.types.best_player"),
+		all_star: t("achievementsTab.types.all_star"),
+		scholarship: t("achievementsTab.types.scholarship"),
+		other: t("achievementsTab.types.other"),
+	};
+
 	const deleteMutation = trpc.athlete.deleteAchievement.useMutation({
 		onSuccess: () => {
 			utils.athlete.listMyAchievements.invalidate();
-			toast.success("Logro eliminado");
+			toast.success(t("achievementsTab.deleteSuccess"));
 		},
 		onError: (error) => {
 			toast.error(error.message);
@@ -90,7 +91,7 @@ export function AthleteAchievementsTab() {
 	};
 
 	const handleDelete = (id: string) => {
-		if (confirm("Eliminar este logro?")) {
+		if (confirm(t("achievementsTab.deleteConfirm"))) {
 			deleteMutation.mutate({ id });
 		}
 	};
@@ -109,30 +110,34 @@ export function AthleteAchievementsTab() {
 
 	return (
 		<Card>
-			<CardHeader>
-				<div className="flex items-center justify-between">
-					<CardTitle className="flex items-center gap-2">
-						<TrophyIcon className="size-5" />
-						Palmares y Reconocimientos
-					</CardTitle>
-					<Button size="sm" onClick={handleAdd}>
-						<PlusIcon className="mr-2 size-4" />
-						Agregar
-					</Button>
-				</div>
+			<CardHeader className="flex flex-row items-center justify-between space-y-0">
+				<CardTitle className="flex items-center gap-2">
+					<TrophyIcon className="size-5" />
+					{t("achievementsTab.title")}
+				</CardTitle>
+				<Button variant="outline" size="sm" onClick={handleAdd}>
+					<PlusIcon className="mr-2 size-4" />
+					{t("achievementsTab.add")}
+				</Button>
 			</CardHeader>
 			<CardContent>
 				{!achievements || achievements.length === 0 ? (
 					<div className="py-10 text-center">
 						<TrophyIcon className="mx-auto size-12 text-muted-foreground/50" />
-						<h3 className="mt-4 font-semibold">Sin logros registrados</h3>
-						<p className="mt-2 max-w-sm mx-auto text-muted-foreground text-sm">
-							Agrega tus logros deportivos, premios y reconocimientos para
-							mostrarlos en tu perfil publico.
+						<h3 className="mt-4 font-semibold">
+							{t("achievementsTab.emptyTitle")}
+						</h3>
+						<p className="mx-auto mt-2 max-w-sm text-muted-foreground text-sm">
+							{t("achievementsTab.emptyDescription")}
 						</p>
-						<Button className="mt-4" size="sm" onClick={handleAdd}>
+						<Button
+							variant="outline"
+							className="mt-4"
+							size="sm"
+							onClick={handleAdd}
+						>
 							<PlusIcon className="mr-2 size-4" />
-							Agregar Logro
+							{t("achievementsTab.addAchievement")}
 						</Button>
 					</div>
 				) : (
@@ -170,7 +175,7 @@ export function AthleteAchievementsTab() {
 															handleEdit(achievement as Achievement)
 														}
 													>
-														Editar
+														{t("common.edit")}
 													</Button>
 													<Button
 														variant="ghost"
@@ -179,18 +184,18 @@ export function AthleteAchievementsTab() {
 														onClick={() => handleDelete(achievement.id)}
 														disabled={deleteMutation.isPending}
 													>
-														Eliminar
+														{t("common.delete")}
 													</Button>
 												</div>
 
 												{/* Icon based on scope */}
 												<div className="mb-3 flex items-center justify-center">
-													<div className="flex size-12 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/50">
+													<div className="flex size-12 items-center justify-center rounded-xl bg-primary/10">
 														{achievement.scope ===
 														AchievementScope.collective ? (
-															<UsersIcon className="size-6 text-amber-600 dark:text-amber-400" />
+															<UsersIcon className="size-6 text-primary" />
 														) : (
-															<AwardIcon className="size-6 text-amber-600 dark:text-amber-400" />
+															<AwardIcon className="size-6 text-primary" />
 														)}
 													</div>
 												</div>
@@ -215,12 +220,12 @@ export function AthleteAchievementsTab() {
 														AchievementScope.collective ? (
 															<>
 																<UsersIcon className="mr-1 size-3" />
-																Colectivo
+																{t("achievementsTab.collective")}
 															</>
 														) : (
 															<>
 																<UserIcon className="mr-1 size-3" />
-																Individual
+																{t("achievementsTab.individual")}
 															</>
 														)}
 													</Badge>
@@ -228,7 +233,7 @@ export function AthleteAchievementsTab() {
 
 												{/* Position/place */}
 												{achievement.position && (
-													<p className="mt-2 text-center font-medium text-amber-600 text-sm dark:text-amber-400">
+													<p className="mt-2 text-center font-medium text-primary text-sm">
 														{achievement.position}
 													</p>
 												)}
@@ -243,7 +248,7 @@ export function AthleteAchievementsTab() {
 												{/* Team */}
 												{achievement.team && (
 													<p className="mt-1 text-center text-muted-foreground text-xs">
-														con {achievement.team}
+														{t("achievementsTab.with")} {achievement.team}
 													</p>
 												)}
 
@@ -258,7 +263,7 @@ export function AthleteAchievementsTab() {
 												{!achievement.isPublic && (
 													<div className="mt-2 flex justify-center">
 														<Badge variant="outline" className="text-xs">
-															Privado
+															{t("achievementsTab.private")}
 														</Badge>
 													</div>
 												)}
