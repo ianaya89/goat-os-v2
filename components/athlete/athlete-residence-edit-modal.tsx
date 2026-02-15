@@ -2,6 +2,7 @@
 
 import NiceModal from "@ebay/nice-modal-react";
 import { HomeIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { z } from "zod/v4";
 import {
@@ -43,6 +44,7 @@ export const AthleteResidenceEditModal = NiceModal.create(
 		nationality,
 	}: AthleteResidenceEditModalProps) => {
 		const modal = useEnhancedModal();
+		const t = useTranslations("myProfile");
 		const utils = trpc.useUtils();
 
 		const form = useZodForm({
@@ -56,12 +58,12 @@ export const AthleteResidenceEditModal = NiceModal.create(
 
 		const updateMutation = trpc.athlete.updateMyProfile.useMutation({
 			onSuccess: () => {
-				toast.success("Informacion de residencia actualizada");
+				toast.success(t("residenceModal.success"));
 				utils.athlete.getMyProfile.invalidate();
 				modal.handleClose();
 			},
 			onError: (error) => {
-				toast.error(error.message || "Error al actualizar");
+				toast.error(error.message || t("common.updateError"));
 			},
 		});
 
@@ -77,8 +79,8 @@ export const AthleteResidenceEditModal = NiceModal.create(
 			<ProfileEditSheet
 				open={modal.visible}
 				onClose={modal.handleClose}
-				title="Residencia"
-				subtitle="Tu ubicacion actual y nacionalidad"
+				title={t("residenceModal.title")}
+				subtitle={t("residenceModal.subtitle")}
 				icon={<HomeIcon className="size-5" />}
 				accentColor="sky"
 				form={form}
@@ -88,7 +90,7 @@ export const AthleteResidenceEditModal = NiceModal.create(
 				onAnimationEndCapture={modal.handleAnimationEndCapture}
 			>
 				<div className="space-y-6">
-					<ProfileEditSection title="Ubicacion">
+					<ProfileEditSection title={t("residenceModal.locationSection")}>
 						<ProfileEditGrid cols={2}>
 							<FormField
 								control={form.control}
@@ -96,10 +98,10 @@ export const AthleteResidenceEditModal = NiceModal.create(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Ciudad</FormLabel>
+											<FormLabel>{t("residenceModal.city")}</FormLabel>
 											<FormControl>
 												<Input
-													placeholder="Buenos Aires"
+													placeholder={t("residenceModal.cityPlaceholder")}
 													{...field}
 													value={field.value ?? ""}
 												/>
@@ -116,10 +118,12 @@ export const AthleteResidenceEditModal = NiceModal.create(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Pais</FormLabel>
+											<FormLabel>{t("residenceModal.country")}</FormLabel>
 											<FormControl>
 												<Input
-													placeholder="Argentina"
+													placeholder={t(
+														"residenceModal.nationalityPlaceholder",
+													)}
 													{...field}
 													value={field.value ?? ""}
 												/>
@@ -139,10 +143,10 @@ export const AthleteResidenceEditModal = NiceModal.create(
 							render={({ field }) => (
 								<FormItem asChild>
 									<Field>
-										<FormLabel>Nacionalidad</FormLabel>
+										<FormLabel>{t("residenceModal.nationality")}</FormLabel>
 										<FormControl>
 											<Input
-												placeholder="Argentina"
+												placeholder={t("residenceModal.nationalityPlaceholder")}
 												{...field}
 												value={field.value ?? ""}
 											/>

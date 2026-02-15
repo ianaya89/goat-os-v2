@@ -194,7 +194,7 @@ export const OrgAthletePhysicalProfileEditModal = NiceModal.create(
 												value={field.value ?? ""}
 											>
 												<FormControl>
-													<SelectTrigger>
+													<SelectTrigger className="w-full">
 														<SelectValue placeholder="-" />
 													</SelectTrigger>
 												</FormControl>
@@ -228,7 +228,7 @@ export const OrgAthletePhysicalProfileEditModal = NiceModal.create(
 												value={field.value ?? ""}
 											>
 												<FormControl>
-													<SelectTrigger>
+													<SelectTrigger className="w-full">
 														<SelectValue placeholder="-" />
 													</SelectTrigger>
 												</FormControl>

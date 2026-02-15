@@ -3,6 +3,7 @@
 import NiceModal from "@ebay/nice-modal-react";
 import { GlobeIcon, Loader2Icon, PlusIcon } from "lucide-react";
 import { AnimatePresence } from "motion/react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -27,13 +28,7 @@ import { LanguageProficiencyLevel } from "@/lib/db/schema/enums";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
-const levelLabels: Record<LanguageProficiencyLevel, string> = {
-	[LanguageProficiencyLevel.native]: "Nativo",
-	[LanguageProficiencyLevel.fluent]: "Fluido",
-	[LanguageProficiencyLevel.advanced]: "Avanzado",
-	[LanguageProficiencyLevel.intermediate]: "Intermedio",
-	[LanguageProficiencyLevel.basic]: "Basico",
-};
+// levelLabels is now generated inside component via useTranslations
 
 const levelColors: Record<LanguageProficiencyLevel, string> = {
 	[LanguageProficiencyLevel.native]:
@@ -48,19 +43,19 @@ const levelColors: Record<LanguageProficiencyLevel, string> = {
 		"bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
 };
 
-const commonLanguages = [
-	{ code: "es", name: "Espanol" },
-	{ code: "en", name: "Ingles" },
-	{ code: "pt", name: "Portugues" },
-	{ code: "fr", name: "Frances" },
-	{ code: "de", name: "Aleman" },
-	{ code: "it", name: "Italiano" },
-	{ code: "zh", name: "Chino" },
-	{ code: "ja", name: "Japones" },
-	{ code: "ko", name: "Coreano" },
-	{ code: "ar", name: "Arabe" },
-	{ code: "ru", name: "Ruso" },
-];
+const commonLanguageCodes = [
+	"es",
+	"en",
+	"pt",
+	"fr",
+	"de",
+	"it",
+	"zh",
+	"ja",
+	"ko",
+	"ar",
+	"ru",
+] as const;
 
 interface Language {
 	id: string;
@@ -79,7 +74,23 @@ interface AthleteLanguagesModalProps {
 export const AthleteLanguagesModal = NiceModal.create(
 	({ languages: initialLanguages }: AthleteLanguagesModalProps) => {
 		const modal = useEnhancedModal();
+		const t = useTranslations("myProfile");
 		const utils = trpc.useUtils();
+
+		const levelLabels: Record<LanguageProficiencyLevel, string> = {
+			[LanguageProficiencyLevel.native]: t("languagesModal.levels.native"),
+			[LanguageProficiencyLevel.fluent]: t("languagesModal.levels.fluent"),
+			[LanguageProficiencyLevel.advanced]: t("languagesModal.levels.advanced"),
+			[LanguageProficiencyLevel.intermediate]: t(
+				"languagesModal.levels.intermediate",
+			),
+			[LanguageProficiencyLevel.basic]: t("languagesModal.levels.basic"),
+		};
+
+		const commonLanguages = commonLanguageCodes.map((code) => ({
+			code,
+			name: t(`languagesModal.commonLanguages.${code}`),
+		}));
 		const [newLanguage, setNewLanguage] = useState("");
 		const [newLevel, setNewLevel] = useState<LanguageProficiencyLevel>(
 			LanguageProficiencyLevel.intermediate,
@@ -92,7 +103,7 @@ export const AthleteLanguagesModal = NiceModal.create(
 
 		const addMutation = trpc.athlete.addLanguage.useMutation({
 			onSuccess: () => {
-				toast.success("Idioma agregado");
+				toast.success(t("languagesModal.addSuccess"));
 				languagesQuery.refetch();
 				utils.athlete.getMyProfile.invalidate();
 				setNewLanguage("");
@@ -100,35 +111,35 @@ export const AthleteLanguagesModal = NiceModal.create(
 				setIsAddingNew(false);
 			},
 			onError: (error) => {
-				toast.error(error.message || "Error al agregar idioma");
+				toast.error(error.message || t("languagesModal.addError"));
 			},
 		});
 
 		const deleteMutation = trpc.athlete.deleteLanguage.useMutation({
 			onSuccess: () => {
-				toast.success("Idioma eliminado");
+				toast.success(t("languagesModal.deleteSuccess"));
 				languagesQuery.refetch();
 				utils.athlete.getMyProfile.invalidate();
 			},
 			onError: (error) => {
-				toast.error(error.message || "Error al eliminar idioma");
+				toast.error(error.message || t("languagesModal.deleteError"));
 			},
 		});
 
 		const updateMutation = trpc.athlete.updateLanguage.useMutation({
 			onSuccess: () => {
-				toast.success("Idioma actualizado");
+				toast.success(t("languagesModal.updateSuccess"));
 				languagesQuery.refetch();
 				utils.athlete.getMyProfile.invalidate();
 			},
 			onError: (error) => {
-				toast.error(error.message || "Error al actualizar idioma");
+				toast.error(error.message || t("languagesModal.updateError"));
 			},
 		});
 
 		const handleAddLanguage = () => {
 			if (!newLanguage.trim()) {
-				toast.error("Selecciona o escribe un idioma");
+				toast.error(t("languagesModal.selectLanguageError"));
 				return;
 			}
 			addMutation.mutate({
@@ -156,8 +167,8 @@ export const AthleteLanguagesModal = NiceModal.create(
 			<ProfileEditSheet
 				open={modal.visible}
 				onClose={modal.handleClose}
-				title="Idiomas"
-				subtitle="Agrega los idiomas que hablas y tu nivel"
+				title={t("languagesModal.title")}
+				subtitle={t("languagesModal.subtitle")}
 				icon={<GlobeIcon className="size-5" />}
 				accentColor="sky"
 				maxWidth="md"
@@ -165,7 +176,7 @@ export const AthleteLanguagesModal = NiceModal.create(
 				customFooter={
 					<div className="flex justify-end">
 						<Button variant="outline" onClick={modal.handleClose}>
-							Cerrar
+							{t("common.close")}
 						</Button>
 					</div>
 				}
@@ -173,7 +184,7 @@ export const AthleteLanguagesModal = NiceModal.create(
 				<div className="space-y-6">
 					{/* Existing languages */}
 					{languages.length > 0 && (
-						<ProfileEditSection title="Mis idiomas">
+						<ProfileEditSection title={t("languagesModal.myLanguages")}>
 							<AnimatePresence mode="popLayout">
 								{languages.map((lang) => (
 									<ProfileEditItem
@@ -238,10 +249,10 @@ export const AthleteLanguagesModal = NiceModal.create(
 
 					{/* Add new language form */}
 					{isAddingNew ? (
-						<ProfileEditSection title="Agregar nuevo idioma">
+						<ProfileEditSection title={t("languagesModal.addNew")}>
 							<div className="space-y-4 rounded-xl border-2 border-dashed border-sky-200 bg-sky-50/50 p-4 dark:border-sky-800 dark:bg-sky-950/30">
 								<Field>
-									<FieldLabel>Idioma</FieldLabel>
+									<FieldLabel>{t("languagesModal.language")}</FieldLabel>
 									<div className="flex flex-wrap gap-2">
 										{commonLanguages
 											.filter(
@@ -273,14 +284,16 @@ export const AthleteLanguagesModal = NiceModal.create(
 									</div>
 									<Input
 										className="mt-2"
-										placeholder="O escribe otro idioma..."
+										placeholder={t("languagesModal.otherLanguage")}
 										value={newLanguage}
 										onChange={(e) => setNewLanguage(e.target.value)}
 									/>
 								</Field>
 
 								<Field>
-									<FieldLabel>Nivel de competencia</FieldLabel>
+									<FieldLabel>
+										{t("languagesModal.proficiencyLevel")}
+									</FieldLabel>
 									<Select
 										value={newLevel}
 										onValueChange={(v) =>
@@ -327,7 +340,7 @@ export const AthleteLanguagesModal = NiceModal.create(
 											setNewLanguage("");
 										}}
 									>
-										Cancelar
+										{t("common.cancel")}
 									</Button>
 									<Button
 										size="sm"
@@ -340,7 +353,7 @@ export const AthleteLanguagesModal = NiceModal.create(
 										) : (
 											<PlusIcon className="mr-2 size-4" />
 										)}
-										Agregar
+										{t("languagesModal.addButton")}
 									</Button>
 								</div>
 							</div>
@@ -352,7 +365,7 @@ export const AthleteLanguagesModal = NiceModal.create(
 							onClick={() => setIsAddingNew(true)}
 						>
 							<PlusIcon className="mr-2 size-4" />
-							Agregar idioma
+							{t("languagesModal.addLanguageButton")}
 						</Button>
 					)}
 
@@ -360,8 +373,8 @@ export const AthleteLanguagesModal = NiceModal.create(
 					{languages.length === 0 && !isAddingNew && (
 						<ProfileEditEmpty
 							icon={<GlobeIcon className="size-12" />}
-							title="No has agregado ningun idioma todavia"
-							description="Los idiomas pueden ayudarte a destacar en oportunidades internacionales"
+							title={t("languagesModal.emptyTitle")}
+							description={t("languagesModal.emptyDescription")}
 						/>
 					)}
 				</div>

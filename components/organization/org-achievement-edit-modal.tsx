@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { z } from "zod/v4";
 import {
 	ProfileEditGrid,
+	ProfileEditSection,
 	ProfileEditSheet,
 } from "@/components/athlete/profile-edit-sheet";
 import {
@@ -271,148 +272,227 @@ export const OrgAchievementEditModal = NiceModal.create(
 				maxWidth="lg"
 				onAnimationEndCapture={modal.handleAnimationEndCapture}
 			>
-				<div className="space-y-4">
-					<FormField
-						control={form.control}
-						name="title"
-						render={({ field }) => (
-							<FormItem asChild>
-								<Field>
-									<FormLabel>{t("title")}</FormLabel>
-									<FormControl>
-										<Input placeholder={t("titlePlaceholder")} {...field} />
-									</FormControl>
-									<FormMessage />
-								</Field>
-							</FormItem>
+				<div className="space-y-6">
+					<ProfileEditSection
+						title={t("achievementInfo")}
+						description={t("achievementInfoDesc")}
+					>
+						<FormField
+							control={form.control}
+							name="title"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel>{t("title")}</FormLabel>
+										<FormControl>
+											<Input placeholder={t("titlePlaceholder")} {...field} />
+										</FormControl>
+										<FormMessage />
+									</Field>
+								</FormItem>
+							)}
+						/>
+
+						<ProfileEditGrid cols={2}>
+							<FormField
+								control={form.control}
+								name="type"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("type")}</FormLabel>
+											<Select
+												onValueChange={field.onChange}
+												defaultValue={field.value}
+											>
+												<FormControl>
+													<SelectTrigger>
+														<SelectValue placeholder={t("typePlaceholder")} />
+													</SelectTrigger>
+												</FormControl>
+												<SelectContent>
+													{AchievementTypes.map((type) => (
+														<SelectItem key={type} value={type}>
+															{t(`types.${type}`)}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
+
+							<FormField
+								control={form.control}
+								name="scope"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("scope")}</FormLabel>
+											<Select
+												onValueChange={field.onChange}
+												defaultValue={field.value}
+											>
+												<FormControl>
+													<SelectTrigger>
+														<SelectValue placeholder={t("scopePlaceholder")} />
+													</SelectTrigger>
+												</FormControl>
+												<SelectContent>
+													{AchievementScopes.map((s) => (
+														<SelectItem key={s} value={s}>
+															{t(`scopes.${s}`)}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
+						</ProfileEditGrid>
+
+						<ProfileEditGrid cols={2}>
+							<FormField
+								control={form.control}
+								name="year"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("year")}</FormLabel>
+											<Select
+												onValueChange={(v) => field.onChange(Number(v))}
+												defaultValue={String(field.value)}
+											>
+												<FormControl>
+													<SelectTrigger>
+														<SelectValue placeholder={t("yearPlaceholder")} />
+													</SelectTrigger>
+												</FormControl>
+												<SelectContent>
+													{yearOptions.map((year) => (
+														<SelectItem key={year} value={String(year)}>
+															{year}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
+
+							<FormField
+								control={form.control}
+								name="position"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("position")}</FormLabel>
+											<FormControl>
+												<Input
+													placeholder={t("positionPlaceholder")}
+													{...field}
+													value={field.value ?? ""}
+												/>
+											</FormControl>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
+						</ProfileEditGrid>
+					</ProfileEditSection>
+
+					<ProfileEditSection
+						title={t("context")}
+						description={t("contextDesc")}
+					>
+						<ProfileEditGrid cols={2} className="items-start">
+							<FormField
+								control={form.control}
+								name="competition"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("competition")}</FormLabel>
+											<FormControl>
+												<Input
+													placeholder={t("competitionPlaceholder")}
+													{...field}
+													value={field.value ?? ""}
+												/>
+											</FormControl>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
+
+							<FormField
+								control={form.control}
+								name="organization"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("organization")}</FormLabel>
+											<FormControl>
+												<Input
+													placeholder={t("organizationPlaceholder")}
+													{...field}
+													value={field.value ?? ""}
+												/>
+											</FormControl>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
+						</ProfileEditGrid>
+
+						{scope === AchievementScope.collective && (
+							<FormField
+								control={form.control}
+								name="team"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("team")}</FormLabel>
+											<FormControl>
+												<Input
+													placeholder={t("teamPlaceholder")}
+													{...field}
+													value={field.value ?? ""}
+												/>
+											</FormControl>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
 						)}
-					/>
+					</ProfileEditSection>
 
-					<ProfileEditGrid cols={2}>
+					<ProfileEditSection
+						title={t("details")}
+						description={t("detailsDesc")}
+					>
 						<FormField
 							control={form.control}
-							name="type"
+							name="description"
 							render={({ field }) => (
 								<FormItem asChild>
 									<Field>
-										<FormLabel>{t("type")}</FormLabel>
-										<Select
-											onValueChange={field.onChange}
-											defaultValue={field.value}
-										>
-											<FormControl>
-												<SelectTrigger>
-													<SelectValue placeholder={t("typePlaceholder")} />
-												</SelectTrigger>
-											</FormControl>
-											<SelectContent>
-												{AchievementTypes.map((type) => (
-													<SelectItem key={type} value={type}>
-														{t(`types.${type}`)}
-													</SelectItem>
-												))}
-											</SelectContent>
-										</Select>
-										<FormMessage />
-									</Field>
-								</FormItem>
-							)}
-						/>
-
-						<FormField
-							control={form.control}
-							name="scope"
-							render={({ field }) => (
-								<FormItem asChild>
-									<Field>
-										<FormLabel>{t("scope")}</FormLabel>
-										<Select
-											onValueChange={field.onChange}
-											defaultValue={field.value}
-										>
-											<FormControl>
-												<SelectTrigger>
-													<SelectValue placeholder={t("scopePlaceholder")} />
-												</SelectTrigger>
-											</FormControl>
-											<SelectContent>
-												{AchievementScopes.map((s) => (
-													<SelectItem key={s} value={s}>
-														{t(`scopes.${s}`)}
-													</SelectItem>
-												))}
-											</SelectContent>
-										</Select>
-										<FormMessage />
-									</Field>
-								</FormItem>
-							)}
-						/>
-					</ProfileEditGrid>
-
-					<ProfileEditGrid cols={2}>
-						<FormField
-							control={form.control}
-							name="year"
-							render={({ field }) => (
-								<FormItem asChild>
-									<Field>
-										<FormLabel>{t("year")}</FormLabel>
-										<Select
-											onValueChange={(v) => field.onChange(Number(v))}
-											defaultValue={String(field.value)}
-										>
-											<FormControl>
-												<SelectTrigger>
-													<SelectValue placeholder={t("yearPlaceholder")} />
-												</SelectTrigger>
-											</FormControl>
-											<SelectContent>
-												{yearOptions.map((year) => (
-													<SelectItem key={year} value={String(year)}>
-														{year}
-													</SelectItem>
-												))}
-											</SelectContent>
-										</Select>
-										<FormMessage />
-									</Field>
-								</FormItem>
-							)}
-						/>
-
-						<FormField
-							control={form.control}
-							name="position"
-							render={({ field }) => (
-								<FormItem asChild>
-									<Field>
-										<FormLabel>{t("position")}</FormLabel>
+										<FormLabel>{t("description")}</FormLabel>
 										<FormControl>
-											<Input
-												placeholder={t("positionPlaceholder")}
-												{...field}
-												value={field.value ?? ""}
-											/>
-										</FormControl>
-										<FormMessage />
-									</Field>
-								</FormItem>
-							)}
-						/>
-					</ProfileEditGrid>
-
-					<ProfileEditGrid cols={2} className="items-start">
-						<FormField
-							control={form.control}
-							name="competition"
-							render={({ field }) => (
-								<FormItem asChild>
-									<Field>
-										<FormLabel>{t("competition")}</FormLabel>
-										<FormControl>
-											<Input
-												placeholder={t("competitionPlaceholder")}
+											<Textarea
+												placeholder={t("descriptionPlaceholder")}
+												className="resize-none"
+												rows={2}
 												{...field}
 												value={field.value ?? ""}
 											/>
@@ -425,87 +505,23 @@ export const OrgAchievementEditModal = NiceModal.create(
 
 						<FormField
 							control={form.control}
-							name="organization"
+							name="isPublic"
 							render={({ field }) => (
-								<FormItem asChild>
-									<Field>
-										<FormLabel>{t("organization")}</FormLabel>
-										<FormControl>
-											<Input
-												placeholder={t("organizationPlaceholder")}
-												{...field}
-												value={field.value ?? ""}
-											/>
-										</FormControl>
-										<FormMessage />
-									</Field>
-								</FormItem>
-							)}
-						/>
-					</ProfileEditGrid>
-
-					{scope === AchievementScope.collective && (
-						<FormField
-							control={form.control}
-							name="team"
-							render={({ field }) => (
-								<FormItem asChild>
-									<Field>
-										<FormLabel>{t("team")}</FormLabel>
-										<FormControl>
-											<Input
-												placeholder={t("teamPlaceholder")}
-												{...field}
-												value={field.value ?? ""}
-											/>
-										</FormControl>
-										<FormMessage />
-									</Field>
-								</FormItem>
-							)}
-						/>
-					)}
-
-					<FormField
-						control={form.control}
-						name="description"
-						render={({ field }) => (
-							<FormItem asChild>
-								<Field>
-									<FormLabel>{t("description")}</FormLabel>
+								<FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
 									<FormControl>
-										<Textarea
-											placeholder={t("descriptionPlaceholder")}
-											className="resize-none"
-											rows={2}
-											{...field}
-											value={field.value ?? ""}
+										<Checkbox
+											checked={field.value}
+											onCheckedChange={field.onChange}
 										/>
 									</FormControl>
-									<FormMessage />
-								</Field>
-							</FormItem>
-						)}
-					/>
-
-					<FormField
-						control={form.control}
-						name="isPublic"
-						render={({ field }) => (
-							<FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-								<FormControl>
-									<Checkbox
-										checked={field.value}
-										onCheckedChange={field.onChange}
-									/>
-								</FormControl>
-								<div className="space-y-1 leading-none">
-									<FormLabel>{t("isPublic")}</FormLabel>
-									<FormDescription>{t("isPublicDesc")}</FormDescription>
-								</div>
-							</FormItem>
-						)}
-					/>
+									<div className="space-y-1 leading-none">
+										<FormLabel>{t("isPublic")}</FormLabel>
+										<FormDescription>{t("isPublicDesc")}</FormDescription>
+									</div>
+								</FormItem>
+							)}
+						/>
+					</ProfileEditSection>
 
 					{/* Delete Button (only in edit mode) */}
 					{isEditing && (

@@ -9,6 +9,7 @@ import {
 	VideoIcon,
 } from "lucide-react";
 import { AnimatePresence } from "motion/react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -43,37 +44,38 @@ interface AthleteVideosEditModalProps {
 export const AthleteVideosEditModal = NiceModal.create(
 	({ videos: initialVideos }: AthleteVideosEditModalProps) => {
 		const modal = useEnhancedModal();
+		const t = useTranslations("myProfile");
 		const utils = trpc.useUtils();
 		const [videos, setVideos] = useState<string[]>(initialVideos ?? []);
 		const [newVideoUrl, setNewVideoUrl] = useState("");
 
 		const updateMutation = trpc.athlete.updateMyProfile.useMutation({
 			onSuccess: () => {
-				toast.success("Videos actualizados");
+				toast.success(t("videosModal.success"));
 				utils.athlete.getMyProfile.invalidate();
 				modal.handleClose();
 			},
 			onError: (error) => {
-				toast.error(error.message || "Error al actualizar");
+				toast.error(error.message || t("common.updateError"));
 			},
 		});
 
 		const handleAddVideo = () => {
 			const url = newVideoUrl.trim();
 			if (!url) {
-				toast.error("Ingresa una URL");
+				toast.error(t("videosModal.enterUrl"));
 				return;
 			}
 			if (!isValidYoutubeUrl(url)) {
-				toast.error("La URL no es un video de YouTube valido");
+				toast.error(t("videosModal.invalidUrl"));
 				return;
 			}
 			if (videos.includes(url)) {
-				toast.error("Este video ya esta agregado");
+				toast.error(t("videosModal.duplicateUrl"));
 				return;
 			}
 			if (videos.length >= 10) {
-				toast.error("Maximo 10 videos permitidos");
+				toast.error(t("videosModal.maxVideos"));
 				return;
 			}
 			setVideos([...videos, url]);
@@ -94,8 +96,8 @@ export const AthleteVideosEditModal = NiceModal.create(
 			<ProfileEditSheet
 				open={modal.visible}
 				onClose={modal.handleClose}
-				title="Videos Destacados"
-				subtitle="Muestra tus mejores jugadas y momentos"
+				title={t("videosModal.title")}
+				subtitle={t("videosModal.subtitle")}
 				icon={<VideoIcon className="size-5" />}
 				accentColor="amber"
 				maxWidth="lg"
@@ -107,14 +109,14 @@ export const AthleteVideosEditModal = NiceModal.create(
 						</span>
 						<div className="flex gap-3">
 							<Button variant="ghost" onClick={modal.handleClose}>
-								Cancelar
+								{t("common.cancel")}
 							</Button>
 							<Button
 								onClick={handleSave}
 								disabled={updateMutation.isPending}
 								loading={updateMutation.isPending}
 							>
-								Guardar
+								{t("common.save")}
 							</Button>
 						</div>
 					</div>
@@ -123,13 +125,13 @@ export const AthleteVideosEditModal = NiceModal.create(
 				<div className="space-y-6">
 					{/* Add new video */}
 					<ProfileEditSection
-						title="Agregar video"
-						description="Pega el enlace de un video de YouTube"
+						title={t("videosModal.addVideo")}
+						description={t("videosModal.addVideoDescription")}
 					>
 						<div className="flex gap-2">
 							<div className="relative flex-1">
 								<Input
-									placeholder="https://www.youtube.com/watch?v=..."
+									placeholder={t("videosModal.urlPlaceholder")}
 									value={newVideoUrl}
 									onChange={(e) => setNewVideoUrl(e.target.value)}
 									onKeyDown={(e) => {
@@ -173,7 +175,9 @@ export const AthleteVideosEditModal = NiceModal.create(
 
 					{/* Video list */}
 					{videos.length > 0 ? (
-						<ProfileEditSection title={`Mis videos (${videos.length})`}>
+						<ProfileEditSection
+							title={t("videosModal.myVideos", { count: videos.length })}
+						>
 							<AnimatePresence mode="popLayout">
 								{videos.map((url, index) => {
 									const videoId = getYoutubeVideoId(url);
@@ -188,7 +192,9 @@ export const AthleteVideosEditModal = NiceModal.create(
 													<div className="group relative shrink-0 overflow-hidden rounded-lg">
 														<img
 															src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`}
-															alt={`Video ${index + 1}`}
+															alt={t("videosModal.videoItem", {
+																index: index + 1,
+															})}
 															className="h-16 w-28 object-cover transition-transform group-hover:scale-105"
 														/>
 														<div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity group-hover:opacity-100">
@@ -204,7 +210,7 @@ export const AthleteVideosEditModal = NiceModal.create(
 												)}
 												<div className="min-w-0 flex-1 space-y-1">
 													<p className="truncate font-medium text-sm">
-														Video {index + 1}
+														{t("videosModal.videoItem", { index: index + 1 })}
 													</p>
 													<a
 														href={url}
@@ -227,36 +233,32 @@ export const AthleteVideosEditModal = NiceModal.create(
 					) : (
 						<ProfileEditEmpty
 							icon={<VideoIcon className="size-12" />}
-							title="No hay videos agregados"
-							description="Los videos de YouTube ayudan a scouts y reclutadores a ver tu talento"
+							title={t("videosModal.emptyTitle")}
+							description={t("videosModal.emptyDescription")}
 						/>
 					)}
 
 					{/* Tips */}
 					<div className="rounded-xl border-2 border-dashed border-amber-200 bg-amber-50/50 p-4 dark:border-amber-800 dark:bg-amber-950/30">
 						<h4 className="mb-2 font-medium text-amber-800 text-sm dark:text-amber-300">
-							Consejos para mejores videos
+							{t("videosModal.tipsTitle")}
 						</h4>
 						<ul className="space-y-1 text-amber-700 text-xs dark:text-amber-400">
 							<li className="flex items-start gap-2">
 								<span className="mt-0.5">•</span>
-								<span>
-									Sube compilaciones de tus mejores jugadas (highlights)
-								</span>
+								<span>{t("videosModal.tip1")}</span>
 							</li>
 							<li className="flex items-start gap-2">
 								<span className="mt-0.5">•</span>
-								<span>Incluye partidos completos donde te destacas</span>
+								<span>{t("videosModal.tip2")}</span>
 							</li>
 							<li className="flex items-start gap-2">
 								<span className="mt-0.5">•</span>
-								<span>Asegurate de que la calidad del video sea buena</span>
+								<span>{t("videosModal.tip3")}</span>
 							</li>
 							<li className="flex items-start gap-2">
 								<span className="mt-0.5">•</span>
-								<span>
-									Agrega tu nombre y posicion en la descripcion del video
-								</span>
+								<span>{t("videosModal.tip4")}</span>
 							</li>
 						</ul>
 					</div>

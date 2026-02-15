@@ -193,7 +193,7 @@ export const AddWellnessModal = NiceModal.create<AddWellnessModalProps>(
 				sleepHoursNum < 0 ||
 				sleepHoursNum > 24
 			) {
-				toast.error("Please enter valid sleep hours (0-24)");
+				toast.error(t("invalidSleepHours"));
 				return;
 			}
 

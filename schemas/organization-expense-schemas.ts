@@ -79,7 +79,7 @@ export const getExpenseSchema = z.object({
 export const createExpenseSchema = z.object({
 	categoryId: z.string().uuid().optional().nullable(),
 	category: z.nativeEnum(ExpenseCategory).optional().nullable(),
-	amount: z.number().int().min(1, "Amount must be positive"),
+	amount: z.number().min(0.01, "Amount must be positive"),
 	currency: z.string().default("ARS"),
 	description: z.string().trim().min(1, "Description is required").max(500),
 	expenseDate: z.coerce.date(),
@@ -96,7 +96,7 @@ export const updateExpenseSchema = z.object({
 	id: z.string().uuid(),
 	categoryId: z.string().uuid().optional().nullable(),
 	category: z.nativeEnum(ExpenseCategory).optional().nullable(),
-	amount: z.number().int().min(1).optional(),
+	amount: z.number().min(0.01).optional(),
 	description: z.string().trim().min(1).max(500).optional(),
 	expenseDate: z.coerce.date().optional(),
 	paymentMethod: z.nativeEnum(TrainingPaymentMethod).optional(),

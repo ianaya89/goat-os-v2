@@ -2,19 +2,16 @@
 
 import NiceModal from "@ebay/nice-modal-react";
 import { format } from "date-fns";
-import {
-	ActivityIcon,
-	HeartIcon,
-	SparklesIcon,
-	StarIcon,
-	XIcon,
-} from "lucide-react";
+import { ActivityIcon, HeartIcon, SparklesIcon, StarIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { z } from "zod/v4";
 import {
-	Form,
+	ProfileEditSection,
+	ProfileEditSheet,
+} from "@/components/athlete/profile-edit-sheet";
+import { Field } from "@/components/ui/field";
+import {
 	FormControl,
 	FormField,
 	FormItem,
@@ -22,7 +19,6 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
 	Select,
 	SelectContent,
@@ -30,27 +26,24 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import {
-	Sheet,
-	SheetContent,
-	SheetFooter,
-	SheetTitle,
-} from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
+import { useZodForm } from "@/hooks/use-zod-form";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
-interface FormValues {
-	sessionId: string;
-	performanceRating: number | null;
-	performanceNotes: string;
-	attitudeRating: number | null;
-	attitudeNotes: string;
-	physicalFitnessRating: number | null;
-	physicalFitnessNotes: string;
-	generalNotes: string;
-}
+const evaluationSchema = z.object({
+	sessionId: z.string().min(1),
+	performanceRating: z.number().nullable(),
+	performanceNotes: z.string().default(""),
+	attitudeRating: z.number().nullable(),
+	attitudeNotes: z.string().default(""),
+	physicalFitnessRating: z.number().nullable(),
+	physicalFitnessNotes: z.string().default(""),
+	generalNotes: z.string().default(""),
+});
+
+type EvaluationFormValues = z.infer<typeof evaluationSchema>;
 
 interface Session {
 	id: string;
@@ -141,7 +134,8 @@ export const AddEvaluationModal = NiceModal.create<AddEvaluationModalProps>(
 			? completedSessions.find((s) => s.id === initialSessionId)
 			: null;
 
-		const form = useForm<FormValues>({
+		const form = useZodForm({
+			schema: evaluationSchema,
 			defaultValues: {
 				sessionId: initialSessionId ?? "",
 				performanceRating: initialValues?.performanceRating ?? null,
@@ -167,7 +161,7 @@ export const AddEvaluationModal = NiceModal.create<AddEvaluationModalProps>(
 				},
 			});
 
-		const onSubmit = (values: FormValues) => {
+		const onSubmit = form.handleSubmit((values) => {
 			if (!values.sessionId) {
 				toast.error(t("modal.selectSessionError"));
 				return;
@@ -193,275 +187,213 @@ export const AddEvaluationModal = NiceModal.create<AddEvaluationModalProps>(
 				physicalFitnessNotes: values.physicalFitnessNotes || undefined,
 				generalNotes: values.generalNotes || undefined,
 			});
-		};
+		});
 
 		const isPending = upsertMutation.isPending;
 
 		return (
-			<Sheet
+			<ProfileEditSheet
 				open={modal.visible}
-				onOpenChange={(open) => !open && modal.handleClose()}
+				onClose={modal.handleClose}
+				title={isEditing ? t("modal.editTitle") : t("modal.title")}
+				subtitle={
+					athleteName ? t("modal.for", { name: athleteName }) : undefined
+				}
+				icon={<StarIcon className="size-5" />}
+				accentColor="slate"
+				form={form}
+				onSubmit={onSubmit}
+				isPending={isPending}
+				submitLabel={t("modal.save")}
+				cancelLabel={t("modal.cancel")}
+				maxWidth="md"
+				onAnimationEndCapture={modal.handleAnimationEndCapture}
 			>
-				<SheetContent
-					className="flex flex-col p-0 sm:max-w-md"
-					onAnimationEndCapture={modal.handleAnimationEndCapture}
-					hideDefaultHeader
-				>
-					<SheetTitle className="sr-only">
-						{isEditing ? t("modal.editTitle") : t("modal.title")}
-					</SheetTitle>
-					{/* Custom Header with accent stripe */}
-					<div className="relative shrink-0">
-						{/* Accent stripe */}
-						<div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-slate-400 to-slate-500" />
+				<div className="space-y-6">
+					{/* Session Selector */}
+					<ProfileEditSection title={t("modal.trainingSession")}>
+						{hasPreselectedSession ? (
+							preselectedSession && (
+								<div className="rounded-lg border bg-muted/30 px-3 py-2.5">
+									<p className="text-sm font-medium mt-0.5">
+										{preselectedSession.title}
+									</p>
+									<p className="text-xs text-muted-foreground">
+										{format(
+											new Date(preselectedSession.startTime),
+											"MMM d, yyyy 'at' h:mm a",
+										)}
+									</p>
+								</div>
+							)
+						) : (
+							<FormField
+								control={form.control}
+								name="sessionId"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("modal.selectSession")}</FormLabel>
+											<Select
+												onValueChange={field.onChange}
+												value={field.value}
+											>
+												<FormControl>
+													<SelectTrigger className="w-full">
+														<SelectValue
+															placeholder={t("modal.selectSession")}
+														/>
+													</SelectTrigger>
+												</FormControl>
+												<SelectContent>
+													{completedSessions.length === 0 ? (
+														<div className="py-4 text-center text-muted-foreground text-sm">
+															{t("modal.noCompletedSessions")}
+														</div>
+													) : (
+														completedSessions.map((session) => (
+															<SelectItem key={session.id} value={session.id}>
+																<div className="flex flex-col">
+																	<span>{session.title}</span>
+																	<span className="text-muted-foreground text-xs">
+																		{format(
+																			new Date(session.startTime),
+																			"MMM d, yyyy 'at' h:mm a",
+																		)}
+																	</span>
+																</div>
+															</SelectItem>
+														))
+													)}
+												</SelectContent>
+											</Select>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
+						)}
+					</ProfileEditSection>
 
-						{/* Header content */}
-						<div className="flex items-start justify-between gap-4 px-6 pb-4 pt-6">
-							<div className="flex items-start gap-3">
-								<div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-slate-400 to-slate-500 text-white shadow-sm">
-									<StarIcon className="size-5" />
-								</div>
-								<div>
-									<h2 className="font-semibold text-lg tracking-tight">
-										{isEditing ? t("modal.editTitle") : t("modal.title")}
-									</h2>
-									{athleteName && (
-										<p className="mt-0.5 text-muted-foreground text-sm">
-											{t("modal.for", { name: athleteName })}
-										</p>
-									)}
-								</div>
-							</div>
-							<button
-								type="button"
-								onClick={modal.handleClose}
-								disabled={isPending}
-								className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-all duration-150 hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-							>
-								<XIcon className="size-4" />
-								<span className="sr-only">{t("modal.close")}</span>
-							</button>
+					{/* Rating sections */}
+					<ProfileEditSection title={t("modal.ratings")}>
+						<div className="space-y-2 rounded-lg border p-3">
+							<FormField
+								control={form.control}
+								name="performanceRating"
+								render={({ field }) => (
+									<StarRating
+										label={t("performance")}
+										icon={SparklesIcon}
+										value={field.value}
+										onChange={field.onChange}
+									/>
+								)}
+							/>
+							<FormField
+								control={form.control}
+								name="performanceNotes"
+								render={({ field }) => (
+									<FormItem>
+										<FormControl>
+											<Textarea
+												placeholder={t("modal.performanceNotes")}
+												className="min-h-[48px] resize-none text-sm"
+												{...field}
+											/>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
 						</div>
 
-						{/* Separator */}
-						<div className="h-px bg-border" />
-					</div>
-
-					<Form {...form}>
-						<form
-							onSubmit={form.handleSubmit(onSubmit)}
-							className="flex min-h-0 flex-1 flex-col"
-						>
-							<ScrollArea className="min-h-0 flex-1">
-								<div className="space-y-4 px-6 py-4">
-									{/* Session Selector - only show if not pre-selected */}
-									{hasPreselectedSession ? (
-										preselectedSession && (
-											<div className="rounded-lg border bg-muted/30 px-3 py-2.5">
-												<p className="text-xs text-muted-foreground">
-													{t("modal.trainingSession")}
-												</p>
-												<p className="text-sm font-medium mt-0.5">
-													{preselectedSession.title}
-												</p>
-												<p className="text-xs text-muted-foreground">
-													{format(
-														new Date(preselectedSession.startTime),
-														"MMM d, yyyy 'at' h:mm a",
-													)}
-												</p>
-											</div>
-										)
-									) : (
-										<FormField
-											control={form.control}
-											name="sessionId"
-											render={({ field }) => (
-												<FormItem>
-													<FormLabel className="text-sm">
-														{t("modal.trainingSession")}
-													</FormLabel>
-													<Select
-														onValueChange={field.onChange}
-														value={field.value}
-													>
-														<FormControl>
-															<SelectTrigger className="h-9 w-full">
-																<SelectValue
-																	placeholder={t("modal.selectSession")}
-																/>
-															</SelectTrigger>
-														</FormControl>
-														<SelectContent>
-															{completedSessions.length === 0 ? (
-																<div className="py-4 text-center text-muted-foreground text-sm">
-																	{t("modal.noCompletedSessions")}
-																</div>
-															) : (
-																completedSessions.map((session) => (
-																	<SelectItem
-																		key={session.id}
-																		value={session.id}
-																	>
-																		<div className="flex flex-col">
-																			<span>{session.title}</span>
-																			<span className="text-muted-foreground text-xs">
-																				{format(
-																					new Date(session.startTime),
-																					"MMM d, yyyy 'at' h:mm a",
-																				)}
-																			</span>
-																		</div>
-																	</SelectItem>
-																))
-															)}
-														</SelectContent>
-													</Select>
-													<FormMessage />
-												</FormItem>
-											)}
-										/>
-									)}
-
-									{/* Rating sections */}
-									<div className="space-y-2 rounded-lg border p-3">
-										<FormField
-											control={form.control}
-											name="performanceRating"
-											render={({ field }) => (
-												<StarRating
-													label={t("performance")}
-													icon={SparklesIcon}
-													value={field.value}
-													onChange={field.onChange}
-												/>
-											)}
-										/>
-										<FormField
-											control={form.control}
-											name="performanceNotes"
-											render={({ field }) => (
-												<FormItem>
-													<FormControl>
-														<Textarea
-															placeholder={t("modal.performanceNotes")}
-															className="min-h-[48px] resize-none text-sm"
-															{...field}
-														/>
-													</FormControl>
-													<FormMessage />
-												</FormItem>
-											)}
-										/>
-									</div>
-
-									<div className="space-y-2 rounded-lg border p-3">
-										<FormField
-											control={form.control}
-											name="attitudeRating"
-											render={({ field }) => (
-												<StarRating
-													label={t("attitude")}
-													icon={HeartIcon}
-													value={field.value}
-													onChange={field.onChange}
-												/>
-											)}
-										/>
-										<FormField
-											control={form.control}
-											name="attitudeNotes"
-											render={({ field }) => (
-												<FormItem>
-													<FormControl>
-														<Textarea
-															placeholder={t("modal.attitudeNotes")}
-															className="min-h-[48px] resize-none text-sm"
-															{...field}
-														/>
-													</FormControl>
-													<FormMessage />
-												</FormItem>
-											)}
-										/>
-									</div>
-
-									<div className="space-y-2 rounded-lg border p-3">
-										<FormField
-											control={form.control}
-											name="physicalFitnessRating"
-											render={({ field }) => (
-												<StarRating
-													label={t("physicalFitness")}
-													icon={ActivityIcon}
-													value={field.value}
-													onChange={field.onChange}
-												/>
-											)}
-										/>
-										<FormField
-											control={form.control}
-											name="physicalFitnessNotes"
-											render={({ field }) => (
-												<FormItem>
-													<FormControl>
-														<Textarea
-															placeholder={t("modal.fitnessNotes")}
-															className="min-h-[48px] resize-none text-sm"
-															{...field}
-														/>
-													</FormControl>
-													<FormMessage />
-												</FormItem>
-											)}
-										/>
-									</div>
-
-									{/* General Notes */}
-									<FormField
-										control={form.control}
-										name="generalNotes"
-										render={({ field }) => (
-											<FormItem>
-												<FormLabel className="text-sm">
-													{t("modal.generalNotes")}
-												</FormLabel>
-												<FormControl>
-													<Textarea
-														placeholder={t("modal.generalNotesPlaceholder")}
-														className="min-h-[56px] resize-none text-sm"
-														{...field}
-													/>
-												</FormControl>
-												<FormMessage />
-											</FormItem>
-										)}
+						<div className="space-y-2 rounded-lg border p-3">
+							<FormField
+								control={form.control}
+								name="attitudeRating"
+								render={({ field }) => (
+									<StarRating
+										label={t("attitude")}
+										icon={HeartIcon}
+										value={field.value}
+										onChange={field.onChange}
 									/>
-								</div>
-							</ScrollArea>
+								)}
+							/>
+							<FormField
+								control={form.control}
+								name="attitudeNotes"
+								render={({ field }) => (
+									<FormItem>
+										<FormControl>
+											<Textarea
+												placeholder={t("modal.attitudeNotes")}
+												className="min-h-[48px] resize-none text-sm"
+												{...field}
+											/>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+						</div>
 
-							{/* Footer */}
-							<SheetFooter className="flex-row justify-end gap-3 border-t bg-muted/30 px-6 py-4">
-								<Button
-									type="button"
-									variant="ghost"
-									onClick={modal.handleClose}
-									disabled={isPending}
-								>
-									{t("modal.cancel")}
-								</Button>
-								<Button
-									type="submit"
-									disabled={isPending || completedSessions.length === 0}
-									loading={isPending}
-								>
-									{t("modal.save")}
-								</Button>
-							</SheetFooter>
-						</form>
-					</Form>
-				</SheetContent>
-			</Sheet>
+						<div className="space-y-2 rounded-lg border p-3">
+							<FormField
+								control={form.control}
+								name="physicalFitnessRating"
+								render={({ field }) => (
+									<StarRating
+										label={t("physicalFitness")}
+										icon={ActivityIcon}
+										value={field.value}
+										onChange={field.onChange}
+									/>
+								)}
+							/>
+							<FormField
+								control={form.control}
+								name="physicalFitnessNotes"
+								render={({ field }) => (
+									<FormItem>
+										<FormControl>
+											<Textarea
+												placeholder={t("modal.fitnessNotes")}
+												className="min-h-[48px] resize-none text-sm"
+												{...field}
+											/>
+										</FormControl>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+						</div>
+					</ProfileEditSection>
+
+					{/* General Notes */}
+					<ProfileEditSection title={t("modal.generalNotes")}>
+						<FormField
+							control={form.control}
+							name="generalNotes"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormControl>
+											<Textarea
+												placeholder={t("modal.generalNotesPlaceholder")}
+												className="min-h-[56px] resize-none text-sm"
+												{...field}
+											/>
+										</FormControl>
+										<FormMessage />
+									</Field>
+								</FormItem>
+							)}
+						/>
+					</ProfileEditSection>
+				</div>
+			</ProfileEditSheet>
 		);
 	},
 );

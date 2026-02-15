@@ -2,6 +2,7 @@
 
 import NiceModal from "@ebay/nice-modal-react";
 import { HeartPulseIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { z } from "zod/v4";
 import {
@@ -37,6 +38,7 @@ interface AthleteHealthEditModalProps {
 export const AthleteHealthEditModal = NiceModal.create(
 	({ dietaryRestrictions, allergies }: AthleteHealthEditModalProps) => {
 		const modal = useEnhancedModal();
+		const t = useTranslations("myProfile");
 		const utils = trpc.useUtils();
 
 		const form = useZodForm({
@@ -49,12 +51,12 @@ export const AthleteHealthEditModal = NiceModal.create(
 
 		const updateMutation = trpc.athlete.updateMyProfile.useMutation({
 			onSuccess: () => {
-				toast.success("Informacion de salud actualizada");
+				toast.success(t("healthModal.success"));
 				utils.athlete.getMyProfile.invalidate();
 				modal.handleClose();
 			},
 			onError: (error) => {
-				toast.error(error.message || "Error al actualizar");
+				toast.error(error.message || t("common.updateError"));
 			},
 		});
 
@@ -69,8 +71,8 @@ export const AthleteHealthEditModal = NiceModal.create(
 			<ProfileEditSheet
 				open={modal.visible}
 				onClose={modal.handleClose}
-				title="Salud y Alimentacion"
-				subtitle="Informacion importante para tu bienestar"
+				title={t("healthModal.title")}
+				subtitle={t("healthModal.subtitle")}
 				icon={<HeartPulseIcon className="size-5" />}
 				accentColor="rose"
 				form={form}
@@ -87,10 +89,12 @@ export const AthleteHealthEditModal = NiceModal.create(
 							render={({ field }) => (
 								<FormItem asChild>
 									<Field>
-										<FormLabel>Restricciones Alimenticias</FormLabel>
+										<FormLabel>
+											{t("healthModal.dietaryRestrictions")}
+										</FormLabel>
 										<FormControl>
 											<Textarea
-												placeholder="Vegetariano, vegano, sin gluten, etc."
+												placeholder={t("healthModal.dietaryPlaceholder")}
 												className="resize-none"
 												rows={3}
 												{...field}
@@ -116,11 +120,11 @@ export const AthleteHealthEditModal = NiceModal.create(
 								<FormItem asChild>
 									<Field>
 										<FormLabel className="text-rose-600 dark:text-rose-400">
-											Alergias
+											{t("healthModal.allergies")}
 										</FormLabel>
 										<FormControl>
 											<Textarea
-												placeholder="Alergias a alimentos, medicamentos, etc."
+												placeholder={t("healthModal.allergiesPlaceholder")}
 												className="resize-none border-rose-200 focus-visible:ring-rose-500 dark:border-rose-800"
 												rows={3}
 												{...field}

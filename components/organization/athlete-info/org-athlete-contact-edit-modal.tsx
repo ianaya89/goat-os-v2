@@ -169,7 +169,7 @@ export const OrgAthleteContactEditModal = NiceModal.create(
 												value={field.value ?? ""}
 											>
 												<FormControl>
-													<SelectTrigger>
+													<SelectTrigger className="w-full">
 														<SelectValue
 															placeholder={t("editForm.selectRelationship")}
 														/>

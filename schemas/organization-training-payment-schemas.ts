@@ -57,13 +57,13 @@ export const createTrainingPaymentSchema = z.object({
 	sessionIds: z.array(z.string().uuid()).optional(),
 	athleteId: z.string().uuid().optional().nullable(),
 	serviceId: z.string().uuid().optional().nullable(),
-	amount: z.number().int().min(1, "Amount must be positive"),
+	amount: z.number().min(0.01, "Amount must be positive"),
 	currency: z.string().default("ARS"),
 	status: z
 		.nativeEnum(TrainingPaymentStatus)
 		.default(TrainingPaymentStatus.pending),
 	paymentMethod: z.nativeEnum(TrainingPaymentMethod).optional(),
-	paidAmount: z.number().int().min(0).default(0),
+	paidAmount: z.number().min(0).default(0),
 	discountPercentage: z.number().int().min(0).max(100).default(0),
 	paymentDate: z.coerce.date().optional(),
 	receiptNumber: z.string().trim().max(100).optional(),
@@ -74,10 +74,10 @@ export const createTrainingPaymentSchema = z.object({
 // Update payment
 export const updateTrainingPaymentSchema = z.object({
 	id: z.string().uuid(),
-	amount: z.number().int().min(1).optional(),
+	amount: z.number().min(0.01).optional(),
 	status: z.nativeEnum(TrainingPaymentStatus).optional(),
 	paymentMethod: z.nativeEnum(TrainingPaymentMethod).optional().nullable(),
-	paidAmount: z.number().int().min(0).optional(),
+	paidAmount: z.number().min(0).optional(),
 	discountPercentage: z.number().int().min(0).max(100).optional(),
 	paymentDate: z.coerce.date().optional().nullable(),
 	receiptNumber: z.string().trim().max(100).optional().nullable(),

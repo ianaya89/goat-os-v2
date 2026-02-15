@@ -8,6 +8,7 @@ import {
 	FlagIcon,
 	TrophyIcon,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { z } from "zod/v4";
 import {
@@ -71,6 +72,7 @@ interface AthleteCareerEditModalProps {
 export const AthleteCareerEditModal = NiceModal.create(
 	({ entry }: AthleteCareerEditModalProps) => {
 		const modal = useEnhancedModal();
+		const t = useTranslations("myProfile");
 		const utils = trpc.useUtils();
 		const isEditing = !!entry;
 
@@ -91,7 +93,7 @@ export const AthleteCareerEditModal = NiceModal.create(
 
 		const createMutation = trpc.athlete.addCareerHistory.useMutation({
 			onSuccess: () => {
-				toast.success("Historial de carrera agregado");
+				toast.success(t("careerModal.addSuccess"));
 				utils.athlete.getMyProfile.invalidate();
 				modal.handleClose();
 			},
@@ -102,7 +104,7 @@ export const AthleteCareerEditModal = NiceModal.create(
 
 		const updateMutation = trpc.athlete.updateCareerHistory.useMutation({
 			onSuccess: () => {
-				toast.success("Historial de carrera actualizado");
+				toast.success(t("careerModal.updateSuccess"));
 				utils.athlete.getMyProfile.invalidate();
 				modal.handleClose();
 			},
@@ -113,7 +115,7 @@ export const AthleteCareerEditModal = NiceModal.create(
 
 		const deleteMutation = trpc.athlete.deleteCareerHistory.useMutation({
 			onSuccess: () => {
-				toast.success("Historial de carrera eliminado");
+				toast.success(t("careerModal.deleteSuccess"));
 				utils.athlete.getMyProfile.invalidate();
 				modal.handleClose();
 			},
@@ -141,7 +143,7 @@ export const AthleteCareerEditModal = NiceModal.create(
 		});
 
 		const handleDelete = () => {
-			if (entry && confirm("Eliminar este historial de carrera?")) {
+			if (entry && confirm(t("careerModal.deleteConfirm"))) {
 				deleteMutation.mutate({ id: entry.id });
 			}
 		};
@@ -163,14 +165,16 @@ export const AthleteCareerEditModal = NiceModal.create(
 			<ProfileEditSheet
 				open={modal.visible}
 				onClose={modal.handleClose}
-				title={isEditing ? "Editar Historial" : "Agregar Historial"}
-				subtitle="Registra tu trayectoria en clubes y selecciones"
+				title={
+					isEditing ? t("careerModal.editTitle") : t("careerModal.addTitle")
+				}
+				subtitle={t("careerModal.subtitle")}
 				icon={<BriefcaseIcon className="size-5" />}
 				accentColor="primary"
 				form={form}
 				onSubmit={onSubmit}
 				isPending={isPending}
-				submitLabel={isEditing ? "Guardar" : "Agregar"}
+				submitLabel={isEditing ? t("common.save") : t("common.add")}
 				maxWidth="lg"
 				onAnimationEndCapture={modal.handleAnimationEndCapture}
 				customFooter={
@@ -183,7 +187,7 @@ export const AthleteCareerEditModal = NiceModal.create(
 								onClick={handleDelete}
 								disabled={isPending}
 							>
-								Eliminar
+								{t("common.delete")}
 							</Button>
 						) : (
 							<div />
@@ -195,10 +199,10 @@ export const AthleteCareerEditModal = NiceModal.create(
 								onClick={modal.handleClose}
 								disabled={isPending}
 							>
-								Cancelar
+								{t("common.cancel")}
 							</Button>
 							<Button type="submit" disabled={isPending} loading={isPending}>
-								{isEditing ? "Guardar" : "Agregar"}
+								{isEditing ? t("common.save") : t("common.add")}
 							</Button>
 						</div>
 					</div>
@@ -228,17 +232,17 @@ export const AthleteCareerEditModal = NiceModal.create(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Club / Equipo</FormLabel>
+											<FormLabel>{t("careerModal.clubLabel")}</FormLabel>
 											<FormControl>
 												<InstitutionSelector
 													type="club"
 													value={field.value}
 													onChange={field.onChange}
-													placeholder="Seleccionar club..."
+													placeholder={t("careerModal.clubPlaceholder")}
 												/>
 											</FormControl>
 											<FormDescription>
-												Los clubes se configuran desde la organizacion
+												{t("careerModal.clubDescription")}
 											</FormDescription>
 											<FormMessage />
 										</Field>
@@ -254,17 +258,17 @@ export const AthleteCareerEditModal = NiceModal.create(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Seleccion Nacional</FormLabel>
+											<FormLabel>{t("careerModal.nationalLabel")}</FormLabel>
 											<FormControl>
 												<InstitutionSelector
 													type="nationalTeam"
 													value={field.value}
 													onChange={field.onChange}
-													placeholder="Seleccionar seleccion..."
+													placeholder={t("careerModal.nationalPlaceholder")}
 												/>
 											</FormControl>
 											<FormDescription>
-												Las selecciones se configuran desde la organizacion
+												{t("careerModal.nationalDescription")}
 											</FormDescription>
 											<FormMessage />
 										</Field>
@@ -274,7 +278,7 @@ export const AthleteCareerEditModal = NiceModal.create(
 						</TabsContent>
 					</Tabs>
 
-					<ProfileEditSection title="Periodo">
+					<ProfileEditSection title={t("careerModal.periodSection")}>
 						<ProfileEditGrid cols={2}>
 							<FormField
 								control={form.control}
@@ -282,7 +286,7 @@ export const AthleteCareerEditModal = NiceModal.create(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Fecha de Inicio</FormLabel>
+											<FormLabel>{t("careerModal.startDate")}</FormLabel>
 											<Popover>
 												<PopoverTrigger asChild>
 													<FormControl>
@@ -296,7 +300,7 @@ export const AthleteCareerEditModal = NiceModal.create(
 															<CalendarIcon className="mr-2 size-4" />
 															{field.value
 																? format(field.value, "MMM yyyy")
-																: "Seleccionar"}
+																: t("common.select")}
 														</Button>
 													</FormControl>
 												</PopoverTrigger>
@@ -324,7 +328,7 @@ export const AthleteCareerEditModal = NiceModal.create(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Fecha de Fin</FormLabel>
+											<FormLabel>{t("careerModal.endDate")}</FormLabel>
 											<Popover>
 												<PopoverTrigger asChild>
 													<FormControl>
@@ -338,7 +342,7 @@ export const AthleteCareerEditModal = NiceModal.create(
 															<CalendarIcon className="mr-2 size-4" />
 															{field.value
 																? format(field.value, "MMM yyyy")
-																: "Presente"}
+																: t("careerModal.present")}
 														</Button>
 													</FormControl>
 												</PopoverTrigger>
@@ -355,7 +359,7 @@ export const AthleteCareerEditModal = NiceModal.create(
 												</PopoverContent>
 											</Popover>
 											<FormDescription>
-												Dejar vacio si es actual
+												{t("careerModal.endDateDescription")}
 											</FormDescription>
 											<FormMessage />
 										</Field>
@@ -365,17 +369,17 @@ export const AthleteCareerEditModal = NiceModal.create(
 						</ProfileEditGrid>
 					</ProfileEditSection>
 
-					<ProfileEditSection title="Detalles">
+					<ProfileEditSection title={t("careerModal.detailsSection")}>
 						<FormField
 							control={form.control}
 							name="position"
 							render={({ field }) => (
 								<FormItem asChild>
 									<Field>
-										<FormLabel>Posicion / Rol</FormLabel>
+										<FormLabel>{t("careerModal.position")}</FormLabel>
 										<FormControl>
 											<Input
-												placeholder="Mediocampista, Delantero, Base..."
+												placeholder={t("careerModal.positionPlaceholder")}
 												{...field}
 												value={field.value ?? ""}
 											/>
@@ -394,11 +398,11 @@ export const AthleteCareerEditModal = NiceModal.create(
 									<Field>
 										<FormLabel className="flex items-center gap-2">
 											<TrophyIcon className="size-4 text-amber-500" />
-											Logros
+											{t("careerModal.achievements")}
 										</FormLabel>
 										<FormControl>
 											<Textarea
-												placeholder="Campeon liga 2024, Goleador, MVP, Mejor defensor..."
+												placeholder={t("careerModal.achievementsPlaceholder")}
 												className="resize-none"
 												rows={3}
 												{...field}
@@ -417,10 +421,10 @@ export const AthleteCareerEditModal = NiceModal.create(
 							render={({ field }) => (
 								<FormItem asChild>
 									<Field>
-										<FormLabel>Notas Adicionales</FormLabel>
+										<FormLabel>{t("careerModal.notes")}</FormLabel>
 										<FormControl>
 											<Textarea
-												placeholder="Cualquier informacion adicional..."
+												placeholder={t("careerModal.notesPlaceholder")}
 												className="resize-none"
 												rows={2}
 												{...field}

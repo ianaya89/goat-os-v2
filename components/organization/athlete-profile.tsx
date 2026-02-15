@@ -412,19 +412,22 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 
 			{/* Detailed Tabs */}
 			<Tabs defaultValue="info" className="space-y-4">
-				<div className="overflow-x-auto pb-2 -mb-2">
-					<TabsList className="inline-flex w-max">
+				<div className="overflow-x-auto scrollbar-none">
+					<TabsList className="inline-flex w-max flex-nowrap">
 						<TabsTrigger value="info">
 							<UserIcon className="mr-1 size-3.5" />
 							{t("tabs.info")}
 						</TabsTrigger>
 						<TabsTrigger value="sessions">
+							<CalendarIcon className="mr-1 size-3.5" />
 							{t("tabs.sessions")} ({sessions.length})
 						</TabsTrigger>
 						<TabsTrigger value="evaluations">
+							<StarIcon className="mr-1 size-3.5" />
 							{t("tabs.evaluations")} ({evaluations.length})
 						</TabsTrigger>
 						<TabsTrigger value="attendance">
+							<CheckCircleIcon className="mr-1 size-3.5" />
 							{t("tabs.attendance")} ({attendanceRecords.length})
 						</TabsTrigger>
 						<TabsTrigger value="physical">
@@ -550,7 +553,7 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 				</TabsContent>
 
 				{/* Physical Metrics Tab */}
-				<TabsContent value="physical" className="space-y-6">
+				<TabsContent value="physical" className="space-y-4">
 					{/* Physical Profile Card */}
 					<Card>
 						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -581,9 +584,11 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 							!athlete.standingReach &&
 							!athlete.dominantFoot &&
 							!athlete.dominantHand ? (
-								<p className="py-6 text-center text-muted-foreground">
-									{t("physical.noProfile")}
-								</p>
+								<EmptyState
+									icon={RulerIcon}
+									title={t("physical.noProfile")}
+									size="sm"
+								/>
 							) : (
 								<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
 									<div>
@@ -639,7 +644,7 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 
 					{/* Body Composition History */}
 					<div className="space-y-4">
-						<div className="flex items-center justify-end">
+						<div className="flex justify-end">
 							<Button
 								size="sm"
 								onClick={() => {
@@ -674,7 +679,9 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 												{t("physical.table.notes")}
 											</th>
 											<th className="w-[50px] px-4 py-3 text-right text-xs font-medium text-muted-foreground">
-												{t("physical.table.actions")}
+												<span className="sr-only">
+													{t("physical.table.actions")}
+												</span>
 											</th>
 										</tr>
 									</thead>
@@ -685,7 +692,7 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 												className="transition-colors hover:bg-muted/30"
 											>
 												<td className="px-4 py-3 font-medium">
-													{format(new Date(metric.measuredAt), "MMM d, yyyy")}
+													{format(new Date(metric.measuredAt), "dd MMM yyyy")}
 												</td>
 												<td className="px-4 py-3">
 													{metric.weight
@@ -705,69 +712,72 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 												<td className="hidden max-w-[200px] truncate px-4 py-3 text-muted-foreground md:table-cell">
 													{metric.notes || "-"}
 												</td>
-												<td className="px-4 py-3 text-right">
-													<DropdownMenu>
-														<DropdownMenuTrigger asChild>
-															<Button
-																variant="ghost"
-																size="icon"
-																className="size-8"
-															>
-																<MoreHorizontalIcon className="size-4" />
-															</Button>
-														</DropdownMenuTrigger>
-														<DropdownMenuContent align="end">
-															<DropdownMenuItem
-																onClick={() => {
-																	NiceModal.show(AddPhysicalMetricsModal, {
-																		athleteId,
-																		initialValues: {
-																			id: metric.id,
-																			measuredAt: metric.measuredAt,
-																			weight: metric.weight,
-																			bodyFatPercentage:
-																				metric.bodyFatPercentage,
-																			muscleMass: metric.muscleMass,
-																			notes: metric.notes,
-																		},
-																	});
-																}}
-															>
-																<PencilIcon className="mr-2 size-4" />
-																{t("physical.actions.edit")}
-															</DropdownMenuItem>
-															<DropdownMenuSeparator />
-															<DropdownMenuItem
-																className="text-destructive"
-																onClick={() => {
-																	NiceModal.show(ConfirmationModal, {
-																		title: t("physical.deleteConfirm.title"),
-																		message: t(
-																			"physical.deleteConfirm.message",
-																			{
-																				date: format(
-																					new Date(metric.measuredAt),
-																					"MMM d, yyyy",
-																				),
-																			},
-																		),
-																		confirmLabel: t(
-																			"physical.deleteConfirm.confirm",
-																		),
-																		onConfirm: () => {
-																			deletePhysicalMetricsMutation.mutate({
+												<td className="px-4 py-3">
+													<div className="flex justify-end">
+														<DropdownMenu>
+															<DropdownMenuTrigger asChild>
+																<Button
+																	className="size-8 text-muted-foreground data-[state=open]:bg-muted"
+																	size="icon"
+																	variant="ghost"
+																>
+																	<MoreHorizontalIcon className="shrink-0" />
+																</Button>
+															</DropdownMenuTrigger>
+															<DropdownMenuContent align="end">
+																<DropdownMenuItem
+																	onClick={() => {
+																		NiceModal.show(AddPhysicalMetricsModal, {
+																			athleteId,
+																			initialValues: {
 																				id: metric.id,
-																				athleteId,
-																			});
-																		},
-																	});
-																}}
-															>
-																<Trash2Icon className="mr-2 size-4" />
-																{t("physical.actions.delete")}
-															</DropdownMenuItem>
-														</DropdownMenuContent>
-													</DropdownMenu>
+																				measuredAt: metric.measuredAt,
+																				weight: metric.weight,
+																				bodyFatPercentage:
+																					metric.bodyFatPercentage,
+																				muscleMass: metric.muscleMass,
+																				notes: metric.notes,
+																			},
+																		});
+																	}}
+																>
+																	<PencilIcon className="mr-2 size-4" />
+																	{t("physical.actions.edit")}
+																</DropdownMenuItem>
+																<DropdownMenuSeparator />
+																<DropdownMenuItem
+																	variant="destructive"
+																	onClick={() => {
+																		NiceModal.show(ConfirmationModal, {
+																			title: t("physical.deleteConfirm.title"),
+																			message: t(
+																				"physical.deleteConfirm.message",
+																				{
+																					date: format(
+																						new Date(metric.measuredAt),
+																						"dd MMM yyyy",
+																					),
+																				},
+																			),
+																			confirmLabel: t(
+																				"physical.deleteConfirm.confirm",
+																			),
+																			destructive: true,
+																			onConfirm: () => {
+																				deletePhysicalMetricsMutation.mutate({
+																					id: metric.id,
+																					athleteId,
+																				});
+																			},
+																		});
+																	}}
+																>
+																	<Trash2Icon className="mr-2 size-4" />
+																	{t("physical.actions.delete")}
+																</DropdownMenuItem>
+															</DropdownMenuContent>
+														</DropdownMenu>
+													</div>
 												</td>
 											</tr>
 										))}
@@ -794,8 +804,8 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 					{!fitnessTests || fitnessTests.length === 0 ? (
 						<EmptyState icon={ActivityIcon} title={t("fitness.noTests")} />
 					) : (
-						<div className="rounded-lg border">
-							<table className="w-full">
+						<div className="overflow-hidden rounded-lg border">
+							<table className="w-full text-sm">
 								<thead>
 									<tr className="border-b bg-muted/50">
 										<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
@@ -819,7 +829,10 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 								</thead>
 								<tbody className="divide-y">
 									{fitnessTests.map((test) => (
-										<tr key={test.id} className="hover:bg-muted/30">
+										<tr
+											key={test.id}
+											className="transition-colors hover:bg-muted/30"
+										>
 											<td className="px-4 py-3">
 												<span className="font-medium text-sm">
 													{t(`fitness.testTypes.${test.testType}`)}
@@ -920,7 +933,7 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 
 				{/* Career History Tab */}
 				<TabsContent value="career" className="space-y-4">
-					<div className="flex items-center justify-end">
+					<div className="flex justify-end">
 						<Button
 							size="sm"
 							onClick={() => {
@@ -955,7 +968,9 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 											{t("career.table.type")}
 										</th>
 										<th className="w-[50px] px-4 py-3 text-right text-xs font-medium text-muted-foreground">
-											{t("career.table.actions")}
+											<span className="sr-only">
+												{t("career.table.actions")}
+											</span>
 										</th>
 									</tr>
 								</thead>
@@ -1002,66 +1017,69 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 													</Badge>
 												)}
 											</td>
-											<td className="px-4 py-3 text-right">
-												<DropdownMenu>
-													<DropdownMenuTrigger asChild>
-														<Button
-															variant="ghost"
-															size="icon"
-															className="size-8"
-														>
-															<MoreHorizontalIcon className="size-4" />
-														</Button>
-													</DropdownMenuTrigger>
-													<DropdownMenuContent align="end">
-														<DropdownMenuItem
-															onClick={() => {
-																NiceModal.show(AddCareerHistoryModal, {
-																	athleteId,
-																	initialValues: {
-																		id: entry.id,
-																		clubId: entry.clubId,
-																		nationalTeamId: entry.nationalTeamId,
-																		startDate: entry.startDate,
-																		endDate: entry.endDate,
-																		position: entry.position,
-																		achievements: entry.achievements,
-																		notes: entry.notes,
-																	},
-																});
-															}}
-														>
-															<PencilIcon className="mr-2 size-4" />
-															{t("career.actions.edit")}
-														</DropdownMenuItem>
-														<DropdownMenuSeparator />
-														<DropdownMenuItem
-															className="text-destructive"
-															onClick={() => {
-																NiceModal.show(ConfirmationModal, {
-																	title: t("career.deleteConfirm.title"),
-																	message: t("career.deleteConfirm.message", {
-																		clubName:
-																			entry.club?.name ||
-																			entry.nationalTeam?.name ||
-																			"-",
-																	}),
-																	confirmLabel: t(
-																		"career.deleteConfirm.confirm",
-																	),
-																	onConfirm: () => {
-																		deleteCareerHistoryMutation.mutate({
+											<td className="px-4 py-3">
+												<div className="flex justify-end">
+													<DropdownMenu>
+														<DropdownMenuTrigger asChild>
+															<Button
+																className="size-8 text-muted-foreground data-[state=open]:bg-muted"
+																size="icon"
+																variant="ghost"
+															>
+																<MoreHorizontalIcon className="shrink-0" />
+															</Button>
+														</DropdownMenuTrigger>
+														<DropdownMenuContent align="end">
+															<DropdownMenuItem
+																onClick={() => {
+																	NiceModal.show(AddCareerHistoryModal, {
+																		athleteId,
+																		initialValues: {
 																			id: entry.id,
-																		});
-																	},
-																});
-															}}
-														>
-															<Trash2Icon className="mr-2 size-4" />
-															{t("career.actions.delete")}
-														</DropdownMenuItem>
-													</DropdownMenuContent>
-												</DropdownMenu>
+																			clubId: entry.clubId,
+																			nationalTeamId: entry.nationalTeamId,
+																			startDate: entry.startDate,
+																			endDate: entry.endDate,
+																			position: entry.position,
+																			achievements: entry.achievements,
+																			notes: entry.notes,
+																		},
+																	});
+																}}
+															>
+																<PencilIcon className="mr-2 size-4" />
+																{t("career.actions.edit")}
+															</DropdownMenuItem>
+															<DropdownMenuSeparator />
+															<DropdownMenuItem
+																variant="destructive"
+																onClick={() => {
+																	NiceModal.show(ConfirmationModal, {
+																		title: t("career.deleteConfirm.title"),
+																		message: t("career.deleteConfirm.message", {
+																			clubName:
+																				entry.club?.name ||
+																				entry.nationalTeam?.name ||
+																				"-",
+																		}),
+																		confirmLabel: t(
+																			"career.deleteConfirm.confirm",
+																		),
+																		destructive: true,
+																		onConfirm: () => {
+																			deleteCareerHistoryMutation.mutate({
+																				id: entry.id,
+																			});
+																		},
+																	});
+																}}
+															>
+																<Trash2Icon className="mr-2 size-4" />
+																{t("career.actions.delete")}
+															</DropdownMenuItem>
+														</DropdownMenuContent>
+													</DropdownMenu>
+												</div>
 											</td>
 										</tr>
 									))}
@@ -1073,7 +1091,7 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 
 				{/* Achievements Tab */}
 				<TabsContent value="achievements" className="space-y-4">
-					<div className="flex items-center justify-end">
+					<div className="flex justify-end">
 						<Button
 							size="sm"
 							onClick={() => {
@@ -1111,7 +1129,9 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 											{t("achievements.table.position")}
 										</th>
 										<th className="w-[50px] px-4 py-3 text-right text-xs font-medium text-muted-foreground">
-											{t("achievements.table.actions")}
+											<span className="sr-only">
+												{t("achievements.table.actions")}
+											</span>
 										</th>
 									</tr>
 								</thead>
@@ -1143,69 +1163,74 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 											<td className="hidden px-4 py-3 text-muted-foreground lg:table-cell">
 												{achievement.position || "-"}
 											</td>
-											<td className="px-4 py-3 text-right">
-												<DropdownMenu>
-													<DropdownMenuTrigger asChild>
-														<Button
-															variant="ghost"
-															size="icon"
-															className="size-8"
-														>
-															<MoreHorizontalIcon className="size-4" />
-														</Button>
-													</DropdownMenuTrigger>
-													<DropdownMenuContent align="end">
-														<DropdownMenuItem
-															onClick={() => {
-																NiceModal.show(OrgAchievementEditModal, {
-																	athleteId,
-																	entry: {
-																		id: achievement.id,
-																		title: achievement.title,
-																		type: achievement.type,
-																		scope: achievement.scope,
-																		year: achievement.year,
-																		organization: achievement.organization,
-																		team: achievement.team,
-																		competition: achievement.competition,
-																		position: achievement.position,
-																		description: achievement.description,
-																		isPublic: achievement.isPublic,
-																	},
-																});
-															}}
-														>
-															<PencilIcon className="mr-2 size-4" />
-															{t("achievements.actions.edit")}
-														</DropdownMenuItem>
-														<DropdownMenuSeparator />
-														<DropdownMenuItem
-															className="text-destructive"
-															onClick={() => {
-																NiceModal.show(ConfirmationModal, {
-																	title: t("achievements.deleteConfirm.title"),
-																	message: t(
-																		"achievements.deleteConfirm.message",
-																		{
-																			title: achievement.title,
-																		},
-																	),
-																	confirmLabel: t(
-																		"achievements.deleteConfirm.confirm",
-																	),
-																	onConfirm: () => {
-																		deleteAchievementMutation.mutate({
+											<td className="px-4 py-3">
+												<div className="flex justify-end">
+													<DropdownMenu>
+														<DropdownMenuTrigger asChild>
+															<Button
+																className="size-8 text-muted-foreground data-[state=open]:bg-muted"
+																size="icon"
+																variant="ghost"
+															>
+																<MoreHorizontalIcon className="shrink-0" />
+															</Button>
+														</DropdownMenuTrigger>
+														<DropdownMenuContent align="end">
+															<DropdownMenuItem
+																onClick={() => {
+																	NiceModal.show(OrgAchievementEditModal, {
+																		athleteId,
+																		entry: {
 																			id: achievement.id,
-																		});
-																	},
-																});
-															}}
-														>
-															<Trash2Icon className="mr-2 size-4" />
-															{t("achievements.actions.delete")}
-														</DropdownMenuItem>
-													</DropdownMenuContent>
-												</DropdownMenu>
+																			title: achievement.title,
+																			type: achievement.type,
+																			scope: achievement.scope,
+																			year: achievement.year,
+																			organization: achievement.organization,
+																			team: achievement.team,
+																			competition: achievement.competition,
+																			position: achievement.position,
+																			description: achievement.description,
+																			isPublic: achievement.isPublic,
+																		},
+																	});
+																}}
+															>
+																<PencilIcon className="mr-2 size-4" />
+																{t("achievements.actions.edit")}
+															</DropdownMenuItem>
+															<DropdownMenuSeparator />
+															<DropdownMenuItem
+																variant="destructive"
+																onClick={() => {
+																	NiceModal.show(ConfirmationModal, {
+																		title: t(
+																			"achievements.deleteConfirm.title",
+																		),
+																		message: t(
+																			"achievements.deleteConfirm.message",
+																			{
+																				title: achievement.title,
+																			},
+																		),
+																		confirmLabel: t(
+																			"achievements.deleteConfirm.confirm",
+																		),
+																		destructive: true,
+																		onConfirm: () => {
+																			deleteAchievementMutation.mutate({
+																				id: achievement.id,
+																			});
+																		},
+																	});
+																}}
+															>
+																<Trash2Icon className="mr-2 size-4" />
+																{t("achievements.actions.delete")}
+															</DropdownMenuItem>
+														</DropdownMenuContent>
+													</DropdownMenu>
+												</div>
 											</td>
 										</tr>
 									))}
@@ -1234,8 +1259,8 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 					{!teams || teams.length === 0 ? (
 						<EmptyState icon={ShieldIcon} title={t("teams.noTeams")} />
 					) : (
-						<div className="rounded-lg border">
-							<table className="w-full">
+						<div className="overflow-hidden rounded-lg border">
+							<table className="w-full text-sm">
 								<thead>
 									<tr className="border-b bg-muted/50">
 										<th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">
@@ -1262,7 +1287,10 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 								</thead>
 								<tbody className="divide-y">
 									{teams.map((team) => (
-										<tr key={team.id} className="hover:bg-muted/30">
+										<tr
+											key={team.id}
+											className="transition-colors hover:bg-muted/30"
+										>
 											<td className="px-4 py-3">
 												<Link
 													href={`/dashboard/organization/teams/${team.id}`}
@@ -1373,7 +1401,7 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 
 				{/* Wellness Tab */}
 				<TabsContent value="wellness" className="space-y-4">
-					<div className="flex items-center justify-end">
+					<div className="flex justify-end">
 						<Button
 							size="sm"
 							onClick={() => {
@@ -1425,9 +1453,12 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 								</thead>
 								<tbody className="divide-y">
 									{wellnessSurveys.map((survey) => (
-										<tr key={survey.id} className="hover:bg-muted/30">
+										<tr
+											key={survey.id}
+											className="transition-colors hover:bg-muted/30"
+										>
 											<td className="px-4 py-3 font-medium text-sm">
-												{format(new Date(survey.surveyDate), "MMM d, yyyy")}
+												{format(new Date(survey.surveyDate), "dd MMM yyyy")}
 											</td>
 											<td className="px-4 py-3 text-sm">
 												{(survey.sleepHours / 60).toFixed(1)}h
@@ -1576,7 +1607,7 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 
 				{/* Education Tab */}
 				<TabsContent value="education" className="space-y-4">
-					<div className="flex items-center justify-end">
+					<div className="flex justify-end">
 						<Button
 							size="sm"
 							onClick={() => {
@@ -1635,11 +1666,11 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 											<DropdownMenu>
 												<DropdownMenuTrigger asChild>
 													<Button
-														variant="ghost"
+														className="size-8 text-muted-foreground data-[state=open]:bg-muted"
 														size="icon"
-														className="size-8"
+														variant="ghost"
 													>
-														<MoreHorizontalIcon className="size-4" />
+														<MoreHorizontalIcon className="shrink-0" />
 													</Button>
 												</DropdownMenuTrigger>
 												<DropdownMenuContent align="end">
@@ -1675,12 +1706,13 @@ export function AthleteProfile({ athleteId }: AthleteProfileProps) {
 													</DropdownMenuItem>
 													<DropdownMenuSeparator />
 													<DropdownMenuItem
-														className="text-destructive"
+														variant="destructive"
 														onClick={() => {
 															NiceModal.show(ConfirmationModal, {
 																title: t("education.deleteConfirmTitle"),
 																message: t("education.deleteConfirmDesc"),
 																confirmLabel: t("education.deleteConfirm"),
+																destructive: true,
 																onConfirm: () => {
 																	deleteEducationMutation.mutate({
 																		id: edu.id,

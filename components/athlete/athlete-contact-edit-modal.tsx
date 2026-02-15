@@ -2,6 +2,7 @@
 
 import NiceModal from "@ebay/nice-modal-react";
 import { PhoneIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { z } from "zod/v4";
 import {
@@ -56,6 +57,7 @@ export const AthleteContactEditModal = NiceModal.create(
 		parentEmail,
 	}: AthleteContactEditModalProps) => {
 		const modal = useEnhancedModal();
+		const t = useTranslations("myProfile");
 		const utils = trpc.useUtils();
 
 		const form = useZodForm({
@@ -71,12 +73,12 @@ export const AthleteContactEditModal = NiceModal.create(
 
 		const updateMutation = trpc.athlete.updateMyProfile.useMutation({
 			onSuccess: () => {
-				toast.success("Informacion de contacto actualizada");
+				toast.success(t("contactModal.success"));
 				utils.athlete.getMyProfile.invalidate();
 				modal.handleClose();
 			},
 			onError: (error) => {
-				toast.error(error.message || "Error al actualizar");
+				toast.error(error.message || t("common.updateError"));
 			},
 		});
 
@@ -94,8 +96,8 @@ export const AthleteContactEditModal = NiceModal.create(
 			<ProfileEditSheet
 				open={modal.visible}
 				onClose={modal.handleClose}
-				title="Informacion de Contacto"
-				subtitle="Tu telefono y datos de contacto de emergencia"
+				title={t("contactModal.title")}
+				subtitle={t("contactModal.subtitle")}
 				icon={<PhoneIcon className="size-5" />}
 				accentColor="primary"
 				form={form}
@@ -105,7 +107,7 @@ export const AthleteContactEditModal = NiceModal.create(
 				onAnimationEndCapture={modal.handleAnimationEndCapture}
 			>
 				<div className="space-y-6">
-					<ProfileEditSection title="Mi contacto">
+					<ProfileEditSection title={t("contactModal.myContact")}>
 						<FormField
 							control={form.control}
 							name="phone"
@@ -138,10 +140,10 @@ export const AthleteContactEditModal = NiceModal.create(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Nombre</FormLabel>
+											<FormLabel>{t("contactModal.parentName")}</FormLabel>
 											<FormControl>
 												<Input
-													placeholder="Nombre completo"
+													placeholder={t("contactModal.parentNamePlaceholder")}
 													{...field}
 													value={field.value ?? ""}
 												/>
@@ -158,21 +160,29 @@ export const AthleteContactEditModal = NiceModal.create(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Relacion</FormLabel>
+											<FormLabel>{t("contactModal.relationship")}</FormLabel>
 											<Select
 												onValueChange={field.onChange}
 												value={field.value ?? ""}
 											>
 												<FormControl>
 													<SelectTrigger>
-														<SelectValue placeholder="Seleccionar" />
+														<SelectValue placeholder={t("common.select")} />
 													</SelectTrigger>
 												</FormControl>
 												<SelectContent>
-													<SelectItem value="mother">Madre</SelectItem>
-													<SelectItem value="father">Padre</SelectItem>
-													<SelectItem value="guardian">Tutor</SelectItem>
-													<SelectItem value="other">Otro</SelectItem>
+													<SelectItem value="mother">
+														{t("contactModal.mother")}
+													</SelectItem>
+													<SelectItem value="father">
+														{t("contactModal.father")}
+													</SelectItem>
+													<SelectItem value="guardian">
+														{t("contactModal.guardian")}
+													</SelectItem>
+													<SelectItem value="other">
+														{t("contactModal.other")}
+													</SelectItem>
 												</SelectContent>
 											</Select>
 											<FormMessage />
@@ -209,11 +219,11 @@ export const AthleteContactEditModal = NiceModal.create(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Email</FormLabel>
+											<FormLabel>{t("contactModal.parentEmail")}</FormLabel>
 											<FormControl>
 												<Input
 													type="email"
-													placeholder="email@ejemplo.com"
+													placeholder={t("contactModal.parentEmailPlaceholder")}
 													{...field}
 													value={field.value ?? ""}
 												/>

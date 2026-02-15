@@ -110,7 +110,7 @@ export const ExpensesModal = NiceModal.create<ExpensesModalProps>(
 				? {
 						id: expense.id,
 						category: (expense.category as ExpenseCategory) ?? undefined,
-						amount: expense.amount,
+						amount: expense.amount / 100,
 						description: expense.description,
 						expenseDate: expense.expenseDate,
 						paymentMethod:
@@ -133,13 +133,17 @@ export const ExpensesModal = NiceModal.create<ExpensesModalProps>(
 		});
 
 		const onSubmit = form.handleSubmit((data) => {
+			const transformedData = {
+				...data,
+				amount: Math.round((data.amount ?? 0) * 100),
+			};
 			if (isEditing) {
 				updateExpenseMutation.mutate(
-					data as Parameters<typeof updateExpenseMutation.mutate>[0],
+					transformedData as Parameters<typeof updateExpenseMutation.mutate>[0],
 				);
 			} else {
 				createExpenseMutation.mutate(
-					data as Parameters<typeof createExpenseMutation.mutate>[0],
+					transformedData as Parameters<typeof createExpenseMutation.mutate>[0],
 				);
 			}
 		});
@@ -232,11 +236,11 @@ export const ExpensesModal = NiceModal.create<ExpensesModalProps>(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>{t("form.amountCents")}</FormLabel>
+											<FormLabel>{t("form.amount")}</FormLabel>
 											<FormControl>
 												<Input
 													type="number"
-													placeholder="10000"
+													placeholder="100"
 													{...field}
 													onChange={(e) =>
 														field.onChange(Number(e.target.value))
@@ -270,13 +274,18 @@ export const ExpensesModal = NiceModal.create<ExpensesModalProps>(
 																)
 															: ""
 													}
-													onChange={(e) =>
-														field.onChange(
-															e.target.value
-																? new Date(e.target.value)
-																: undefined,
-														)
-													}
+													onChange={(e) => {
+														if (e.target.value) {
+															const parts = e.target.value
+																.split("-")
+																.map(Number);
+															field.onChange(
+																new Date(parts[0]!, parts[1]! - 1, parts[2]),
+															);
+														} else {
+															field.onChange(undefined);
+														}
+													}}
 												/>
 											</FormControl>
 											<FormMessage />

@@ -105,7 +105,7 @@ export const CashMovementModal = NiceModal.create<CashMovementModalProps>(
 
 		React.useEffect(() => {
 			if (selectedProducts.length > 0) {
-				form.setValue("amount", productsTotal);
+				form.setValue("amount", productsTotal / 100);
 				const productNames = selectedProducts
 					.map((p) => `${p.name} x${p.quantity}`)
 					.join(", ");
@@ -178,6 +178,7 @@ export const CashMovementModal = NiceModal.create<CashMovementModalProps>(
 
 			addMovementMutation.mutate({
 				...data,
+				amount: Math.round(data.amount * 100),
 				products,
 			});
 		});
@@ -255,11 +256,11 @@ export const CashMovementModal = NiceModal.create<CashMovementModalProps>(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>{t("modal.amountCents")}</FormLabel>
+											<FormLabel>{t("form.amount")}</FormLabel>
 											<FormControl>
 												<Input
 													type="number"
-													placeholder="1000"
+													placeholder="100"
 													{...field}
 													onChange={(e) =>
 														field.onChange(Number(e.target.value))

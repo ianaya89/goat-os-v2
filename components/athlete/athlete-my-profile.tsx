@@ -33,6 +33,7 @@ import {
 	WeightIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { AthleteAchievementsTab } from "@/components/athlete/athlete-achievements-tab";
 import { AthleteBioEditModal } from "@/components/athlete/athlete-bio-edit-modal";
@@ -85,6 +86,7 @@ const levelColors: Record<string, string> = {
 export function AthleteMyProfile() {
 	const { data, isLoading, error } = trpc.athlete.getMyProfile.useQuery();
 	const coverPhotoQuery = trpc.athlete.getCoverPhotoUrl.useQuery();
+	const t = useTranslations("myProfile");
 
 	if (isLoading) {
 		return <AthleteMyProfileSkeleton />;
@@ -96,7 +98,7 @@ export function AthleteMyProfile() {
 				<CardContent className="py-10 text-center">
 					<AlertCircleIcon className="mx-auto size-12 text-destructive" />
 					<p className="mt-4 text-muted-foreground">
-						Error al cargar el perfil: {error.message}
+						{t("error.loadingError")} {error.message}
 					</p>
 				</CardContent>
 			</Card>
@@ -108,15 +110,12 @@ export function AthleteMyProfile() {
 			<Card>
 				<CardContent className="py-10 text-center">
 					<UserIcon className="mx-auto size-12 text-muted-foreground" />
-					<h3 className="mt-4 font-semibold text-lg">
-						No tienes un perfil de atleta
-					</h3>
+					<h3 className="mt-4 font-semibold text-lg">{t("noProfile.title")}</h3>
 					<p className="mt-2 text-muted-foreground">
-						Tu cuenta no tiene un perfil de atleta asociado. Si eres atleta,
-						contacta con tu organizacion para que te agreguen.
+						{t("noProfile.description")}
 					</p>
 					<Button asChild className="mt-4" variant="outline">
-						<Link href="/dashboard">Volver al inicio</Link>
+						<Link href="/dashboard">{t("noProfile.backToDashboard")}</Link>
 					</Button>
 				</CardContent>
 			</Card>
@@ -131,14 +130,12 @@ export function AthleteMyProfile() {
 			<Card>
 				<CardContent className="py-10 text-center">
 					<UserIcon className="mx-auto size-12 text-muted-foreground" />
-					<h3 className="mt-4 font-semibold text-lg">
-						No tienes un perfil de atleta
-					</h3>
+					<h3 className="mt-4 font-semibold text-lg">{t("noProfile.title")}</h3>
 					<p className="mt-2 text-muted-foreground">
-						Tu cuenta no tiene un perfil de atleta asociado.
+						{t("noProfile.descriptionShort")}
 					</p>
 					<Button asChild className="mt-4" variant="outline">
-						<Link href="/dashboard">Volver al inicio</Link>
+						<Link href="/dashboard">{t("noProfile.backToDashboard")}</Link>
 					</Button>
 				</CardContent>
 			</Card>
@@ -174,7 +171,7 @@ export function AthleteMyProfile() {
 							<div className="mb-2">
 								<div className="flex items-center gap-3">
 									<h1 className="font-bold text-2xl">
-										{athlete.user?.name ?? "Sin nombre"}
+										{athlete.user?.name ?? t("header.noName")}
 									</h1>
 									<Badge
 										className={cn("border-none", statusColors[athlete.status])}
@@ -195,7 +192,7 @@ export function AthleteMyProfile() {
 									{age && (
 										<div className="flex items-center gap-1">
 											<UserIcon className="size-4" />
-											<span>{age} anos</span>
+											<span>{t("header.age", { age })}</span>
 										</div>
 									)}
 									{athlete.user?.email && (
@@ -227,7 +224,7 @@ export function AthleteMyProfile() {
 									rel="noopener noreferrer"
 								>
 									<ExternalLinkIcon className="mr-2 size-4" />
-									Ver Perfil Público
+									{t("header.viewPublicProfile")}
 								</Link>
 							</Button>
 							<Button
@@ -252,7 +249,7 @@ export function AthleteMyProfile() {
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2 text-base">
 							<UsersIcon className="size-4" />
-							Mis Organizaciones
+							{t("header.myOrganizations")}
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
@@ -275,51 +272,51 @@ export function AthleteMyProfile() {
 				<TabsList className="flex-wrap">
 					<TabsTrigger value="info">
 						<UserIcon className="mr-1 size-3.5" />
-						Informacion
+						{t("tabs.info")}
 					</TabsTrigger>
 					<TabsTrigger value="physical">
 						<RulerIcon className="mr-1 size-3.5" />
-						Fisico
+						{t("tabs.physical")}
 					</TabsTrigger>
 					<TabsTrigger value="career">
 						<BriefcaseIcon className="mr-1 size-3.5" />
-						Carrera ({careerHistory?.length ?? 0})
+						{t("tabs.career")} ({careerHistory?.length ?? 0})
 					</TabsTrigger>
 					<TabsTrigger value="education">
 						<GraduationCapIcon className="mr-1 size-3.5" />
-						Educacion
+						{t("tabs.education")}
 					</TabsTrigger>
 					<TabsTrigger value="languages">
 						<GlobeIcon className="mr-1 size-3.5" />
-						Idiomas ({languages?.length ?? 0})
+						{t("tabs.languages")} ({languages?.length ?? 0})
 					</TabsTrigger>
 					<TabsTrigger value="social">
 						<Share2Icon className="mr-1 size-3.5" />
-						Redes
+						{t("tabs.social")}
 					</TabsTrigger>
 					<TabsTrigger value="medical">
 						<FileTextIcon className="mr-1 size-3.5" />
-						Medico
+						{t("tabs.medical")}
 					</TabsTrigger>
 					<TabsTrigger value="videos">
 						<VideoIcon className="mr-1 size-3.5" />
-						Videos ({athlete.youtubeVideos?.length ?? 0})
+						{t("tabs.videos")} ({athlete.youtubeVideos?.length ?? 0})
 					</TabsTrigger>
 					<TabsTrigger value="references">
 						<UserCheckIcon className="mr-1 size-3.5" />
-						Referencias
+						{t("tabs.references")}
 					</TabsTrigger>
 					<TabsTrigger value="sponsors">
 						<SparklesIcon className="mr-1 size-3.5" />
-						Sponsors
+						{t("tabs.sponsors")}
 					</TabsTrigger>
 					<TabsTrigger value="achievements">
 						<TrophyIcon className="mr-1 size-3.5" />
-						Palmares
+						{t("tabs.achievements")}
 					</TabsTrigger>
 					<TabsTrigger value="public">
 						<GlobeIcon className="mr-1 size-3.5" />
-						Perfil Publico
+						{t("tabs.publicProfile")}
 					</TabsTrigger>
 				</TabsList>
 
@@ -331,7 +328,7 @@ export function AthleteMyProfile() {
 							<CardHeader className="flex flex-row items-center justify-between space-y-0">
 								<CardTitle className="flex items-center gap-2 text-base">
 									<PhoneIcon className="size-4" />
-									Contacto
+									{t("info.contact.title")}
 								</CardTitle>
 								<Button
 									variant="ghost"
@@ -352,19 +349,23 @@ export function AthleteMyProfile() {
 							<CardContent className="space-y-3">
 								{athlete.phone && (
 									<div>
-										<p className="text-muted-foreground text-xs">Telefono</p>
+										<p className="text-muted-foreground text-xs">
+											{t("info.contact.phone")}
+										</p>
 										<p className="font-medium">{athlete.phone}</p>
 									</div>
 								)}
 								{athlete.user?.email && (
 									<div>
-										<p className="text-muted-foreground text-xs">Email</p>
+										<p className="text-muted-foreground text-xs">
+											{t("info.contact.email")}
+										</p>
 										<p className="font-medium">{athlete.user.email}</p>
 									</div>
 								)}
 								{!athlete.phone && !athlete.user?.email && (
 									<p className="text-muted-foreground text-sm">
-										No hay informacion de contacto
+										{t("info.contact.empty")}
 									</p>
 								)}
 							</CardContent>
@@ -375,7 +376,7 @@ export function AthleteMyProfile() {
 							<CardHeader className="flex flex-row items-center justify-between space-y-0">
 								<CardTitle className="flex items-center gap-2 text-base">
 									<HomeIcon className="size-4" />
-									Residencia
+									{t("info.residence.title")}
 								</CardTitle>
 								<Button
 									variant="ghost"
@@ -394,7 +395,9 @@ export function AthleteMyProfile() {
 							<CardContent className="space-y-3">
 								{(athlete.residenceCity || athlete.residenceCountry) && (
 									<div>
-										<p className="text-muted-foreground text-xs">Ubicacion</p>
+										<p className="text-muted-foreground text-xs">
+											{t("info.residence.location")}
+										</p>
 										<p className="font-medium">
 											{[athlete.residenceCity, athlete.residenceCountry]
 												.filter(Boolean)
@@ -405,7 +408,7 @@ export function AthleteMyProfile() {
 								{athlete.nationality && (
 									<div>
 										<p className="text-muted-foreground text-xs">
-											Nacionalidad
+											{t("info.residence.nationality")}
 										</p>
 										<p className="font-medium">{athlete.nationality}</p>
 									</div>
@@ -414,7 +417,7 @@ export function AthleteMyProfile() {
 									!athlete.residenceCountry &&
 									!athlete.nationality && (
 										<p className="text-muted-foreground text-sm">
-											No hay informacion de residencia
+											{t("info.residence.empty")}
 										</p>
 									)}
 							</CardContent>
@@ -425,7 +428,7 @@ export function AthleteMyProfile() {
 							<CardHeader className="flex flex-row items-center justify-between space-y-0">
 								<CardTitle className="flex items-center gap-2 text-base">
 									<UsersIcon className="size-4" />
-									Contacto de Padre/Tutor
+									{t("info.parent.title")}
 								</CardTitle>
 								<Button
 									variant="ghost"
@@ -447,13 +450,15 @@ export function AthleteMyProfile() {
 								{athlete.parentName ? (
 									<>
 										<div>
-											<p className="text-muted-foreground text-xs">Nombre</p>
+											<p className="text-muted-foreground text-xs">
+												{t("info.parent.name")}
+											</p>
 											<p className="font-medium">{athlete.parentName}</p>
 										</div>
 										{athlete.parentRelationship && (
 											<div>
 												<p className="text-muted-foreground text-xs">
-													Relacion
+													{t("info.parent.relationship")}
 												</p>
 												<p className="font-medium capitalize">
 													{athlete.parentRelationship}
@@ -477,7 +482,7 @@ export function AthleteMyProfile() {
 									</>
 								) : (
 									<p className="text-muted-foreground text-sm">
-										No hay informacion de padre/tutor
+										{t("info.parent.empty")}
 									</p>
 								)}
 							</CardContent>
@@ -488,7 +493,7 @@ export function AthleteMyProfile() {
 							<CardHeader className="flex flex-row items-center justify-between space-y-0">
 								<CardTitle className="flex items-center gap-2 text-base">
 									<HeartPulseIcon className="size-4" />
-									Salud y Alimentacion
+									{t("info.health.title")}
 								</CardTitle>
 								<Button
 									variant="ghost"
@@ -507,14 +512,16 @@ export function AthleteMyProfile() {
 								{athlete.dietaryRestrictions && (
 									<div>
 										<p className="text-muted-foreground text-xs">
-											Restricciones Alimenticias
+											{t("info.health.dietaryRestrictions")}
 										</p>
 										<p className="font-medium">{athlete.dietaryRestrictions}</p>
 									</div>
 								)}
 								{athlete.allergies && (
 									<div>
-										<p className="text-muted-foreground text-xs">Alergias</p>
+										<p className="text-muted-foreground text-xs">
+											{t("info.health.allergies")}
+										</p>
 										<p className="font-medium text-red-600">
 											{athlete.allergies}
 										</p>
@@ -522,7 +529,7 @@ export function AthleteMyProfile() {
 								)}
 								{!athlete.dietaryRestrictions && !athlete.allergies && (
 									<p className="text-muted-foreground text-sm">
-										No hay restricciones ni alergias registradas
+										{t("info.health.empty")}
 									</p>
 								)}
 							</CardContent>
@@ -560,7 +567,7 @@ export function AthleteMyProfile() {
 				<TabsContent value="physical">
 					<Card>
 						<CardHeader className="flex flex-row items-center justify-between">
-							<CardTitle>Atributos Fisicos</CardTitle>
+							<CardTitle>{t("physical.title")}</CardTitle>
 							<Button
 								variant="ghost"
 								size="icon"
@@ -584,7 +591,9 @@ export function AthleteMyProfile() {
 										<RulerIcon className="size-6 text-primary" />
 									</div>
 									<div>
-										<p className="text-muted-foreground text-xs">Altura</p>
+										<p className="text-muted-foreground text-xs">
+											{t("physical.height")}
+										</p>
 										<p className="font-semibold text-lg">
 											{athlete.height ? `${athlete.height} cm` : "-"}
 										</p>
@@ -595,7 +604,9 @@ export function AthleteMyProfile() {
 										<WeightIcon className="size-6 text-primary" />
 									</div>
 									<div>
-										<p className="text-muted-foreground text-xs">Peso</p>
+										<p className="text-muted-foreground text-xs">
+											{t("physical.weight")}
+										</p>
 										<p className="font-semibold text-lg">
 											{athlete.weight
 												? `${(athlete.weight / 1000).toFixed(1)} kg`
@@ -609,7 +620,7 @@ export function AthleteMyProfile() {
 									</div>
 									<div>
 										<p className="text-muted-foreground text-xs">
-											Pie Dominante
+											{t("physical.dominantFoot")}
 										</p>
 										<p className="font-semibold text-lg">
 											{athlete.dominantFoot
@@ -624,7 +635,7 @@ export function AthleteMyProfile() {
 									</div>
 									<div>
 										<p className="text-muted-foreground text-xs">
-											Mano Dominante
+											{t("physical.dominantHand")}
 										</p>
 										<p className="font-semibold text-lg">
 											{athlete.dominantHand
@@ -641,10 +652,12 @@ export function AthleteMyProfile() {
 									</div>
 									<div>
 										<p className="text-muted-foreground text-xs">
-											Anos de Experiencia
+											{t("physical.yearsOfExperience")}
 										</p>
 										<p className="font-semibold text-lg">
-											{athlete.yearsOfExperience} anos
+											{t("physical.yearsValue", {
+												years: athlete.yearsOfExperience,
+											})}
 										</p>
 									</div>
 								</div>
@@ -657,7 +670,7 @@ export function AthleteMyProfile() {
 				<TabsContent value="career">
 					<Card>
 						<CardHeader className="flex flex-row items-center justify-between">
-							<CardTitle>Historial de Carrera</CardTitle>
+							<CardTitle>{t("career.title")}</CardTitle>
 							<Button
 								size="sm"
 								onClick={() => {
@@ -667,7 +680,7 @@ export function AthleteMyProfile() {
 								}}
 							>
 								<PlusIcon className="mr-2 size-4" />
-								Agregar
+								{t("career.add")}
 							</Button>
 						</CardHeader>
 						<CardContent>
@@ -675,7 +688,7 @@ export function AthleteMyProfile() {
 								<div className="py-10 text-center">
 									<BriefcaseIcon className="mx-auto size-12 text-muted-foreground/50" />
 									<p className="mt-3 text-muted-foreground">
-										No hay historial de carrera registrado
+										{t("career.empty")}
 									</p>
 								</div>
 							) : (
@@ -692,7 +705,9 @@ export function AthleteMyProfile() {
 													<div className="flex size-8 items-center justify-center rounded-full bg-primary/10">
 														<BriefcaseIcon className="size-4 text-primary" />
 													</div>
-													<h3 className="font-semibold">Clubes y Equipos</h3>
+													<h3 className="font-semibold">
+														{t("career.clubsTeams")}
+													</h3>
 													<Badge variant="secondary" className="ml-auto">
 														{clubs.length}
 													</Badge>
@@ -723,7 +738,7 @@ export function AthleteMyProfile() {
 														<FlagIcon className="size-4 text-yellow-600" />
 													</div>
 													<h3 className="font-semibold">
-														Selecciones Nacionales
+														{t("career.nationalTeams")}
 													</h3>
 													<Badge
 														variant="secondary"
@@ -804,15 +819,15 @@ export function AthleteMyProfile() {
 												)}
 											>
 												{lang.level === LanguageProficiencyLevel.native &&
-													"Nativo"}
+													t("languages.levels.native")}
 												{lang.level === LanguageProficiencyLevel.fluent &&
-													"Fluido"}
+													t("languages.levels.fluent")}
 												{lang.level === LanguageProficiencyLevel.advanced &&
-													"Avanzado"}
+													t("languages.levels.advanced")}
 												{lang.level === LanguageProficiencyLevel.intermediate &&
-													"Intermedio"}
+													t("languages.levels.intermediate")}
 												{lang.level === LanguageProficiencyLevel.basic &&
-													"Básico"}
+													t("languages.levels.basic")}
 											</Badge>
 										</div>
 									))}
@@ -821,7 +836,7 @@ export function AthleteMyProfile() {
 								<div className="py-10 text-center">
 									<GlobeIcon className="mx-auto size-12 text-muted-foreground/50" />
 									<p className="mt-3 text-muted-foreground">
-										No has agregado ningún idioma
+										{t("languages.empty")}
 									</p>
 									<Button
 										variant="ghost"
@@ -946,7 +961,7 @@ export function AthleteMyProfile() {
 								<div className="py-10 text-center">
 									<Share2Icon className="mx-auto size-12 text-muted-foreground/50" />
 									<p className="mt-3 text-muted-foreground">
-										No has agregado tus redes sociales
+										{t("social.empty")}
 									</p>
 									<Button
 										variant="ghost"
@@ -1017,7 +1032,7 @@ export function AthleteMyProfile() {
 												{videoId ? (
 													<img
 														src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`}
-														alt={`Video ${index + 1}`}
+														alt={t("videos.videoAlt", { index: index + 1 })}
 														className="aspect-video w-full object-cover transition-transform group-hover:scale-105"
 													/>
 												) : (
@@ -1038,7 +1053,7 @@ export function AthleteMyProfile() {
 								<div className="py-10 text-center">
 									<VideoIcon className="mx-auto size-12 text-muted-foreground/50" />
 									<p className="mt-3 text-muted-foreground">
-										No hay videos destacados
+										{t("videos.empty")}
 									</p>
 									<Button
 										variant="ghost"
@@ -1118,6 +1133,7 @@ function CareerEntryCard({
 	athleteId: string;
 	isNationalTeam?: boolean;
 }) {
+	const t = useTranslations("myProfile");
 	return (
 		<div className="relative pb-6 last:pb-0">
 			<div
@@ -1155,7 +1171,7 @@ function CareerEntryCard({
 							{" — "}
 							{entry.endDate
 								? format(new Date(entry.endDate), "MMM yyyy")
-								: "Presente"}
+								: t("career.present")}
 						</Badge>
 						<Button
 							variant="ghost"
@@ -1201,6 +1217,7 @@ function CareerEntryCard({
 
 // Education Tab Content with list of entries
 function EducationTabContent() {
+	const t = useTranslations("myProfile");
 	const { data: educationList, isLoading } =
 		trpc.athlete.listMyEducation.useQuery();
 
@@ -1230,9 +1247,7 @@ function EducationTabContent() {
 				) : !educationList || educationList.length === 0 ? (
 					<div className="py-10 text-center">
 						<GraduationCapIcon className="mx-auto size-12 text-muted-foreground/50" />
-						<p className="mt-3 text-muted-foreground">
-							No hay historial educativo registrado
-						</p>
+						<p className="mt-3 text-muted-foreground">{t("education.empty")}</p>
 						<Button
 							size="sm"
 							className="mt-4"
@@ -1272,6 +1287,7 @@ interface EducationEntryProps {
 }
 
 function EducationEntryCard({ entry }: EducationEntryProps) {
+	const t = useTranslations("myProfile");
 	return (
 		<div className="group rounded-lg border bg-card p-4 transition-shadow hover:shadow-sm">
 			<div className="flex flex-wrap items-start justify-between gap-2">
@@ -1294,7 +1310,7 @@ function EducationEntryCard({ entry }: EducationEntryProps) {
 					)}
 					{entry.academicYear && (
 						<p className="text-muted-foreground text-xs">
-							Ano academico: {entry.academicYear}
+							{t("education.academicYear")} {entry.academicYear}
 						</p>
 					)}
 				</div>
@@ -1305,7 +1321,7 @@ function EducationEntryCard({ entry }: EducationEntryProps) {
 							: "?"}
 						{" — "}
 						{entry.isCurrent
-							? "Presente"
+							? t("education.present")
 							: entry.endDate
 								? format(new Date(entry.endDate), "MMM yyyy")
 								: "?"}
@@ -1339,7 +1355,7 @@ function EducationEntryCard({ entry }: EducationEntryProps) {
 
 			{entry.gpa && (
 				<div className="mt-3 flex items-center gap-2 text-sm">
-					<span className="text-muted-foreground">GPA:</span>
+					<span className="text-muted-foreground">{t("education.gpa")}</span>
 					<span className="font-medium">{entry.gpa}</span>
 				</div>
 			)}

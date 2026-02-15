@@ -3,6 +3,7 @@
 import NiceModal from "@ebay/nice-modal-react";
 import { format } from "date-fns";
 import { CalendarIcon, GraduationCapIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { z } from "zod/v4";
 import {
@@ -35,7 +36,7 @@ import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
 const educationSchema = z.object({
-	institution: z.string().min(2, "La institucion es requerida").max(200),
+	institution: z.string().min(2).max(200),
 	degree: z.string().max(100).optional().nullable(),
 	fieldOfStudy: z.string().max(100).optional().nullable(),
 	academicYear: z.string().max(50).optional().nullable(),
@@ -68,6 +69,7 @@ interface AthleteEducationEditModalProps {
 export const AthleteEducationEditModal = NiceModal.create(
 	({ entry }: AthleteEducationEditModalProps) => {
 		const modal = useEnhancedModal();
+		const t = useTranslations("myProfile");
 		const utils = trpc.useUtils();
 		const isEditing = !!entry;
 
@@ -91,7 +93,7 @@ export const AthleteEducationEditModal = NiceModal.create(
 
 		const addMutation = trpc.athlete.addEducation.useMutation({
 			onSuccess: () => {
-				toast.success("Educacion agregada");
+				toast.success(t("educationModal.addSuccess"));
 				utils.athlete.listMyEducation.invalidate();
 				utils.athlete.getMyProfile.invalidate();
 				modal.handleClose();
@@ -103,7 +105,7 @@ export const AthleteEducationEditModal = NiceModal.create(
 
 		const updateMutation = trpc.athlete.updateEducation.useMutation({
 			onSuccess: () => {
-				toast.success("Educacion actualizada");
+				toast.success(t("educationModal.updateSuccess"));
 				utils.athlete.listMyEducation.invalidate();
 				utils.athlete.getMyProfile.invalidate();
 				modal.handleClose();
@@ -115,7 +117,7 @@ export const AthleteEducationEditModal = NiceModal.create(
 
 		const deleteMutation = trpc.athlete.deleteEducation.useMutation({
 			onSuccess: () => {
-				toast.success("Educacion eliminada");
+				toast.success(t("educationModal.deleteSuccess"));
 				utils.athlete.listMyEducation.invalidate();
 				utils.athlete.getMyProfile.invalidate();
 				modal.handleClose();
@@ -148,7 +150,7 @@ export const AthleteEducationEditModal = NiceModal.create(
 		});
 
 		const handleDelete = () => {
-			if (entry && confirm("Eliminar esta entrada educativa?")) {
+			if (entry && confirm(t("educationModal.deleteConfirm"))) {
 				deleteMutation.mutate({ id: entry.id });
 			}
 		};
@@ -162,14 +164,18 @@ export const AthleteEducationEditModal = NiceModal.create(
 			<ProfileEditSheet
 				open={modal.visible}
 				onClose={modal.handleClose}
-				title={isEditing ? "Editar Educacion" : "Agregar Educacion"}
-				subtitle="Registra tu historial educativo"
+				title={
+					isEditing
+						? t("educationModal.editTitle")
+						: t("educationModal.addTitle")
+				}
+				subtitle={t("educationModal.subtitle")}
 				icon={<GraduationCapIcon className="size-5" />}
 				accentColor="violet"
 				form={form}
 				onSubmit={onSubmit}
 				isPending={isPending}
-				submitLabel={isEditing ? "Guardar" : "Agregar"}
+				submitLabel={isEditing ? t("common.save") : t("common.add")}
 				maxWidth="lg"
 				onAnimationEndCapture={modal.handleAnimationEndCapture}
 				customFooter={
@@ -182,7 +188,7 @@ export const AthleteEducationEditModal = NiceModal.create(
 								onClick={handleDelete}
 								disabled={isPending}
 							>
-								Eliminar
+								{t("common.delete")}
 							</Button>
 						) : (
 							<div />
@@ -194,27 +200,27 @@ export const AthleteEducationEditModal = NiceModal.create(
 								onClick={modal.handleClose}
 								disabled={isPending}
 							>
-								Cancelar
+								{t("common.cancel")}
 							</Button>
 							<Button type="submit" disabled={isPending} loading={isPending}>
-								{isEditing ? "Guardar" : "Agregar"}
+								{isEditing ? t("common.save") : t("common.add")}
 							</Button>
 						</div>
 					</div>
 				}
 			>
 				<div className="space-y-6">
-					<ProfileEditSection title="Institucion">
+					<ProfileEditSection title={t("educationModal.institutionSection")}>
 						<FormField
 							control={form.control}
 							name="institution"
 							render={({ field }) => (
 								<FormItem asChild>
 									<Field>
-										<FormLabel>Nombre de la Institucion</FormLabel>
+										<FormLabel>{t("educationModal.institutionName")}</FormLabel>
 										<FormControl>
 											<Input
-												placeholder="Universidad de Buenos Aires, Colegio Nacional..."
+												placeholder={t("educationModal.institutionPlaceholder")}
 												{...field}
 											/>
 										</FormControl>
@@ -231,10 +237,10 @@ export const AthleteEducationEditModal = NiceModal.create(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Titulo / Grado</FormLabel>
+											<FormLabel>{t("educationModal.degree")}</FormLabel>
 											<FormControl>
 												<Input
-													placeholder="Licenciatura, Bachiller, Tecnico..."
+													placeholder={t("educationModal.degreePlaceholder")}
 													{...field}
 													value={field.value ?? ""}
 												/>
@@ -251,10 +257,12 @@ export const AthleteEducationEditModal = NiceModal.create(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Campo de Estudio</FormLabel>
+											<FormLabel>{t("educationModal.fieldOfStudy")}</FormLabel>
 											<FormControl>
 												<Input
-													placeholder="Administracion, Ciencias, Deportes..."
+													placeholder={t(
+														"educationModal.fieldOfStudyPlaceholder",
+													)}
 													{...field}
 													value={field.value ?? ""}
 												/>
@@ -273,10 +281,12 @@ export const AthleteEducationEditModal = NiceModal.create(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Ano Academico</FormLabel>
+											<FormLabel>{t("educationModal.academicYear")}</FormLabel>
 											<FormControl>
 												<Input
-													placeholder="5to ano, Freshman, 2do semestre..."
+													placeholder={t(
+														"educationModal.academicYearPlaceholder",
+													)}
 													{...field}
 													value={field.value ?? ""}
 												/>
@@ -293,10 +303,10 @@ export const AthleteEducationEditModal = NiceModal.create(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Promedio (GPA)</FormLabel>
+											<FormLabel>{t("educationModal.gpa")}</FormLabel>
 											<FormControl>
 												<Input
-													placeholder="3.5, 8.5..."
+													placeholder={t("educationModal.gpaPlaceholder")}
 													{...field}
 													value={field.value ?? ""}
 												/>
@@ -309,7 +319,7 @@ export const AthleteEducationEditModal = NiceModal.create(
 						</ProfileEditGrid>
 					</ProfileEditSection>
 
-					<ProfileEditSection title="Periodo">
+					<ProfileEditSection title={t("educationModal.periodSection")}>
 						<FormField
 							control={form.control}
 							name="isCurrent"
@@ -322,7 +332,7 @@ export const AthleteEducationEditModal = NiceModal.create(
 										/>
 									</FormControl>
 									<div className="space-y-1 leading-none">
-										<FormLabel>Actualmente estudiando aqui</FormLabel>
+										<FormLabel>{t("educationModal.isCurrent")}</FormLabel>
 										<FormDescription>
 											Marca esta opcion si aun estas estudiando en esta
 											institucion
@@ -339,7 +349,7 @@ export const AthleteEducationEditModal = NiceModal.create(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Fecha de Inicio</FormLabel>
+											<FormLabel>{t("educationModal.startDate")}</FormLabel>
 											<Popover>
 												<PopoverTrigger asChild>
 													<FormControl>
@@ -353,7 +363,7 @@ export const AthleteEducationEditModal = NiceModal.create(
 															<CalendarIcon className="mr-2 size-4" />
 															{field.value
 																? format(field.value, "MMM yyyy")
-																: "Seleccionar"}
+																: t("common.select")}
 														</Button>
 													</FormControl>
 												</PopoverTrigger>
@@ -382,7 +392,7 @@ export const AthleteEducationEditModal = NiceModal.create(
 									render={({ field }) => (
 										<FormItem asChild>
 											<Field>
-												<FormLabel>Fecha de Fin</FormLabel>
+												<FormLabel>{t("educationModal.endDate")}</FormLabel>
 												<Popover>
 													<PopoverTrigger asChild>
 														<FormControl>
@@ -396,7 +406,7 @@ export const AthleteEducationEditModal = NiceModal.create(
 																<CalendarIcon className="mr-2 size-4" />
 																{field.value
 																	? format(field.value, "MMM yyyy")
-																	: "Seleccionar"}
+																	: t("common.select")}
 															</Button>
 														</FormControl>
 													</PopoverTrigger>
@@ -427,7 +437,9 @@ export const AthleteEducationEditModal = NiceModal.create(
 									render={({ field }) => (
 										<FormItem asChild>
 											<Field>
-												<FormLabel>Graduacion Estimada</FormLabel>
+												<FormLabel>
+													{t("educationModal.expectedGraduation")}
+												</FormLabel>
 												<Popover>
 													<PopoverTrigger asChild>
 														<FormControl>
@@ -441,7 +453,7 @@ export const AthleteEducationEditModal = NiceModal.create(
 																<CalendarIcon className="mr-2 size-4" />
 																{field.value
 																	? format(field.value, "MMM yyyy")
-																	: "Seleccionar"}
+																	: t("common.select")}
 															</Button>
 														</FormControl>
 													</PopoverTrigger>
@@ -456,7 +468,7 @@ export const AthleteEducationEditModal = NiceModal.create(
 													</PopoverContent>
 												</Popover>
 												<FormDescription>
-													Fecha estimada de graduacion
+													{t("educationModal.expectedGraduationDescription")}
 												</FormDescription>
 												<FormMessage />
 											</Field>
@@ -467,17 +479,17 @@ export const AthleteEducationEditModal = NiceModal.create(
 						</ProfileEditGrid>
 					</ProfileEditSection>
 
-					<ProfileEditSection title="Notas">
+					<ProfileEditSection title={t("educationModal.notesSection")}>
 						<FormField
 							control={form.control}
 							name="notes"
 							render={({ field }) => (
 								<FormItem asChild>
 									<Field>
-										<FormLabel>Notas Adicionales</FormLabel>
+										<FormLabel>{t("educationModal.notes")}</FormLabel>
 										<FormControl>
 											<Textarea
-												placeholder="Becas, logros academicos, actividades extracurriculares..."
+												placeholder={t("educationModal.notesPlaceholder")}
 												className="resize-none"
 												rows={3}
 												{...field}

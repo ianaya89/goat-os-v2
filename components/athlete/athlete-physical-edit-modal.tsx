@@ -2,6 +2,7 @@
 
 import NiceModal from "@ebay/nice-modal-react";
 import { RulerIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { z } from "zod/v4";
 import {
@@ -56,6 +57,7 @@ export const AthletePhysicalEditModal = NiceModal.create(
 		yearsOfExperience,
 	}: AthletePhysicalEditModalProps) => {
 		const modal = useEnhancedModal();
+		const t = useTranslations("myProfile");
 		const utils = trpc.useUtils();
 
 		const form = useZodForm({
@@ -71,12 +73,12 @@ export const AthletePhysicalEditModal = NiceModal.create(
 
 		const updateMutation = trpc.athlete.updateMyProfile.useMutation({
 			onSuccess: () => {
-				toast.success("Atributos fisicos actualizados");
+				toast.success(t("physicalModal.success"));
 				utils.athlete.getMyProfile.invalidate();
 				modal.handleClose();
 			},
 			onError: (error) => {
-				toast.error(error.message || "Error al actualizar");
+				toast.error(error.message || t("common.updateError"));
 			},
 		});
 
@@ -97,8 +99,8 @@ export const AthletePhysicalEditModal = NiceModal.create(
 			<ProfileEditSheet
 				open={modal.visible}
 				onClose={modal.handleClose}
-				title="Atributos Fisicos"
-				subtitle="Tus medidas y caracteristicas deportivas"
+				title={t("physicalModal.title")}
+				subtitle={t("physicalModal.subtitle")}
 				icon={<RulerIcon className="size-5" />}
 				accentColor="primary"
 				form={form}
@@ -108,7 +110,7 @@ export const AthletePhysicalEditModal = NiceModal.create(
 				onAnimationEndCapture={modal.handleAnimationEndCapture}
 			>
 				<div className="space-y-6">
-					<ProfileEditSection title="Medidas">
+					<ProfileEditSection title={t("physicalModal.measurementsSection")}>
 						<ProfileEditGrid cols={2}>
 							<FormField
 								control={form.control}
@@ -116,11 +118,11 @@ export const AthletePhysicalEditModal = NiceModal.create(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Altura (cm)</FormLabel>
+											<FormLabel>{t("physicalModal.height")}</FormLabel>
 											<FormControl>
 												<Input
 													type="number"
-													placeholder="175"
+													placeholder={t("physicalModal.heightPlaceholder")}
 													value={
 														typeof field.value === "number" ? field.value : ""
 													}
@@ -148,12 +150,12 @@ export const AthletePhysicalEditModal = NiceModal.create(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Peso (kg)</FormLabel>
+											<FormLabel>{t("physicalModal.weight")}</FormLabel>
 											<FormControl>
 												<Input
 													type="number"
 													step="0.1"
-													placeholder="70"
+													placeholder={t("physicalModal.weightPlaceholder")}
 													value={
 														typeof field.value === "number"
 															? field.value / 1000
@@ -179,7 +181,7 @@ export const AthletePhysicalEditModal = NiceModal.create(
 						</ProfileEditGrid>
 					</ProfileEditSection>
 
-					<ProfileEditSection title="Dominancia">
+					<ProfileEditSection title={t("physicalModal.dominanceSection")}>
 						<ProfileEditGrid cols={2}>
 							<FormField
 								control={form.control}
@@ -187,7 +189,7 @@ export const AthletePhysicalEditModal = NiceModal.create(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Pie Dominante</FormLabel>
+											<FormLabel>{t("physicalModal.dominantFoot")}</FormLabel>
 											<Select
 												onValueChange={field.onChange}
 												value={field.value ?? ""}
@@ -215,7 +217,7 @@ export const AthletePhysicalEditModal = NiceModal.create(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>Mano Dominante</FormLabel>
+											<FormLabel>{t("physicalModal.dominantHand")}</FormLabel>
 											<Select
 												onValueChange={field.onChange}
 												value={field.value ?? ""}
@@ -239,18 +241,20 @@ export const AthletePhysicalEditModal = NiceModal.create(
 						</ProfileEditGrid>
 					</ProfileEditSection>
 
-					<ProfileEditSection title="Experiencia">
+					<ProfileEditSection title={t("physicalModal.experienceSection")}>
 						<FormField
 							control={form.control}
 							name="yearsOfExperience"
 							render={({ field }) => (
 								<FormItem asChild>
 									<Field>
-										<FormLabel>Anos de Experiencia</FormLabel>
+										<FormLabel>
+											{t("physicalModal.yearsOfExperience")}
+										</FormLabel>
 										<FormControl>
 											<Input
 												type="number"
-												placeholder="5"
+												placeholder={t("physicalModal.yearsPlaceholder")}
 												value={
 													typeof field.value === "number" ? field.value : ""
 												}
@@ -265,7 +269,7 @@ export const AthletePhysicalEditModal = NiceModal.create(
 											/>
 										</FormControl>
 										<FormDescription>
-											Tiempo que llevas practicando tu deporte
+											{t("physicalModal.yearsDescription")}
 										</FormDescription>
 										<FormMessage />
 									</Field>

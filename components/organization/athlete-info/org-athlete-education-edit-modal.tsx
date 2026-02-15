@@ -365,14 +365,14 @@ export const OrgAthleteEducationEditModal = NiceModal.create(
 														<Button
 															variant="outline"
 															className={cn(
-																"w-full justify-start text-left font-normal",
+																"w-full pl-3 text-left font-normal",
 																!field.value && "text-muted-foreground",
 															)}
 														>
-															<CalendarIcon className="mr-2 size-4" />
 															{field.value
 																? format(field.value, "MMM yyyy")
 																: t("editForm.educationSelectDate")}
+															<CalendarIcon className="ml-auto size-4 opacity-50" />
 														</Button>
 													</FormControl>
 												</PopoverTrigger>
@@ -408,14 +408,14 @@ export const OrgAthleteEducationEditModal = NiceModal.create(
 															<Button
 																variant="outline"
 																className={cn(
-																	"w-full justify-start text-left font-normal",
+																	"w-full pl-3 text-left font-normal",
 																	!field.value && "text-muted-foreground",
 																)}
 															>
-																<CalendarIcon className="mr-2 size-4" />
 																{field.value
 																	? format(field.value, "MMM yyyy")
 																	: t("editForm.educationSelectDate")}
+																<CalendarIcon className="ml-auto size-4 opacity-50" />
 															</Button>
 														</FormControl>
 													</PopoverTrigger>
@@ -455,14 +455,14 @@ export const OrgAthleteEducationEditModal = NiceModal.create(
 															<Button
 																variant="outline"
 																className={cn(
-																	"w-full justify-start text-left font-normal",
+																	"w-full pl-3 text-left font-normal",
 																	!field.value && "text-muted-foreground",
 																)}
 															>
-																<CalendarIcon className="mr-2 size-4" />
 																{field.value
 																	? format(field.value, "MMM yyyy")
 																	: t("editForm.educationSelectDate")}
+																<CalendarIcon className="ml-auto size-4 opacity-50" />
 															</Button>
 														</FormControl>
 													</PopoverTrigger>

@@ -237,11 +237,11 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 			defaultValues: isEditing
 				? {
 						id: payment.id,
-						amount: payment.amount,
+						amount: payment.amount / 100,
 						status: payment.status as TrainingPaymentStatus,
 						paymentMethod:
 							(payment.paymentMethod as TrainingPaymentMethod) ?? null,
-						paidAmount: payment.paidAmount,
+						paidAmount: payment.paidAmount / 100,
 						paymentDate: payment.paymentDate ?? undefined,
 						receiptNumber: payment.receiptNumber ?? "",
 						description: payment.description ?? "",
@@ -379,8 +379,8 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 			if (sessionServicePriceData?.price && !isEditing) {
 				const currentAmount = form.getValues("amount");
 				if (currentAmount === 0) {
-					form.setValue("amount", sessionServicePriceData.price);
-					form.setValue("paidAmount", sessionServicePriceData.price);
+					form.setValue("amount", sessionServicePriceData.price / 100);
+					form.setValue("paidAmount", sessionServicePriceData.price / 100);
 				}
 			}
 		}, [sessionServicePriceData, isEditing, form]);
@@ -390,8 +390,8 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 			if (directServicePriceData?.price && !primarySessionId && !isEditing) {
 				const currentAmount = form.getValues("amount");
 				if (currentAmount === 0) {
-					form.setValue("amount", directServicePriceData.price);
-					form.setValue("paidAmount", directServicePriceData.price);
+					form.setValue("amount", directServicePriceData.price / 100);
+					form.setValue("paidAmount", directServicePriceData.price / 100);
 				}
 			}
 		}, [directServicePriceData, primarySessionId, isEditing, form]);
@@ -402,16 +402,51 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 			: directServicePriceData;
 
 		const onSubmit = form.handleSubmit((data) => {
+			const transformedData = {
+				...data,
+				amount: Math.round((data.amount ?? 0) * 100),
+				paidAmount: Math.round((data.paidAmount ?? 0) * 100),
+			};
 			if (isEditing) {
 				updatePaymentMutation.mutate(
-					data as Parameters<typeof updatePaymentMutation.mutate>[0],
+					transformedData as Parameters<typeof updatePaymentMutation.mutate>[0],
 				);
 			} else {
 				createPaymentMutation.mutate(
-					data as Parameters<typeof createPaymentMutation.mutate>[0],
+					transformedData as Parameters<typeof createPaymentMutation.mutate>[0],
 				);
 			}
 		});
+
+		// Reset form and local state when modal opens for creation
+		const prevVisibleRef = React.useRef(false);
+		React.useEffect(() => {
+			if (modal.visible && !prevVisibleRef.current && !isEditing) {
+				form.reset({
+					sessionId: null,
+					sessionIds: initialSessionIds,
+					athleteId: initialAthleteId,
+					serviceId: null,
+					amount: 0,
+					currency: "ARS",
+					status: TrainingPaymentStatus.paid,
+					paymentMethod: "cash",
+					paidAmount: 0,
+					discountPercentage: 0,
+					paymentDate: new Date(),
+					receiptNumber: "",
+					description: "",
+					notes: "",
+				});
+				setSelectedSessions([]);
+				setSelectedAthleteLabel(null);
+				setSelectedServiceLabel(null);
+				setSessionSearchQuery("");
+				setAthleteSearchQuery("");
+				setServiceSearchQuery("");
+			}
+			prevVisibleRef.current = modal.visible;
+		}, [modal.visible, isEditing, form, initialSessionIds, initialAthleteId]);
 
 		const isPending =
 			createPaymentMutation.isPending || updatePaymentMutation.isPending;
@@ -922,11 +957,11 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>{t("form.amountCents")}</FormLabel>
+											<FormLabel>{t("form.amount")}</FormLabel>
 											<FormControl>
 												<Input
 													type="number"
-													placeholder="10000"
+													placeholder="100"
 													{...field}
 													onChange={(e) =>
 														field.onChange(Number(e.target.value))
@@ -957,7 +992,7 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 								render={({ field }) => (
 									<FormItem asChild>
 										<Field>
-											<FormLabel>{t("form.paidAmountCents")}</FormLabel>
+											<FormLabel>{t("form.paidAmount")}</FormLabel>
 											<FormControl>
 												<Input
 													type="number"
@@ -1089,13 +1124,18 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 																)
 															: ""
 													}
-													onChange={(e) =>
-														field.onChange(
-															e.target.value
-																? new Date(e.target.value)
-																: undefined,
-														)
-													}
+													onChange={(e) => {
+														if (e.target.value) {
+															const parts = e.target.value
+																.split("-")
+																.map(Number);
+															field.onChange(
+																new Date(parts[0]!, parts[1]! - 1, parts[2]),
+															);
+														} else {
+															field.onChange(undefined);
+														}
+													}}
 												/>
 											</FormControl>
 											<FormMessage />

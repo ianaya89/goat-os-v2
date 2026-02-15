@@ -11,6 +11,7 @@ import {
 	ProfileEditSection,
 	ProfileEditSheet,
 } from "@/components/athlete/profile-edit-sheet";
+import { InstitutionSelector } from "@/components/shared/institution-selector";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Field } from "@/components/ui/field";
@@ -35,7 +36,6 @@ import { useZodForm } from "@/hooks/use-zod-form";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
-// TODO: Implement club/nationalTeam selectors instead of text inputs
 const careerHistorySchema = z.object({
 	clubId: z.string().uuid().optional().nullable(),
 	nationalTeamId: z.string().uuid().optional().nullable(),
@@ -166,7 +166,6 @@ export const AddCareerHistoryModal =
 					onAnimationEndCapture={modal.handleAnimationEndCapture}
 				>
 					<div className="space-y-6">
-						{/* TODO: Implement club/nationalTeam selectors */}
 						<Tabs
 							defaultValue={isNationalTeam ? "national" : "club"}
 							onValueChange={handleTabChange}
@@ -183,29 +182,48 @@ export const AddCareerHistoryModal =
 							</TabsList>
 
 							<TabsContent value="club" className="mt-4">
-								<div className="rounded-lg border border-dashed p-4 text-center text-muted-foreground text-sm">
-									{t("career.selectClubPlaceholder", {
-										defaultValue:
-											"Club selector pendiente. Configura clubs en la sección de configuración.",
-									})}
-								</div>
+								<FormField
+									control={form.control}
+									name="clubId"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>{t("career.club")}</FormLabel>
+											<FormControl>
+												<InstitutionSelector
+													type="club"
+													value={field.value}
+													onChange={field.onChange}
+												/>
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
 							</TabsContent>
 
 							<TabsContent value="national" className="mt-4">
-								<div className="rounded-lg border border-dashed p-4 text-center text-muted-foreground text-sm">
-									{t("career.selectNationalTeamPlaceholder", {
-										defaultValue:
-											"Selector de selección pendiente. Configura selecciones en la sección de configuración.",
-									})}
-								</div>
+								<FormField
+									control={form.control}
+									name="nationalTeamId"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>{t("career.nationalTeam")}</FormLabel>
+											<FormControl>
+												<InstitutionSelector
+													type="nationalTeam"
+													value={field.value}
+													onChange={field.onChange}
+												/>
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
 							</TabsContent>
 						</Tabs>
 
 						{/* Period */}
-						<ProfileEditSection
-							title={t("career.period")}
-							description={t("career.endDateHint")}
-						>
+						<ProfileEditSection title={t("career.period")}>
 							<ProfileEditGrid cols={2}>
 								<FormField
 									control={form.control}
@@ -286,6 +304,9 @@ export const AddCareerHistoryModal =
 													/>
 												</PopoverContent>
 											</Popover>
+											<FormDescription>
+												{t("career.endDateHint")}
+											</FormDescription>
 											<FormMessage />
 										</FormItem>
 									)}

@@ -1,6 +1,7 @@
 "use client";
 
 import NiceModal from "@ebay/nice-modal-react";
+import { format } from "date-fns";
 import { CalendarIcon, WeightIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -10,6 +11,8 @@ import {
 	ProfileEditSection,
 	ProfileEditSheet,
 } from "@/components/athlete/profile-edit-sheet";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Field } from "@/components/ui/field";
 import {
 	FormControl,
@@ -19,9 +22,15 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { useEnhancedModal } from "@/hooks/use-enhanced-modal";
 import { useZodForm } from "@/hooks/use-zod-form";
+import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
 const bodyCompositionSchema = z.object({
@@ -169,13 +178,43 @@ export const AddPhysicalMetricsModal =
 												<CalendarIcon className="size-3.5" />
 												{t("physical.measurementDate")}
 											</FormLabel>
-											<FormControl>
-												<Input
-													type="date"
-													{...field}
-													value={field.value ?? ""}
-												/>
-											</FormControl>
+											<Popover>
+												<PopoverTrigger asChild>
+													<FormControl>
+														<Button
+															variant="outline"
+															className={cn(
+																"w-full pl-3 text-left font-normal",
+																!field.value && "text-muted-foreground",
+															)}
+														>
+															{field.value ? (
+																format(new Date(field.value), "dd MMM yyyy")
+															) : (
+																<span>{t("physical.selectDate")}</span>
+															)}
+															<CalendarIcon className="ml-auto size-4 opacity-50" />
+														</Button>
+													</FormControl>
+												</PopoverTrigger>
+												<PopoverContent className="w-auto p-0" align="start">
+													<Calendar
+														mode="single"
+														selected={
+															field.value ? new Date(field.value) : undefined
+														}
+														onSelect={(date) =>
+															field.onChange(
+																date ? date.toISOString().split("T")[0] : "",
+															)
+														}
+														disabled={(date) =>
+															date > new Date() || date < new Date("1950-01-01")
+														}
+														initialFocus
+													/>
+												</PopoverContent>
+											</Popover>
 											<FormMessage />
 										</Field>
 									</FormItem>

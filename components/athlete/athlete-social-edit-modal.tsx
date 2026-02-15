@@ -7,6 +7,7 @@ import {
 	LinkedinIcon,
 	Share2Icon,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { z } from "zod/v4";
 import {
@@ -117,6 +118,7 @@ export const AthleteSocialEditModal = NiceModal.create(
 		socialFacebook,
 	}: AthleteSocialEditModalProps) => {
 		const modal = useEnhancedModal();
+		const t = useTranslations("myProfile");
 		const utils = trpc.useUtils();
 
 		const form = useZodForm({
@@ -132,12 +134,12 @@ export const AthleteSocialEditModal = NiceModal.create(
 
 		const updateMutation = trpc.athlete.updateMyProfile.useMutation({
 			onSuccess: () => {
-				toast.success("Redes sociales actualizadas");
+				toast.success(t("socialModal.success"));
 				utils.athlete.getMyProfile.invalidate();
 				modal.handleClose();
 			},
 			onError: (error) => {
-				toast.error(error.message || "Error al actualizar");
+				toast.error(error.message || t("common.updateError"));
 			},
 		});
 
@@ -155,8 +157,8 @@ export const AthleteSocialEditModal = NiceModal.create(
 			<ProfileEditSheet
 				open={modal.visible}
 				onClose={modal.handleClose}
-				title="Redes Sociales"
-				subtitle="Conecta tus perfiles para aumentar tu visibilidad"
+				title={t("socialModal.title")}
+				subtitle={t("socialModal.subtitle")}
 				icon={<Share2Icon className="size-5" />}
 				accentColor="rose"
 				form={form}
@@ -167,8 +169,8 @@ export const AthleteSocialEditModal = NiceModal.create(
 			>
 				<div className="space-y-6">
 					<ProfileEditSection
-						title="Perfiles principales"
-						description="Agrega tu nombre de usuario sin @"
+						title={t("socialModal.mainProfiles")}
+						description={t("socialModal.mainProfilesDescription")}
 					>
 						<div className="space-y-4">
 							<FormField
@@ -196,7 +198,7 @@ export const AthleteSocialEditModal = NiceModal.create(
 													<FormLabel className="text-sm">Instagram</FormLabel>
 													<FormControl>
 														<Input
-															placeholder="tu_usuario"
+															placeholder={t("socialModal.usernamePlaceholder")}
 															className="border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
 															{...field}
 															value={field.value ?? ""}
@@ -235,7 +237,7 @@ export const AthleteSocialEditModal = NiceModal.create(
 													<FormLabel className="text-sm">X (Twitter)</FormLabel>
 													<FormControl>
 														<Input
-															placeholder="tu_usuario"
+															placeholder={t("socialModal.usernamePlaceholder")}
 															className="border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
 															{...field}
 															value={field.value ?? ""}
@@ -274,7 +276,7 @@ export const AthleteSocialEditModal = NiceModal.create(
 													<FormLabel className="text-sm">TikTok</FormLabel>
 													<FormControl>
 														<Input
-															placeholder="tu_usuario"
+															placeholder={t("socialModal.usernamePlaceholder")}
 															className="border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
 															{...field}
 															value={field.value ?? ""}
@@ -291,8 +293,8 @@ export const AthleteSocialEditModal = NiceModal.create(
 					</ProfileEditSection>
 
 					<ProfileEditSection
-						title="Perfiles profesionales"
-						description="Agrega la URL completa de tu perfil"
+						title={t("socialModal.professionalProfiles")}
+						description={t("socialModal.professionalProfilesDescription")}
 					>
 						<div className="space-y-4">
 							<FormField
@@ -320,7 +322,7 @@ export const AthleteSocialEditModal = NiceModal.create(
 													<FormLabel className="text-sm">LinkedIn</FormLabel>
 													<FormControl>
 														<Input
-															placeholder="https://linkedin.com/in/tu-perfil"
+															placeholder={t("socialModal.linkedinPlaceholder")}
 															className="border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
 															{...field}
 															value={field.value ?? ""}
@@ -359,7 +361,7 @@ export const AthleteSocialEditModal = NiceModal.create(
 													<FormLabel className="text-sm">Facebook</FormLabel>
 													<FormControl>
 														<Input
-															placeholder="https://facebook.com/tu-perfil"
+															placeholder={t("socialModal.facebookPlaceholder")}
 															className="border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
 															{...field}
 															value={field.value ?? ""}

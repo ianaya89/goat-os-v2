@@ -76,7 +76,7 @@ export const cashMovementProductItemSchema = z.object({
 // Add manual movement (adjustment)
 export const addManualMovementSchema = z.object({
 	type: z.nativeEnum(CashMovementType),
-	amount: z.number().int().min(1, "Amount must be positive"),
+	amount: z.number().min(0.01, "Amount must be positive"),
 	description: z.string().trim().min(1, "Description is required").max(500),
 	products: z.array(cashMovementProductItemSchema).optional(),
 });

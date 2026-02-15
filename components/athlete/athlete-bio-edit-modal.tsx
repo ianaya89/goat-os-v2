@@ -2,6 +2,7 @@
 
 import NiceModal from "@ebay/nice-modal-react";
 import { UserIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { z } from "zod/v4";
 import {
@@ -35,6 +36,7 @@ interface AthleteBioEditModalProps {
 export const AthleteBioEditModal = NiceModal.create(
 	({ bio }: AthleteBioEditModalProps) => {
 		const modal = useEnhancedModal();
+		const t = useTranslations("myProfile");
 		const utils = trpc.useUtils();
 
 		const form = useZodForm({
@@ -48,12 +50,12 @@ export const AthleteBioEditModal = NiceModal.create(
 
 		const updateMutation = trpc.athlete.updateMyProfile.useMutation({
 			onSuccess: () => {
-				toast.success("Biografia actualizada");
+				toast.success(t("bioModal.success"));
 				utils.athlete.getMyProfile.invalidate();
 				modal.handleClose();
 			},
 			onError: (error) => {
-				toast.error(error.message || "Error al actualizar");
+				toast.error(error.message || t("common.updateError"));
 			},
 		});
 
@@ -67,8 +69,8 @@ export const AthleteBioEditModal = NiceModal.create(
 			<ProfileEditSheet
 				open={modal.visible}
 				onClose={modal.handleClose}
-				title="Biografia"
-				subtitle="Cuenta tu historia deportiva"
+				title={t("bioModal.title")}
+				subtitle={t("bioModal.subtitle")}
 				icon={<UserIcon className="size-5" />}
 				accentColor="violet"
 				form={form}
@@ -85,10 +87,10 @@ export const AthleteBioEditModal = NiceModal.create(
 							render={({ field }) => (
 								<FormItem asChild>
 									<Field>
-										<FormLabel>Tu historia</FormLabel>
+										<FormLabel>{t("bioModal.label")}</FormLabel>
 										<FormControl>
 											<Textarea
-												placeholder="Cuenta tu trayectoria, logros, motivaciones y objetivos..."
+												placeholder={t("bioModal.placeholder")}
 												className="min-h-[200px] resize-none"
 												{...field}
 												value={field.value ?? ""}
