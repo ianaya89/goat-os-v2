@@ -42,6 +42,7 @@
 			"descriptionPlaceholder": "e.g., Monthly training fee",
 			"session": "Session (Optional)",
 			"sessions": "Sessions",
+			"sessionsOptional": "Sessions (Optional)",
 			"selectSession": "Select session",
 			"addSession": "Add session",
 			"noSession": "No session",

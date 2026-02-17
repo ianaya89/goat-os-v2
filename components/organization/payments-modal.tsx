@@ -7,7 +7,6 @@ import {
 	CheckIcon,
 	ChevronsUpDownIcon,
 	Loader2Icon,
-	PlusIcon,
 	XIcon,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -19,7 +18,6 @@ import {
 	ProfileEditSheet,
 } from "@/components/athlete/profile-edit-sheet";
 import { PaymentReceiptModal } from "@/components/organization/receipt-modal";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
 	Command,
@@ -117,6 +115,11 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 		const debouncedSessionQuery = useDebounce(sessionSearchQuery, 300);
 		const shouldSearchSessions = debouncedSessionQuery.length >= 2;
 
+		// Track selected athlete for session filtering
+		const [sessionAthleteFilter, setSessionAthleteFilter] = React.useState<
+			string | null
+		>(null);
+
 		const { data: sessionsData, isFetching: isSearchingSessions } =
 			trpc.organization.trainingSession.list.useQuery(
 				{
@@ -125,6 +128,9 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 					query: debouncedSessionQuery,
 					sortBy: "startTime",
 					sortOrder: "desc",
+					...(sessionAthleteFilter
+						? { filters: { athleteId: sessionAthleteFilter } }
+						: {}),
 				},
 				{
 					enabled: shouldSearchSessions,
@@ -444,6 +450,7 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 				setSessionSearchQuery("");
 				setAthleteSearchQuery("");
 				setServiceSearchQuery("");
+				setSessionAthleteFilter(null);
 			}
 			prevVisibleRef.current = modal.visible;
 		}, [modal.visible, isEditing, form, initialSessionIds, initialAthleteId]);
@@ -494,6 +501,181 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 
 						{!isEditing && (
 							<>
+								{/* Athlete selector - appears first so sessions can be filtered by athlete */}
+								<FormField
+									control={form.control}
+									name="athleteId"
+									render={({ field }) => (
+										<FormItem asChild>
+											<Field>
+												<FormLabel>
+													{isAthleteLocked
+														? t("form.athlete")
+														: t("form.athleteOptional")}
+												</FormLabel>
+												{/* When athlete is locked (only one fixed athlete), show read-only */}
+												{isAthleteLocked ? (
+													<FormControl>
+														<Input
+															value={fixedAthletes?.[0]?.name ?? ""}
+															disabled
+															className="bg-muted"
+														/>
+													</FormControl>
+												) : fixedAthletes || showSessionAthletes ? (
+													<Select
+														onValueChange={(value) => {
+															const newValue = value === "none" ? null : value;
+															field.onChange(newValue);
+															setSessionAthleteFilter(newValue);
+															// Clear selected sessions when athlete changes
+															form.setValue("sessionIds", []);
+															setSelectedSessions([]);
+														}}
+														value={field.value ?? "none"}
+													>
+														<FormControl>
+															<SelectTrigger className="w-full">
+																<SelectValue
+																	placeholder={t("form.selectAthlete")}
+																/>
+															</SelectTrigger>
+														</FormControl>
+														<SelectContent>
+															<SelectItem value="none">
+																{t("form.noAthlete")}
+															</SelectItem>
+															{athletes.map((athlete) => (
+																<SelectItem key={athlete.id} value={athlete.id}>
+																	{athlete.name}
+																</SelectItem>
+															))}
+														</SelectContent>
+													</Select>
+												) : (
+													<Popover
+														open={athletePopoverOpen}
+														onOpenChange={setAthletePopoverOpen}
+													>
+														<PopoverTrigger asChild>
+															<FormControl>
+																<Button
+																	variant="outline"
+																	className="w-full justify-between font-normal"
+																>
+																	{selectedAthleteLabel ?? (
+																		<span className="text-muted-foreground">
+																			{t("form.selectAthlete")}
+																		</span>
+																	)}
+																	<div className="flex items-center gap-1">
+																		{field.value && (
+																			<span
+																				role="button"
+																				tabIndex={0}
+																				className="rounded-sm p-0.5 hover:bg-muted"
+																				onClick={(e) => {
+																					e.stopPropagation();
+																					field.onChange(null);
+																					setSelectedAthleteLabel(null);
+																					setAthleteSearchQuery("");
+																					setSessionAthleteFilter(null);
+																					// Clear selected sessions when athlete is cleared
+																					form.setValue("sessionIds", []);
+																					setSelectedSessions([]);
+																				}}
+																				onKeyDown={(e) => {
+																					if (
+																						e.key === "Enter" ||
+																						e.key === " "
+																					) {
+																						e.preventDefault();
+																						e.stopPropagation();
+																						field.onChange(null);
+																						setSelectedAthleteLabel(null);
+																						setAthleteSearchQuery("");
+																						setSessionAthleteFilter(null);
+																						form.setValue("sessionIds", []);
+																						setSelectedSessions([]);
+																					}
+																				}}
+																			>
+																				<XIcon className="size-3.5 text-muted-foreground" />
+																			</span>
+																		)}
+																		<ChevronsUpDownIcon className="size-4 shrink-0 opacity-50" />
+																	</div>
+																</Button>
+															</FormControl>
+														</PopoverTrigger>
+														<PopoverContent
+															className="w-[350px] p-0"
+															align="start"
+														>
+															<Command shouldFilter={false}>
+																<CommandInput
+																	placeholder={t("form.searchAthlete")}
+																	value={athleteSearchQuery}
+																	onValueChange={setAthleteSearchQuery}
+																/>
+																<CommandList>
+																	{!shouldSearchAthletes && (
+																		<div className="py-6 text-center text-muted-foreground text-sm">
+																			{t("form.typeToSearchAthlete")}
+																		</div>
+																	)}
+																	{shouldSearchAthletes &&
+																		isSearchingAthletes && (
+																			<div className="flex items-center justify-center py-6">
+																				<Loader2Icon className="size-5 animate-spin text-muted-foreground" />
+																			</div>
+																		)}
+																	{shouldSearchAthletes &&
+																		!isSearchingAthletes &&
+																		athletes.length === 0 && (
+																			<CommandEmpty>
+																				{t("form.noAthletesFound")}
+																			</CommandEmpty>
+																		)}
+																	{shouldSearchAthletes &&
+																		!isSearchingAthletes &&
+																		athletes.length > 0 && (
+																			<CommandGroup>
+																				{athletes.map((athlete) => (
+																					<CommandItem
+																						key={athlete.id}
+																						value={athlete.id}
+																						onSelect={() => {
+																							field.onChange(athlete.id);
+																							setSelectedAthleteLabel(
+																								athlete.name,
+																							);
+																							setAthletePopoverOpen(false);
+																							setAthleteSearchQuery("");
+																							setSessionAthleteFilter(
+																								athlete.id,
+																							);
+																							// Clear selected sessions when athlete changes
+																							form.setValue("sessionIds", []);
+																							setSelectedSessions([]);
+																						}}
+																					>
+																						<span>{athlete.name}</span>
+																					</CommandItem>
+																				))}
+																			</CommandGroup>
+																		)}
+																</CommandList>
+															</Command>
+														</PopoverContent>
+													</Popover>
+												)}
+												<FormMessage />
+											</Field>
+										</FormItem>
+									)}
+								/>
+
 								{!fixedSessionId && (
 									<FormField
 										control={form.control}
@@ -507,7 +689,6 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 												label: string,
 											) => {
 												if (isSelected(sessionId)) {
-													// Remove session
 													field.onChange(
 														currentIds.filter((id: string) => id !== sessionId),
 													);
@@ -515,7 +696,6 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 														prev.filter((s) => s.id !== sessionId),
 													);
 												} else {
-													// Add session
 													field.onChange([...currentIds, sessionId]);
 													setSelectedSessions((prev) => [
 														...prev,
@@ -523,52 +703,18 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 													]);
 												}
 											};
-											const removeSession = (sessionId: string) => {
-												field.onChange(
-													currentIds.filter((id: string) => id !== sessionId),
-												);
-												setSelectedSessions((prev) =>
-													prev.filter((s) => s.id !== sessionId),
-												);
-											};
+
+											const sessionDisplayLabel =
+												selectedSessions.length === 1
+													? selectedSessions[0]?.label
+													: selectedSessions.length > 1
+														? `${selectedSessions.length} ${t("form.sessions").toLowerCase()}`
+														: null;
 
 											return (
 												<FormItem asChild>
 													<Field>
-														<FormLabel>
-															{t("form.sessions")}
-															{selectedSessions.length > 0 && (
-																<span className="ml-1 text-muted-foreground">
-																	({selectedSessions.length})
-																</span>
-															)}
-														</FormLabel>
-
-														{/* Selected sessions badges */}
-														{selectedSessions.length > 0 && (
-															<div className="flex flex-wrap gap-1.5 pb-2">
-																{selectedSessions.map((session) => (
-																	<Badge
-																		key={session.id}
-																		variant="secondary"
-																		className="gap-1 pr-1"
-																	>
-																		<span className="max-w-[200px] truncate">
-																			{session.label}
-																		</span>
-																		<button
-																			type="button"
-																			className="rounded-sm p-0.5 hover:bg-muted-foreground/20"
-																			onClick={() => removeSession(session.id)}
-																		>
-																			<XIcon className="size-3" />
-																		</button>
-																	</Badge>
-																))}
-															</div>
-														)}
-
-														{/* Add session button/popover */}
+														<FormLabel>{t("form.sessionsOptional")}</FormLabel>
 														<Popover
 															open={sessionPopoverOpen}
 															onOpenChange={setSessionPopoverOpen}
@@ -576,13 +722,44 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 															<PopoverTrigger asChild>
 																<FormControl>
 																	<Button
-																		type="button"
 																		variant="outline"
-																		size="sm"
-																		className="w-full justify-start gap-2 font-normal text-muted-foreground"
+																		className="w-full justify-between font-normal"
 																	>
-																		<PlusIcon className="size-4" />
-																		{t("form.addSession")}
+																		{sessionDisplayLabel ?? (
+																			<span className="text-muted-foreground">
+																				{t("form.selectSession")}
+																			</span>
+																		)}
+																		<div className="flex items-center gap-1">
+																			{selectedSessions.length > 0 && (
+																				<span
+																					role="button"
+																					tabIndex={0}
+																					className="rounded-sm p-0.5 hover:bg-muted"
+																					onClick={(e) => {
+																						e.stopPropagation();
+																						field.onChange([]);
+																						setSelectedSessions([]);
+																						setSessionSearchQuery("");
+																					}}
+																					onKeyDown={(e) => {
+																						if (
+																							e.key === "Enter" ||
+																							e.key === " "
+																						) {
+																							e.preventDefault();
+																							e.stopPropagation();
+																							field.onChange([]);
+																							setSelectedSessions([]);
+																							setSessionSearchQuery("");
+																						}
+																					}}
+																				>
+																					<XIcon className="size-3.5 text-muted-foreground" />
+																				</span>
+																			)}
+																			<ChevronsUpDownIcon className="size-4 shrink-0 opacity-50" />
+																		</div>
 																	</Button>
 																</FormControl>
 															</PopoverTrigger>
@@ -660,163 +837,6 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 										}}
 									/>
 								)}
-
-								{/* Athlete selector - shows session athletes when session is selected */}
-								<FormField
-									control={form.control}
-									name="athleteId"
-									render={({ field }) => (
-										<FormItem asChild>
-											<Field>
-												<FormLabel>
-													{isAthleteLocked
-														? t("form.athlete")
-														: t("form.athleteOptional")}
-												</FormLabel>
-												{/* When athlete is locked (only one fixed athlete), show read-only */}
-												{isAthleteLocked ? (
-													<FormControl>
-														<Input
-															value={fixedAthletes?.[0]?.name ?? ""}
-															disabled
-															className="bg-muted"
-														/>
-													</FormControl>
-												) : fixedAthletes || showSessionAthletes ? (
-													<Select
-														onValueChange={(value) =>
-															field.onChange(value === "none" ? null : value)
-														}
-														value={field.value ?? "none"}
-													>
-														<FormControl>
-															<SelectTrigger className="w-full">
-																<SelectValue
-																	placeholder={t("form.selectAthlete")}
-																/>
-															</SelectTrigger>
-														</FormControl>
-														<SelectContent>
-															<SelectItem value="none">
-																{t("form.noAthlete")}
-															</SelectItem>
-															{athletes.map((athlete) => (
-																<SelectItem key={athlete.id} value={athlete.id}>
-																	{athlete.name}
-																</SelectItem>
-															))}
-														</SelectContent>
-													</Select>
-												) : (
-													<Popover
-														open={athletePopoverOpen}
-														onOpenChange={setAthletePopoverOpen}
-													>
-														<PopoverTrigger asChild>
-															<FormControl>
-																<Button
-																	variant="outline"
-																	className="w-full justify-between font-normal"
-																>
-																	{selectedAthleteLabel ?? (
-																		<span className="text-muted-foreground">
-																			{t("form.selectAthlete")}
-																		</span>
-																	)}
-																	<div className="flex items-center gap-1">
-																		{field.value && (
-																			<span
-																				role="button"
-																				tabIndex={0}
-																				className="rounded-sm p-0.5 hover:bg-muted"
-																				onClick={(e) => {
-																					e.stopPropagation();
-																					field.onChange(null);
-																					setSelectedAthleteLabel(null);
-																					setAthleteSearchQuery("");
-																				}}
-																				onKeyDown={(e) => {
-																					if (
-																						e.key === "Enter" ||
-																						e.key === " "
-																					) {
-																						e.preventDefault();
-																						e.stopPropagation();
-																						field.onChange(null);
-																						setSelectedAthleteLabel(null);
-																						setAthleteSearchQuery("");
-																					}
-																				}}
-																			>
-																				<XIcon className="size-3.5 text-muted-foreground" />
-																			</span>
-																		)}
-																		<ChevronsUpDownIcon className="size-4 shrink-0 opacity-50" />
-																	</div>
-																</Button>
-															</FormControl>
-														</PopoverTrigger>
-														<PopoverContent
-															className="w-[350px] p-0"
-															align="start"
-														>
-															<Command shouldFilter={false}>
-																<CommandInput
-																	placeholder={t("form.searchAthlete")}
-																	value={athleteSearchQuery}
-																	onValueChange={setAthleteSearchQuery}
-																/>
-																<CommandList>
-																	{!shouldSearchAthletes && (
-																		<div className="py-6 text-center text-muted-foreground text-sm">
-																			{t("form.typeToSearchAthlete")}
-																		</div>
-																	)}
-																	{shouldSearchAthletes &&
-																		isSearchingAthletes && (
-																			<div className="flex items-center justify-center py-6">
-																				<Loader2Icon className="size-5 animate-spin text-muted-foreground" />
-																			</div>
-																		)}
-																	{shouldSearchAthletes &&
-																		!isSearchingAthletes &&
-																		athletes.length === 0 && (
-																			<CommandEmpty>
-																				{t("form.noAthletesFound")}
-																			</CommandEmpty>
-																		)}
-																	{shouldSearchAthletes &&
-																		!isSearchingAthletes &&
-																		athletes.length > 0 && (
-																			<CommandGroup>
-																				{athletes.map((athlete) => (
-																					<CommandItem
-																						key={athlete.id}
-																						value={athlete.id}
-																						onSelect={() => {
-																							field.onChange(athlete.id);
-																							setSelectedAthleteLabel(
-																								athlete.name,
-																							);
-																							setAthletePopoverOpen(false);
-																							setAthleteSearchQuery("");
-																						}}
-																					>
-																						<span>{athlete.name}</span>
-																					</CommandItem>
-																				))}
-																			</CommandGroup>
-																		)}
-																</CommandList>
-															</Command>
-														</PopoverContent>
-													</Popover>
-												)}
-												<FormMessage />
-											</Field>
-										</FormItem>
-									)}
-								/>
 
 								{/* Service selector - hidden when session has a linked service */}
 								{!sessionHasService && (

@@ -112,6 +112,45 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 				);
 			}
 
+			// Athlete filter - find sessions where athlete is directly assigned or in the session's group
+			if (input.filters?.athleteId) {
+				const athleteId = input.filters.athleteId;
+
+				// Find session IDs where athlete is directly assigned
+				const directSessions = await db
+					.select({ sessionId: trainingSessionAthleteTable.sessionId })
+					.from(trainingSessionAthleteTable)
+					.where(eq(trainingSessionAthleteTable.athleteId, athleteId));
+
+				// Find group IDs where athlete is a member
+				const athleteGroups = await db
+					.select({ groupId: athleteGroupMemberTable.groupId })
+					.from(athleteGroupMemberTable)
+					.where(eq(athleteGroupMemberTable.athleteId, athleteId));
+
+				const directSessionIds = directSessions.map((s) => s.sessionId);
+				const groupIds = athleteGroups.map((g) => g.groupId);
+
+				const athleteConditions: SQL[] = [];
+				if (directSessionIds.length > 0) {
+					athleteConditions.push(
+						inArray(trainingSessionTable.id, directSessionIds),
+					);
+				}
+				if (groupIds.length > 0) {
+					athleteConditions.push(
+						inArray(trainingSessionTable.athleteGroupId, groupIds),
+					);
+				}
+
+				if (athleteConditions.length > 0) {
+					conditions.push(or(...athleteConditions)!);
+				} else {
+					// Athlete not in any session - return empty
+					conditions.push(eq(trainingSessionTable.id, "no-match"));
+				}
+			}
+
 			const whereCondition = and(...conditions);
 
 			// Build sort order

@@ -42,6 +42,7 @@
 			"descriptionPlaceholder": "ej., Cuota mensual de entrenamiento",
 			"session": "Sesión (Opcional)",
 			"sessions": "Sesiones",
+			"sessionsOptional": "Sesiones (Opcional)",
 			"selectSession": "Seleccionar sesión",
 			"addSession": "Agregar sesión",
 			"noSession": "Sin sesión",
