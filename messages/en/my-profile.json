@@ -333,6 +333,34 @@
 		"notes": "Additional Notes",
 		"notesPlaceholder": "Scholarships, academic achievements, extracurricular activities..."
 	},
+	"referencesTab": {
+		"title": "References",
+		"add": "Add",
+		"emptyTitle": "No references",
+		"emptyDescription": "Add references from coaches, teachers or people who can attest to your skills.",
+		"private": "Private",
+		"edit": "Edit",
+		"delete": "Delete",
+		"deleteConfirm": "Delete this reference?",
+		"addSuccess": "Reference added",
+		"updateSuccess": "Reference updated",
+		"deleteSuccess": "Reference deleted"
+	},
+	"sponsorsTab": {
+		"title": "Sponsors & Partnerships",
+		"add": "Add",
+		"emptyTitle": "No sponsors",
+		"emptyDescription": "Add your sponsors and partnerships to display them on your public profile.",
+		"private": "Private",
+		"edit": "Edit",
+		"delete": "Delete",
+		"deleteConfirm": "Delete this sponsor?",
+		"addSuccess": "Sponsor added",
+		"updateSuccess": "Sponsor updated",
+		"deleteSuccess": "Sponsor deleted",
+		"visitSite": "Visit site",
+		"present": "Present"
+	},
 	"achievementsTab": {
 		"title": "Achievements & Recognition",
 		"add": "Add",

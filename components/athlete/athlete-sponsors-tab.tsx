@@ -12,6 +12,7 @@ import {
 	UploadIcon,
 } from "lucide-react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { toast } from "sonner";
 import { z } from "zod/v4";
@@ -450,13 +451,14 @@ const SponsorModal = NiceModal.create(({ sponsor }: SponsorModalProps) => {
 });
 
 export function AthleteSponsorsTab() {
+	const t = useTranslations("myProfile.sponsorsTab");
 	const { data: sponsors, isLoading } = trpc.athlete.listMySponsors.useQuery();
 	const utils = trpc.useUtils();
 
 	const deleteMutation = trpc.athlete.deleteSponsor.useMutation({
 		onSuccess: () => {
 			utils.athlete.listMySponsors.invalidate();
-			toast.success("Sponsor eliminado");
+			toast.success(t("deleteSuccess"));
 		},
 		onError: (error) => {
 			toast.error(error.message);
@@ -472,7 +474,7 @@ export function AthleteSponsorsTab() {
 	};
 
 	const handleDelete = (id: string) => {
-		if (confirm("Eliminar este sponsor?")) {
+		if (confirm(t("deleteConfirm"))) {
 			deleteMutation.mutate({ id });
 		}
 	};
@@ -496,30 +498,32 @@ export function AthleteSponsorsTab() {
 
 	return (
 		<Card>
-			<CardHeader>
-				<div className="flex items-center justify-between">
-					<CardTitle className="flex items-center gap-2">
-						<SparklesIcon className="size-5" />
-						Sponsors y Partnerships
-					</CardTitle>
-					<Button size="sm" onClick={handleAdd}>
-						<PlusIcon className="mr-2 size-4" />
-						Agregar
-					</Button>
-				</div>
+			<CardHeader className="flex flex-row items-center justify-between space-y-0">
+				<CardTitle className="flex items-center gap-2">
+					<SparklesIcon className="size-5" />
+					{t("title")}
+				</CardTitle>
+				<Button variant="outline" size="sm" onClick={handleAdd}>
+					<PlusIcon className="mr-2 size-4" />
+					{t("add")}
+				</Button>
 			</CardHeader>
 			<CardContent>
 				{!sponsors || sponsors.length === 0 ? (
 					<div className="py-10 text-center">
 						<SparklesIcon className="mx-auto size-12 text-muted-foreground/50" />
-						<h3 className="mt-4 font-semibold">Sin sponsors</h3>
+						<h3 className="mt-4 font-semibold">{t("emptyTitle")}</h3>
 						<p className="mt-2 max-w-sm mx-auto text-muted-foreground text-sm">
-							Agrega tus patrocinadores y partnerships para mostrarlos en tu
-							perfil publico.
+							{t("emptyDescription")}
 						</p>
-						<Button className="mt-4" size="sm" onClick={handleAdd}>
+						<Button
+							variant="outline"
+							className="mt-4"
+							size="sm"
+							onClick={handleAdd}
+						>
 							<PlusIcon className="mr-2 size-4" />
-							Agregar
+							{t("add")}
 						</Button>
 					</div>
 				) : (
@@ -536,7 +540,7 @@ export function AthleteSponsorsTab() {
 										size="sm"
 										onClick={() => handleEdit(sponsor as Sponsor)}
 									>
-										Editar
+										{t("edit")}
 									</Button>
 									<Button
 										variant="ghost"
@@ -545,7 +549,7 @@ export function AthleteSponsorsTab() {
 										onClick={() => handleDelete(sponsor.id)}
 										disabled={deleteMutation.isPending}
 									>
-										Eliminar
+										{t("delete")}
 									</Button>
 								</div>
 
@@ -600,7 +604,7 @@ export function AthleteSponsorsTab() {
 											{" — "}
 											{sponsor.endDate
 												? format(new Date(sponsor.endDate), "MMM yyyy")
-												: "Presente"}
+												: t("present")}
 										</span>
 									</div>
 								)}
@@ -615,7 +619,7 @@ export function AthleteSponsorsTab() {
 											className="inline-flex items-center gap-1 text-amber-600 text-xs hover:underline dark:text-amber-400"
 										>
 											<GlobeIcon className="size-3" />
-											Visitar sitio
+											{t("visitSite")}
 											<ExternalLinkIcon className="size-3" />
 										</a>
 									</div>
@@ -625,7 +629,7 @@ export function AthleteSponsorsTab() {
 								{!sponsor.isPublic && (
 									<div className="mt-2 flex justify-center">
 										<Badge variant="outline" className="text-xs">
-											Privado
+											{t("private")}
 										</Badge>
 									</div>
 								)}

@@ -269,56 +269,58 @@ export function AthleteMyProfile() {
 
 			{/* Tabs */}
 			<Tabs defaultValue="info" className="space-y-4">
-				<TabsList className="flex-wrap">
-					<TabsTrigger value="info">
-						<UserIcon className="mr-1 size-3.5" />
-						{t("tabs.info")}
-					</TabsTrigger>
-					<TabsTrigger value="physical">
-						<RulerIcon className="mr-1 size-3.5" />
-						{t("tabs.physical")}
-					</TabsTrigger>
-					<TabsTrigger value="career">
-						<BriefcaseIcon className="mr-1 size-3.5" />
-						{t("tabs.career")} ({careerHistory?.length ?? 0})
-					</TabsTrigger>
-					<TabsTrigger value="education">
-						<GraduationCapIcon className="mr-1 size-3.5" />
-						{t("tabs.education")}
-					</TabsTrigger>
-					<TabsTrigger value="languages">
-						<GlobeIcon className="mr-1 size-3.5" />
-						{t("tabs.languages")} ({languages?.length ?? 0})
-					</TabsTrigger>
-					<TabsTrigger value="social">
-						<Share2Icon className="mr-1 size-3.5" />
-						{t("tabs.social")}
-					</TabsTrigger>
-					<TabsTrigger value="medical">
-						<FileTextIcon className="mr-1 size-3.5" />
-						{t("tabs.medical")}
-					</TabsTrigger>
-					<TabsTrigger value="videos">
-						<VideoIcon className="mr-1 size-3.5" />
-						{t("tabs.videos")} ({athlete.youtubeVideos?.length ?? 0})
-					</TabsTrigger>
-					<TabsTrigger value="references">
-						<UserCheckIcon className="mr-1 size-3.5" />
-						{t("tabs.references")}
-					</TabsTrigger>
-					<TabsTrigger value="sponsors">
-						<SparklesIcon className="mr-1 size-3.5" />
-						{t("tabs.sponsors")}
-					</TabsTrigger>
-					<TabsTrigger value="achievements">
-						<TrophyIcon className="mr-1 size-3.5" />
-						{t("tabs.achievements")}
-					</TabsTrigger>
-					<TabsTrigger value="public">
-						<GlobeIcon className="mr-1 size-3.5" />
-						{t("tabs.publicProfile")}
-					</TabsTrigger>
-				</TabsList>
+				<div className="overflow-x-auto scrollbar-none">
+					<TabsList className="inline-flex w-max flex-nowrap">
+						<TabsTrigger value="info">
+							<UserIcon className="mr-1 size-3.5" />
+							{t("tabs.info")}
+						</TabsTrigger>
+						<TabsTrigger value="physical">
+							<RulerIcon className="mr-1 size-3.5" />
+							{t("tabs.physical")}
+						</TabsTrigger>
+						<TabsTrigger value="career">
+							<BriefcaseIcon className="mr-1 size-3.5" />
+							{t("tabs.career")} ({careerHistory?.length ?? 0})
+						</TabsTrigger>
+						<TabsTrigger value="education">
+							<GraduationCapIcon className="mr-1 size-3.5" />
+							{t("tabs.education")}
+						</TabsTrigger>
+						<TabsTrigger value="languages">
+							<GlobeIcon className="mr-1 size-3.5" />
+							{t("tabs.languages")} ({languages?.length ?? 0})
+						</TabsTrigger>
+						<TabsTrigger value="social">
+							<Share2Icon className="mr-1 size-3.5" />
+							{t("tabs.social")}
+						</TabsTrigger>
+						<TabsTrigger value="medical">
+							<FileTextIcon className="mr-1 size-3.5" />
+							{t("tabs.medical")}
+						</TabsTrigger>
+						<TabsTrigger value="videos">
+							<VideoIcon className="mr-1 size-3.5" />
+							{t("tabs.videos")} ({athlete.youtubeVideos?.length ?? 0})
+						</TabsTrigger>
+						<TabsTrigger value="references">
+							<UserCheckIcon className="mr-1 size-3.5" />
+							{t("tabs.references")}
+						</TabsTrigger>
+						<TabsTrigger value="sponsors">
+							<SparklesIcon className="mr-1 size-3.5" />
+							{t("tabs.sponsors")}
+						</TabsTrigger>
+						<TabsTrigger value="achievements">
+							<TrophyIcon className="mr-1 size-3.5" />
+							{t("tabs.achievements")}
+						</TabsTrigger>
+						<TabsTrigger value="public">
+							<GlobeIcon className="mr-1 size-3.5" />
+							{t("tabs.publicProfile")}
+						</TabsTrigger>
+					</TabsList>
+				</div>
 
 				{/* Info Tab */}
 				<TabsContent value="info">

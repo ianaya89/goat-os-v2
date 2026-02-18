@@ -10,6 +10,7 @@ import {
 	UserCheckIcon,
 } from "lucide-react";
 import { AnimatePresence } from "motion/react";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { toast } from "sonner";
 import { z } from "zod/v4";
@@ -356,6 +357,7 @@ const ReferenceModal = NiceModal.create(
 );
 
 export function AthleteReferencesTab() {
+	const t = useTranslations("myProfile.referencesTab");
 	const { data: references, isLoading } =
 		trpc.athlete.listMyReferences.useQuery();
 	const utils = trpc.useUtils();
@@ -364,7 +366,7 @@ export function AthleteReferencesTab() {
 		onSuccess: () => {
 			utils.athlete.listMyReferences.invalidate();
 			utils.athlete.getMyProfile.invalidate();
-			toast.success("Referencia eliminada");
+			toast.success(t("deleteSuccess"));
 		},
 		onError: (error) => {
 			toast.error(error.message);
@@ -380,7 +382,7 @@ export function AthleteReferencesTab() {
 	};
 
 	const handleDelete = (id: string) => {
-		if (confirm("Eliminar esta referencia?")) {
+		if (confirm(t("deleteConfirm"))) {
 			deleteMutation.mutate({ id });
 		}
 	};
@@ -399,30 +401,32 @@ export function AthleteReferencesTab() {
 
 	return (
 		<Card>
-			<CardHeader>
-				<div className="flex items-center justify-between">
-					<CardTitle className="flex items-center gap-2">
-						<UserCheckIcon className="size-5" />
-						Referencias
-					</CardTitle>
-					<Button size="sm" onClick={handleAdd}>
-						<PlusIcon className="mr-2 size-4" />
-						Agregar
-					</Button>
-				</div>
+			<CardHeader className="flex flex-row items-center justify-between space-y-0">
+				<CardTitle className="flex items-center gap-2">
+					<UserCheckIcon className="size-5" />
+					{t("title")}
+				</CardTitle>
+				<Button variant="outline" size="sm" onClick={handleAdd}>
+					<PlusIcon className="mr-2 size-4" />
+					{t("add")}
+				</Button>
 			</CardHeader>
 			<CardContent>
 				{!references || references.length === 0 ? (
 					<div className="py-10 text-center">
 						<UserCheckIcon className="mx-auto size-12 text-muted-foreground/50" />
-						<h3 className="mt-4 font-semibold">Sin referencias</h3>
+						<h3 className="mt-4 font-semibold">{t("emptyTitle")}</h3>
 						<p className="mt-2 max-w-sm mx-auto text-muted-foreground text-sm">
-							Agrega referencias de entrenadores, profesores o personas que
-							puedan dar testimonio de tus habilidades.
+							{t("emptyDescription")}
 						</p>
-						<Button className="mt-4" size="sm" onClick={handleAdd}>
+						<Button
+							variant="outline"
+							className="mt-4"
+							size="sm"
+							onClick={handleAdd}
+						>
 							<PlusIcon className="mr-2 size-4" />
-							Agregar
+							{t("add")}
 						</Button>
 					</div>
 				) : (
@@ -444,7 +448,7 @@ export function AthleteReferencesTab() {
 										)}
 										{!ref.isPublic && (
 											<Badge variant="secondary" className="text-xs">
-												Privado
+												{t("private")}
 											</Badge>
 										)}
 									</div>
@@ -499,7 +503,7 @@ export function AthleteReferencesTab() {
 										size="sm"
 										onClick={() => handleEdit(ref as Reference)}
 									>
-										Editar
+										{t("edit")}
 									</Button>
 									<Button
 										variant="ghost"
@@ -508,7 +512,7 @@ export function AthleteReferencesTab() {
 										onClick={() => handleDelete(ref.id)}
 										disabled={deleteMutation.isPending}
 									>
-										Eliminar
+										{t("delete")}
 									</Button>
 								</div>
 							</div>

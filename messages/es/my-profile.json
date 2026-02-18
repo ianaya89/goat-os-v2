@@ -333,6 +333,34 @@
 		"notes": "Notas Adicionales",
 		"notesPlaceholder": "Becas, logros academicos, actividades extracurriculares..."
 	},
+	"referencesTab": {
+		"title": "Referencias",
+		"add": "Agregar",
+		"emptyTitle": "Sin referencias",
+		"emptyDescription": "Agrega referencias de entrenadores, profesores o personas que puedan dar testimonio de tus habilidades.",
+		"private": "Privado",
+		"edit": "Editar",
+		"delete": "Eliminar",
+		"deleteConfirm": "Eliminar esta referencia?",
+		"addSuccess": "Referencia agregada",
+		"updateSuccess": "Referencia actualizada",
+		"deleteSuccess": "Referencia eliminada"
+	},
+	"sponsorsTab": {
+		"title": "Sponsors y Partnerships",
+		"add": "Agregar",
+		"emptyTitle": "Sin sponsors",
+		"emptyDescription": "Agrega tus patrocinadores y partnerships para mostrarlos en tu perfil publico.",
+		"private": "Privado",
+		"edit": "Editar",
+		"delete": "Eliminar",
+		"deleteConfirm": "Eliminar este sponsor?",
+		"addSuccess": "Sponsor agregado",
+		"updateSuccess": "Sponsor actualizado",
+		"deleteSuccess": "Sponsor eliminado",
+		"visitSite": "Visitar sitio",
+		"present": "Presente"
+	},
 	"achievementsTab": {
 		"title": "Palmares y Reconocimientos",
 		"add": "Agregar",
