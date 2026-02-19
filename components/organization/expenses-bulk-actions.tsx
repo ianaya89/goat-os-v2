@@ -24,6 +24,8 @@ interface Expense {
 	receiptImageKey: string | null;
 	vendor: string | null;
 	notes: string | null;
+	eventId: string | null;
+	event: { id: string; title: string } | null;
 	createdAt: Date;
 	recordedByUser: {
 		id: string;

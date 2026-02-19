@@ -235,7 +235,8 @@
 			"noExpenses": "No se encontraron gastos.",
 			"openMenu": "Abrir menú",
 			"noCategory": "Sin categoría",
-			"receiptNumber": "Comprobante #{number}"
+			"receiptNumber": "Comprobante #{number}",
+			"event": "Evento"
 		},
 		"form": {
 			"description": "Descripción",
@@ -255,7 +256,10 @@
 			"receiptPlaceholder": "Factura/Recibo #",
 			"receiptUpload": "Comprobante / Factura",
 			"notes": "Notas",
-			"notesPlaceholder": "Notas adicionales..."
+			"notesPlaceholder": "Notas adicionales...",
+			"event": "Evento",
+			"selectEvent": "Seleccionar evento",
+			"noEvent": "Sin evento vinculado"
 		},
 		"modal": {
 			"createTitle": "Registrar Gasto",

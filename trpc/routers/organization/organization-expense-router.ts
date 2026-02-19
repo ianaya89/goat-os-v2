@@ -276,6 +276,7 @@ export const organizationExpenseRouter = createTRPCRouter({
 					with: {
 						categoryRef: { columns: { id: true, name: true, type: true } },
 						recordedByUser: { columns: { id: true, name: true } },
+						event: { columns: { id: true, title: true } },
 					},
 				}),
 				db.select({ count: count() }).from(expenseTable).where(whereCondition),
@@ -311,6 +312,23 @@ export const organizationExpenseRouter = createTRPCRouter({
 	create: protectedOrgAdminProcedure
 		.input(createExpenseSchema)
 		.mutation(async ({ ctx, input }) => {
+			// Validate event belongs to org if provided
+			if (input.eventId) {
+				const event = await db.query.sportsEventTable.findFirst({
+					where: and(
+						eq(sportsEventTable.id, input.eventId),
+						eq(sportsEventTable.organizationId, ctx.organization.id),
+					),
+				});
+
+				if (!event) {
+					throw new TRPCError({
+						code: "NOT_FOUND",
+						message: "Event not found",
+					});
+				}
+			}
+
 			// Validate category belongs to org if provided
 			if (input.categoryId) {
 				const category = await db.query.expenseCategoryTable.findFirst({
@@ -342,6 +360,7 @@ export const organizationExpenseRouter = createTRPCRouter({
 					receiptNumber: input.receiptNumber,
 					vendor: input.vendor,
 					notes: input.notes,
+					eventId: input.eventId,
 					recordedBy: ctx.user.id,
 				})
 				.returning();
@@ -416,6 +435,8 @@ export const organizationExpenseRouter = createTRPCRouter({
 							: existing.receiptNumber,
 					vendor: input.vendor !== undefined ? input.vendor : existing.vendor,
 					notes: input.notes !== undefined ? input.notes : existing.notes,
+					eventId:
+						input.eventId !== undefined ? input.eventId : existing.eventId,
 				})
 				.where(eq(expenseTable.id, input.id))
 				.returning();

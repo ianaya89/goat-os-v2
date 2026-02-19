@@ -235,7 +235,8 @@
 			"noExpenses": "No expenses found.",
 			"openMenu": "Open menu",
 			"noCategory": "No category",
-			"receiptNumber": "Receipt #{number}"
+			"receiptNumber": "Receipt #{number}",
+			"event": "Event"
 		},
 		"form": {
 			"description": "Description",
@@ -255,7 +256,10 @@
 			"receiptPlaceholder": "Invoice/Receipt #",
 			"receiptUpload": "Receipt / Invoice",
 			"notes": "Notes",
-			"notesPlaceholder": "Additional notes..."
+			"notesPlaceholder": "Additional notes...",
+			"event": "Event",
+			"selectEvent": "Select event",
+			"noEvent": "No linked event"
 		},
 		"modal": {
 			"createTitle": "Record Expense",

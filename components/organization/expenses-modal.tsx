@@ -66,11 +66,14 @@ export type ExpensesModalProps = NiceModalHocProps & {
 		vendor?: string | null;
 		notes?: string | null;
 		receiptImageKey?: string | null;
+		eventId?: string | null;
+		event?: { id: string; title: string } | null;
 	};
+	fixedEventId?: string;
 };
 
 export const ExpensesModal = NiceModal.create<ExpensesModalProps>(
-	({ expense }) => {
+	({ expense, fixedEventId }) => {
 		const t = useTranslations("finance.expenses");
 		const modal = useEnhancedModal();
 		const utils = trpc.useUtils();
@@ -104,6 +107,14 @@ export const ExpensesModal = NiceModal.create<ExpensesModalProps>(
 			},
 		});
 
+		const effectiveEventId = fixedEventId ?? undefined;
+
+		// Fetch events for the selector (only when not fixed and creating)
+		const { data: eventsData } = trpc.organization.sportsEvent.list.useQuery(
+			{ limit: 100, offset: 0 },
+			{ enabled: !fixedEventId && !isEditing },
+		);
+
 		const form = useZodForm({
 			schema: isEditing ? updateExpenseSchema : createExpenseSchema,
 			defaultValues: isEditing
@@ -118,6 +129,7 @@ export const ExpensesModal = NiceModal.create<ExpensesModalProps>(
 						receiptNumber: expense.receiptNumber ?? "",
 						vendor: expense.vendor ?? "",
 						notes: expense.notes ?? "",
+						eventId: expense.eventId ?? undefined,
 					}
 				: {
 						category: undefined,
@@ -129,6 +141,7 @@ export const ExpensesModal = NiceModal.create<ExpensesModalProps>(
 						receiptNumber: "",
 						vendor: "",
 						notes: "",
+						eventId: effectiveEventId,
 					},
 		});
 
@@ -226,6 +239,57 @@ export const ExpensesModal = NiceModal.create<ExpensesModalProps>(
 								</FormItem>
 							)}
 						/>
+						{/* Event selector - only show when not fixed and creating */}
+						{!fixedEventId && !isEditing && (
+							<FormField
+								control={form.control}
+								name="eventId"
+								render={({ field }) => (
+									<FormItem asChild>
+										<Field>
+											<FormLabel>{t("form.event")}</FormLabel>
+											<Select
+												onValueChange={(value) =>
+													field.onChange(value === "none" ? undefined : value)
+												}
+												value={field.value ?? "none"}
+											>
+												<FormControl>
+													<SelectTrigger className="w-full">
+														<SelectValue placeholder={t("form.selectEvent")} />
+													</SelectTrigger>
+												</FormControl>
+												<SelectContent>
+													<SelectItem value="none">
+														{t("form.noEvent")}
+													</SelectItem>
+													{eventsData?.events?.map(
+														(event: { id: string; title: string }) => (
+															<SelectItem key={event.id} value={event.id}>
+																{event.title}
+															</SelectItem>
+														),
+													)}
+												</SelectContent>
+											</Select>
+											<FormMessage />
+										</Field>
+									</FormItem>
+								)}
+							/>
+						)}
+
+						{/* Show linked event info when editing */}
+						{isEditing && expense?.event && (
+							<Field>
+								<FormLabel>{t("form.event")}</FormLabel>
+								<Input
+									value={expense.event.title}
+									disabled
+									className="bg-muted"
+								/>
+							</Field>
+						)}
 					</ProfileEditSection>
 
 					<ProfileEditSection>

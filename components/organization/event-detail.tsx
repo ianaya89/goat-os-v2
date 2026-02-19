@@ -23,6 +23,7 @@ import type * as React from "react";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/confirmation-modal";
 import { EventDiscounts } from "@/components/organization/event-discounts";
+import { EventExpensesTable } from "@/components/organization/event-expenses-table";
 import { EventPaymentsTable } from "@/components/organization/event-payments-table";
 import { EventPricingConfig } from "@/components/organization/event-pricing-config";
 import { EventRegistrationsTable } from "@/components/organization/event-registrations-table";
@@ -291,6 +292,7 @@ export function EventDetail({ eventId }: EventDetailProps): React.JSX.Element {
 						<TabsTrigger value="overview">Resumen</TabsTrigger>
 						<TabsTrigger value="registrations">Inscripciones</TabsTrigger>
 						<TabsTrigger value="payments">Pagos</TabsTrigger>
+						<TabsTrigger value="expenses">Gastos</TabsTrigger>
 						<TabsTrigger value="pricing">Precios</TabsTrigger>
 					</TabsList>
 					<Button variant="outline" asChild>
@@ -457,6 +459,20 @@ export function EventDetail({ eventId }: EventDetailProps): React.JSX.Element {
 						</CardHeader>
 						<CardContent>
 							<EventPaymentsTable eventId={eventId} />
+						</CardContent>
+					</Card>
+				</TabsContent>
+
+				<TabsContent value="expenses">
+					<Card>
+						<CardHeader>
+							<CardTitle>Gastos del Evento</CardTitle>
+							<CardDescription>
+								Gestiona los gastos operativos del evento
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<EventExpensesTable eventId={eventId} />
 						</CardContent>
 					</Card>
 				</TabsContent>
