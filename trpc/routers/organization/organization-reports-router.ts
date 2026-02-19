@@ -677,7 +677,8 @@ export const organizationReportsRouter = createTRPCRouter({
 		.query(async ({ ctx, input }) => {
 			const { from, to } = input.dateRange ?? getDefaultDateRange();
 
-			const result = await db
+			// Training revenue by service (via session or direct serviceId)
+			const trainingResult = await db
 				.select({
 					serviceId: serviceTable.id,
 					serviceName: serviceTable.name,
@@ -704,16 +705,73 @@ export const organizationReportsRouter = createTRPCRouter({
 						lte(trainingPaymentTable.paymentDate, to),
 					),
 				)
-				.groupBy(serviceTable.id, serviceTable.name)
-				.orderBy(desc(sum(trainingPaymentTable.paidAmount)))
-				.limit(input.limit);
+				.groupBy(serviceTable.id, serviceTable.name);
 
-			return result.map((r) => ({
-				serviceId: r.serviceId,
-				serviceName: r.serviceName,
-				total: Number(r.total ?? 0),
-				count: Number(r.count ?? 0),
-			}));
+			// Event revenue by service (via event → serviceId)
+			const eventResult = await db
+				.select({
+					serviceId: serviceTable.id,
+					serviceName: serviceTable.name,
+					total: sum(trainingPaymentTable.paidAmount),
+					count: count(),
+				})
+				.from(trainingPaymentTable)
+				.innerJoin(
+					eventRegistrationTable,
+					eq(trainingPaymentTable.registrationId, eventRegistrationTable.id),
+				)
+				.innerJoin(
+					sportsEventTable,
+					eq(eventRegistrationTable.eventId, sportsEventTable.id),
+				)
+				.innerJoin(
+					serviceTable,
+					eq(sportsEventTable.serviceId, serviceTable.id),
+				)
+				.where(
+					and(
+						eq(trainingPaymentTable.organizationId, ctx.organization.id),
+						eq(trainingPaymentTable.type, "event"),
+						eq(trainingPaymentTable.status, TrainingPaymentStatus.paid),
+						gte(trainingPaymentTable.paymentDate, from),
+						lte(trainingPaymentTable.paymentDate, to),
+					),
+				)
+				.groupBy(serviceTable.id, serviceTable.name);
+
+			// Combine both results by serviceId
+			const combined = new Map<
+				string,
+				{ serviceId: string; serviceName: string; total: number; count: number }
+			>();
+
+			for (const r of trainingResult) {
+				combined.set(r.serviceId, {
+					serviceId: r.serviceId,
+					serviceName: r.serviceName,
+					total: Number(r.total ?? 0),
+					count: Number(r.count ?? 0),
+				});
+			}
+
+			for (const r of eventResult) {
+				const existing = combined.get(r.serviceId);
+				if (existing) {
+					existing.total += Number(r.total ?? 0);
+					existing.count += Number(r.count ?? 0);
+				} else {
+					combined.set(r.serviceId, {
+						serviceId: r.serviceId,
+						serviceName: r.serviceName,
+						total: Number(r.total ?? 0),
+						count: Number(r.count ?? 0),
+					});
+				}
+			}
+
+			return Array.from(combined.values())
+				.sort((a, b) => b.total - a.total)
+				.slice(0, input.limit);
 		}),
 
 	// Revenue composition (training vs events by period)

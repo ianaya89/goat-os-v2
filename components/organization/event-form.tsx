@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { toast } from "sonner";
+import { ServiceSelector } from "@/components/organization/service-selector";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -66,6 +67,7 @@ interface SportsEventData {
 	registrationOpenDate: Date | null;
 	registrationCloseDate: Date | null;
 	locationId: string | null;
+	serviceId: string | null;
 	venueDetails: string | null;
 	maxCapacity: number | null;
 	enableWaitlist: boolean;
@@ -179,6 +181,7 @@ export function EventForm({
 						registrationOpenDate: event.registrationOpenDate ?? undefined,
 						registrationCloseDate: event.registrationCloseDate ?? undefined,
 						locationId: event.locationId ?? undefined,
+						serviceId: event.serviceId ?? undefined,
 						venueDetails: event.venueDetails ?? "",
 						maxCapacity: event.maxCapacity ?? undefined,
 						enableWaitlist: event.enableWaitlist,
@@ -601,6 +604,28 @@ export function EventForm({
 												rows={2}
 												{...field}
 												value={field.value ?? ""}
+											/>
+										</FormControl>
+										<FormMessage />
+									</Field>
+								</FormItem>
+							)}
+						/>
+
+						<FormField
+							control={form.control}
+							name="serviceId"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FormLabel>Servicio Asociado</FormLabel>
+										<FormDescription>
+											Vincular a un servicio para reportes financieros
+										</FormDescription>
+										<FormControl>
+											<ServiceSelector
+												value={field.value}
+												onValueChange={field.onChange}
 											/>
 										</FormControl>
 										<FormMessage />

@@ -707,6 +707,7 @@ export const serviceRelations = relations(serviceTable, ({ one, many }) => ({
 	athleteGroups: many(athleteGroupTable),
 	trainingSessions: many(trainingSessionTable),
 	payments: many(trainingPaymentTable),
+	sportsEvents: many(sportsEventTable),
 }));
 
 // Service Price History relations
@@ -923,6 +924,10 @@ export const sportsEventRelations = relations(
 		location: one(locationTable, {
 			fields: [sportsEventTable.locationId],
 			references: [locationTable.id],
+		}),
+		service: one(serviceTable, {
+			fields: [sportsEventTable.serviceId],
+			references: [serviceTable.id],
 		}),
 		createdByUser: one(userTable, {
 			fields: [sportsEventTable.createdBy],

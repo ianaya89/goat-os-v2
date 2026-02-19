@@ -100,6 +100,9 @@ export const createSportsEventSchema = z
 		locationId: z.string().uuid().optional().nullable(),
 		venueDetails: z.string().trim().max(1000).optional(),
 
+		// Service (for financial reports)
+		serviceId: z.string().uuid().optional().nullable(),
+
 		// Capacity
 		maxCapacity: z.number().int().min(1).optional(),
 		enableWaitlist: z.boolean().default(true),
@@ -153,6 +156,7 @@ export const updateSportsEventSchema = z.object({
 	registrationOpenDate: z.coerce.date().optional().nullable(),
 	registrationCloseDate: z.coerce.date().optional().nullable(),
 	locationId: z.string().uuid().optional().nullable(),
+	serviceId: z.string().uuid().optional().nullable(),
 	venueDetails: z.string().trim().max(1000).optional().nullable(),
 	maxCapacity: z.number().int().min(1).optional().nullable(),
 	enableWaitlist: z.boolean().optional(),

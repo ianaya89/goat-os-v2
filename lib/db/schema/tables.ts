@@ -2661,6 +2661,9 @@ export const sportsEventTable = pgTable(
 		locationId: uuid("location_id").references(() => locationTable.id, {
 			onDelete: "set null",
 		}),
+		serviceId: uuid("service_id").references(() => serviceTable.id, {
+			onDelete: "set null",
+		}),
 		venueDetails: text("venue_details"), // Additional venue info
 
 		// Capacity
@@ -2709,6 +2712,7 @@ export const sportsEventTable = pgTable(
 		index("sports_event_start_date_idx").on(table.startDate),
 		index("sports_event_end_date_idx").on(table.endDate),
 		index("sports_event_location_id_idx").on(table.locationId),
+		index("sports_event_service_id_idx").on(table.serviceId),
 		uniqueIndex("sports_event_org_slug_unique").on(
 			table.organizationId,
 			table.slug,
