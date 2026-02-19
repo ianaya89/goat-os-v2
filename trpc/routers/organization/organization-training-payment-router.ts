@@ -24,6 +24,7 @@ import {
 } from "@/lib/db/schema/enums";
 import {
 	athleteTable,
+	eventRegistrationTable,
 	serviceTable,
 	trainingPaymentSessionTable,
 	trainingPaymentTable,
@@ -115,6 +116,11 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 				);
 			}
 
+			// Type filter
+			if (input.filters?.type) {
+				conditions.push(eq(trainingPaymentTable.type, input.filters.type));
+			}
+
 			// Date range filter
 			if (input.filters?.dateRange) {
 				conditions.push(
@@ -174,6 +180,14 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 						},
 						service: {
 							columns: { id: true, name: true, currentPrice: true },
+						},
+						registration: {
+							columns: { id: true, registrantName: true },
+							with: {
+								event: {
+									columns: { id: true, title: true },
+								},
+							},
 						},
 						recordedByUser: {
 							columns: { id: true, name: true },
@@ -310,6 +324,23 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 		.input(createTrainingPaymentSchema)
 		.mutation(async ({ ctx, input }) => {
 			const { sessionIds, ...paymentData } = input;
+
+			// Verify registration belongs to organization if provided (event payments)
+			if (paymentData.registrationId) {
+				const registration = await db.query.eventRegistrationTable.findFirst({
+					where: and(
+						eq(eventRegistrationTable.id, paymentData.registrationId),
+						eq(eventRegistrationTable.organizationId, ctx.organization.id),
+					),
+				});
+
+				if (!registration) {
+					throw new TRPCError({
+						code: "NOT_FOUND",
+						message: "Registration not found",
+					});
+				}
+			}
 
 			// Verify single session belongs to organization if provided (legacy)
 			if (paymentData.sessionId) {
@@ -1025,6 +1056,30 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 				price: service.currentPrice,
 				currency: service.currency,
 			};
+		}),
+
+	// List events (registrations) for a specific athlete (used by payment form)
+	listEventsForAthlete: protectedOrganizationProcedure
+		.input(z.object({ athleteId: z.string().uuid() }))
+		.query(async ({ ctx, input }) => {
+			const registrations = await db.query.eventRegistrationTable.findMany({
+				where: and(
+					eq(eventRegistrationTable.athleteId, input.athleteId),
+					eq(eventRegistrationTable.organizationId, ctx.organization.id),
+				),
+				columns: {
+					id: true,
+					registrantName: true,
+					price: true,
+					paidAmount: true,
+				},
+				with: {
+					event: {
+						columns: { id: true, title: true, startDate: true },
+					},
+				},
+			});
+			return registrations;
 		}),
 
 	// ============================================================================

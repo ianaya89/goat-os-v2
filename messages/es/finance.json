@@ -66,12 +66,19 @@
 			"serviceHint": "Selecciona un servicio para pre-cargar el precio",
 			"serviceFromSession": "Servicio vinculado a la sesión",
 			"discountPercentage": "Descuento (%)",
-			"discountPercentageHint": "Porcentaje de descuento aplicado (0-100)"
+			"discountPercentageHint": "Porcentaje de descuento aplicado (0-100)",
+			"event": "Evento",
+			"eventOptional": "Evento (Opcional)",
+			"selectEvent": "Seleccionar evento",
+			"searchEvent": "Buscar evento...",
+			"noEventsFound": "No hay eventos para este atleta",
+			"eventSelected": "Pago vinculado a evento"
 		},
 		"methods": {
 			"cash": "Efectivo",
 			"bankTransfer": "Transferencia Bancaria",
 			"mercadoPago": "Mercado Pago",
+			"stripe": "Stripe",
 			"card": "Tarjeta",
 			"transfer": "Transferencia",
 			"check": "Cheque",
@@ -79,10 +86,13 @@
 		},
 		"status": {
 			"pending": "Pendiente",
+			"processing": "Procesando",
 			"paid": "Pagado",
 			"partial": "Parcial",
 			"completed": "Completado",
 			"overdue": "Vencido",
+			"failed": "Fallido",
+			"refunded": "Reembolsado",
 			"cancelled": "Cancelado"
 		},
 		"modal": {

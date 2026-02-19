@@ -76,8 +76,10 @@ const methodKeys: Record<string, string> = {
 export type PaymentsModalProps = NiceModalHocProps & {
 	payment?: {
 		id: string;
+		type?: string;
 		sessionId?: string | null;
 		athleteId?: string | null;
+		registrationId?: string | null;
 		amount: number;
 		currency: string;
 		status: string;
@@ -88,6 +90,25 @@ export type PaymentsModalProps = NiceModalHocProps & {
 		description?: string | null;
 		notes?: string | null;
 		receiptImageKey?: string | null;
+		registration?: {
+			id: string;
+			registrantName: string;
+			event: {
+				id: string;
+				title: string;
+			} | null;
+		} | null;
+		session?: {
+			id: string;
+			title: string;
+		} | null;
+		athlete?: {
+			id: string;
+			user: {
+				id: string;
+				name: string;
+			} | null;
+		} | null;
 	};
 	/** When set, the session is fixed and cannot be changed (used from session detail) */
 	fixedSessionId?: string;
@@ -184,6 +205,15 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 			string | null
 		>(null);
 
+		// Event selection state (for event-type payments)
+		const [eventPopoverOpen, setEventPopoverOpen] = React.useState(false);
+		const [selectedEventLabel, setSelectedEventLabel] = React.useState<
+			string | null
+		>(null);
+		const [paymentType, setPaymentType] = React.useState<"training" | "event">(
+			"training",
+		);
+
 		const sessions = sessionsData?.sessions ?? [];
 		const services = (servicesData?.items ?? []).filter((s) =>
 			s.name.toLowerCase().includes(serviceSearchQuery.toLowerCase()),
@@ -194,6 +224,12 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 				onSuccess: (data) => {
 					toast.success(t("success.created"));
 					utils.organization.trainingPayment.invalidate();
+					// Invalidate event data if event payment was created
+					if (paymentType === "event") {
+						utils.organization.sportsEvent.listPayments.invalidate();
+						utils.organization.sportsEvent.listRegistrations.invalidate();
+						utils.organization.eventOrganization.getProjection.invalidate();
+					}
 					modal.handleClose();
 					const method = form.getValues("paymentMethod");
 					if (data?.id && method === "bank_transfer") {
@@ -213,6 +249,12 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 				onSuccess: () => {
 					toast.success(t("success.updated"));
 					utils.organization.trainingPayment.invalidate();
+					// Invalidate event projection if editing an event payment
+					if (payment?.type === "event") {
+						utils.organization.sportsEvent.listPayments.invalidate();
+						utils.organization.sportsEvent.listRegistrations.invalidate();
+						utils.organization.eventOrganization.getProjection.invalidate();
+					}
 					modal.handleClose();
 				},
 				onError: (error) => {
@@ -254,6 +296,8 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 						notes: payment.notes ?? "",
 					}
 				: {
+						type: "training",
+						registrationId: null,
 						sessionId: null, // Keep for backwards compatibility
 						sessionIds: initialSessionIds,
 						athleteId: initialAthleteId,
@@ -271,9 +315,21 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 					},
 		});
 
-		// Watch sessions and service for price auto-fill
+		// Watch fields for conditional logic
+		const watchedAthleteId = form.watch("athleteId");
 		const primarySessionIds = form.watch("sessionIds") ?? [];
 		const watchedServiceId = form.watch("serviceId");
+
+		// Fetch events for the selected athlete
+		const { data: athleteEventsData } =
+			trpc.organization.trainingPayment.listEventsForAthlete.useQuery(
+				{ athleteId: watchedAthleteId! },
+				{
+					enabled: !!watchedAthleteId && !isEditing,
+					staleTime: 10000,
+				},
+			);
+		const athleteEvents = athleteEventsData ?? [];
 
 		// For backwards compatibility, use first session for service/athlete logic
 		const primarySessionId = primarySessionIds[0] ?? null;
@@ -429,6 +485,8 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 		React.useEffect(() => {
 			if (modal.visible && !prevVisibleRef.current && !isEditing) {
 				form.reset({
+					type: "training",
+					registrationId: null,
 					sessionId: null,
 					sessionIds: initialSessionIds,
 					athleteId: initialAthleteId,
@@ -447,6 +505,8 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 				setSelectedSessions([]);
 				setSelectedAthleteLabel(null);
 				setSelectedServiceLabel(null);
+				setSelectedEventLabel(null);
+				setPaymentType("training");
 				setSessionSearchQuery("");
 				setAthleteSearchQuery("");
 				setServiceSearchQuery("");
@@ -499,6 +559,41 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 							)}
 						/>
 
+						{/* Show linked context when editing */}
+						{isEditing && payment?.athlete?.user?.name && (
+							<Field>
+								<FormLabel>{t("form.athlete")}</FormLabel>
+								<Input
+									value={payment.athlete.user.name}
+									disabled
+									className="bg-muted"
+								/>
+							</Field>
+						)}
+						{isEditing && payment?.type === "event" && payment.registration && (
+							<Field>
+								<FormLabel>{t("form.event")}</FormLabel>
+								<Input
+									value={`${payment.registration.event?.title ?? ""} - ${payment.registration.registrantName}`}
+									disabled
+									className="bg-muted"
+								/>
+								<FormDescription className="text-xs text-blue-600">
+									{t("form.eventSelected")}
+								</FormDescription>
+							</Field>
+						)}
+						{isEditing && payment?.session && (
+							<Field>
+								<FormLabel>{t("form.session")}</FormLabel>
+								<Input
+									value={payment.session.title}
+									disabled
+									className="bg-muted"
+								/>
+							</Field>
+						)}
+
 						{!isEditing && (
 							<>
 								{/* Athlete selector - appears first so sessions can be filtered by athlete */}
@@ -531,6 +626,11 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 															// Clear selected sessions when athlete changes
 															form.setValue("sessionIds", []);
 															setSelectedSessions([]);
+															// Clear event selection when athlete changes
+															form.setValue("registrationId", null);
+															form.setValue("type", "training");
+															setSelectedEventLabel(null);
+															setPaymentType("training");
 														}}
 														value={field.value ?? "none"}
 													>
@@ -583,6 +683,11 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 																					// Clear selected sessions when athlete is cleared
 																					form.setValue("sessionIds", []);
 																					setSelectedSessions([]);
+																					// Clear event selection
+																					form.setValue("registrationId", null);
+																					form.setValue("type", "training");
+																					setSelectedEventLabel(null);
+																					setPaymentType("training");
 																				}}
 																				onKeyDown={(e) => {
 																					if (
@@ -597,6 +702,14 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 																						setSessionAthleteFilter(null);
 																						form.setValue("sessionIds", []);
 																						setSelectedSessions([]);
+																						// Clear event selection
+																						form.setValue(
+																							"registrationId",
+																							null,
+																						);
+																						form.setValue("type", "training");
+																						setSelectedEventLabel(null);
+																						setPaymentType("training");
 																					}
 																				}}
 																			>
@@ -658,6 +771,14 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 																							// Clear selected sessions when athlete changes
 																							form.setValue("sessionIds", []);
 																							setSelectedSessions([]);
+																							// Clear event selection when athlete changes
+																							form.setValue(
+																								"registrationId",
+																								null,
+																							);
+																							form.setValue("type", "training");
+																							setSelectedEventLabel(null);
+																							setPaymentType("training");
 																						}}
 																					>
 																						<span>{athlete.name}</span>
@@ -676,7 +797,157 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 									)}
 								/>
 
-								{!fixedSessionId && (
+								{/* Event selector - only when athlete is selected and not in session-fixed context */}
+								{watchedAthleteId && !fixedSessionId && (
+									<FormField
+										control={form.control}
+										name="registrationId"
+										render={({ field }) => (
+											<FormItem asChild>
+												<Field>
+													<FormLabel>{t("form.eventOptional")}</FormLabel>
+													<Popover
+														open={eventPopoverOpen}
+														onOpenChange={setEventPopoverOpen}
+													>
+														<PopoverTrigger asChild>
+															<FormControl>
+																<Button
+																	variant="outline"
+																	className="w-full justify-between font-normal"
+																>
+																	{selectedEventLabel ?? (
+																		<span className="text-muted-foreground">
+																			{t("form.selectEvent")}
+																		</span>
+																	)}
+																	<div className="flex items-center gap-1">
+																		{field.value && (
+																			<span
+																				role="button"
+																				tabIndex={0}
+																				className="rounded-sm p-0.5 hover:bg-muted"
+																				onClick={(e) => {
+																					e.stopPropagation();
+																					field.onChange(null);
+																					setSelectedEventLabel(null);
+																					setPaymentType("training");
+																					form.setValue("type", "training");
+																				}}
+																				onKeyDown={(e) => {
+																					if (
+																						e.key === "Enter" ||
+																						e.key === " "
+																					) {
+																						e.preventDefault();
+																						e.stopPropagation();
+																						field.onChange(null);
+																						setSelectedEventLabel(null);
+																						setPaymentType("training");
+																						form.setValue("type", "training");
+																					}
+																				}}
+																			>
+																				<XIcon className="size-3.5 text-muted-foreground" />
+																			</span>
+																		)}
+																		<ChevronsUpDownIcon className="size-4 shrink-0 opacity-50" />
+																	</div>
+																</Button>
+															</FormControl>
+														</PopoverTrigger>
+														<PopoverContent
+															className="w-[350px] p-0"
+															align="start"
+														>
+															<Command shouldFilter={false}>
+																<CommandInput
+																	placeholder={t("form.searchEvent")}
+																/>
+																<CommandList>
+																	{athleteEvents.length === 0 && (
+																		<CommandEmpty>
+																			{t("form.noEventsFound")}
+																		</CommandEmpty>
+																	)}
+																	{athleteEvents.length > 0 && (
+																		<CommandGroup>
+																			{athleteEvents.map((reg) => {
+																				const eventTitle =
+																					reg.event?.title ?? "Evento";
+																				const eventDate = reg.event?.startDate
+																					? format(
+																							reg.event.startDate,
+																							"dd/MM/yyyy",
+																						)
+																					: "";
+																				const label = `${eventTitle} - ${reg.registrantName}${eventDate ? ` (${eventDate})` : ""}`;
+																				return (
+																					<CommandItem
+																						key={reg.id}
+																						value={reg.id}
+																						onSelect={() => {
+																							field.onChange(reg.id);
+																							setSelectedEventLabel(label);
+																							setPaymentType("event");
+																							form.setValue("type", "event");
+																							setEventPopoverOpen(false);
+																							// Auto-fill amount from registration price
+																							const currentAmount =
+																								form.getValues("amount");
+																							if (
+																								currentAmount === 0 &&
+																								reg.price > 0
+																							) {
+																								form.setValue(
+																									"amount",
+																									reg.price / 100,
+																								);
+																								form.setValue(
+																									"paidAmount",
+																									reg.price / 100,
+																								);
+																							}
+																							// Auto-fill description
+																							const currentDesc =
+																								form.getValues("description");
+																							if (!currentDesc) {
+																								form.setValue(
+																									"description",
+																									`${eventTitle} - ${reg.registrantName}`,
+																								);
+																							}
+																							// Clear session/service selections
+																							form.setValue("sessionIds", []);
+																							form.setValue("sessionId", null);
+																							form.setValue("serviceId", null);
+																							setSelectedSessions([]);
+																							setSelectedServiceLabel(null);
+																						}}
+																					>
+																						<span>{label}</span>
+																					</CommandItem>
+																				);
+																			})}
+																		</CommandGroup>
+																	)}
+																</CommandList>
+															</Command>
+														</PopoverContent>
+													</Popover>
+													{paymentType === "event" && (
+														<FormDescription className="text-xs text-blue-600">
+															{t("form.eventSelected")}
+														</FormDescription>
+													)}
+													<FormMessage />
+												</Field>
+											</FormItem>
+										)}
+									/>
+								)}
+
+								{!fixedSessionId && paymentType !== "event" && (
 									<FormField
 										control={form.control}
 										name="sessionIds"
@@ -838,8 +1109,8 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 									/>
 								)}
 
-								{/* Service selector - hidden when session has a linked service */}
-								{!sessionHasService && (
+								{/* Service selector - hidden when session has a linked service or event selected */}
+								{!sessionHasService && paymentType !== "event" && (
 									<FormField
 										control={form.control}
 										name="serviceId"

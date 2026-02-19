@@ -2,7 +2,6 @@ import { and, asc, count, desc, eq, gte, lte, sql, sum } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
 	AttendanceStatus,
-	EventPaymentStatus,
 	EventRegistrationStatus,
 	TrainingPaymentStatus,
 	TrainingSessionStatus,
@@ -12,7 +11,6 @@ import {
 	athleteTable,
 	attendanceTable,
 	coachTable,
-	eventPaymentTable,
 	eventRegistrationTable,
 	expenseCategoryTable,
 	expenseTable,
@@ -587,13 +585,13 @@ export const organizationReportsRouter = createTRPCRouter({
 					eventTitle: sportsEventTable.title,
 					eventType: sportsEventTable.eventType,
 					eventDate: sportsEventTable.startDate,
-					total: sum(eventPaymentTable.amount),
+					total: sum(trainingPaymentTable.paidAmount),
 					count: count(),
 				})
-				.from(eventPaymentTable)
+				.from(trainingPaymentTable)
 				.innerJoin(
 					eventRegistrationTable,
-					eq(eventPaymentTable.registrationId, eventRegistrationTable.id),
+					eq(trainingPaymentTable.registrationId, eventRegistrationTable.id),
 				)
 				.innerJoin(
 					sportsEventTable,
@@ -601,10 +599,11 @@ export const organizationReportsRouter = createTRPCRouter({
 				)
 				.where(
 					and(
-						eq(eventPaymentTable.organizationId, ctx.organization.id),
-						eq(eventPaymentTable.status, EventPaymentStatus.paid),
-						gte(eventPaymentTable.paymentDate, from),
-						lte(eventPaymentTable.paymentDate, to),
+						eq(trainingPaymentTable.organizationId, ctx.organization.id),
+						eq(trainingPaymentTable.type, "event"),
+						eq(trainingPaymentTable.status, TrainingPaymentStatus.paid),
+						gte(trainingPaymentTable.paymentDate, from),
+						lte(trainingPaymentTable.paymentDate, to),
 					),
 				)
 				.groupBy(
@@ -613,7 +612,7 @@ export const organizationReportsRouter = createTRPCRouter({
 					sportsEventTable.eventType,
 					sportsEventTable.startDate,
 				)
-				.orderBy(desc(sum(eventPaymentTable.amount)))
+				.orderBy(desc(sum(trainingPaymentTable.amount)))
 				.limit(input.limit);
 
 			return result.map((r) => ({
@@ -718,57 +717,54 @@ export const organizationReportsRouter = createTRPCRouter({
 		.query(async ({ ctx, input }) => {
 			const { from, to } = input.dateRange ?? getDefaultDateRange();
 
-			let trainingDateTrunc: ReturnType<typeof sql>;
-			let eventDateTrunc: ReturnType<typeof sql>;
+			let dateTrunc: ReturnType<typeof sql>;
 			switch (input.period) {
 				case "day":
-					trainingDateTrunc = sql`DATE_TRUNC('day', ${trainingPaymentTable.paymentDate})`;
-					eventDateTrunc = sql`DATE_TRUNC('day', ${eventPaymentTable.paymentDate})`;
+					dateTrunc = sql`DATE_TRUNC('day', ${trainingPaymentTable.paymentDate})`;
 					break;
 				case "week":
-					trainingDateTrunc = sql`DATE_TRUNC('week', ${trainingPaymentTable.paymentDate})`;
-					eventDateTrunc = sql`DATE_TRUNC('week', ${eventPaymentTable.paymentDate})`;
+					dateTrunc = sql`DATE_TRUNC('week', ${trainingPaymentTable.paymentDate})`;
 					break;
 				case "year":
-					trainingDateTrunc = sql`DATE_TRUNC('year', ${trainingPaymentTable.paymentDate})`;
-					eventDateTrunc = sql`DATE_TRUNC('year', ${eventPaymentTable.paymentDate})`;
+					dateTrunc = sql`DATE_TRUNC('year', ${trainingPaymentTable.paymentDate})`;
 					break;
 				default:
-					trainingDateTrunc = sql`DATE_TRUNC('month', ${trainingPaymentTable.paymentDate})`;
-					eventDateTrunc = sql`DATE_TRUNC('month', ${eventPaymentTable.paymentDate})`;
+					dateTrunc = sql`DATE_TRUNC('month', ${trainingPaymentTable.paymentDate})`;
 			}
 
 			const [trainingRevenue, eventRevenue] = await Promise.all([
 				db
 					.select({
-						period: trainingDateTrunc,
+						period: dateTrunc,
 						total: sum(trainingPaymentTable.paidAmount),
 					})
 					.from(trainingPaymentTable)
 					.where(
 						and(
 							eq(trainingPaymentTable.organizationId, ctx.organization.id),
+							eq(trainingPaymentTable.type, "training"),
 							eq(trainingPaymentTable.status, TrainingPaymentStatus.paid),
 							gte(trainingPaymentTable.paymentDate, from),
 							lte(trainingPaymentTable.paymentDate, to),
 						),
 					)
-					.groupBy(trainingDateTrunc),
+					.groupBy(dateTrunc),
 				db
 					.select({
-						period: eventDateTrunc,
-						total: sum(eventPaymentTable.amount),
+						period: dateTrunc,
+						total: sum(trainingPaymentTable.paidAmount),
 					})
-					.from(eventPaymentTable)
+					.from(trainingPaymentTable)
 					.where(
 						and(
-							eq(eventPaymentTable.organizationId, ctx.organization.id),
-							eq(eventPaymentTable.status, EventPaymentStatus.paid),
-							gte(eventPaymentTable.paymentDate, from),
-							lte(eventPaymentTable.paymentDate, to),
+							eq(trainingPaymentTable.organizationId, ctx.organization.id),
+							eq(trainingPaymentTable.type, "event"),
+							eq(trainingPaymentTable.status, TrainingPaymentStatus.paid),
+							gte(trainingPaymentTable.paymentDate, from),
+							lte(trainingPaymentTable.paymentDate, to),
 						),
 					)
-					.groupBy(eventDateTrunc),
+					.groupBy(dateTrunc),
 			]);
 
 			// Safely convert period value (Date or string from pg) to an ISO key

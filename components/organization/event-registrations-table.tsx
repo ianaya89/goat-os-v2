@@ -204,6 +204,7 @@ export function EventRegistrationsTable({
 				toast.success("Inscripción cancelada");
 				utils.organization.sportsEvent.listRegistrations.invalidate();
 				utils.organization.sportsEvent.get.invalidate();
+				utils.organization.eventOrganization.getProjection.invalidate();
 			},
 			onError: (error: { message?: string }) => {
 				toast.error(error.message || "Error al cancelar la inscripción");

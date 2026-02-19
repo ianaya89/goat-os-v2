@@ -27,6 +27,7 @@ export const listTrainingPaymentsSchema = z.object({
 			athleteId: z.string().uuid().optional(),
 			sessionId: z.string().uuid().optional(),
 			serviceId: z.string().uuid().optional(),
+			type: z.enum(["training", "event"]).optional(),
 			dateRange: z
 				.object({
 					from: z.coerce.date(),
@@ -51,6 +52,10 @@ export const getSessionPaymentsSchema = z.object({
 
 // Create payment
 export const createTrainingPaymentSchema = z.object({
+	// Payment type: "training" (default) or "event"
+	type: z.enum(["training", "event"]).default("training"),
+	// Event payment: link to event registration
+	registrationId: z.string().uuid().optional().nullable(),
 	// Legacy: single session (for backwards compatibility)
 	sessionId: z.string().uuid().optional().nullable(),
 	// New: multiple sessions (for package payments)

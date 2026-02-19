@@ -102,6 +102,7 @@ export const EventPaymentModal = NiceModal.create<EventPaymentModalProps>(
 					utils.organization.sportsEvent.listPayments.invalidate();
 					utils.organization.sportsEvent.listRegistrations.invalidate();
 					utils.organization.sportsEvent.get.invalidate();
+					utils.organization.eventOrganization.getProjection.invalidate();
 					onSuccess?.();
 					modal.handleClose();
 				},

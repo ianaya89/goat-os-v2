@@ -63,7 +63,7 @@ export function getCapacityPercentage(
 }
 
 /**
- * Format price with currency
+ * Format price with currency (amounts stored in centavos, divided by 100 for display)
  * Examples: "$50,000 ARS", "$100 USD"
  */
 export function formatEventPrice(
@@ -76,7 +76,7 @@ export function formatEventPrice(
 		minimumFractionDigits: 0,
 		maximumFractionDigits: 0,
 	});
-	return formatter.format(price);
+	return formatter.format(price / 100);
 }
 
 /**

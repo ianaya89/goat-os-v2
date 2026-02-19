@@ -4,7 +4,6 @@ import {
 	type CashMovementReferenceType,
 	CashMovementType,
 	CashRegisterStatus,
-	EventPaymentMethod,
 	TrainingPaymentMethod,
 } from "@/lib/db/schema/enums";
 import { cashMovementTable, cashRegisterTable } from "@/lib/db/schema/tables";
@@ -44,9 +43,7 @@ export async function createCashMovementIfCash({
 }: CreateCashMovementParams): Promise<void> {
 	// Only create movement for cash payments
 	const isCash =
-		paymentMethod === TrainingPaymentMethod.cash ||
-		paymentMethod === EventPaymentMethod.cash ||
-		paymentMethod === "cash";
+		paymentMethod === TrainingPaymentMethod.cash || paymentMethod === "cash";
 
 	if (!isCash) {
 		return;

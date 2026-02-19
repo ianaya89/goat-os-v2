@@ -64,8 +64,10 @@ const DEFAULT_SORTING: SortingState = [{ id: "createdAt", desc: true }];
 interface TrainingPayment {
 	id: string;
 	organizationId: string;
+	type: string;
 	sessionId: string | null;
 	athleteId: string | null;
+	registrationId: string | null;
 	amount: number;
 	currency: string;
 	status: string;
@@ -77,6 +79,14 @@ interface TrainingPayment {
 	notes: string | null;
 	receiptImageKey: string | null;
 	createdAt: Date;
+	registration: {
+		id: string;
+		registrantName: string;
+		event: {
+			id: string;
+			title: string;
+		} | null;
+	} | null;
 	session: {
 		id: string;
 		title: string;
@@ -251,6 +261,7 @@ export function PaymentsTable({
 			onSuccess: () => {
 				toast.success(t("success.deleted"));
 				utils.organization.trainingPayment.invalidate();
+				utils.organization.eventOrganization.getProjection.invalidate();
 			},
 			onError: (error) => {
 				toast.error(error.message || t("error.deleteFailed"));

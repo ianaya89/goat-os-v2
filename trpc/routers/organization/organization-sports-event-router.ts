@@ -20,9 +20,9 @@ import {
 	CashMovementReferenceType,
 	DiscountMode,
 	DiscountValueType,
-	EventPaymentStatus,
 	EventRegistrationStatus,
 	PricingTierType,
+	TrainingPaymentStatus,
 } from "@/lib/db/schema/enums";
 import {
 	ageCategoryTable,
@@ -31,10 +31,10 @@ import {
 	eventCoachTable,
 	eventDiscountTable,
 	eventDiscountUsageTable,
-	eventPaymentTable,
 	eventPricingTierTable,
 	eventRegistrationTable,
 	sportsEventTable,
+	trainingPaymentTable,
 } from "@/lib/db/schema/tables";
 import { env } from "@/lib/env";
 import {
@@ -990,7 +990,10 @@ export const organizationSportsEventRouter = createTRPCRouter({
 						},
 						ageCategory: true,
 						payments: {
-							where: eq(eventPaymentTable.status, EventPaymentStatus.paid),
+							where: eq(
+								trainingPaymentTable.status,
+								TrainingPaymentStatus.paid,
+							),
 						},
 					},
 				}),
@@ -1457,12 +1460,13 @@ export const organizationSportsEventRouter = createTRPCRouter({
 		.input(listEventPaymentsSchema)
 		.query(async ({ ctx, input }) => {
 			const conditions: SQL[] = [
-				eq(eventPaymentTable.organizationId, ctx.organization.id),
+				eq(trainingPaymentTable.organizationId, ctx.organization.id),
+				eq(trainingPaymentTable.type, "event"),
 			];
 
 			if (input.registrationId) {
 				conditions.push(
-					eq(eventPaymentTable.registrationId, input.registrationId),
+					eq(trainingPaymentTable.registrationId, input.registrationId),
 				);
 			}
 
@@ -1475,7 +1479,7 @@ export const organizationSportsEventRouter = createTRPCRouter({
 				const registrationIds = registrations.map((r) => r.id);
 				if (registrationIds.length > 0) {
 					conditions.push(
-						inArray(eventPaymentTable.registrationId, registrationIds),
+						inArray(trainingPaymentTable.registrationId, registrationIds),
 					);
 				} else {
 					return { payments: [], total: 0 };
@@ -1484,7 +1488,7 @@ export const organizationSportsEventRouter = createTRPCRouter({
 
 			if (input.filters?.status && input.filters.status.length > 0) {
 				conditions.push(
-					inArray(eventPaymentTable.status, input.filters.status),
+					inArray(trainingPaymentTable.status, input.filters.status),
 				);
 			}
 
@@ -1493,18 +1497,21 @@ export const organizationSportsEventRouter = createTRPCRouter({
 				input.filters.paymentMethod.length > 0
 			) {
 				conditions.push(
-					inArray(eventPaymentTable.paymentMethod, input.filters.paymentMethod),
+					inArray(
+						trainingPaymentTable.paymentMethod,
+						input.filters.paymentMethod,
+					),
 				);
 			}
 
 			const whereCondition = and(...conditions);
 
 			const [payments, countResult] = await Promise.all([
-				db.query.eventPaymentTable.findMany({
+				db.query.trainingPaymentTable.findMany({
 					where: whereCondition,
 					limit: input.limit,
 					offset: input.offset,
-					orderBy: desc(eventPaymentTable.createdAt),
+					orderBy: desc(trainingPaymentTable.createdAt),
 					with: {
 						registration: {
 							columns: {
@@ -1517,7 +1524,7 @@ export const organizationSportsEventRouter = createTRPCRouter({
 				}),
 				db
 					.select({ count: count() })
-					.from(eventPaymentTable)
+					.from(trainingPaymentTable)
 					.where(whereCondition),
 			]);
 
@@ -1546,18 +1553,19 @@ export const organizationSportsEventRouter = createTRPCRouter({
 			}
 
 			const [payment] = await db
-				.insert(eventPaymentTable)
+				.insert(trainingPaymentTable)
 				.values({
+					type: "event",
 					registrationId: input.registrationId,
 					organizationId: ctx.organization.id,
 					amount: input.amount,
 					currency: registration.currency,
-					status: EventPaymentStatus.paid,
+					status: TrainingPaymentStatus.paid,
 					paymentMethod: input.paymentMethod,
 					paymentDate: input.paymentDate ?? new Date(),
 					receiptNumber: input.receiptNumber,
 					notes: input.notes,
-					processedBy: ctx.user.id,
+					recordedBy: ctx.user.id,
 				})
 				.returning();
 
@@ -1604,12 +1612,12 @@ export const organizationSportsEventRouter = createTRPCRouter({
 			const { id, ...data } = input;
 
 			const [updated] = await db
-				.update(eventPaymentTable)
+				.update(trainingPaymentTable)
 				.set(data)
 				.where(
 					and(
-						eq(eventPaymentTable.id, id),
-						eq(eventPaymentTable.organizationId, ctx.organization.id),
+						eq(trainingPaymentTable.id, id),
+						eq(trainingPaymentTable.organizationId, ctx.organization.id),
 					),
 				)
 				.returning();
@@ -1627,10 +1635,10 @@ export const organizationSportsEventRouter = createTRPCRouter({
 	processRefund: protectedOrganizationProcedure
 		.input(processRefundSchema)
 		.mutation(async ({ ctx, input }) => {
-			const payment = await db.query.eventPaymentTable.findFirst({
+			const payment = await db.query.trainingPaymentTable.findFirst({
 				where: and(
-					eq(eventPaymentTable.id, input.paymentId),
-					eq(eventPaymentTable.organizationId, ctx.organization.id),
+					eq(trainingPaymentTable.id, input.paymentId),
+					eq(trainingPaymentTable.organizationId, ctx.organization.id),
 				),
 				with: {
 					registration: true,
@@ -1655,26 +1663,28 @@ export const organizationSportsEventRouter = createTRPCRouter({
 			}
 
 			const [updated] = await db
-				.update(eventPaymentTable)
+				.update(trainingPaymentTable)
 				.set({
 					refundedAmount: newRefundedAmount,
 					refundedAt: new Date(),
 					refundReason: input.reason,
 					status:
 						newRefundedAmount === payment.amount
-							? EventPaymentStatus.refunded
-							: EventPaymentStatus.partial,
+							? TrainingPaymentStatus.refunded
+							: TrainingPaymentStatus.partial,
 				})
-				.where(eq(eventPaymentTable.id, input.paymentId))
+				.where(eq(trainingPaymentTable.id, input.paymentId))
 				.returning();
 
 			// Update registration paid amount
-			await db
-				.update(eventRegistrationTable)
-				.set({
-					paidAmount: sql`GREATEST(${eventRegistrationTable.paidAmount} - ${input.refundAmount}, 0)`,
-				})
-				.where(eq(eventRegistrationTable.id, payment.registrationId));
+			if (payment.registrationId) {
+				await db
+					.update(eventRegistrationTable)
+					.set({
+						paidAmount: sql`GREATEST(${eventRegistrationTable.paidAmount} - ${input.refundAmount}, 0)`,
+					})
+					.where(eq(eventRegistrationTable.id, payment.registrationId));
+			}
 
 			return updated;
 		}),
@@ -1687,10 +1697,10 @@ export const organizationSportsEventRouter = createTRPCRouter({
 		.input(getReceiptUploadUrlSchema)
 		.mutation(async ({ ctx, input }) => {
 			// Verify payment belongs to organization
-			const payment = await db.query.eventPaymentTable.findFirst({
+			const payment = await db.query.trainingPaymentTable.findFirst({
 				where: and(
-					eq(eventPaymentTable.id, input.paymentId),
-					eq(eventPaymentTable.organizationId, ctx.organization.id),
+					eq(trainingPaymentTable.id, input.paymentId),
+					eq(trainingPaymentTable.organizationId, ctx.organization.id),
 				),
 			});
 
@@ -1732,10 +1742,10 @@ export const organizationSportsEventRouter = createTRPCRouter({
 		.input(updatePaymentReceiptSchema)
 		.mutation(async ({ ctx, input }) => {
 			// Verify payment belongs to organization
-			const payment = await db.query.eventPaymentTable.findFirst({
+			const payment = await db.query.trainingPaymentTable.findFirst({
 				where: and(
-					eq(eventPaymentTable.id, input.paymentId),
-					eq(eventPaymentTable.organizationId, ctx.organization.id),
+					eq(trainingPaymentTable.id, input.paymentId),
+					eq(trainingPaymentTable.organizationId, ctx.organization.id),
 				),
 			});
 
@@ -1760,12 +1770,12 @@ export const organizationSportsEventRouter = createTRPCRouter({
 
 			// Update payment with new receipt
 			const [updated] = await db
-				.update(eventPaymentTable)
+				.update(trainingPaymentTable)
 				.set({
 					receiptImageKey: input.receiptImageKey,
 					receiptImageUploadedAt: new Date(),
 				})
-				.where(eq(eventPaymentTable.id, input.paymentId))
+				.where(eq(trainingPaymentTable.id, input.paymentId))
 				.returning();
 
 			return updated;
@@ -1775,10 +1785,10 @@ export const organizationSportsEventRouter = createTRPCRouter({
 		.input(deletePaymentReceiptSchema)
 		.mutation(async ({ ctx, input }) => {
 			// Verify payment belongs to organization
-			const payment = await db.query.eventPaymentTable.findFirst({
+			const payment = await db.query.trainingPaymentTable.findFirst({
 				where: and(
-					eq(eventPaymentTable.id, input.paymentId),
-					eq(eventPaymentTable.organizationId, ctx.organization.id),
+					eq(trainingPaymentTable.id, input.paymentId),
+					eq(trainingPaymentTable.organizationId, ctx.organization.id),
 				),
 			});
 
@@ -1807,12 +1817,12 @@ export const organizationSportsEventRouter = createTRPCRouter({
 
 			// Update payment to remove receipt
 			const [updated] = await db
-				.update(eventPaymentTable)
+				.update(trainingPaymentTable)
 				.set({
 					receiptImageKey: null,
 					receiptImageUploadedAt: null,
 				})
-				.where(eq(eventPaymentTable.id, input.paymentId))
+				.where(eq(trainingPaymentTable.id, input.paymentId))
 				.returning();
 
 			return updated;
@@ -1822,10 +1832,10 @@ export const organizationSportsEventRouter = createTRPCRouter({
 		.input(getReceiptDownloadUrlSchema)
 		.query(async ({ ctx, input }) => {
 			// Verify payment belongs to organization
-			const payment = await db.query.eventPaymentTable.findFirst({
+			const payment = await db.query.trainingPaymentTable.findFirst({
 				where: and(
-					eq(eventPaymentTable.id, input.paymentId),
-					eq(eventPaymentTable.organizationId, ctx.organization.id),
+					eq(trainingPaymentTable.id, input.paymentId),
+					eq(trainingPaymentTable.organizationId, ctx.organization.id),
 				),
 			});
 

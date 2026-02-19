@@ -50,7 +50,6 @@ import {
 	eventInventoryTable,
 	eventMilestoneTable,
 	eventNoteTable,
-	eventPaymentTable,
 	eventPricingTierTable,
 	eventRegistrationTable,
 	eventRiskLogTable,
@@ -186,7 +185,7 @@ export const organizationRelations = relations(
 		ageCategories: many(ageCategoryTable),
 		sportsEvents: many(sportsEventTable),
 		eventRegistrations: many(eventRegistrationTable),
-		eventPayments: many(eventPaymentTable),
+		// eventPayments removed - unified into trainingPayments
 		// Organization-level vendors and sponsors
 		vendors: many(eventVendorTable),
 		sponsors: many(sponsorTable),
@@ -670,6 +669,12 @@ export const trainingPaymentRelations = relations(
 			fields: [trainingPaymentTable.recordedBy],
 			references: [userTable.id],
 		}),
+		// Event payment: link to event registration (type="event")
+		registration: one(eventRegistrationTable, {
+			fields: [trainingPaymentTable.registrationId],
+			references: [eventRegistrationTable.id],
+			relationName: "registrationPayments",
+		}),
 	}),
 );
 
@@ -1008,27 +1013,10 @@ export const eventRegistrationRelations = relations(
 			fields: [eventRegistrationTable.appliedDiscountId],
 			references: [eventDiscountTable.id],
 		}),
-		payments: many(eventPaymentTable),
+		payments: many(trainingPaymentTable, {
+			relationName: "registrationPayments",
+		}),
 		discountUsages: many(eventDiscountUsageTable),
-	}),
-);
-
-// Event Payment relations
-export const eventPaymentRelations = relations(
-	eventPaymentTable,
-	({ one }) => ({
-		registration: one(eventRegistrationTable, {
-			fields: [eventPaymentTable.registrationId],
-			references: [eventRegistrationTable.id],
-		}),
-		organization: one(organizationTable, {
-			fields: [eventPaymentTable.organizationId],
-			references: [organizationTable.id],
-		}),
-		processedByUser: one(userTable, {
-			fields: [eventPaymentTable.processedBy],
-			references: [userTable.id],
-		}),
 	}),
 );
 

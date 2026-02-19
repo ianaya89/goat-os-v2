@@ -1,18 +1,13 @@
 import * as p from "@clack/prompts";
 import { and, eq } from "drizzle-orm";
 import { getDb, schema } from "../db";
-import {
-	REAL_LIFE_ATHLETE_COUNT,
-	REAL_LIFE_ATHLETES,
-} from "./real-life-athletes";
+import { seedRealLifeEventCampusFeb } from "./real-life-event-campus-feb";
 import {
 	METROPOLITANO_CLUBS,
 	METROPOLITANO_CLUBS_COUNT,
 	NATIONAL_TEAMS,
 	NATIONAL_TEAMS_COUNT,
 } from "./real-life-institutions";
-import { seedRealLifePayments } from "./real-life-payments";
-import { seedRealLifeSessions } from "./real-life-sessions";
 
 // Fixed constants for idempotent seeding
 const REAL_LIFE_ORG_SLUG = "goat-sports";
@@ -85,17 +80,6 @@ const COACH_TOMAS_USER_ID = "20000000-0000-4000-8000-000000000080";
 const COACH_TOMAS_MEMBER_ID = "20000000-0000-4000-8000-000000000081";
 const COACH_TOMAS_ID = "20000000-0000-4000-8000-000000000082";
 
-// Athlete UUID prefix (300xxxxx to avoid conflicts)
-const ATHLETE_UUID_PREFIX = "30000000-0000-4000-8000";
-const ATHLETE_USER_UUID_PREFIX = "31000000-0000-4000-8000";
-const ATHLETE_MEMBER_UUID_PREFIX = "32000000-0000-4000-8000";
-
-// Fixed athlete data
-const ATHLETE_PASSWORD = "Goat2025";
-const ATHLETE_BIRTH_DATE = new Date(2012, 0, 1); // January 1, 2012 (all athletes ~13 years old)
-const ATHLETE_LEVEL = "intermediate" as const;
-const ATHLETE_SPORT = "Hockey";
-
 // Coach password
 const COACH_PASSWORD = "Goat2025";
 
@@ -120,7 +104,7 @@ const AGE_CATEGORY_SUB16_ID = "20000000-0000-4000-8000-000000000113";
 const AGE_CATEGORY_SUB18_ID = "20000000-0000-4000-8000-000000000114";
 
 // Events
-const EVENT_CAMPUS_VERANO_ID = "20000000-0000-4000-8000-000000000120";
+const EVENT_CAMPUS_VERANO_FEB_ID = "20000000-0000-4000-8000-000000000121";
 
 // Services
 const SERVICE_HOCKEY_PERSONALIZADO_ID = "20000000-0000-4000-8000-000000000130";
@@ -353,17 +337,17 @@ interface RealLifeEvent {
 
 const EVENTS: RealLifeEvent[] = [
 	{
-		id: EVENT_CAMPUS_VERANO_ID,
-		title: "Campus Verano 2026",
-		slug: "campus-verano-2026",
+		id: EVENT_CAMPUS_VERANO_FEB_ID,
+		title: "Campus de Verano Febrero 2026",
+		slug: "campus-verano-febrero-2026",
 		description:
-			"Campus de verano de hockey GOAT Academy. Entrenamiento intensivo durante enero con los mejores coaches. Incluye preparación física, técnica individual, táctica grupal y partidos amistosos.",
+			"Campus de verano de hockey GOAT Academy - Edición Febrero. Dos días intensivos de entrenamiento con los mejores coaches. Incluye preparación física, técnica individual, táctica grupal y partidos.",
 		eventType: "campus",
-		status: "registration_open",
-		startDate: new Date(2026, 0, 6), // January 6, 2026
-		endDate: new Date(2026, 0, 31), // January 31, 2026
-		registrationOpenDate: new Date(2025, 10, 1), // November 1, 2025
-		registrationCloseDate: new Date(2026, 0, 3), // January 3, 2026
+		status: "completed",
+		startDate: new Date(2026, 1, 16), // February 16, 2026
+		endDate: new Date(2026, 1, 17), // February 17, 2026
+		registrationOpenDate: new Date(2026, 0, 10), // January 10, 2026
+		registrationCloseDate: new Date(2026, 1, 14), // February 14, 2026
 		locationId: LOCATION_CAMPO_VERDE_ID,
 		maxCapacity: 100,
 		venueDetails:
@@ -418,45 +402,6 @@ const SERVICES: RealLifeService[] = [
 		sortOrder: 5,
 	},
 ];
-
-// Generate deterministic UUIDs for athlete entities
-function athleteUUID(index: number): string {
-	const indexHex = index.toString(16).padStart(12, "0");
-	return `${ATHLETE_UUID_PREFIX}-${indexHex}`;
-}
-
-function athleteUserUUID(index: number): string {
-	const indexHex = index.toString(16).padStart(12, "0");
-	return `${ATHLETE_USER_UUID_PREFIX}-${indexHex}`;
-}
-
-function athleteMemberUUID(index: number): string {
-	const indexHex = index.toString(16).padStart(12, "0");
-	return `${ATHLETE_MEMBER_UUID_PREFIX}-${indexHex}`;
-}
-
-// Generate email from athlete name (normalized)
-function generateAthleteEmail(
-	firstName: string,
-	lastName: string,
-	index: number,
-): string {
-	const normalizedFirst = firstName
-		.toLowerCase()
-		.normalize("NFD")
-		.replace(/[\u0300-\u036f]/g, "") // Remove accents
-		.replace(/[^a-z]/g, "");
-	const normalizedLast = lastName
-		.toLowerCase()
-		.normalize("NFD")
-		.replace(/[\u0300-\u036f]/g, "")
-		.replace(/[^a-z]/g, "");
-
-	if (normalizedLast) {
-		return `${normalizedFirst}.${normalizedLast}@goat-academy.local`;
-	}
-	return `${normalizedFirst}${index}@goat-academy.local`;
-}
 
 /**
  * Run the "real-life" seed with fixed data for GOAT Sports organization
@@ -1102,133 +1047,8 @@ export async function runRealLifeSeed(): Promise<void> {
 			: "Coaches already exist",
 	);
 
-	// 10. Create athletes with user accounts (check by email to be resilient)
-	const athleteSpinner = p.spinner();
-	athleteSpinner.start(
-		`Setting up ${REAL_LIFE_ATHLETE_COUNT} athletes with user accounts...`,
-	);
-
-	// Hash password for all athletes (reuse hashPassword from above)
-	const athleteHashedPassword = await hashPassword(ATHLETE_PASSWORD);
-
-	let athletesCreated = 0;
-
-	for (let i = 0; i < REAL_LIFE_ATHLETES.length; i++) {
-		const athlete = REAL_LIFE_ATHLETES[i];
-		if (!athlete) continue;
-
-		const athleteId = athleteUUID(i + 1);
-		const athleteUserId = athleteUserUUID(i + 1);
-		const athleteMemberId = athleteMemberUUID(i + 1);
-
-		const fullName = athlete.lastName
-			? `${athlete.firstName} ${athlete.lastName}`
-			: athlete.firstName;
-
-		const email = generateAthleteEmail(
-			athlete.firstName,
-			athlete.lastName,
-			i + 1,
-		);
-
-		// Check if user with this email already exists
-		const existingUser = await db.query.userTable.findFirst({
-			where: eq(schema.userTable.email, email),
-		});
-
-		let userId = athleteUserId;
-
-		if (!existingUser) {
-			// Create user for athlete
-			await db
-				.insert(schema.userTable)
-				.values({
-					id: athleteUserId,
-					name: fullName,
-					email,
-					emailVerified: true,
-					role: "user",
-					onboardingComplete: true,
-				})
-				.onConflictDoNothing();
-
-			// Create credential account
-			await db
-				.insert(schema.accountTable)
-				.values({
-					id: `33000000-0000-4000-8000-${(i + 1).toString(16).padStart(12, "0")}`,
-					userId: athleteUserId,
-					accountId: athleteUserId,
-					providerId: "credential",
-					password: athleteHashedPassword,
-				})
-				.onConflictDoNothing();
-		} else {
-			userId = existingUser.id;
-		}
-
-		// Check if athlete already exists for this user in this org
-		const existingAthlete = await db.query.athleteTable.findFirst({
-			where: and(
-				eq(schema.athleteTable.organizationId, organizationId),
-				eq(schema.athleteTable.userId, userId),
-			),
-		});
-
-		if (existingAthlete) {
-			continue;
-		}
-
-		// Check if membership exists
-		const existingMembership = await db.query.memberTable.findFirst({
-			where: and(
-				eq(schema.memberTable.userId, userId),
-				eq(schema.memberTable.organizationId, organizationId),
-			),
-		});
-
-		if (!existingMembership) {
-			// Create member record
-			await db
-				.insert(schema.memberTable)
-				.values({
-					id: athleteMemberId,
-					organizationId,
-					userId,
-					role: "member",
-				})
-				.onConflictDoNothing();
-		}
-
-		// Create athlete linked to user
-		await db
-			.insert(schema.athleteTable)
-			.values({
-				id: athleteId,
-				organizationId,
-				userId, // Link to user account
-				sport: ATHLETE_SPORT,
-				birthDate: ATHLETE_BIRTH_DATE,
-				level: ATHLETE_LEVEL,
-				status: "active",
-				nationality: "Argentina",
-			})
-			.onConflictDoNothing();
-
-		athletesCreated++;
-	}
-
-	athleteSpinner.stop(
-		athletesCreated > 0
-			? `Created ${athletesCreated} athlete(s) with user accounts`
-			: "Athletes already exist",
-	);
-
-	// 11. Create training sessions from calendar
-	await seedRealLifeSessions();
-
-	// 12. Create hockey personalizado payments
-	await seedRealLifePayments();
+	// 10. Create Campus de Verano Febrero 2026 registrations and payments
+	await seedRealLifeEventCampusFeb();
 
 	// Summary
 	p.note(
@@ -1239,14 +1059,12 @@ Admin users: ${ADMIN_USER_G_EMAIL}, ${ADMIN_USER_S_EMAIL}, ${ADMIN_USER_C_EMAIL}
 Locations: Campo Verde, Campo Azul
 Groups: Pretemporada Hockey 2026, Sub 10 Hockey
 Age Categories: Sub 10, Sub 12, Sub 14, Sub 16, Sub 18
-Events: Campus Verano 2026
+Events: Campus Verano Febrero 2026 (85 registrations)
 Services: Hockey Personalizado, Pretemporada de Hockey, Físico 30m/60m, Academia
 Clubs: ${METROPOLITANO_CLUBS_COUNT} clubs (Torneo Metropolitano de Hockey)
 National Teams: ${NATIONAL_TEAMS_COUNT} seleccionados (nacionales y provinciales)
 Coaches: Pilar, Santi, Ignacio, Manuel, Sasha, Santiago, Tomas (password: ${COACH_PASSWORD})
-Athletes: ${REAL_LIFE_ATHLETE_COUNT} GOAT Academy athletes (password: ${ATHLETE_PASSWORD})
-Training Sessions: January 2026 calendar sessions
-Payments: Hockey Personalizado (Enero 2026)`,
+Campus Febrero: 85 registrations with event payments`,
 		"Real-Life Seed Summary",
 	);
 }

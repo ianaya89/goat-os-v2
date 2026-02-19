@@ -16,11 +16,11 @@ import {
 	EventBudgetStatus,
 	EventChecklistStatus,
 	EventMilestoneStatus,
-	EventPaymentStatus,
 	EventRegistrationStatus,
 	EventRiskStatus,
 	EventSponsorBenefitStatus,
 	EventStaffType,
+	TrainingPaymentStatus,
 } from "@/lib/db/schema/enums";
 import {
 	eventBudgetLineTable,
@@ -29,7 +29,6 @@ import {
 	eventInventoryTable,
 	eventMilestoneTable,
 	eventNoteTable,
-	eventPaymentTable,
 	eventRegistrationTable,
 	eventRiskLogTable,
 	eventRiskTable,
@@ -43,6 +42,7 @@ import {
 	eventZoneStaffTable,
 	eventZoneTable,
 	sportsEventTable,
+	trainingPaymentTable,
 } from "@/lib/db/schema/tables";
 import {
 	assignStaffToZoneSchema,
@@ -2016,19 +2016,19 @@ export const organizationEventOrganizationRouter = createTRPCRouter({
 			// Get all payments for registrations of this event
 			const payments = await db
 				.select({
-					amount: eventPaymentTable.amount,
-					status: eventPaymentTable.status,
-					refundedAmount: eventPaymentTable.refundedAmount,
+					amount: trainingPaymentTable.amount,
+					status: trainingPaymentTable.status,
+					refundedAmount: trainingPaymentTable.refundedAmount,
 				})
-				.from(eventPaymentTable)
+				.from(trainingPaymentTable)
 				.innerJoin(
 					eventRegistrationTable,
-					eq(eventPaymentTable.registrationId, eventRegistrationTable.id),
+					eq(trainingPaymentTable.registrationId, eventRegistrationTable.id),
 				)
 				.where(
 					and(
 						eq(eventRegistrationTable.eventId, input.id),
-						eq(eventPaymentTable.organizationId, ctx.organization.id),
+						eq(trainingPaymentTable.organizationId, ctx.organization.id),
 					),
 				);
 
@@ -2094,11 +2094,11 @@ export const organizationEventOrganizationRouter = createTRPCRouter({
 			let refundedAmount = 0;
 
 			for (const payment of payments) {
-				if (payment.status === EventPaymentStatus.paid) {
+				if (payment.status === TrainingPaymentStatus.paid) {
 					collectedRevenue += payment.amount - (payment.refundedAmount ?? 0);
 				} else if (
-					payment.status === EventPaymentStatus.pending ||
-					payment.status === EventPaymentStatus.processing
+					payment.status === TrainingPaymentStatus.pending ||
+					payment.status === TrainingPaymentStatus.processing
 				) {
 					pendingPayments += payment.amount;
 				}

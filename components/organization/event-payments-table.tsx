@@ -148,6 +148,7 @@ export function EventPaymentsTable({
 				toast.success(t("refund.success"));
 				utils.organization.sportsEvent.listPayments.invalidate();
 				utils.organization.sportsEvent.listRegistrations.invalidate();
+				utils.organization.eventOrganization.getProjection.invalidate();
 			},
 			onError: (error: { message?: string }) => {
 				toast.error(error.message || t("refund.error"));

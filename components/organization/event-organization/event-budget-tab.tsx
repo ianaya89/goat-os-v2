@@ -103,6 +103,7 @@ export function EventBudgetTab({
 			onSuccess: () => {
 				toast.success("Línea de presupuesto agregada");
 				utils.organization.eventOrganization.listBudgetLines.invalidate();
+				utils.organization.eventOrganization.getProjection.invalidate();
 				setIsDialogOpen(false);
 				form.reset();
 			},
@@ -116,6 +117,7 @@ export function EventBudgetTab({
 			onSuccess: () => {
 				toast.success("Línea eliminada");
 				utils.organization.eventOrganization.listBudgetLines.invalidate();
+				utils.organization.eventOrganization.getProjection.invalidate();
 			},
 			onError: (error) => {
 				toast.error(error.message || "Error al eliminar línea");

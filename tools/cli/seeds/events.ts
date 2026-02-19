@@ -169,7 +169,7 @@ export async function seedEvents(
 	const registrations: Array<
 		typeof schema.eventRegistrationTable.$inferInsert
 	> = [];
-	const payments: Array<typeof schema.eventPaymentTable.$inferInsert> = [];
+	const payments: Array<typeof schema.trainingPaymentTable.$inferInsert> = [];
 	const cashMovements: Array<typeof schema.cashMovementTable.$inferInsert> = [];
 
 	const eventIds: string[] = existingEvents.map((e: any) => e.id);
@@ -470,30 +470,30 @@ export async function seedEvents(
 
 				payments.push({
 					id: paymentId,
+					type: "event",
 					registrationId,
 					organizationId: context.organizationId,
 					amount: paidAmount > 0 ? paidAmount : price,
+					paidAmount:
+						paymentStatus === "paid"
+							? paidAmount > 0
+								? paidAmount
+								: price
+							: paidAmount,
 					currency: "ARS",
 					status: paymentStatus,
 					paymentMethod,
-					mercadoPagoPaymentId:
-						paymentMethod === "mercado_pago" && paymentStatus === "paid"
-							? `MP-${Date.now()}-${paymentIndex}`
-							: null,
-					mercadoPagoStatus:
-						paymentMethod === "mercado_pago" && paymentStatus === "paid"
-							? "approved"
-							: null,
 					paymentDate,
 					receiptNumber:
 						paymentStatus === "paid"
 							? `REC-${eventId.slice(0, 8)}-${registrationNumber.toString().padStart(4, "0")}`
 							: null,
+					description: `${eventNames[i % eventNames.length]} - ${firstName} ${lastName}`,
 					notes:
 						paymentStatus === "partial"
 							? `Pago parcial - resta $${((price - paidAmount) / 100).toLocaleString("es-AR")}`
 							: null,
-					processedBy: paymentStatus !== "pending" ? context.seedUserId : null,
+					recordedBy: paymentStatus !== "pending" ? context.seedUserId : null,
 				});
 
 				// Create cash movement for cash payments with open register
@@ -549,7 +549,7 @@ export async function seedEvents(
 
 	if (payments.length > 0) {
 		await db
-			.insert(schema.eventPaymentTable)
+			.insert(schema.trainingPaymentTable)
 			.values(payments)
 			.onConflictDoNothing();
 	}

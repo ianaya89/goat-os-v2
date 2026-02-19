@@ -254,22 +254,26 @@ export type AttendanceStatus =
 	(typeof AttendanceStatus)[keyof typeof AttendanceStatus];
 export const AttendanceStatuses = Object.values(AttendanceStatus);
 
-// Training payment status enum
+// Training payment status enum (unified: covers both training and event payments)
 export const TrainingPaymentStatus = {
 	pending: "pending",
+	processing: "processing",
 	paid: "paid",
 	partial: "partial",
+	failed: "failed",
+	refunded: "refunded",
 	cancelled: "cancelled",
 } as const;
 export type TrainingPaymentStatus =
 	(typeof TrainingPaymentStatus)[keyof typeof TrainingPaymentStatus];
 export const TrainingPaymentStatuses = Object.values(TrainingPaymentStatus);
 
-// Training payment method enum
+// Training payment method enum (unified: covers both training and event payments)
 export const TrainingPaymentMethod = {
 	cash: "cash",
 	bankTransfer: "bank_transfer",
 	mercadoPago: "mercado_pago",
+	stripe: "stripe",
 	card: "card",
 	other: "other",
 } as const;
@@ -325,32 +329,14 @@ export type PricingTierType =
 	(typeof PricingTierType)[keyof typeof PricingTierType];
 export const PricingTierTypes = Object.values(PricingTierType);
 
-// Event payment method enum
-export const EventPaymentMethod = {
-	cash: "cash",
-	bankTransfer: "bank_transfer",
-	mercadoPago: "mercado_pago",
-	stripe: "stripe",
-	card: "card",
-	other: "other",
-} as const;
-export type EventPaymentMethod =
-	(typeof EventPaymentMethod)[keyof typeof EventPaymentMethod];
-export const EventPaymentMethods = Object.values(EventPaymentMethod);
+// Event payment enums (aliases for unified TrainingPayment* enums)
+export const EventPaymentMethod = TrainingPaymentMethod;
+export type EventPaymentMethod = TrainingPaymentMethod;
+export const EventPaymentMethods = TrainingPaymentMethods;
 
-// Event payment status enum
-export const EventPaymentStatus = {
-	pending: "pending",
-	processing: "processing",
-	paid: "paid",
-	partial: "partial",
-	failed: "failed",
-	refunded: "refunded",
-	cancelled: "cancelled",
-} as const;
-export type EventPaymentStatus =
-	(typeof EventPaymentStatus)[keyof typeof EventPaymentStatus];
-export const EventPaymentStatuses = Object.values(EventPaymentStatus);
+export const EventPaymentStatus = TrainingPaymentStatus;
+export type EventPaymentStatus = TrainingPaymentStatus;
+export const EventPaymentStatuses = TrainingPaymentStatuses;
 
 // Expense category type enum
 export const ExpenseCategoryType = {

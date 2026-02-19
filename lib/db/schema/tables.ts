@@ -47,8 +47,6 @@ import {
 	EventInventoryStatus,
 	EventMilestoneStatus,
 	EventNoteType,
-	EventPaymentMethod,
-	EventPaymentStatus,
 	EventRegistrationStatus,
 	EventRiskProbability,
 	EventRiskSeverity,
@@ -1871,10 +1869,30 @@ export const trainingPaymentTable = pgTable(
 		description: text("description"),
 		// Receipt/proof of payment (S3 key)
 		receiptImageKey: text("receipt_image_key"),
+		receiptImageUploadedAt: timestamp("receipt_image_uploaded_at", {
+			withTimezone: true,
+		}),
 		// Who recorded this payment
 		recordedBy: uuid("recorded_by").references(() => userTable.id, {
 			onDelete: "set null",
 		}),
+		// Payment type discriminator: "training" | "event"
+		type: text("type").notNull().default("training"),
+		// Event payment: link to event registration (nullable, only for type="event")
+		registrationId: uuid("registration_id").references(
+			() => eventRegistrationTable.id,
+			{ onDelete: "cascade" },
+		),
+		// Stripe integration (for event payments)
+		stripePaymentIntentId: text("stripe_payment_intent_id"),
+		stripeCheckoutSessionId: text("stripe_checkout_session_id"),
+		stripeStatus: text("stripe_status"),
+		// MercadoPago external reference (for event payments)
+		mercadoPagoExternalReference: text("mercado_pago_external_reference"),
+		// Refund tracking
+		refundedAmount: integer("refunded_amount").default(0),
+		refundedAt: timestamp("refunded_at", { withTimezone: true }),
+		refundReason: text("refund_reason"),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.notNull()
 			.defaultNow(),
@@ -1913,6 +1931,12 @@ export const trainingPaymentTable = pgTable(
 		uniqueIndex("training_payment_session_athlete_unique")
 			.on(table.sessionId, table.athleteId)
 			.where(sql`${table.sessionId} IS NOT NULL`),
+		// Event payment indexes
+		index("training_payment_registration_id_idx").on(table.registrationId),
+		index("training_payment_type_idx").on(table.type),
+		index("training_payment_stripe_intent_id_idx").on(
+			table.stripePaymentIntentId,
+		),
 	],
 );
 
@@ -2926,96 +2950,7 @@ export const eventRegistrationTable = pgTable(
 	],
 );
 
-/**
- * Event payment table - tracks payments for event registrations
- * Supports multiple payment methods including MercadoPago, Stripe, manual
- */
-export const eventPaymentTable = pgTable(
-	"event_payment",
-	{
-		id: uuid("id").primaryKey().defaultRandom(),
-		registrationId: uuid("registration_id")
-			.notNull()
-			.references(() => eventRegistrationTable.id, { onDelete: "cascade" }),
-		organizationId: uuid("organization_id")
-			.notNull()
-			.references(() => organizationTable.id, { onDelete: "cascade" }),
-
-		// Amount
-		amount: integer("amount").notNull(), // Amount in smallest currency unit
-		currency: text("currency").notNull().default("ARS"),
-
-		// Status
-		status: text("status", { enum: enumToPgEnum(EventPaymentStatus) })
-			.$type<EventPaymentStatus>()
-			.notNull()
-			.default(EventPaymentStatus.pending),
-
-		// Payment method
-		paymentMethod: text("payment_method", {
-			enum: enumToPgEnum(EventPaymentMethod),
-		})
-			.$type<EventPaymentMethod>()
-			.notNull(),
-
-		// MercadoPago integration
-		mercadoPagoPaymentId: text("mercado_pago_payment_id"),
-		mercadoPagoPreferenceId: text("mercado_pago_preference_id"),
-		mercadoPagoStatus: text("mercado_pago_status"),
-		mercadoPagoExternalReference: text("mercado_pago_external_reference"),
-
-		// Stripe integration
-		stripePaymentIntentId: text("stripe_payment_intent_id"),
-		stripeCheckoutSessionId: text("stripe_checkout_session_id"),
-		stripeStatus: text("stripe_status"),
-
-		// Manual payment tracking
-		paymentDate: timestamp("payment_date", { withTimezone: true }),
-		receiptNumber: text("receipt_number"),
-
-		// Receipt image (stored in S3)
-		receiptImageKey: text("receipt_image_key"), // S3 object key
-		receiptImageUploadedAt: timestamp("receipt_image_uploaded_at", {
-			withTimezone: true,
-		}),
-
-		// Refund tracking
-		refundedAmount: integer("refunded_amount").default(0),
-		refundedAt: timestamp("refunded_at", { withTimezone: true }),
-		refundReason: text("refund_reason"),
-
-		// Notes
-		notes: text("notes"),
-
-		// Who processed this payment
-		processedBy: uuid("processed_by").references(() => userTable.id, {
-			onDelete: "set null",
-		}),
-
-		// Timestamps
-		createdAt: timestamp("created_at", { withTimezone: true })
-			.notNull()
-			.defaultNow(),
-		updatedAt: timestamp("updated_at", { withTimezone: true })
-			.notNull()
-			.defaultNow()
-			.$onUpdate(() => new Date()),
-	},
-	(table) => [
-		index("event_payment_registration_id_idx").on(table.registrationId),
-		index("event_payment_organization_id_idx").on(table.organizationId),
-		index("event_payment_status_idx").on(table.status),
-		index("event_payment_payment_method_idx").on(table.paymentMethod),
-		index("event_payment_mercado_pago_id_idx").on(table.mercadoPagoPaymentId),
-		index("event_payment_stripe_intent_id_idx").on(table.stripePaymentIntentId),
-		index("event_payment_payment_date_idx").on(table.paymentDate),
-		// Composite indexes
-		index("event_payment_org_status_idx").on(
-			table.organizationId,
-			table.status,
-		),
-	],
-);
+// eventPaymentTable removed - unified into trainingPaymentTable with type="event"
 
 /**
  * Event coach assignment - coaches assigned to run events
