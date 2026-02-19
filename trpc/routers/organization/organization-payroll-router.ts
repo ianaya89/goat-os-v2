@@ -48,14 +48,14 @@ import {
 	markPayrollAsPaidSchema,
 	updatePayrollSchema,
 } from "@/schemas/organization-payroll-schemas";
-import { createTRPCRouter, protectedOrganizationProcedure } from "@/trpc/init";
+import { createTRPCRouter, protectedOrgAdminProcedure } from "@/trpc/init";
 
 export const organizationPayrollRouter = createTRPCRouter({
 	// ============================================================================
 	// LIST & GET
 	// ============================================================================
 
-	list: protectedOrganizationProcedure
+	list: protectedOrgAdminProcedure
 		.input(listPayrollSchema)
 		.query(async ({ ctx, input }) => {
 			const conditions = [
@@ -176,7 +176,7 @@ export const organizationPayrollRouter = createTRPCRouter({
 			return { payrolls, total: countResult[0]?.count ?? 0 };
 		}),
 
-	get: protectedOrganizationProcedure
+	get: protectedOrgAdminProcedure
 		.input(getPayrollSchema)
 		.query(async ({ ctx, input }) => {
 			const payroll = await db.query.staffPayrollTable.findFirst({
@@ -213,7 +213,7 @@ export const organizationPayrollRouter = createTRPCRouter({
 	// CREATE
 	// ============================================================================
 
-	create: protectedOrganizationProcedure
+	create: protectedOrgAdminProcedure
 		.input(createPayrollSchema)
 		.mutation(async ({ ctx, input }) => {
 			// Validate period
@@ -350,7 +350,7 @@ export const organizationPayrollRouter = createTRPCRouter({
 	// UPDATE
 	// ============================================================================
 
-	update: protectedOrganizationProcedure
+	update: protectedOrgAdminProcedure
 		.input(updatePayrollSchema)
 		.mutation(async ({ ctx, input }) => {
 			const existing = await db.query.staffPayrollTable.findFirst({
@@ -415,7 +415,7 @@ export const organizationPayrollRouter = createTRPCRouter({
 	// STATUS TRANSITIONS
 	// ============================================================================
 
-	approve: protectedOrganizationProcedure
+	approve: protectedOrgAdminProcedure
 		.input(approvePayrollSchema)
 		.mutation(async ({ ctx, input }) => {
 			const existing = await db.query.staffPayrollTable.findFirst({
@@ -452,7 +452,7 @@ export const organizationPayrollRouter = createTRPCRouter({
 			return updated;
 		}),
 
-	markAsPaid: protectedOrganizationProcedure
+	markAsPaid: protectedOrgAdminProcedure
 		.input(markPayrollAsPaidSchema)
 		.mutation(async ({ ctx, input }) => {
 			const existing = await db.query.staffPayrollTable.findFirst({
@@ -572,7 +572,7 @@ export const organizationPayrollRouter = createTRPCRouter({
 			return updated;
 		}),
 
-	cancel: protectedOrganizationProcedure
+	cancel: protectedOrgAdminProcedure
 		.input(cancelPayrollSchema)
 		.mutation(async ({ ctx, input }) => {
 			const existing = await db.query.staffPayrollTable.findFirst({
@@ -611,7 +611,7 @@ export const organizationPayrollRouter = createTRPCRouter({
 	// DELETE
 	// ============================================================================
 
-	delete: protectedOrganizationProcedure
+	delete: protectedOrgAdminProcedure
 		.input(deletePayrollSchema)
 		.mutation(async ({ ctx, input }) => {
 			const existing = await db.query.staffPayrollTable.findFirst({
@@ -646,7 +646,7 @@ export const organizationPayrollRouter = createTRPCRouter({
 			return { success: true };
 		}),
 
-	bulkDelete: protectedOrganizationProcedure
+	bulkDelete: protectedOrgAdminProcedure
 		.input(bulkDeletePayrollSchema)
 		.mutation(async ({ ctx, input }) => {
 			// Only delete pending or cancelled
@@ -666,7 +666,7 @@ export const organizationPayrollRouter = createTRPCRouter({
 			return { success: true };
 		}),
 
-	bulkApprove: protectedOrganizationProcedure
+	bulkApprove: protectedOrgAdminProcedure
 		.input(bulkApprovePayrollSchema)
 		.mutation(async ({ ctx, input }) => {
 			await db
@@ -691,7 +691,7 @@ export const organizationPayrollRouter = createTRPCRouter({
 	// EXPORT & STATS
 	// ============================================================================
 
-	exportCsv: protectedOrganizationProcedure
+	exportCsv: protectedOrgAdminProcedure
 		.input(exportPayrollSchema)
 		.mutation(async ({ ctx, input }) => {
 			const payrolls = await db.query.staffPayrollTable.findMany({
@@ -767,7 +767,7 @@ export const organizationPayrollRouter = createTRPCRouter({
 			return csv;
 		}),
 
-	getSummary: protectedOrganizationProcedure
+	getSummary: protectedOrgAdminProcedure
 		.input(getPayrollSummarySchema)
 		.query(async ({ ctx, input }) => {
 			const conditions = [
@@ -845,7 +845,7 @@ export const organizationPayrollRouter = createTRPCRouter({
 		}),
 
 	// Get available staff for payroll (coaches and users with roles)
-	getAvailableStaff: protectedOrganizationProcedure.query(async ({ ctx }) => {
+	getAvailableStaff: protectedOrgAdminProcedure.query(async ({ ctx }) => {
 		// Get coaches
 		const coaches = await db.query.coachTable.findMany({
 			where: eq(coachTable.organizationId, ctx.organization.id),
@@ -865,7 +865,7 @@ export const organizationPayrollRouter = createTRPCRouter({
 	}),
 
 	// Get coach sessions count for a period (for calculating per_session payroll)
-	getCoachSessions: protectedOrganizationProcedure
+	getCoachSessions: protectedOrgAdminProcedure
 		.input(getCoachSessionsSchema)
 		.query(async ({ ctx, input }) => {
 			// Validate coach exists

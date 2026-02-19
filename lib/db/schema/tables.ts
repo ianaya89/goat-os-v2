@@ -3161,6 +3161,11 @@ export const expenseTable = pgTable(
 		vendor: text("vendor"),
 		notes: text("notes"),
 
+		// Optional link to event
+		eventId: uuid("event_id").references(() => sportsEventTable.id, {
+			onDelete: "set null",
+		}),
+
 		// Audit
 		recordedBy: uuid("recorded_by").references(() => userTable.id, {
 			onDelete: "set null",
@@ -3180,6 +3185,7 @@ export const expenseTable = pgTable(
 		index("expense_date_idx").on(table.expenseDate),
 		index("expense_payment_method_idx").on(table.paymentMethod),
 		index("expense_org_date_idx").on(table.organizationId, table.expenseDate),
+		index("expense_event_idx").on(table.eventId),
 	],
 );
 

@@ -108,16 +108,31 @@ export const Permissions = {
 	canViewReports: (c: UserCapabilities): boolean => Permissions.isOrgAdmin(c),
 
 	/**
+	 * Can manage payments (training payments).
+	 */
+	canManagePayments: (c: UserCapabilities): boolean => Permissions.isStaff(c),
+
+	/**
 	 * Can manage cash register.
 	 */
 	canManageCashRegister: (c: UserCapabilities): boolean =>
-		Permissions.isOrgAdmin(c),
+		Permissions.isStaff(c),
+
+	/**
+	 * Can manage products (stock).
+	 */
+	canManageProducts: (c: UserCapabilities): boolean => Permissions.isStaff(c),
 
 	/**
 	 * Can manage expenses.
 	 */
 	canManageExpenses: (c: UserCapabilities): boolean =>
 		Permissions.isOrgAdmin(c),
+
+	/**
+	 * Can manage payroll.
+	 */
+	canManagePayroll: (c: UserCapabilities): boolean => Permissions.isOrgAdmin(c),
 
 	/**
 	 * Can view their own coach sessions (if they are a coach).
@@ -140,6 +155,14 @@ export interface ComputedCapabilities {
 	isRestrictedMember: boolean;
 	isRestrictedCoach: boolean;
 	isOwner: boolean;
+	canViewReports: boolean;
+	canManageExpenses: boolean;
+	canManagePayroll: boolean;
+	canManageUsers: boolean;
+	canManageSettings: boolean;
+	canManagePayments: boolean;
+	canManageCashRegister: boolean;
+	canManageProducts: boolean;
 }
 
 /**
@@ -153,5 +176,13 @@ export function computeCapabilities(c: UserCapabilities): ComputedCapabilities {
 		isRestrictedMember: Permissions.isRestrictedMember(c),
 		isRestrictedCoach: Permissions.isRestrictedCoach(c),
 		isOwner: Permissions.isOwner(c),
+		canViewReports: Permissions.canViewReports(c),
+		canManageExpenses: Permissions.canManageExpenses(c),
+		canManagePayroll: Permissions.canManagePayroll(c),
+		canManageUsers: Permissions.canManageUsers(c),
+		canManageSettings: Permissions.canManageSettings(c),
+		canManagePayments: Permissions.canManagePayments(c),
+		canManageCashRegister: Permissions.canManageCashRegister(c),
+		canManageProducts: Permissions.canManageProducts(c),
 	};
 }

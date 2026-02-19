@@ -93,6 +93,8 @@ export function OrganizationMenuItems(): React.JSX.Element {
 	// Use pre-computed capabilities from context
 	const isRestrictedMember = userProfile.capabilities.isRestrictedMember;
 	const isRestrictedCoach = userProfile.capabilities.isRestrictedCoach;
+	const isStaff = userProfile.capabilities.isStaff;
+	const isAdmin = userProfile.capabilities.isAdmin;
 
 	// Menu items for restricted members (athletes) - no "My" prefix needed
 	// since they can only see their own data anyway
@@ -401,6 +403,109 @@ export function OrganizationMenuItems(): React.JSX.Element {
 		},
 	];
 
+	// Staff finance items (no expenses, no payroll)
+	const staffFinanceItems: MenuItem[] = [
+		{
+			label: t("payments"),
+			href: `${basePath}/payments`,
+			icon: BanknoteIcon,
+			feature: OrganizationFeature.payments,
+		},
+		{
+			label: t("cashRegister"),
+			href: `${basePath}/cash-register`,
+			exactMatch: true,
+			icon: LandmarkIcon,
+			feature: OrganizationFeature.cashRegister,
+		},
+		{
+			label: t("cashRegisterHistory"),
+			href: `${basePath}/cash-register/history`,
+			activePrefix: `${basePath}/cash-register/`,
+			icon: HistoryIcon,
+			feature: OrganizationFeature.cashRegister,
+		},
+		{
+			label: t("products"),
+			href: `${basePath}/products`,
+			icon: PackageIcon,
+			feature: OrganizationFeature.products,
+		},
+	];
+
+	// Staff general items (same as admin but without users)
+	const staffGeneralItems: MenuItem[] = [
+		{
+			label: t("institutions"),
+			href: `${basePath}/institutions`,
+			icon: ShieldIcon,
+		},
+		{
+			label: t("ageCategories"),
+			href: `${basePath}/age-categories`,
+			icon: TagsIcon,
+			feature: OrganizationFeature.ageCategories,
+		},
+		{
+			label: t("locations"),
+			href: `${basePath}/locations`,
+			icon: MapPinIcon,
+			feature: OrganizationFeature.locations,
+		},
+		{
+			label: t("vendors"),
+			href: `${basePath}/vendors`,
+			icon: TruckIcon,
+			feature: OrganizationFeature.vendors,
+		},
+		{
+			label: t("sponsors"),
+			href: `${basePath}/sponsors`,
+			icon: HandshakeIcon,
+			feature: OrganizationFeature.sponsors,
+		},
+		{
+			label: t("services"),
+			href: `${basePath}/services`,
+			icon: TicketIcon,
+			feature: OrganizationFeature.services,
+		},
+		{
+			label: t("chatbot"),
+			href: `${basePath}/chatbot`,
+			icon: BotIcon,
+			feature: OrganizationFeature.chatbot,
+		},
+	];
+
+	// Staff menu groups: sports + competitions + filtered finance + general (no users), NO reports
+	const staffMenuGroups: MenuGroup[] = [
+		{
+			label: t("groups.sports"),
+			icon: MedalIcon,
+			items: sportsItems,
+			defaultOpen: true,
+		},
+		{
+			label: t("groups.competitions"),
+			icon: TrophyIcon,
+			items: competitionItems,
+			defaultOpen: false,
+		},
+		{
+			label: t("groups.finance"),
+			icon: WalletIcon,
+			items: staffFinanceItems,
+			defaultOpen: false,
+		},
+		{
+			label: t("groups.general"),
+			icon: LayoutDashboardIcon,
+			items: staffGeneralItems,
+			defaultOpen: false,
+		},
+	];
+
 	// Filter menu items based on enabled features
 	const enabledFeatures = userProfile.enabledFeatures;
 	const filterByFeature = (items: MenuItem[]): MenuItem[] =>
@@ -418,13 +523,17 @@ export function OrganizationMenuItems(): React.JSX.Element {
 	// Select the appropriate menu based on user's access level:
 	// 1. Restricted member (athlete without coach profile) -> athlete menu
 	// 2. Restricted coach (coach without admin/owner role) -> coach menu
-	// 3. Admin/Owner -> full admin menu
+	// 3. Staff (not admin/owner) -> staff menu (no reports, expenses, payroll, users)
+	// 4. Admin/Owner -> full admin menu
 	const getMenuGroups = (): MenuGroup[] => {
 		if (isRestrictedMember) {
 			return restrictedMemberMenuGroups;
 		}
 		if (isRestrictedCoach) {
 			return restrictedCoachMenuGroups;
+		}
+		if (isStaff && !isAdmin) {
+			return staffMenuGroups;
 		}
 		return adminMenuGroups;
 	};

@@ -1624,7 +1624,7 @@ export async function seedRealLifeEventCampusFeb(): Promise<void> {
 			const expectedAthleteId = existingAthleteUUID(existingAthleteIndex + 1);
 			const expectedUserId = existingAthleteUserUUID(existingAthleteIndex + 1);
 
-			// Verify athlete actually exists in DB (may have different ID if created externally)
+			// Verify athlete actually exists in DB
 			const dbAthlete = await db.query.athleteTable.findFirst({
 				where: eq(schema.athleteTable.id, expectedAthleteId),
 			});
@@ -1633,19 +1633,109 @@ export async function seedRealLifeEventCampusFeb(): Promise<void> {
 				athleteId = dbAthlete.id;
 				athleteUserId = dbAthlete.userId ?? expectedUserId;
 			} else {
-				// Athlete not in DB by expected ID - search by org
-				const dbAthleteByUser = await db.query.athleteTable.findFirst({
-					where: and(
-						eq(schema.athleteTable.organizationId, REAL_LIFE_ORG_ID),
-						eq(schema.athleteTable.id, expectedAthleteId),
-					),
+				// Athlete not in DB - create user + account + member + athlete
+				const knownAthlete = REAL_LIFE_ATHLETES[existingAthleteIndex]!;
+				const knownName = knownAthlete.lastName
+					? `${knownAthlete.firstName} ${knownAthlete.lastName}`
+					: knownAthlete.firstName;
+				const knownEmail = generateAthleteEmail(
+					knownAthlete.firstName,
+					knownAthlete.lastName,
+					existingAthleteIndex,
+				);
+
+				// Check if user already exists by email
+				const existingUser = await db.query.userTable.findFirst({
+					where: eq(schema.userTable.email, knownEmail),
 				});
 
-				if (dbAthleteByUser) {
-					athleteId = dbAthleteByUser.id;
-					athleteUserId = dbAthleteByUser.userId ?? expectedUserId;
+				if (existingUser) {
+					// User exists - find or create athlete record
+					const existingAthRecord = await db.query.athleteTable.findFirst({
+						where: and(
+							eq(schema.athleteTable.organizationId, REAL_LIFE_ORG_ID),
+							eq(schema.athleteTable.userId, existingUser.id),
+						),
+					});
+
+					if (existingAthRecord) {
+						athleteId = existingAthRecord.id;
+						athleteUserId = existingUser.id;
+					} else {
+						await db
+							.insert(schema.athleteTable)
+							.values({
+								id: expectedAthleteId,
+								organizationId: REAL_LIFE_ORG_ID,
+								userId: existingUser.id,
+								sport: "Hockey",
+								birthDate: new Date(reg.birthYear, 0, 1),
+								level: "intermediate",
+								status: "active",
+								nationality: "Argentina",
+							})
+							.onConflictDoNothing();
+						newAthletesCreated++;
+						athleteId = expectedAthleteId;
+						athleteUserId = existingUser.id;
+					}
 				} else {
-					// Fallback: use expected IDs (athlete will be created by main seed)
+					// Create full user + account + member + athlete
+					const memberUUIDPrefix = "32000000-0000-4000-8000";
+					const accountUUIDPrefix = "33000000-0000-4000-8000";
+					const idx = existingAthleteIndex + 1;
+					const idxHex = idx.toString(16).padStart(12, "0");
+					const memberId = `${memberUUIDPrefix}-${idxHex}`;
+					const accountId = `${accountUUIDPrefix}-${idxHex}`;
+
+					await db
+						.insert(schema.userTable)
+						.values({
+							id: expectedUserId,
+							name: knownName,
+							email: knownEmail,
+							emailVerified: true,
+							role: "user",
+							onboardingComplete: true,
+						})
+						.onConflictDoNothing();
+
+					await db
+						.insert(schema.accountTable)
+						.values({
+							id: accountId,
+							userId: expectedUserId,
+							accountId: expectedUserId,
+							providerId: "credential",
+							password: athleteHashedPassword,
+						})
+						.onConflictDoNothing();
+
+					await db
+						.insert(schema.memberTable)
+						.values({
+							id: memberId,
+							organizationId: REAL_LIFE_ORG_ID,
+							userId: expectedUserId,
+							role: "member",
+						})
+						.onConflictDoNothing();
+
+					await db
+						.insert(schema.athleteTable)
+						.values({
+							id: expectedAthleteId,
+							organizationId: REAL_LIFE_ORG_ID,
+							userId: expectedUserId,
+							sport: "Hockey",
+							birthDate: new Date(reg.birthYear, 0, 1),
+							level: "intermediate",
+							status: "active",
+							nationality: "Argentina",
+						})
+						.onConflictDoNothing();
+					newAthletesCreated++;
+
 					athleteId = expectedAthleteId;
 					athleteUserId = expectedUserId;
 				}

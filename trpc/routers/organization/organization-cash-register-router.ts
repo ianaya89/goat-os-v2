@@ -35,7 +35,7 @@ import {
 	getDailySummarySchema,
 	openCashRegisterSchema,
 } from "@/schemas/organization-cash-register-schemas";
-import { createTRPCRouter, protectedOrganizationProcedure } from "@/trpc/init";
+import { createTRPCRouter, protectedOrgStaffProcedure } from "@/trpc/init";
 
 // Helper to get start of day in org timezone
 function getStartOfDay(date: Date): Date {
@@ -52,7 +52,7 @@ function getEndOfDay(date: Date): Date {
 
 export const organizationCashRegisterRouter = createTRPCRouter({
 	// Get current (today's) cash register
-	getCurrent: protectedOrganizationProcedure.query(async ({ ctx }) => {
+	getCurrent: protectedOrgStaffProcedure.query(async ({ ctx }) => {
 		const today = getStartOfDay(new Date());
 
 		const cashRegister = await db.query.cashRegisterTable.findFirst({
@@ -70,7 +70,7 @@ export const organizationCashRegisterRouter = createTRPCRouter({
 	}),
 
 	// Get cash register by ID
-	getById: protectedOrganizationProcedure
+	getById: protectedOrgStaffProcedure
 		.input(getCashRegisterByIdSchema)
 		.query(async ({ ctx, input }) => {
 			const cashRegister = await db.query.cashRegisterTable.findFirst({
@@ -95,7 +95,7 @@ export const organizationCashRegisterRouter = createTRPCRouter({
 		}),
 
 	// Open cash register for today
-	open: protectedOrganizationProcedure
+	open: protectedOrgStaffProcedure
 		.input(openCashRegisterSchema)
 		.mutation(async ({ ctx, input }) => {
 			const today = getStartOfDay(new Date());
@@ -131,7 +131,7 @@ export const organizationCashRegisterRouter = createTRPCRouter({
 		}),
 
 	// Close cash register
-	close: protectedOrganizationProcedure
+	close: protectedOrgStaffProcedure
 		.input(closeCashRegisterSchema)
 		.mutation(async ({ ctx, input }) => {
 			const cashRegister = await db.query.cashRegisterTable.findFirst({
@@ -171,7 +171,7 @@ export const organizationCashRegisterRouter = createTRPCRouter({
 		}),
 
 	// Get cash register history
-	getHistory: protectedOrganizationProcedure
+	getHistory: protectedOrgStaffProcedure
 		.input(getCashRegisterHistorySchema)
 		.query(async ({ ctx, input }) => {
 			const conditions = [
@@ -214,7 +214,7 @@ export const organizationCashRegisterRouter = createTRPCRouter({
 		}),
 
 	// Get movements for a cash register
-	getMovements: protectedOrganizationProcedure
+	getMovements: protectedOrgStaffProcedure
 		.input(getCashMovementsSchema)
 		.query(async ({ ctx, input }) => {
 			const conditions = [
@@ -254,7 +254,7 @@ export const organizationCashRegisterRouter = createTRPCRouter({
 		}),
 
 	// Add manual movement
-	addManualMovement: protectedOrganizationProcedure
+	addManualMovement: protectedOrgStaffProcedure
 		.input(addManualMovementSchema)
 		.mutation(async ({ ctx, input }) => {
 			const today = getStartOfDay(new Date());
@@ -377,7 +377,7 @@ export const organizationCashRegisterRouter = createTRPCRouter({
 		}),
 
 	// Get daily summary
-	getDailySummary: protectedOrganizationProcedure
+	getDailySummary: protectedOrgStaffProcedure
 		.input(getDailySummarySchema)
 		.query(async ({ ctx, input }) => {
 			const targetDate = input.date

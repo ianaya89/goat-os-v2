@@ -54,6 +54,7 @@ export const listExpensesSchema = z.object({
 			category: z.array(z.nativeEnum(ExpenseCategory)).optional(),
 			categoryType: z.nativeEnum(ExpenseCategoryType).optional(),
 			paymentMethod: z.array(z.nativeEnum(TrainingPaymentMethod)).optional(),
+			eventId: z.string().uuid().optional(),
 			dateRange: z
 				.object({
 					from: z.coerce.date(),
@@ -89,6 +90,7 @@ export const createExpenseSchema = z.object({
 	receiptNumber: z.string().trim().max(100).optional(),
 	vendor: z.string().trim().max(200).optional(),
 	notes: z.string().trim().max(2000).optional(),
+	eventId: z.string().uuid().optional().nullable(),
 });
 
 // Update expense
@@ -103,6 +105,7 @@ export const updateExpenseSchema = z.object({
 	receiptNumber: z.string().trim().max(100).optional().nullable(),
 	vendor: z.string().trim().max(200).optional().nullable(),
 	notes: z.string().trim().max(2000).optional().nullable(),
+	eventId: z.string().uuid().optional().nullable(),
 });
 
 // Delete expense

@@ -55,10 +55,14 @@ import {
 	updateTrainingPaymentReceiptSchema,
 	updateTrainingPaymentSchema,
 } from "@/schemas/organization-training-payment-schemas";
-import { createTRPCRouter, protectedOrganizationProcedure } from "@/trpc/init";
+import {
+	createTRPCRouter,
+	protectedOrganizationProcedure,
+	protectedOrgStaffProcedure,
+} from "@/trpc/init";
 
 export const organizationTrainingPaymentRouter = createTRPCRouter({
-	list: protectedOrganizationProcedure
+	list: protectedOrgStaffProcedure
 		.input(listTrainingPaymentsSchema)
 		.query(async ({ ctx, input }) => {
 			const conditions = [
@@ -203,7 +207,7 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 			return { payments, total: countResult[0]?.count ?? 0 };
 		}),
 
-	get: protectedOrganizationProcedure
+	get: protectedOrgStaffProcedure
 		.input(deleteTrainingPaymentSchema)
 		.query(async ({ ctx, input }) => {
 			const payment = await db.query.trainingPaymentTable.findFirst({
@@ -248,7 +252,7 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 		}),
 
 	// Get payments for an athlete
-	getAthletePayments: protectedOrganizationProcedure
+	getAthletePayments: protectedOrgStaffProcedure
 		.input(getAthletePaymentsSchema)
 		.query(async ({ ctx, input }) => {
 			// Verify athlete belongs to organization
@@ -285,7 +289,7 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 		}),
 
 	// Get payments for a session
-	getSessionPayments: protectedOrganizationProcedure
+	getSessionPayments: protectedOrgStaffProcedure
 		.input(getSessionPaymentsSchema)
 		.query(async ({ ctx, input }) => {
 			// Verify session belongs to organization
@@ -320,7 +324,7 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 			return payments;
 		}),
 
-	create: protectedOrganizationProcedure
+	create: protectedOrgStaffProcedure
 		.input(createTrainingPaymentSchema)
 		.mutation(async ({ ctx, input }) => {
 			const { sessionIds, ...paymentData } = input;
@@ -445,7 +449,7 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 			return payment;
 		}),
 
-	update: protectedOrganizationProcedure
+	update: protectedOrgStaffProcedure
 		.input(updateTrainingPaymentSchema)
 		.mutation(async ({ ctx, input }) => {
 			const { id, ...data } = input;
@@ -494,7 +498,7 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 		}),
 
 	// Record a payment (convenience method to mark as paid)
-	recordPayment: protectedOrganizationProcedure
+	recordPayment: protectedOrgStaffProcedure
 		.input(recordPaymentSchema)
 		.mutation(async ({ ctx, input }) => {
 			const { id, ...data } = input;
@@ -555,7 +559,7 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 			return updatedPayment;
 		}),
 
-	delete: protectedOrganizationProcedure
+	delete: protectedOrgStaffProcedure
 		.input(deleteTrainingPaymentSchema)
 		.mutation(async ({ ctx, input }) => {
 			const [deletedPayment] = await db
@@ -578,7 +582,7 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 			return { success: true };
 		}),
 
-	bulkDelete: protectedOrganizationProcedure
+	bulkDelete: protectedOrgStaffProcedure
 		.input(bulkDeleteTrainingPaymentsSchema)
 		.mutation(async ({ ctx, input }) => {
 			const deleted = await db
@@ -594,7 +598,7 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 			return { success: true, count: deleted.length };
 		}),
 
-	bulkUpdateStatus: protectedOrganizationProcedure
+	bulkUpdateStatus: protectedOrgStaffProcedure
 		.input(bulkUpdateTrainingPaymentsStatusSchema)
 		.mutation(async ({ ctx, input }) => {
 			const updated = await db
@@ -615,7 +619,7 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 	// RECEIPT UPLOAD ENDPOINTS
 	// ============================================================================
 
-	getReceiptUploadUrl: protectedOrganizationProcedure
+	getReceiptUploadUrl: protectedOrgStaffProcedure
 		.input(getTrainingPaymentReceiptUploadUrlSchema)
 		.mutation(async ({ ctx, input }) => {
 			// Verify payment belongs to organization
@@ -660,7 +664,7 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 			};
 		}),
 
-	updatePaymentReceipt: protectedOrganizationProcedure
+	updatePaymentReceipt: protectedOrgStaffProcedure
 		.input(updateTrainingPaymentReceiptSchema)
 		.mutation(async ({ ctx, input }) => {
 			// Verify payment belongs to organization
@@ -702,7 +706,7 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 			return updated;
 		}),
 
-	deletePaymentReceipt: protectedOrganizationProcedure
+	deletePaymentReceipt: protectedOrgStaffProcedure
 		.input(deleteTrainingPaymentReceiptSchema)
 		.mutation(async ({ ctx, input }) => {
 			// Verify payment belongs to organization
@@ -748,7 +752,7 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 			return updated;
 		}),
 
-	getReceiptDownloadUrl: protectedOrganizationProcedure
+	getReceiptDownloadUrl: protectedOrgStaffProcedure
 		.input(getTrainingPaymentReceiptDownloadUrlSchema)
 		.query(async ({ ctx, input }) => {
 			// Verify payment belongs to organization
@@ -850,7 +854,7 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 	}),
 
 	// Get payments summary (today, week, month, pending, total)
-	getPaymentsSummary: protectedOrganizationProcedure.query(async ({ ctx }) => {
+	getPaymentsSummary: protectedOrgStaffProcedure.query(async ({ ctx }) => {
 		const now = new Date();
 
 		const todayStart = new Date(now);
@@ -983,7 +987,7 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 	}),
 
 	// Get service price for a session (used by payment form for auto-fill)
-	getServicePriceForSession: protectedOrganizationProcedure
+	getServicePriceForSession: protectedOrgStaffProcedure
 		.input(z.object({ sessionId: z.string().uuid() }))
 		.query(async ({ ctx, input }) => {
 			const session = await db.query.trainingSessionTable.findFirst({
@@ -1032,7 +1036,7 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 		}),
 
 	// Get service price directly (used when creating a payment without a session)
-	getServicePrice: protectedOrganizationProcedure
+	getServicePrice: protectedOrgStaffProcedure
 		.input(z.object({ serviceId: z.string().uuid() }))
 		.query(async ({ ctx, input }) => {
 			const service = await db.query.serviceTable.findFirst({
@@ -1059,7 +1063,7 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 		}),
 
 	// List events (registrations) for a specific athlete (used by payment form)
-	listEventsForAthlete: protectedOrganizationProcedure
+	listEventsForAthlete: protectedOrgStaffProcedure
 		.input(z.object({ athleteId: z.string().uuid() }))
 		.query(async ({ ctx, input }) => {
 			const registrations = await db.query.eventRegistrationTable.findMany({
@@ -1087,7 +1091,7 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 	// ============================================================================
 
 	// Get sessions linked to a payment
-	getPaymentSessions: protectedOrganizationProcedure
+	getPaymentSessions: protectedOrgStaffProcedure
 		.input(getPaymentSessionsSchema)
 		.query(async ({ ctx, input }) => {
 			// Verify payment belongs to organization
@@ -1129,7 +1133,7 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 		}),
 
 	// Add sessions to a payment (for package payments)
-	addSessionsToPayment: protectedOrganizationProcedure
+	addSessionsToPayment: protectedOrgStaffProcedure
 		.input(addSessionsToPaymentSchema)
 		.mutation(async ({ ctx, input }) => {
 			// Verify payment belongs to organization
@@ -1177,7 +1181,7 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 		}),
 
 	// Remove sessions from a payment
-	removeSessionsFromPayment: protectedOrganizationProcedure
+	removeSessionsFromPayment: protectedOrgStaffProcedure
 		.input(removeSessionsFromPaymentSchema)
 		.mutation(async ({ ctx, input }) => {
 			// Verify payment belongs to organization

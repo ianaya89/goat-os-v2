@@ -24,6 +24,20 @@ const RESTRICTED_COACH_ALLOWED_ROUTES = [
 	"/dashboard/organization/my-profile",
 ];
 
+// Routes that staff members CANNOT access (deny-list approach)
+const STAFF_BLOCKED_ROUTES = [
+	"/dashboard/organization/reports",
+	"/dashboard/organization/expenses",
+	"/dashboard/organization/payroll",
+	"/dashboard/organization/users",
+	"/dashboard/organization/settings",
+];
+
+// Check if a path is blocked for staff members
+function isStaffBlockedRoute(pathname: string): boolean {
+	return STAFF_BLOCKED_ROUTES.some((route) => pathname.startsWith(route));
+}
+
 // Pattern for session detail pages (athletes can view their session details)
 const SESSION_DETAIL_PATTERN =
 	/^\/dashboard\/organization\/training-sessions\/[^/]+$/;
@@ -79,8 +93,11 @@ interface AthleteRouteGuardProps {
 }
 
 /**
- * Route guard for restricted members (athletes and coaches without admin access).
- * Restricts access to only "My" pages and allowed routes.
+ * Route guard for restricted members (athletes, coaches, and staff without admin access).
+ * Restricts access based on role:
+ * - Restricted members: only "My" pages
+ * - Restricted coaches: only their sessions and athletes
+ * - Staff (not admin): blocked from reports, expenses, payroll, users, settings
  *
  * Uses pre-computed capabilities from context instead of manual role checks.
  */
@@ -92,24 +109,31 @@ export function AthleteRouteGuard({ children }: AthleteRouteGuardProps) {
 	// Use pre-computed capabilities from context
 	const isRestrictedMember = userProfile.capabilities.isRestrictedMember;
 	const isRestrictedCoach = userProfile.capabilities.isRestrictedCoach;
+	const isStaff = userProfile.capabilities.isStaff;
+	const isAdmin = userProfile.capabilities.isAdmin;
+
+	const isStaffOnly = isStaff && !isAdmin;
 
 	useEffect(() => {
 		if (isRestrictedMember && !isRestrictedMemberAllowedRoute(pathname)) {
-			// Redirect restricted members to dashboard if they try to access restricted routes
 			router.replace("/dashboard/organization");
 		} else if (isRestrictedCoach && !isRestrictedCoachAllowedRoute(pathname)) {
-			// Redirect restricted coaches to dashboard if they try to access restricted routes
+			router.replace("/dashboard/organization");
+		} else if (isStaffOnly && isStaffBlockedRoute(pathname)) {
 			router.replace("/dashboard/organization");
 		}
-	}, [isRestrictedMember, isRestrictedCoach, pathname, router]);
+	}, [isRestrictedMember, isRestrictedCoach, isStaffOnly, pathname, router]);
 
-	// If restricted member is trying to access a restricted route, show nothing while redirecting
+	// Show nothing while redirecting
 	if (isRestrictedMember && !isRestrictedMemberAllowedRoute(pathname)) {
 		return null;
 	}
 
-	// If restricted coach is trying to access a restricted route, show nothing while redirecting
 	if (isRestrictedCoach && !isRestrictedCoachAllowedRoute(pathname)) {
+		return null;
+	}
+
+	if (isStaffOnly && isStaffBlockedRoute(pathname)) {
 		return null;
 	}
 

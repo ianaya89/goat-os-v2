@@ -134,6 +134,13 @@
       "when": 1771471462540,
       "tag": "20260219032422_petite_cyclops",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1771503092686,
+      "tag": "20260219121132_last_daredevil",
+      "breakpoints": true
     }
   ]
 }

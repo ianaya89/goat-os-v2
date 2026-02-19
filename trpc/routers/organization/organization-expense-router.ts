@@ -20,7 +20,11 @@ import {
 	CashMovementReferenceType,
 	CashMovementType,
 } from "@/lib/db/schema/enums";
-import { expenseCategoryTable, expenseTable } from "@/lib/db/schema/tables";
+import {
+	expenseCategoryTable,
+	expenseTable,
+	sportsEventTable,
+} from "@/lib/db/schema/tables";
 import { env } from "@/lib/env";
 import {
 	deleteObject,
@@ -45,14 +49,14 @@ import {
 	updateExpenseReceiptSchema,
 	updateExpenseSchema,
 } from "@/schemas/organization-expense-schemas";
-import { createTRPCRouter, protectedOrganizationProcedure } from "@/trpc/init";
+import { createTRPCRouter, protectedOrgAdminProcedure } from "@/trpc/init";
 
 export const organizationExpenseRouter = createTRPCRouter({
 	// ============================================================================
 	// EXPENSE CATEGORIES
 	// ============================================================================
 
-	listCategories: protectedOrganizationProcedure
+	listCategories: protectedOrgAdminProcedure
 		.input(listExpenseCategoriesSchema)
 		.query(async ({ ctx, input }) => {
 			const conditions = [
@@ -69,7 +73,7 @@ export const organizationExpenseRouter = createTRPCRouter({
 			});
 		}),
 
-	createCategory: protectedOrganizationProcedure
+	createCategory: protectedOrgAdminProcedure
 		.input(createExpenseCategorySchema)
 		.mutation(async ({ ctx, input }) => {
 			// Check for duplicate name
@@ -100,7 +104,7 @@ export const organizationExpenseRouter = createTRPCRouter({
 			return category;
 		}),
 
-	updateCategory: protectedOrganizationProcedure
+	updateCategory: protectedOrgAdminProcedure
 		.input(updateExpenseCategorySchema)
 		.mutation(async ({ ctx, input }) => {
 			const existing = await db.query.expenseCategoryTable.findFirst({
@@ -151,7 +155,7 @@ export const organizationExpenseRouter = createTRPCRouter({
 			return updated;
 		}),
 
-	deleteCategory: protectedOrganizationProcedure
+	deleteCategory: protectedOrgAdminProcedure
 		.input(deleteExpenseCategorySchema)
 		.mutation(async ({ ctx, input }) => {
 			const existing = await db.query.expenseCategoryTable.findFirst({
@@ -181,7 +185,7 @@ export const organizationExpenseRouter = createTRPCRouter({
 	// EXPENSES
 	// ============================================================================
 
-	list: protectedOrganizationProcedure
+	list: protectedOrgAdminProcedure
 		.input(listExpensesSchema)
 		.query(async ({ ctx, input }) => {
 			const conditions = [eq(expenseTable.organizationId, ctx.organization.id)];
@@ -215,6 +219,11 @@ export const organizationExpenseRouter = createTRPCRouter({
 				conditions.push(
 					inArray(expenseTable.paymentMethod, input.filters.paymentMethod),
 				);
+			}
+
+			// Event filter
+			if (input.filters?.eventId) {
+				conditions.push(eq(expenseTable.eventId, input.filters.eventId));
 			}
 
 			// Date range filter
@@ -275,7 +284,7 @@ export const organizationExpenseRouter = createTRPCRouter({
 			return { expenses, total: countResult[0]?.count ?? 0 };
 		}),
 
-	get: protectedOrganizationProcedure
+	get: protectedOrgAdminProcedure
 		.input(getExpenseSchema)
 		.query(async ({ ctx, input }) => {
 			const expense = await db.query.expenseTable.findFirst({
@@ -299,7 +308,7 @@ export const organizationExpenseRouter = createTRPCRouter({
 			return expense;
 		}),
 
-	create: protectedOrganizationProcedure
+	create: protectedOrgAdminProcedure
 		.input(createExpenseSchema)
 		.mutation(async ({ ctx, input }) => {
 			// Validate category belongs to org if provided
@@ -354,7 +363,7 @@ export const organizationExpenseRouter = createTRPCRouter({
 			return expense;
 		}),
 
-	update: protectedOrganizationProcedure
+	update: protectedOrgAdminProcedure
 		.input(updateExpenseSchema)
 		.mutation(async ({ ctx, input }) => {
 			const existing = await db.query.expenseTable.findFirst({
@@ -414,7 +423,7 @@ export const organizationExpenseRouter = createTRPCRouter({
 			return updated;
 		}),
 
-	delete: protectedOrganizationProcedure
+	delete: protectedOrgAdminProcedure
 		.input(deleteExpenseSchema)
 		.mutation(async ({ ctx, input }) => {
 			const existing = await db.query.expenseTable.findFirst({
@@ -436,7 +445,7 @@ export const organizationExpenseRouter = createTRPCRouter({
 			return { success: true };
 		}),
 
-	bulkDelete: protectedOrganizationProcedure
+	bulkDelete: protectedOrgAdminProcedure
 		.input(bulkDeleteExpensesSchema)
 		.mutation(async ({ ctx, input }) => {
 			await db
@@ -451,7 +460,7 @@ export const organizationExpenseRouter = createTRPCRouter({
 			return { success: true, deletedCount: input.ids.length };
 		}),
 
-	exportCsv: protectedOrganizationProcedure
+	exportCsv: protectedOrgAdminProcedure
 		.input(exportExpensesSchema)
 		.mutation(async ({ ctx, input }) => {
 			const expenses = await db.query.expenseTable.findMany({
@@ -502,7 +511,7 @@ export const organizationExpenseRouter = createTRPCRouter({
 	// EXPENSE RECEIPTS
 	// ============================================================================
 
-	getReceiptUploadUrl: protectedOrganizationProcedure
+	getReceiptUploadUrl: protectedOrgAdminProcedure
 		.input(getExpenseReceiptUploadUrlSchema)
 		.mutation(async ({ ctx, input }) => {
 			const expense = await db.query.expenseTable.findFirst({
@@ -541,7 +550,7 @@ export const organizationExpenseRouter = createTRPCRouter({
 			return { uploadUrl, key };
 		}),
 
-	updateExpenseReceipt: protectedOrganizationProcedure
+	updateExpenseReceipt: protectedOrgAdminProcedure
 		.input(updateExpenseReceiptSchema)
 		.mutation(async ({ ctx, input }) => {
 			const expense = await db.query.expenseTable.findFirst({
@@ -578,7 +587,7 @@ export const organizationExpenseRouter = createTRPCRouter({
 			return updated;
 		}),
 
-	deleteExpenseReceipt: protectedOrganizationProcedure
+	deleteExpenseReceipt: protectedOrgAdminProcedure
 		.input(deleteExpenseReceiptSchema)
 		.mutation(async ({ ctx, input }) => {
 			const expense = await db.query.expenseTable.findFirst({
@@ -620,7 +629,7 @@ export const organizationExpenseRouter = createTRPCRouter({
 			return updated;
 		}),
 
-	getReceiptDownloadUrl: protectedOrganizationProcedure
+	getReceiptDownloadUrl: protectedOrgAdminProcedure
 		.input(getExpenseReceiptDownloadUrlSchema)
 		.query(async ({ ctx, input }) => {
 			const expense = await db.query.expenseTable.findFirst({
@@ -660,7 +669,7 @@ export const organizationExpenseRouter = createTRPCRouter({
 		}),
 
 	// Get expenses summary (today, week, month, top category, total)
-	getExpensesSummary: protectedOrganizationProcedure.query(async ({ ctx }) => {
+	getExpensesSummary: protectedOrgAdminProcedure.query(async ({ ctx }) => {
 		const now = new Date();
 
 		const todayStart = new Date(now);

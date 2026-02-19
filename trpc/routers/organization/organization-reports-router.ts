@@ -46,7 +46,7 @@ import {
 	getSessionsByPeriodSchema,
 	getTrainingSummarySchema,
 } from "@/schemas/organization-reports-schemas";
-import { createTRPCRouter, protectedOrganizationProcedure } from "@/trpc/init";
+import { createTRPCRouter, protectedOrgAdminProcedure } from "@/trpc/init";
 
 // Helper to get default date range (last 12 months)
 function getDefaultDateRange() {
@@ -58,7 +58,7 @@ function getDefaultDateRange() {
 
 export const organizationReportsRouter = createTRPCRouter({
 	// Financial summary for a period
-	getFinancialSummary: protectedOrganizationProcedure
+	getFinancialSummary: protectedOrgAdminProcedure
 		.input(getFinancialSummarySchema)
 		.query(async ({ ctx, input }) => {
 			const { from, to } = input.dateRange;
@@ -137,7 +137,7 @@ export const organizationReportsRouter = createTRPCRouter({
 		}),
 
 	// Revenue by period (month, week, etc.)
-	getRevenueByPeriod: protectedOrganizationProcedure
+	getRevenueByPeriod: protectedOrgAdminProcedure
 		.input(getRevenueByPeriodSchema)
 		.query(async ({ ctx, input }) => {
 			const { from, to } = input.dateRange ?? getDefaultDateRange();
@@ -184,7 +184,7 @@ export const organizationReportsRouter = createTRPCRouter({
 		}),
 
 	// Revenue by athlete
-	getRevenueByAthlete: protectedOrganizationProcedure
+	getRevenueByAthlete: protectedOrgAdminProcedure
 		.input(getRevenueByAthleteSchema)
 		.query(async ({ ctx, input }) => {
 			const { from, to } = input.dateRange ?? getDefaultDateRange();
@@ -245,7 +245,7 @@ export const organizationReportsRouter = createTRPCRouter({
 		}),
 
 	// Expenses by category
-	getExpensesByCategory: protectedOrganizationProcedure
+	getExpensesByCategory: protectedOrgAdminProcedure
 		.input(getExpensesByCategorySchema)
 		.query(async ({ ctx, input }) => {
 			const { from, to } = input.dateRange ?? getDefaultDateRange();
@@ -287,7 +287,7 @@ export const organizationReportsRouter = createTRPCRouter({
 		}),
 
 	// Expenses by period
-	getExpensesByPeriod: protectedOrganizationProcedure
+	getExpensesByPeriod: protectedOrgAdminProcedure
 		.input(getExpensesByPeriodSchema)
 		.query(async ({ ctx, input }) => {
 			const { from, to } = input.dateRange ?? getDefaultDateRange();
@@ -332,7 +332,7 @@ export const organizationReportsRouter = createTRPCRouter({
 		}),
 
 	// Cash flow report (revenue - expenses by period)
-	getCashFlowReport: protectedOrganizationProcedure
+	getCashFlowReport: protectedOrgAdminProcedure
 		.input(getCashFlowReportSchema)
 		.query(async ({ ctx, input }) => {
 			try {
@@ -435,7 +435,7 @@ export const organizationReportsRouter = createTRPCRouter({
 		}),
 
 	// Outstanding (pending) payments
-	getOutstandingPayments: protectedOrganizationProcedure
+	getOutstandingPayments: protectedOrgAdminProcedure
 		.input(getOutstandingPaymentsSchema)
 		.query(async ({ ctx, input }) => {
 			const [payments, countResult] = await Promise.all([
@@ -490,7 +490,7 @@ export const organizationReportsRouter = createTRPCRouter({
 		}),
 
 	// Revenue by payment method
-	getRevenueByPaymentMethod: protectedOrganizationProcedure
+	getRevenueByPaymentMethod: protectedOrgAdminProcedure
 		.input(getRevenueByPaymentMethodSchema)
 		.query(async ({ ctx, input }) => {
 			const { from, to } = input.dateRange ?? getDefaultDateRange();
@@ -521,7 +521,7 @@ export const organizationReportsRouter = createTRPCRouter({
 		}),
 
 	// Revenue with cumulative totals
-	getRevenueWithCumulative: protectedOrganizationProcedure
+	getRevenueWithCumulative: protectedOrgAdminProcedure
 		.input(getRevenueWithCumulativeSchema)
 		.query(async ({ ctx, input }) => {
 			const { from, to } = input.dateRange ?? getDefaultDateRange();
@@ -574,7 +574,7 @@ export const organizationReportsRouter = createTRPCRouter({
 		}),
 
 	// Revenue by sports event
-	getRevenueByEvent: protectedOrganizationProcedure
+	getRevenueByEvent: protectedOrgAdminProcedure
 		.input(getRevenueByEventSchema)
 		.query(async ({ ctx, input }) => {
 			const { from, to } = input.dateRange ?? getDefaultDateRange();
@@ -626,7 +626,7 @@ export const organizationReportsRouter = createTRPCRouter({
 		}),
 
 	// Revenue by location (from training sessions)
-	getRevenueByLocation: protectedOrganizationProcedure
+	getRevenueByLocation: protectedOrgAdminProcedure
 		.input(getRevenueByLocationSchema)
 		.query(async ({ ctx, input }) => {
 			const { from, to } = input.dateRange ?? getDefaultDateRange();
@@ -670,7 +670,7 @@ export const organizationReportsRouter = createTRPCRouter({
 		}),
 
 	// Revenue by service
-	getRevenueByService: protectedOrganizationProcedure
+	getRevenueByService: protectedOrgAdminProcedure
 		.input(getRevenueByServiceSchema)
 		.query(async ({ ctx, input }) => {
 			const { from, to } = input.dateRange ?? getDefaultDateRange();
@@ -712,7 +712,7 @@ export const organizationReportsRouter = createTRPCRouter({
 		}),
 
 	// Revenue composition (training vs events by period)
-	getRevenueComposition: protectedOrganizationProcedure
+	getRevenueComposition: protectedOrgAdminProcedure
 		.input(getRevenueCompositionSchema)
 		.query(async ({ ctx, input }) => {
 			const { from, to } = input.dateRange ?? getDefaultDateRange();
@@ -810,7 +810,7 @@ export const organizationReportsRouter = createTRPCRouter({
 	// ============================================================================
 
 	// Training summary (sessions stats)
-	getTrainingSummary: protectedOrganizationProcedure
+	getTrainingSummary: protectedOrgAdminProcedure
 		.input(getTrainingSummarySchema)
 		.query(async ({ ctx, input }) => {
 			const { from, to } = input.dateRange;
@@ -910,7 +910,7 @@ export const organizationReportsRouter = createTRPCRouter({
 		}),
 
 	// Sessions by period
-	getSessionsByPeriod: protectedOrganizationProcedure
+	getSessionsByPeriod: protectedOrgAdminProcedure
 		.input(getSessionsByPeriodSchema)
 		.query(async ({ ctx, input }) => {
 			const { from, to } = input.dateRange ?? getDefaultDateRange();
@@ -959,7 +959,7 @@ export const organizationReportsRouter = createTRPCRouter({
 		}),
 
 	// Attendance by athlete
-	getAttendanceByAthlete: protectedOrganizationProcedure
+	getAttendanceByAthlete: protectedOrgAdminProcedure
 		.input(getAttendanceByAthleteSchema)
 		.query(async ({ ctx, input }) => {
 			const { from, to } = input.dateRange ?? getDefaultDateRange();
@@ -1032,7 +1032,7 @@ export const organizationReportsRouter = createTRPCRouter({
 		}),
 
 	// Attendance by group
-	getAttendanceByGroup: protectedOrganizationProcedure
+	getAttendanceByGroup: protectedOrgAdminProcedure
 		.input(getAttendanceByGroupSchema)
 		.query(async ({ ctx, input }) => {
 			const { from, to } = input.dateRange ?? getDefaultDateRange();
@@ -1081,7 +1081,7 @@ export const organizationReportsRouter = createTRPCRouter({
 		}),
 
 	// Sessions by coach
-	getSessionsByCoach: protectedOrganizationProcedure
+	getSessionsByCoach: protectedOrgAdminProcedure
 		.input(getSessionsByCoachSchema)
 		.query(async ({ ctx, input }) => {
 			const { from, to } = input.dateRange ?? getDefaultDateRange();
@@ -1128,7 +1128,7 @@ export const organizationReportsRouter = createTRPCRouter({
 		}),
 
 	// Attendance trend over time
-	getAttendanceTrend: protectedOrganizationProcedure
+	getAttendanceTrend: protectedOrgAdminProcedure
 		.input(getAttendanceTrendSchema)
 		.query(async ({ ctx, input }) => {
 			const { from, to } = input.dateRange ?? getDefaultDateRange();
@@ -1190,7 +1190,7 @@ export const organizationReportsRouter = createTRPCRouter({
 	// ============================================================================
 
 	// Pending event registrations
-	getPendingEventRegistrations: protectedOrganizationProcedure
+	getPendingEventRegistrations: protectedOrgAdminProcedure
 		.input(getPendingEventRegistrationsSchema)
 		.query(async ({ ctx, input }) => {
 			const [registrations, countResult] = await Promise.all([
@@ -1278,7 +1278,7 @@ export const organizationReportsRouter = createTRPCRouter({
 		}),
 
 	// Combined pending payments summary
-	getPendingSummary: protectedOrganizationProcedure
+	getPendingSummary: protectedOrgAdminProcedure
 		.input(getPendingSummarySchema)
 		.query(async ({ ctx }) => {
 			// Get pending training payments summary

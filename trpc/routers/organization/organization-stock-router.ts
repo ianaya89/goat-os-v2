@@ -28,7 +28,7 @@ import {
 	listStockTransactionsSchema,
 	updateProductSchema,
 } from "@/schemas/organization-stock-schemas";
-import { createTRPCRouter, protectedOrganizationProcedure } from "@/trpc/init";
+import { createTRPCRouter, protectedOrgStaffProcedure } from "@/trpc/init";
 
 export const organizationStockRouter = createTRPCRouter({
 	// ============================================================================
@@ -36,7 +36,7 @@ export const organizationStockRouter = createTRPCRouter({
 	// ============================================================================
 
 	// List all products with filtering
-	listProducts: protectedOrganizationProcedure
+	listProducts: protectedOrgStaffProcedure
 		.input(listProductsSchema)
 		.query(async ({ ctx, input }) => {
 			const conditions: SQL[] = [
@@ -86,7 +86,7 @@ export const organizationStockRouter = createTRPCRouter({
 		}),
 
 	// Get single product
-	getProduct: protectedOrganizationProcedure
+	getProduct: protectedOrgStaffProcedure
 		.input(getProductSchema)
 		.query(async ({ ctx, input }) => {
 			const product = await db.query.productTable.findFirst({
@@ -116,7 +116,7 @@ export const organizationStockRouter = createTRPCRouter({
 		}),
 
 	// Create new product
-	createProduct: protectedOrganizationProcedure
+	createProduct: protectedOrgStaffProcedure
 		.input(createProductSchema)
 		.mutation(async ({ ctx, input }) => {
 			const [product] = await db
@@ -139,7 +139,7 @@ export const organizationStockRouter = createTRPCRouter({
 		}),
 
 	// Update product
-	updateProduct: protectedOrganizationProcedure
+	updateProduct: protectedOrgStaffProcedure
 		.input(updateProductSchema)
 		.mutation(async ({ ctx, input }) => {
 			const { id, ...data } = input;
@@ -166,7 +166,7 @@ export const organizationStockRouter = createTRPCRouter({
 		}),
 
 	// Delete product (soft delete)
-	deleteProduct: protectedOrganizationProcedure
+	deleteProduct: protectedOrgStaffProcedure
 		.input(deleteProductSchema)
 		.mutation(async ({ ctx, input }) => {
 			const [updated] = await db
@@ -195,7 +195,7 @@ export const organizationStockRouter = createTRPCRouter({
 	// ============================================================================
 
 	// List stock transactions
-	listStockTransactions: protectedOrganizationProcedure
+	listStockTransactions: protectedOrgStaffProcedure
 		.input(listStockTransactionsSchema)
 		.query(async ({ ctx, input }) => {
 			const conditions: SQL[] = [
@@ -236,7 +236,7 @@ export const organizationStockRouter = createTRPCRouter({
 		}),
 
 	// Create stock adjustment
-	createStockAdjustment: protectedOrganizationProcedure
+	createStockAdjustment: protectedOrgStaffProcedure
 		.input(createStockAdjustmentSchema)
 		.mutation(async ({ ctx, input }) => {
 			// Verify product belongs to organization
@@ -294,7 +294,7 @@ export const organizationStockRouter = createTRPCRouter({
 	// ============================================================================
 
 	// List sales
-	listSales: protectedOrganizationProcedure
+	listSales: protectedOrgStaffProcedure
 		.input(listSalesSchema)
 		.query(async ({ ctx, input }) => {
 			const conditions: SQL[] = [
@@ -346,7 +346,7 @@ export const organizationStockRouter = createTRPCRouter({
 		}),
 
 	// Get single sale
-	getSale: protectedOrganizationProcedure
+	getSale: protectedOrgStaffProcedure
 		.input(getSaleSchema)
 		.query(async ({ ctx, input }) => {
 			const sale = await db.query.saleTable.findFirst({
@@ -385,7 +385,7 @@ export const organizationStockRouter = createTRPCRouter({
 		}),
 
 	// Create sale
-	createSale: protectedOrganizationProcedure
+	createSale: protectedOrgStaffProcedure
 		.input(createSaleSchema)
 		.mutation(async ({ ctx, input }) => {
 			// Validate athlete if provided
@@ -526,7 +526,7 @@ export const organizationStockRouter = createTRPCRouter({
 		}),
 
 	// Complete sale (mark as paid)
-	completeSale: protectedOrganizationProcedure
+	completeSale: protectedOrgStaffProcedure
 		.input(completeSaleSchema)
 		.mutation(async ({ ctx, input }) => {
 			const sale = await db.query.saleTable.findFirst({
@@ -564,7 +564,7 @@ export const organizationStockRouter = createTRPCRouter({
 		}),
 
 	// Cancel sale
-	cancelSale: protectedOrganizationProcedure
+	cancelSale: protectedOrgStaffProcedure
 		.input(cancelSaleSchema)
 		.mutation(async ({ ctx, input }) => {
 			const sale = await db.query.saleTable.findFirst({

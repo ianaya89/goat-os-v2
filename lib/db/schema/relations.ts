@@ -947,6 +947,7 @@ export const sportsEventRelations = relations(
 		vendorAssignments: many(eventVendorAssignmentTable),
 		zones: many(eventZoneTable),
 		risks: many(eventRiskTable),
+		expenses: many(expenseTable),
 	}),
 );
 
@@ -1097,6 +1098,10 @@ export const expenseRelations = relations(expenseTable, ({ one }) => ({
 	recordedByUser: one(userTable, {
 		fields: [expenseTable.recordedBy],
 		references: [userTable.id],
+	}),
+	event: one(sportsEventTable, {
+		fields: [expenseTable.eventId],
+		references: [sportsEventTable.id],
 	}),
 }));
 
