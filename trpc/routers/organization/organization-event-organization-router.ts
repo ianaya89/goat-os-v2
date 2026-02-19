@@ -20,7 +20,6 @@ import {
 	EventRiskStatus,
 	EventSponsorBenefitStatus,
 	EventStaffType,
-	TrainingPaymentStatus,
 } from "@/lib/db/schema/enums";
 import {
 	eventBudgetLineTable,
@@ -41,8 +40,8 @@ import {
 	eventVendorTable,
 	eventZoneStaffTable,
 	eventZoneTable,
+	expenseTable,
 	sportsEventTable,
-	trainingPaymentTable,
 } from "@/lib/db/schema/tables";
 import {
 	assignStaffToZoneSchema,
@@ -2013,25 +2012,6 @@ export const organizationEventOrganizationRouter = createTRPCRouter({
 					),
 				);
 
-			// Get all payments for registrations of this event
-			const payments = await db
-				.select({
-					amount: trainingPaymentTable.amount,
-					status: trainingPaymentTable.status,
-					refundedAmount: trainingPaymentTable.refundedAmount,
-				})
-				.from(trainingPaymentTable)
-				.innerJoin(
-					eventRegistrationTable,
-					eq(trainingPaymentTable.registrationId, eventRegistrationTable.id),
-				)
-				.where(
-					and(
-						eq(eventRegistrationTable.eventId, input.id),
-						eq(trainingPaymentTable.organizationId, ctx.organization.id),
-					),
-				);
-
 			// Get budget lines (expenses)
 			const budgetLines = await db
 				.select({
@@ -2049,6 +2029,21 @@ export const organizationEventOrganizationRouter = createTRPCRouter({
 					),
 				);
 
+			// Get recorded expenses from the expense table (linked to this event)
+			const recordedExpenses = await db
+				.select({
+					amount: expenseTable.amount,
+					description: expenseTable.description,
+					category: expenseTable.category,
+				})
+				.from(expenseTable)
+				.where(
+					and(
+						eq(expenseTable.eventId, input.id),
+						eq(expenseTable.organizationId, ctx.organization.id),
+					),
+				);
+
 			// Calculate registration metrics
 			const registrationsByStatus = {
 				confirmed: 0,
@@ -2060,6 +2055,9 @@ export const organizationEventOrganizationRouter = createTRPCRouter({
 			};
 
 			let expectedRevenue = 0; // From confirmed + pending registrations
+			let collectedRevenue = 0; // Sum of paidAmount from active registrations
+			let pendingPayments = 0; // Expected minus collected for active registrations
+			let refundedAmount = 0; // Sum of paidAmount from refunded registrations
 			let totalDiscounts = 0;
 
 			for (const reg of registrations) {
@@ -2067,10 +2065,12 @@ export const organizationEventOrganizationRouter = createTRPCRouter({
 					case EventRegistrationStatus.confirmed:
 						registrationsByStatus.confirmed++;
 						expectedRevenue += reg.price;
+						collectedRevenue += reg.paidAmount;
 						break;
 					case EventRegistrationStatus.pendingPayment:
 						registrationsByStatus.pendingPayment++;
 						expectedRevenue += reg.price;
+						collectedRevenue += reg.paidAmount;
 						break;
 					case EventRegistrationStatus.waitlist:
 						registrationsByStatus.waitlist++;
@@ -2080,6 +2080,7 @@ export const organizationEventOrganizationRouter = createTRPCRouter({
 						break;
 					case EventRegistrationStatus.refunded:
 						registrationsByStatus.refunded++;
+						refundedAmount += reg.paidAmount;
 						break;
 					case EventRegistrationStatus.noShow:
 						registrationsByStatus.noShow++;
@@ -2088,22 +2089,8 @@ export const organizationEventOrganizationRouter = createTRPCRouter({
 				totalDiscounts += reg.discountAmount ?? 0;
 			}
 
-			// Calculate actual collected revenue from payments
-			let collectedRevenue = 0;
-			let pendingPayments = 0;
-			let refundedAmount = 0;
-
-			for (const payment of payments) {
-				if (payment.status === TrainingPaymentStatus.paid) {
-					collectedRevenue += payment.amount - (payment.refundedAmount ?? 0);
-				} else if (
-					payment.status === TrainingPaymentStatus.pending ||
-					payment.status === TrainingPaymentStatus.processing
-				) {
-					pendingPayments += payment.amount;
-				}
-				refundedAmount += payment.refundedAmount ?? 0;
-			}
+			// Pending is the difference between expected and collected
+			pendingPayments = Math.max(0, expectedRevenue - collectedRevenue);
 
 			// Calculate budget metrics (expenses only, not revenue lines)
 			let plannedExpenses = 0;
@@ -2130,6 +2117,31 @@ export const organizationEventOrganizationRouter = createTRPCRouter({
 						planned: line.plannedAmount,
 						actual: line.actualAmount,
 						variance: line.plannedAmount - line.actualAmount,
+					});
+				}
+			}
+
+			// Calculate recorded expenses from the expense table
+			let totalRecordedExpenses = 0;
+			const recordedExpensesByCategory = new Map<string, number>();
+			for (const expense of recordedExpenses) {
+				totalRecordedExpenses += expense.amount;
+				const cat = expense.category ?? expense.description;
+				recordedExpensesByCategory.set(
+					cat,
+					(recordedExpensesByCategory.get(cat) ?? 0) + expense.amount,
+				);
+			}
+
+			// If there are recorded expenses, add them to breakdown and actuals
+			if (totalRecordedExpenses > 0) {
+				actualExpenses += totalRecordedExpenses;
+				for (const [name, amount] of recordedExpensesByCategory) {
+					expenseBreakdown.push({
+						name,
+						planned: 0,
+						actual: amount,
+						variance: -amount,
 					});
 				}
 			}
@@ -2176,7 +2188,9 @@ export const organizationEventOrganizationRouter = createTRPCRouter({
 					executionRate:
 						plannedExpenses > 0
 							? Math.round((actualExpenses / plannedExpenses) * 100)
-							: 0,
+							: actualExpenses > 0
+								? 100
+								: 0,
 					breakdown: expenseBreakdown,
 				},
 
