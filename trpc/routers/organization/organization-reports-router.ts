@@ -252,8 +252,9 @@ export const organizationReportsRouter = createTRPCRouter({
 
 			const result = await db
 				.select({
+					category: expenseTable.category,
 					categoryId: expenseTable.categoryId,
-					categoryName: expenseCategoryTable.name,
+					categoryRefName: expenseCategoryTable.name,
 					categoryType: expenseCategoryTable.type,
 					total: sum(expenseTable.amount),
 					count: count(),
@@ -271,6 +272,7 @@ export const organizationReportsRouter = createTRPCRouter({
 					),
 				)
 				.groupBy(
+					expenseTable.category,
 					expenseTable.categoryId,
 					expenseCategoryTable.name,
 					expenseCategoryTable.type,
@@ -279,7 +281,7 @@ export const organizationReportsRouter = createTRPCRouter({
 
 			return result.map((r) => ({
 				categoryId: r.categoryId,
-				categoryName: r.categoryName ?? "Uncategorized",
+				categoryName: r.categoryRefName ?? r.category ?? "Sin categoría",
 				categoryType: r.categoryType,
 				total: Number(r.total ?? 0),
 				count: Number(r.count ?? 0),
@@ -683,13 +685,16 @@ export const organizationReportsRouter = createTRPCRouter({
 					count: count(),
 				})
 				.from(trainingPaymentTable)
-				.innerJoin(
+				.leftJoin(
 					trainingSessionTable,
 					eq(trainingPaymentTable.sessionId, trainingSessionTable.id),
 				)
 				.innerJoin(
 					serviceTable,
-					eq(trainingSessionTable.serviceId, serviceTable.id),
+					eq(
+						serviceTable.id,
+						sql`COALESCE(${trainingSessionTable.serviceId}, ${trainingPaymentTable.serviceId})`,
+					),
 				)
 				.where(
 					and(

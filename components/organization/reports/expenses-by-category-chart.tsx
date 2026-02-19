@@ -1,6 +1,7 @@
 "use client";
 
 import { TagsIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type * as React from "react";
 import {
 	Bar,
@@ -28,6 +29,8 @@ type ExpensesByCategoryChartProps = {
 export function ExpensesByCategoryChart({
 	dateRange,
 }: ExpensesByCategoryChartProps): React.JSX.Element {
+	const t = useTranslations("finance.expenses");
+
 	const { data, isLoading } =
 		trpc.organization.reports.getExpensesByCategory.useQuery({
 			dateRange,
@@ -42,16 +45,25 @@ export function ExpensesByCategoryChart({
 		}).format(amount / 100);
 	};
 
+	const translateCategory = (name: string): string => {
+		try {
+			return t(`categories.${name}`);
+		} catch {
+			return name;
+		}
+	};
+
 	const chartData =
-		data?.map((item) => ({
-			name:
-				item.categoryName.length > 18
-					? `${item.categoryName.slice(0, 18)}...`
-					: item.categoryName,
-			fullName: item.categoryName,
-			value: item.total,
-			count: item.count,
-		})) ?? [];
+		data?.map((item) => {
+			const translated = translateCategory(item.categoryName);
+			return {
+				name:
+					translated.length > 18 ? `${translated.slice(0, 18)}...` : translated,
+				fullName: translated,
+				value: item.total,
+				count: item.count,
+			};
+		}) ?? [];
 
 	const totalExpenses = chartData.reduce((acc, item) => acc + item.value, 0);
 
