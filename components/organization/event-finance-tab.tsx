@@ -32,6 +32,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
@@ -190,20 +191,6 @@ export function EventFinanceTab({
 
 	const { revenue, expenses, profit, summary } = data;
 
-	// Bar chart data: Actual vs Projected
-	const comparisonData = [
-		{
-			name: "Ingresos",
-			Recaudado: revenue.collected,
-			Esperado: revenue.expected,
-		},
-		{
-			name: "Gastos",
-			Recaudado: expenses.actual,
-			Esperado: expenses.planned,
-		},
-	];
-
 	// Pie chart data: Revenue distribution
 	const pieData = [
 		{ name: "Recaudado", value: revenue.collected },
@@ -293,53 +280,130 @@ export function EventFinanceTab({
 				/>
 			</div>
 
-			{/* Section 2: Charts */}
+			{/* Section 2: Financial Overview + Pie Chart */}
 			<div className="grid gap-4 md:grid-cols-2">
-				{/* Left: Revenue vs Expenses Bar Chart */}
+				{/* Left: Financial Overview */}
 				<Card>
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2">
 							<TrendingUp className="size-5" />
-							Ingresos vs Gastos
+							Resumen Financiero
 						</CardTitle>
 						<CardDescription>
-							Comparación entre valores reales y esperados
+							Progreso de recaudación y ejecución de gastos
 						</CardDescription>
 					</CardHeader>
-					<CardContent>
-						<div className="h-[280px] w-full">
-							<ResponsiveContainer width="100%" height="100%">
-								<BarChart data={comparisonData}>
-									<CartesianGrid
-										strokeDasharray="3 3"
-										className="stroke-muted"
-									/>
-									<XAxis
-										dataKey="name"
-										tick={{ fontSize: 12 }}
-										tickLine={false}
-										axisLine={false}
-									/>
-									<YAxis
-										tick={{ fontSize: 12 }}
-										tickLine={false}
-										axisLine={false}
-										tickFormatter={(value) => formatCurrency(value as number)}
-									/>
-									<Tooltip content={<BarTooltip />} />
-									<Legend />
-									<Bar
-										dataKey="Recaudado"
-										fill="#22c55e"
-										radius={[4, 4, 0, 0]}
-									/>
-									<Bar
-										dataKey="Esperado"
-										fill="#94a3b8"
-										radius={[4, 4, 0, 0]}
-									/>
-								</BarChart>
-							</ResponsiveContainer>
+					<CardContent className="space-y-6">
+						{/* Revenue Progress */}
+						<div className="space-y-3">
+							<div className="flex items-center justify-between">
+								<span className="text-sm font-medium">Recaudación</span>
+								<span
+									className={cn(
+										"text-sm font-semibold",
+										revenue.collectionRate >= 80
+											? "text-green-600"
+											: revenue.collectionRate >= 50
+												? "text-yellow-600"
+												: "text-red-600",
+									)}
+								>
+									{revenue.collectionRate}%
+								</span>
+							</div>
+							<Progress
+								value={Math.min(revenue.collectionRate, 100)}
+								className="h-2.5"
+							/>
+							<div className="grid grid-cols-2 gap-2 text-sm">
+								<div className="flex justify-between">
+									<span className="text-muted-foreground">Recaudado</span>
+									<span className="font-medium text-green-600">
+										{formatCurrency(revenue.collected)}
+									</span>
+								</div>
+								<div className="flex justify-between">
+									<span className="text-muted-foreground">Esperado</span>
+									<span className="font-medium">
+										{formatCurrency(revenue.expected)}
+									</span>
+								</div>
+							</div>
+							{revenue.pending > 0 && (
+								<div className="flex justify-between text-sm">
+									<span className="text-muted-foreground">Pendiente</span>
+									<span className="font-medium text-yellow-600">
+										{formatCurrency(revenue.pending)}
+									</span>
+								</div>
+							)}
+							{revenue.discounts > 0 && (
+								<div className="flex justify-between text-sm">
+									<span className="text-muted-foreground">Descuentos</span>
+									<span className="font-medium text-orange-600">
+										-{formatCurrency(revenue.discounts)}
+									</span>
+								</div>
+							)}
+						</div>
+
+						<div className="border-t" />
+
+						{/* Expenses Progress */}
+						<div className="space-y-3">
+							<div className="flex items-center justify-between">
+								<span className="text-sm font-medium">Ejecución de Gastos</span>
+								<span
+									className={cn(
+										"text-sm font-semibold",
+										expenses.executionRate > 100
+											? "text-red-600"
+											: "text-muted-foreground",
+									)}
+								>
+									{expenses.executionRate}%
+								</span>
+							</div>
+							<Progress
+								value={Math.min(expenses.executionRate, 100)}
+								className={cn(
+									"h-2.5",
+									expenses.executionRate > 100 && "[&>div]:bg-red-500",
+								)}
+							/>
+							<div className="grid grid-cols-2 gap-2 text-sm">
+								<div className="flex justify-between">
+									<span className="text-muted-foreground">Gastado</span>
+									<span className="font-medium text-orange-600">
+										{formatCurrency(expenses.actual)}
+									</span>
+								</div>
+								<div className="flex justify-between">
+									<span className="text-muted-foreground">Planificado</span>
+									<span className="font-medium">
+										{formatCurrency(expenses.planned)}
+									</span>
+								</div>
+							</div>
+						</div>
+
+						<div className="border-t" />
+
+						{/* Net Result */}
+						<div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+							<span className="text-sm font-medium">Resultado Neto</span>
+							<span
+								className={cn(
+									"text-lg font-bold",
+									profit.current > 0
+										? "text-green-600"
+										: profit.current < 0
+											? "text-red-600"
+											: "text-muted-foreground",
+								)}
+							>
+								{formatCurrency(profit.current)}
+							</span>
 						</div>
 					</CardContent>
 				</Card>
