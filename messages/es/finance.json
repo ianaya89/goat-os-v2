@@ -294,6 +294,8 @@
 			"facilities": "Instalaciones",
 			"medical": "Gastos Médicos",
 			"technology": "Tecnología",
+			"merchandising": "Merchandising",
+			"food_and_beverages": "Comidas y Bebidas",
 			"other": "Otros"
 		},
 		"categoryTypes": {

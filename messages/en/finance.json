@@ -294,6 +294,8 @@
 			"facilities": "Facilities",
 			"medical": "Medical",
 			"technology": "Technology",
+			"merchandising": "Merchandising",
+			"food_and_beverages": "Food & Beverages",
 			"other": "Other"
 		},
 		"categoryTypes": {

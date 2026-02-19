@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/confirmation-modal";
 import { EventDiscounts } from "@/components/organization/event-discounts";
 import { EventExpensesTable } from "@/components/organization/event-expenses-table";
+import { EventFinanceTab } from "@/components/organization/event-finance-tab";
 import { EventPaymentsTable } from "@/components/organization/event-payments-table";
 import { EventPricingConfig } from "@/components/organization/event-pricing-config";
 import { EventRegistrationsTable } from "@/components/organization/event-registrations-table";
@@ -293,6 +294,7 @@ export function EventDetail({ eventId }: EventDetailProps): React.JSX.Element {
 						<TabsTrigger value="registrations">Inscripciones</TabsTrigger>
 						<TabsTrigger value="payments">Pagos</TabsTrigger>
 						<TabsTrigger value="expenses">Gastos</TabsTrigger>
+						<TabsTrigger value="finance">Finanzas</TabsTrigger>
 						<TabsTrigger value="pricing">Precios</TabsTrigger>
 					</TabsList>
 					<Button variant="outline" asChild>
@@ -475,6 +477,10 @@ export function EventDetail({ eventId }: EventDetailProps): React.JSX.Element {
 							<EventExpensesTable eventId={eventId} />
 						</CardContent>
 					</Card>
+				</TabsContent>
+
+				<TabsContent value="finance">
+					<EventFinanceTab eventId={eventId} />
 				</TabsContent>
 
 				<TabsContent value="pricing" className="space-y-6">

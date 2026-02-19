@@ -83,6 +83,7 @@ export const ExpensesModal = NiceModal.create<ExpensesModalProps>(
 			onSuccess: (data) => {
 				toast.success(t("success.created"));
 				utils.organization.expense.invalidate();
+				form.reset();
 				modal.handleClose();
 				if (data?.id) {
 					NiceModal.show(ExpenseReceiptModal, {

@@ -363,6 +363,8 @@ export const ExpenseCategory = {
 	facilities: "facilities", // Instalaciones
 	medical: "medical", // Gastos médicos
 	technology: "technology", // Tecnología
+	merchandising: "merchandising", // Merchandising
+	foodAndBeverages: "food_and_beverages", // Comidas y bebidas
 	other: "other",
 } as const;
 export type ExpenseCategory =
