@@ -365,6 +365,7 @@ export const ExpenseCategory = {
 	technology: "technology", // Tecnología
 	merchandising: "merchandising", // Merchandising
 	foodAndBeverages: "food_and_beverages", // Comidas y bebidas
+	management: "management", // Gerencia
 	other: "other",
 } as const;
 export type ExpenseCategory =
