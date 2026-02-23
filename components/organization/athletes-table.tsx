@@ -469,59 +469,72 @@ export function AthletesTable({
 		{
 			accessorKey: "status",
 			header: t("table.status"),
-			cell: ({ row }) => (
-				<StatusBadge status={row.original.status as AthleteStatus} />
-			),
-		},
-		{
-			id: "accountStatus",
-			header: t("table.accountStatus"),
 			cell: ({ row }) => {
 				const user = row.original.user;
-				if (!user) {
+				const accountIndicator = (() => {
+					if (!user) {
+						return (
+							<Tooltip>
+								<TooltipTrigger>
+									<div className="flex items-center gap-1.5 text-muted-foreground">
+										<UserXIcon className="size-3.5" />
+										<span className="text-xs">{t("table.noAccount")}</span>
+									</div>
+								</TooltipTrigger>
+								<TooltipContent>
+									<p>{t("table.noAccountTooltip")}</p>
+								</TooltipContent>
+							</Tooltip>
+						);
+					}
+					if (user.emailVerified) {
+						return (
+							<Tooltip>
+								<TooltipTrigger>
+									<div className="flex items-center gap-1.5 text-green-600">
+										<CheckCircle2Icon className="size-3.5" />
+										<span className="text-xs">{t("table.accountActive")}</span>
+									</div>
+								</TooltipTrigger>
+								<TooltipContent>
+									<p>{t("table.accountActiveTooltip")}</p>
+								</TooltipContent>
+							</Tooltip>
+						);
+					}
 					return (
 						<Tooltip>
 							<TooltipTrigger>
-								<div className="flex items-center gap-1.5 text-muted-foreground">
-									<UserXIcon className="size-4" />
-									<span className="text-xs">{t("table.noAccount")}</span>
+								<div className="flex items-center gap-1.5 text-amber-600">
+									<ClockIcon className="size-3.5" />
+									<span className="text-xs">{t("table.accountPending")}</span>
 								</div>
 							</TooltipTrigger>
 							<TooltipContent>
-								<p>{t("table.noAccountTooltip")}</p>
+								<p>{t("table.accountPendingTooltip")}</p>
 							</TooltipContent>
 						</Tooltip>
 					);
-				}
-				if (user.emailVerified) {
-					return (
-						<Tooltip>
-							<TooltipTrigger>
-								<div className="flex items-center gap-1.5 text-green-600">
-									<CheckCircle2Icon className="size-4" />
-									<span className="text-xs">{t("table.accountActive")}</span>
-								</div>
-							</TooltipTrigger>
-							<TooltipContent>
-								<p>{t("table.accountActiveTooltip")}</p>
-							</TooltipContent>
-						</Tooltip>
-					);
-				}
+				})();
+
 				return (
-					<Tooltip>
-						<TooltipTrigger>
-							<div className="flex items-center gap-1.5 text-amber-600">
-								<ClockIcon className="size-4" />
-								<span className="text-xs">{t("table.accountPending")}</span>
-							</div>
-						</TooltipTrigger>
-						<TooltipContent>
-							<p>{t("table.accountPendingTooltip")}</p>
-						</TooltipContent>
-					</Tooltip>
+					<div className="flex flex-col gap-1.5">
+						<StatusBadge status={row.original.status as AthleteStatus} />
+						{accountIndicator}
+					</div>
 				);
 			},
+		},
+		{
+			accessorKey: "createdAt",
+			header: ({ column }) => (
+				<SortableColumnHeader column={column} title={t("table.createdAt")} />
+			),
+			cell: ({ row }) => (
+				<span className="text-sm text-muted-foreground">
+					{format(new Date(row.original.createdAt), "dd/MM/yyyy")}
+				</span>
+			),
 		},
 		{
 			id: "actions",
