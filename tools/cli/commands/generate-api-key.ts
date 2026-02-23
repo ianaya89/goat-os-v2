@@ -1,11 +1,19 @@
-import { randomBytes } from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
 import * as p from "@clack/prompts";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { organizationTable } from "../../../lib/db/schema/tables";
 
+function deriveApiKey(masterSecret: string, organizationId: string): string {
+	const signature = createHmac("sha256", masterSecret)
+		.update(organizationId)
+		.digest("base64url");
+	return `goat_sk_${organizationId}.${signature}`;
+}
+
 /**
  * Generate a new API key for external agent access.
- * Queries the database for available organizations and lets the user pick one.
+ * Keys are derived via HMAC from a master secret + org ID.
+ * If API_SECRET_KEY is already set, it uses that; otherwise it generates a new one.
  */
 export async function generateApiKey(): Promise<void> {
 	p.log.step("Generating API key...");
@@ -31,6 +39,18 @@ export async function generateApiKey(): Promise<void> {
 		return;
 	}
 
+	// Check for existing master secret or generate a new one
+	let masterSecret = process.env.API_SECRET_KEY;
+	let isNewSecret = false;
+
+	if (!masterSecret) {
+		masterSecret = randomBytes(32).toString("base64");
+		isNewSecret = true;
+		p.log.info("No API_SECRET_KEY found, generating a new master secret.");
+	} else {
+		p.log.info("Using existing API_SECRET_KEY from environment.");
+	}
+
 	const orgOptions = organizations.map((org) => ({
 		value: org.id,
 		label: org.name,
@@ -48,22 +68,31 @@ export async function generateApiKey(): Promise<void> {
 	}
 
 	const selectedOrg = organizations.find((o) => o.id === selectedOrgId);
-	const token = randomBytes(32).toString("base64url");
-	const apiKey = `goat_sk_${token}`;
+	const apiKey = deriveApiKey(masterSecret, selectedOrgId as string);
 
 	p.log.success("API key generated!");
 
-	p.note(
-		[
-			`Organization: ${selectedOrg?.name} (${selectedOrgId})`,
-			"",
-			"Add these to your .env file:",
-			"",
-			`API_SECRET_KEY="${apiKey}"`,
-			`API_ORGANIZATION_ID="${selectedOrgId}"`,
-		].join("\n"),
-		"API Key",
-	);
+	const lines = [`Organization: ${selectedOrg?.name} (${selectedOrgId})`, ""];
 
-	p.log.warn("Save this key now — it cannot be retrieved later.");
+	if (isNewSecret) {
+		lines.push(
+			"Add to your .env file:",
+			"",
+			`API_SECRET_KEY="${masterSecret}"`,
+			"",
+			"API key for this organization:",
+		);
+	} else {
+		lines.push("API key for this organization:");
+	}
+
+	lines.push("", apiKey);
+
+	p.note(lines.join("\n"), "API Key");
+
+	if (isNewSecret) {
+		p.log.warn("Save the API_SECRET_KEY — all derived keys depend on it.");
+	}
+
+	p.log.info("Use with: Authorization: Bearer <api-key>");
 }

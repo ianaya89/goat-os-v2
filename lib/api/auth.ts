@@ -1,4 +1,4 @@
-import { timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
@@ -12,18 +12,32 @@ export class ApiAuthError extends Error {
 }
 
 /**
+ * Derives an API key for a given organization ID using HMAC-SHA256.
+ * Key format: goat_sk_<orgId>.<signature_base64url>
+ */
+export function deriveApiKey(
+	masterSecret: string,
+	organizationId: string,
+): string {
+	const signature = createHmac("sha256", masterSecret)
+		.update(organizationId)
+		.digest("base64url");
+	return `goat_sk_${organizationId}.${signature}`;
+}
+
+/**
  * Validates the API key from the Authorization header.
+ * Keys are HMAC-derived: goat_sk_<orgId>.<signature>
  * Uses timing-safe comparison to prevent timing attacks.
  *
- * @returns The organization ID associated with the API key
+ * @returns The organization ID embedded in the API key
  * @throws ApiAuthError if authentication fails
  */
 export function validateApiKey(request: Request): { organizationId: string } {
-	const secretKey = env.API_SECRET_KEY;
-	const organizationId = env.API_ORGANIZATION_ID;
+	const masterSecret = env.API_SECRET_KEY;
 
-	if (!secretKey || !organizationId) {
-		logger.error("API_SECRET_KEY or API_ORGANIZATION_ID not configured");
+	if (!masterSecret) {
+		logger.error("API_SECRET_KEY not configured");
 		throw new ApiAuthError(503, "API not configured");
 	}
 
@@ -39,9 +53,31 @@ export function validateApiKey(request: Request): { organizationId: string } {
 
 	const providedKey = parts[1] as string;
 
-	// Timing-safe comparison
-	const expectedBuffer = Buffer.from(secretKey, "utf-8");
-	const providedBuffer = Buffer.from(providedKey, "utf-8");
+	// Validate key format: goat_sk_<orgId>.<signature>
+	if (!providedKey.startsWith("goat_sk_")) {
+		throw new ApiAuthError(401, "Invalid API key format");
+	}
+
+	const payload = providedKey.slice("goat_sk_".length);
+	const dotIndex = payload.lastIndexOf(".");
+	if (dotIndex === -1) {
+		throw new ApiAuthError(401, "Invalid API key format");
+	}
+
+	const organizationId = payload.slice(0, dotIndex);
+	const providedSignature = payload.slice(dotIndex + 1);
+
+	if (!organizationId || !providedSignature) {
+		throw new ApiAuthError(401, "Invalid API key format");
+	}
+
+	// Recompute expected signature and compare
+	const expectedSignature = createHmac("sha256", masterSecret)
+		.update(organizationId)
+		.digest("base64url");
+
+	const expectedBuffer = Buffer.from(expectedSignature, "utf-8");
+	const providedBuffer = Buffer.from(providedSignature, "utf-8");
 
 	if (
 		expectedBuffer.length !== providedBuffer.length ||

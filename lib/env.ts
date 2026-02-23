@@ -56,9 +56,8 @@ export const env = createEnv({
 		// Cloudflare Turnstile (Captcha)
 		TURNSTILE_SECRET_KEY: z.string().optional(),
 
-		// API (external agent access)
+		// API (external agent access - master secret for HMAC-derived keys)
 		API_SECRET_KEY: z.string().optional(),
-		API_ORGANIZATION_ID: z.string().uuid().optional(),
 
 		// Build / CI
 		ANALYZE: z
@@ -144,7 +143,6 @@ export const env = createEnv({
 		STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
 		TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY,
 		API_SECRET_KEY: process.env.API_SECRET_KEY,
-		API_ORGANIZATION_ID: process.env.API_ORGANIZATION_ID,
 		ANALYZE: process.env.ANALYZE,
 		CI: process.env.CI,
 		VERCEL: process.env.VERCEL,
