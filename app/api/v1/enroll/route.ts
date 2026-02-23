@@ -25,6 +25,17 @@ export async function POST(request: Request) {
 		const parsed = enrollSchema.safeParse(body);
 
 		if (!parsed.success) {
+			const missingFields = parsed.error.issues.map((issue) => ({
+				path: issue.path.join("."),
+				message: issue.message,
+				code: issue.code,
+			}));
+
+			logger.warn(
+				{ organizationId, missingFields, body },
+				"Enroll validation failed: invalid request body",
+			);
+
 			return NextResponse.json(
 				{ error: "Invalid request body", details: parsed.error.issues },
 				{ status: 400 },
