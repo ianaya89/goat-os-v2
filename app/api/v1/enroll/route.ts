@@ -56,6 +56,10 @@ export async function POST(request: Request) {
 		});
 
 		if (!group) {
+			logger.warn(
+				{ organizationId, groupId: data.groupId },
+				"Enroll failed: group not found or inactive",
+			);
 			return NextResponse.json(
 				{ error: "Group not found or inactive" },
 				{ status: 400 },
