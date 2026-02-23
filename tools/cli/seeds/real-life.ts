@@ -22,6 +22,7 @@ const ROOT_USER_EMAIL = "root@goat.ar";
 const ADMIN_USER_G_EMAIL = "g@goat.ar";
 const ADMIN_USER_S_EMAIL = "s@goat.ar";
 const ADMIN_USER_C_EMAIL = "clara@goat.ar";
+const ADMIN_USER_R_EMAIL = "recepcion@goat.ar";
 const ADMIN_USER_PASSWORD = "g04t5p0rt5";
 
 // Deterministic UUIDs for real-life entities (using prefix 200 to avoid conflicts)
@@ -41,6 +42,9 @@ const ADMIN_USER_S_ACCOUNT_ID = "20000000-0000-4000-8000-00000000000b";
 const ADMIN_USER_C_ID = "20000000-0000-4000-8000-00000000000c";
 const ADMIN_USER_C_MEMBER_ID = "20000000-0000-4000-8000-00000000000d";
 const ADMIN_USER_C_ACCOUNT_ID = "20000000-0000-4000-8000-00000000000e";
+const ADMIN_USER_R_ID = "20000000-0000-4000-8000-0000000000a0";
+const ADMIN_USER_R_MEMBER_ID = "20000000-0000-4000-8000-0000000000a1";
+const ADMIN_USER_R_ACCOUNT_ID = "20000000-0000-4000-8000-0000000000a2";
 
 // Locations
 const LOCATION_CAMPO_VERDE_ID = "20000000-0000-4000-8000-000000000010";
@@ -674,8 +678,53 @@ export async function runRealLifeSeed(): Promise<void> {
 		});
 	}
 
+	// Create recepcion@goat.ar
+	const existingRUser = await db.query.userTable.findFirst({
+		where: eq(schema.userTable.email, ADMIN_USER_R_EMAIL),
+	});
+
+	let rUserId = ADMIN_USER_R_ID;
+
+	if (!existingRUser) {
+		await db.insert(schema.userTable).values({
+			id: ADMIN_USER_R_ID,
+			name: "Recepcion",
+			email: ADMIN_USER_R_EMAIL,
+			emailVerified: true,
+			role: "user",
+			onboardingComplete: true,
+		});
+
+		await db.insert(schema.accountTable).values({
+			id: ADMIN_USER_R_ACCOUNT_ID,
+			userId: ADMIN_USER_R_ID,
+			accountId: ADMIN_USER_R_ID,
+			providerId: "credential",
+			password: adminHashedPassword,
+		});
+	} else {
+		rUserId = existingRUser.id;
+	}
+
+	// Ensure recepcion@goat.ar membership
+	const existingRMembership = await db.query.memberTable.findFirst({
+		where: and(
+			eq(schema.memberTable.userId, rUserId),
+			eq(schema.memberTable.organizationId, organizationId),
+		),
+	});
+
+	if (!existingRMembership) {
+		await db.insert(schema.memberTable).values({
+			id: ADMIN_USER_R_MEMBER_ID,
+			organizationId,
+			userId: rUserId,
+			role: "member",
+		});
+	}
+
 	adminUsersSpinner.stop(
-		"Admin users g@goat.ar, s@goat.ar, and clara@goat.ar configured",
+		"Admin users g@goat.ar, s@goat.ar, clara@goat.ar, and recepcion@goat.ar configured",
 	);
 
 	// 5. Create locations
@@ -1055,7 +1104,7 @@ export async function runRealLifeSeed(): Promise<void> {
 		`Organization: ${REAL_LIFE_ORG_NAME} (${REAL_LIFE_ORG_SLUG})
 User: ${REAL_LIFE_USER_EMAIL} (password: ${REAL_LIFE_USER_PASSWORD})
 Root user: ${ROOT_USER_EMAIL} (added to org if exists)
-Admin users: ${ADMIN_USER_G_EMAIL}, ${ADMIN_USER_S_EMAIL}, ${ADMIN_USER_C_EMAIL} (password: ${ADMIN_USER_PASSWORD})
+Admin users: ${ADMIN_USER_G_EMAIL}, ${ADMIN_USER_S_EMAIL}, ${ADMIN_USER_C_EMAIL}, ${ADMIN_USER_R_EMAIL} (password: ${ADMIN_USER_PASSWORD})
 Locations: Campo Verde, Campo Azul
 Groups: Pretemporada Hockey 2026, Sub 10 Hockey
 Age Categories: Sub 10, Sub 12, Sub 14, Sub 16, Sub 18
