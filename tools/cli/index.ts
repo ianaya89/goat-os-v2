@@ -1,6 +1,7 @@
 #!/usr/bin/env tsx
 import * as p from "@clack/prompts";
 import { generateMigrations } from "./commands/generate";
+import { generateApiKey } from "./commands/generate-api-key";
 import { runMigrations } from "./commands/migrate";
 import { pushSchema } from "./commands/push";
 import { resetDatabase } from "./commands/reset";
@@ -91,6 +92,11 @@ async function main() {
 				label: "Reset Database",
 				hint: "Drop all tables and re-migrate (dangerous!)",
 			},
+			{
+				value: "generate-api-key",
+				label: "Generate API Key",
+				hint: "Create a key for external API access",
+			},
 		],
 	});
 
@@ -114,6 +120,9 @@ async function main() {
 			break;
 		case "reset":
 			await handleReset(env);
+			break;
+		case "generate-api-key":
+			await generateApiKey();
 			break;
 	}
 
