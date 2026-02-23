@@ -20,7 +20,7 @@ import {
 import * as React from "react";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/confirmation-modal";
-import { EventPaymentModal } from "@/components/organization/event-payment-modal";
+import { PaymentsModal } from "@/components/organization/payments-modal";
 import { EventPaymentReceiptModal } from "@/components/organization/receipt-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -181,7 +181,7 @@ export function EventPaymentsTable({
 	};
 
 	const handleCreatePayment = (): void => {
-		NiceModal.show(EventPaymentModal, { eventId });
+		NiceModal.show(PaymentsModal, { fixedEventId: eventId });
 	};
 
 	const columns: ColumnDef<Payment>[] = [

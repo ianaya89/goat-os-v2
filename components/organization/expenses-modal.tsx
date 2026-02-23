@@ -110,10 +110,10 @@ export const ExpensesModal = NiceModal.create<ExpensesModalProps>(
 
 		const effectiveEventId = fixedEventId ?? undefined;
 
-		// Fetch events for the selector (only when not fixed and creating)
+		// Fetch events for the selector (only when not in fixed context)
 		const { data: eventsData } = trpc.organization.sportsEvent.list.useQuery(
 			{ limit: 100, offset: 0 },
-			{ enabled: !fixedEventId && !isEditing },
+			{ enabled: !fixedEventId },
 		);
 
 		const form = useZodForm({
@@ -145,6 +145,26 @@ export const ExpensesModal = NiceModal.create<ExpensesModalProps>(
 						eventId: effectiveEventId,
 					},
 		});
+
+		// Reset form when modal opens for creation (fix stale data from previous edit)
+		const prevVisibleRef = React.useRef(false);
+		React.useEffect(() => {
+			if (modal.visible && !prevVisibleRef.current && !isEditing) {
+				form.reset({
+					category: undefined,
+					amount: 0,
+					currency: "ARS",
+					description: "",
+					expenseDate: new Date(),
+					paymentMethod: undefined,
+					receiptNumber: "",
+					vendor: "",
+					notes: "",
+					eventId: effectiveEventId,
+				});
+			}
+			prevVisibleRef.current = modal.visible;
+		}, [modal.visible, isEditing, form, effectiveEventId]);
 
 		const onSubmit = form.handleSubmit((data) => {
 			const transformedData = {
@@ -240,8 +260,8 @@ export const ExpensesModal = NiceModal.create<ExpensesModalProps>(
 								</FormItem>
 							)}
 						/>
-						{/* Event selector - only show when not fixed and creating */}
-						{!fixedEventId && !isEditing && (
+						{/* Event selector - show when not fixed and expense doesn't already have an event */}
+						{!fixedEventId && !expense?.eventId && (
 							<FormField
 								control={form.control}
 								name="eventId"
@@ -280,8 +300,25 @@ export const ExpensesModal = NiceModal.create<ExpensesModalProps>(
 							/>
 						)}
 
+						{/* Show fixed event when creating from event context */}
+						{fixedEventId && (
+							<Field>
+								<FormLabel>{t("form.event")}</FormLabel>
+								<Input
+									value={
+										eventsData?.events?.find(
+											(e: { id: string; title: string }) =>
+												e.id === fixedEventId,
+										)?.title ?? t("form.linkedEvent")
+									}
+									disabled
+									className="bg-muted"
+								/>
+							</Field>
+						)}
+
 						{/* Show linked event info when editing */}
-						{isEditing && expense?.event && (
+						{isEditing && expense?.event && !fixedEventId && (
 							<Field>
 								<FormLabel>{t("form.event")}</FormLabel>
 								<Input

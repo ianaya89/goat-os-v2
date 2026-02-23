@@ -23,7 +23,7 @@ import {
 import * as React from "react";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/confirmation-modal";
-import { EventPaymentModal } from "@/components/organization/event-payment-modal";
+import { PaymentsModal } from "@/components/organization/payments-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -335,17 +335,8 @@ export function EventRegistrationsTable({
 							{row.original.price > row.original.paidAmount && (
 								<DropdownMenuItem
 									onClick={() => {
-										NiceModal.show(EventPaymentModal, {
-											eventId,
-											registration: {
-												id: row.original.id,
-												registrationNumber: row.original.registrationNumber,
-												registrantName: row.original.registrantName,
-												registrantEmail: row.original.registrantEmail,
-												price: row.original.price,
-												paidAmount: row.original.paidAmount,
-												currency: row.original.currency,
-											},
+										NiceModal.show(PaymentsModal, {
+											fixedEventId: eventId,
 										});
 									}}
 								>

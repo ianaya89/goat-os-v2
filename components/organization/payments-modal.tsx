@@ -116,6 +116,8 @@ export type PaymentsModalProps = NiceModalHocProps & {
 	fixedSessionIds?: string[];
 	/** When set, only these athletes are shown in the selector (used from session detail) */
 	fixedAthletes?: { id: string; name: string }[];
+	/** When set, shows event payment flow with registration selector */
+	fixedEventId?: string;
 };
 
 type SelectedSession = {
@@ -124,7 +126,13 @@ type SelectedSession = {
 };
 
 export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
-	({ payment, fixedSessionId, fixedSessionIds, fixedAthletes }) => {
+	({
+		payment,
+		fixedSessionId,
+		fixedSessionIds,
+		fixedAthletes,
+		fixedEventId,
+	}) => {
 		const t = useTranslations("finance.payments");
 		const modal = useEnhancedModal();
 		const utils = trpc.useUtils();
@@ -213,6 +221,46 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 		const [paymentType, setPaymentType] = React.useState<"training" | "event">(
 			"training",
 		);
+
+		// Event payment state (when fixedEventId is set)
+		const [selectedRegistrationId, setSelectedRegistrationId] = React.useState<
+			string | null
+		>(null);
+
+		const { data: eventRegistrationsData } =
+			trpc.organization.sportsEvent.listRegistrations.useQuery(
+				{ eventId: fixedEventId!, limit: 100, offset: 0 },
+				{ enabled: !!fixedEventId && !isEditing },
+			);
+
+		const eventRegistrations = eventRegistrationsData?.registrations ?? [];
+
+		const selectedEventReg = React.useMemo(() => {
+			if (!selectedRegistrationId) return null;
+			return (
+				eventRegistrations.find((r) => r.id === selectedRegistrationId) ?? null
+			);
+		}, [selectedRegistrationId, eventRegistrations]);
+
+		const eventRemainingAmount = selectedEventReg
+			? selectedEventReg.price - selectedEventReg.paidAmount
+			: 0;
+
+		const createEventPaymentMutation =
+			trpc.organization.sportsEvent.createPayment.useMutation({
+				onSuccess: () => {
+					toast.success(t("success.created"));
+					utils.organization.sportsEvent.listPayments.invalidate();
+					utils.organization.sportsEvent.listRegistrations.invalidate();
+					utils.organization.sportsEvent.get.invalidate();
+					utils.organization.eventOrganization.getProjection.invalidate();
+					utils.organization.trainingPayment.invalidate();
+					modal.handleClose();
+				},
+				onError: (error) => {
+					toast.error(error.message || t("error.createFailed"));
+				},
+			});
 
 		const sessions = sessionsData?.sessions ?? [];
 		const services = (servicesData?.items ?? []).filter((s) =>
@@ -464,6 +512,21 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 			: directServicePriceData;
 
 		const onSubmit = form.handleSubmit((data) => {
+			// Event payment flow - use sportsEvent.createPayment
+			if (fixedEventId && !isEditing && selectedRegistrationId) {
+				createEventPaymentMutation.mutate({
+					registrationId: selectedRegistrationId,
+					amount: Math.round((data.amount ?? 0) * 100),
+					paymentMethod: (data.paymentMethod ?? "cash") as Parameters<
+						typeof createEventPaymentMutation.mutate
+					>[0]["paymentMethod"],
+					paymentDate: data.paymentDate ?? undefined,
+					receiptNumber: data.receiptNumber || undefined,
+					notes: data.notes || undefined,
+				});
+				return;
+			}
+
 			const transformedData = {
 				...data,
 				amount: Math.round((data.amount ?? 0) * 100),
@@ -511,12 +574,15 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 				setAthleteSearchQuery("");
 				setServiceSearchQuery("");
 				setSessionAthleteFilter(null);
+				setSelectedRegistrationId(null);
 			}
 			prevVisibleRef.current = modal.visible;
 		}, [modal.visible, isEditing, form, initialSessionIds, initialAthleteId]);
 
 		const isPending =
-			createPaymentMutation.isPending || updatePaymentMutation.isPending;
+			createPaymentMutation.isPending ||
+			updatePaymentMutation.isPending ||
+			createEventPaymentMutation.isPending;
 
 		return (
 			<ProfileEditSheet
@@ -594,7 +660,102 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 							</Field>
 						)}
 
-						{!isEditing && (
+						{/* Event registration flow when fixedEventId is set */}
+						{!isEditing && fixedEventId && (
+							<>
+								<Field>
+									<FormLabel>{t("form.registration")}</FormLabel>
+									<Select
+										onValueChange={(value) => {
+											setSelectedRegistrationId(
+												value === "none" ? null : value,
+											);
+											if (value !== "none") {
+												const reg = eventRegistrations.find(
+													(r) => r.id === value,
+												);
+												if (reg) {
+													const remaining = reg.price - reg.paidAmount;
+													if (remaining > 0) {
+														form.setValue("amount", remaining / 100);
+														form.setValue("paidAmount", remaining / 100);
+													}
+												}
+											}
+										}}
+										value={selectedRegistrationId ?? "none"}
+									>
+										<SelectTrigger className="w-full">
+											<SelectValue placeholder={t("form.selectRegistration")} />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="none">
+												{t("form.selectRegistration")}
+											</SelectItem>
+											{eventRegistrations.map((reg) => (
+												<SelectItem key={reg.id} value={reg.id}>
+													#{reg.registrationNumber} - {reg.registrantName}
+													{reg.price - reg.paidAmount > 0 && (
+														<span className="text-muted-foreground ml-2">
+															({t("form.owes")}{" "}
+															{new Intl.NumberFormat("es-AR", {
+																style: "currency",
+																currency: reg.currency,
+																minimumFractionDigits: 0,
+															}).format((reg.price - reg.paidAmount) / 100)}
+															)
+														</span>
+													)}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</Field>
+
+								{selectedEventReg && (
+									<div className="rounded-lg border bg-muted/50 p-3 space-y-1 text-sm">
+										<div className="flex justify-between">
+											<span className="text-muted-foreground">
+												{t("form.summaryTotal")}
+											</span>
+											<span className="font-medium">
+												{new Intl.NumberFormat("es-AR", {
+													style: "currency",
+													currency: selectedEventReg.currency,
+													minimumFractionDigits: 0,
+												}).format(selectedEventReg.price / 100)}
+											</span>
+										</div>
+										<div className="flex justify-between">
+											<span className="text-muted-foreground">
+												{t("form.summaryPaid")}
+											</span>
+											<span className="font-medium">
+												{new Intl.NumberFormat("es-AR", {
+													style: "currency",
+													currency: selectedEventReg.currency,
+													minimumFractionDigits: 0,
+												}).format(selectedEventReg.paidAmount / 100)}
+											</span>
+										</div>
+										<div className="flex justify-between border-t pt-1">
+											<span className="text-muted-foreground">
+												{t("form.summaryPending")}
+											</span>
+											<span className="font-medium text-primary">
+												{new Intl.NumberFormat("es-AR", {
+													style: "currency",
+													currency: selectedEventReg.currency,
+													minimumFractionDigits: 0,
+												}).format(eventRemainingAmount / 100)}
+											</span>
+										</div>
+									</div>
+								)}
+							</>
+						)}
+
+						{!isEditing && !fixedEventId && (
 							<>
 								{/* Athlete selector - appears first so sessions can be filtered by athlete */}
 								<FormField
@@ -1241,157 +1402,227 @@ export const PaymentsModal = NiceModal.create<PaymentsModalProps>(
 					</ProfileEditSection>
 
 					<ProfileEditSection>
-						<ProfileEditGrid cols={3}>
-							<FormField
-								control={form.control}
-								name="amount"
-								render={({ field }) => (
-									<FormItem asChild>
-										<Field>
-											<FormLabel>{t("form.amount")}</FormLabel>
-											<FormControl>
-												<Input
-													type="number"
-													placeholder="100"
-													{...field}
-													onChange={(e) =>
-														field.onChange(Number(e.target.value))
-													}
-												/>
-											</FormControl>
-											<FormMessage />
-											{servicePriceData && (
-												<FormDescription className="text-xs text-blue-600">
-													{t("form.servicePriceHint", {
-														name: servicePriceData.serviceName,
-														price: new Intl.NumberFormat("es-AR", {
-															style: "currency",
-															currency: servicePriceData.currency,
-															minimumFractionDigits: 0,
-														}).format(servicePriceData.price / 100),
-													})}
-												</FormDescription>
-											)}
-										</Field>
-									</FormItem>
-								)}
-							/>
-
-							<FormField
-								control={form.control}
-								name="paidAmount"
-								render={({ field }) => (
-									<FormItem asChild>
-										<Field>
-											<FormLabel>{t("form.paidAmount")}</FormLabel>
-											<FormControl>
-												<Input
-													type="number"
-													placeholder="0"
-													{...field}
-													onChange={(e) =>
-														field.onChange(Number(e.target.value))
-													}
-												/>
-											</FormControl>
-											<FormMessage />
-										</Field>
-									</FormItem>
-								)}
-							/>
-
-							<FormField
-								control={form.control}
-								name="discountPercentage"
-								render={({ field }) => (
-									<FormItem asChild>
-										<Field>
-											<FormLabel>{t("form.discountPercentage")}</FormLabel>
-											<FormControl>
-												<Input
-													type="number"
-													min={0}
-													max={100}
-													placeholder="0"
-													{...field}
-													onChange={(e) =>
-														field.onChange(Number(e.target.value))
-													}
-												/>
-											</FormControl>
-											<FormMessage />
-										</Field>
-									</FormItem>
-								)}
-							/>
-						</ProfileEditGrid>
-
-						<ProfileEditGrid cols={2}>
-							<FormField
-								control={form.control}
-								name="status"
-								render={({ field }) => (
-									<FormItem asChild>
-										<Field>
-											<FormLabel>{t("form.status")}</FormLabel>
-											<Select
-												onValueChange={field.onChange}
-												value={field.value}
-											>
+						{fixedEventId && !isEditing ? (
+							<ProfileEditGrid cols={2}>
+								<FormField
+									control={form.control}
+									name="amount"
+									render={({ field }) => (
+										<FormItem asChild>
+											<Field>
+												<FormLabel>{t("form.amount")}</FormLabel>
 												<FormControl>
-													<SelectTrigger className="w-full">
-														<SelectValue placeholder={t("form.selectStatus")} />
-													</SelectTrigger>
+													<Input
+														type="number"
+														placeholder="100"
+														{...field}
+														onChange={(e) =>
+															field.onChange(Number(e.target.value))
+														}
+													/>
 												</FormControl>
-												<SelectContent>
-													{TrainingPaymentStatuses.map((status) => (
-														<SelectItem key={status} value={status}>
-															{t(`status.${status}`)}
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
-											<FormMessage />
-										</Field>
-									</FormItem>
-								)}
-							/>
+												<FormMessage />
+											</Field>
+										</FormItem>
+									)}
+								/>
 
-							<FormField
-								control={form.control}
-								name="paymentMethod"
-								render={({ field }) => (
-									<FormItem asChild>
-										<Field>
-											<FormLabel>{t("form.method")}</FormLabel>
-											<Select
-												onValueChange={(value) =>
-													field.onChange(value === "none" ? null : value)
-												}
-												value={field.value ?? "none"}
-											>
-												<FormControl>
-													<SelectTrigger className="w-full">
-														<SelectValue placeholder={t("form.selectMethod")} />
-													</SelectTrigger>
-												</FormControl>
-												<SelectContent>
-													<SelectItem value="none">
-														{t("form.notSpecified")}
-													</SelectItem>
-													{TrainingPaymentMethods.map((method) => (
-														<SelectItem key={method} value={method}>
-															{t(`methods.${methodKeys[method] ?? method}`)}
+								<FormField
+									control={form.control}
+									name="paymentMethod"
+									render={({ field }) => (
+										<FormItem asChild>
+											<Field>
+												<FormLabel>{t("form.method")}</FormLabel>
+												<Select
+													onValueChange={(value) =>
+														field.onChange(value === "none" ? null : value)
+													}
+													value={field.value ?? "none"}
+												>
+													<FormControl>
+														<SelectTrigger className="w-full">
+															<SelectValue
+																placeholder={t("form.selectMethod")}
+															/>
+														</SelectTrigger>
+													</FormControl>
+													<SelectContent>
+														<SelectItem value="none">
+															{t("form.notSpecified")}
 														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
-											<FormMessage />
-										</Field>
-									</FormItem>
-								)}
-							/>
-						</ProfileEditGrid>
+														{TrainingPaymentMethods.map((method) => (
+															<SelectItem key={method} value={method}>
+																{t(`methods.${methodKeys[method] ?? method}`)}
+															</SelectItem>
+														))}
+													</SelectContent>
+												</Select>
+												<FormMessage />
+											</Field>
+										</FormItem>
+									)}
+								/>
+							</ProfileEditGrid>
+						) : (
+							<>
+								<ProfileEditGrid cols={3}>
+									<FormField
+										control={form.control}
+										name="amount"
+										render={({ field }) => (
+											<FormItem asChild>
+												<Field>
+													<FormLabel>{t("form.amount")}</FormLabel>
+													<FormControl>
+														<Input
+															type="number"
+															placeholder="100"
+															{...field}
+															onChange={(e) =>
+																field.onChange(Number(e.target.value))
+															}
+														/>
+													</FormControl>
+													<FormMessage />
+													{servicePriceData && (
+														<FormDescription className="text-xs text-blue-600">
+															{t("form.servicePriceHint", {
+																name: servicePriceData.serviceName,
+																price: new Intl.NumberFormat("es-AR", {
+																	style: "currency",
+																	currency: servicePriceData.currency,
+																	minimumFractionDigits: 0,
+																}).format(servicePriceData.price / 100),
+															})}
+														</FormDescription>
+													)}
+												</Field>
+											</FormItem>
+										)}
+									/>
+
+									<FormField
+										control={form.control}
+										name="paidAmount"
+										render={({ field }) => (
+											<FormItem asChild>
+												<Field>
+													<FormLabel>{t("form.paidAmount")}</FormLabel>
+													<FormControl>
+														<Input
+															type="number"
+															placeholder="0"
+															{...field}
+															onChange={(e) =>
+																field.onChange(Number(e.target.value))
+															}
+														/>
+													</FormControl>
+													<FormMessage />
+												</Field>
+											</FormItem>
+										)}
+									/>
+
+									<FormField
+										control={form.control}
+										name="discountPercentage"
+										render={({ field }) => (
+											<FormItem asChild>
+												<Field>
+													<FormLabel>{t("form.discountPercentage")}</FormLabel>
+													<FormControl>
+														<Input
+															type="number"
+															min={0}
+															max={100}
+															placeholder="0"
+															{...field}
+															onChange={(e) =>
+																field.onChange(Number(e.target.value))
+															}
+														/>
+													</FormControl>
+													<FormMessage />
+												</Field>
+											</FormItem>
+										)}
+									/>
+								</ProfileEditGrid>
+
+								<ProfileEditGrid cols={2}>
+									<FormField
+										control={form.control}
+										name="status"
+										render={({ field }) => (
+											<FormItem asChild>
+												<Field>
+													<FormLabel>{t("form.status")}</FormLabel>
+													<Select
+														onValueChange={field.onChange}
+														value={field.value}
+													>
+														<FormControl>
+															<SelectTrigger className="w-full">
+																<SelectValue
+																	placeholder={t("form.selectStatus")}
+																/>
+															</SelectTrigger>
+														</FormControl>
+														<SelectContent>
+															{TrainingPaymentStatuses.map((status) => (
+																<SelectItem key={status} value={status}>
+																	{t(`status.${status}`)}
+																</SelectItem>
+															))}
+														</SelectContent>
+													</Select>
+													<FormMessage />
+												</Field>
+											</FormItem>
+										)}
+									/>
+
+									<FormField
+										control={form.control}
+										name="paymentMethod"
+										render={({ field }) => (
+											<FormItem asChild>
+												<Field>
+													<FormLabel>{t("form.method")}</FormLabel>
+													<Select
+														onValueChange={(value) =>
+															field.onChange(value === "none" ? null : value)
+														}
+														value={field.value ?? "none"}
+													>
+														<FormControl>
+															<SelectTrigger className="w-full">
+																<SelectValue
+																	placeholder={t("form.selectMethod")}
+																/>
+															</SelectTrigger>
+														</FormControl>
+														<SelectContent>
+															<SelectItem value="none">
+																{t("form.notSpecified")}
+															</SelectItem>
+															{TrainingPaymentMethods.map((method) => (
+																<SelectItem key={method} value={method}>
+																	{t(`methods.${methodKeys[method] ?? method}`)}
+																</SelectItem>
+															))}
+														</SelectContent>
+													</Select>
+													<FormMessage />
+												</Field>
+											</FormItem>
+										)}
+									/>
+								</ProfileEditGrid>
+							</>
+						)}
 
 						<ProfileEditGrid cols={2}>
 							<FormField

@@ -72,7 +72,14 @@
 			"selectEvent": "Seleccionar evento",
 			"searchEvent": "Buscar evento...",
 			"noEventsFound": "No hay eventos para este atleta",
-			"eventSelected": "Pago vinculado a evento"
+			"eventSelected": "Pago vinculado a evento",
+			"registration": "Inscripción",
+			"selectRegistration": "Seleccionar inscripción",
+			"summaryTotal": "Total",
+			"summaryPaid": "Pagado",
+			"summaryPending": "Pendiente",
+			"linkedEvent": "Evento vinculado",
+			"owes": "Debe:"
 		},
 		"methods": {
 			"cash": "Efectivo",
@@ -259,7 +266,8 @@
 			"notesPlaceholder": "Notas adicionales...",
 			"event": "Evento",
 			"selectEvent": "Seleccionar evento",
-			"noEvent": "Sin evento vinculado"
+			"noEvent": "Sin evento vinculado",
+			"linkedEvent": "Evento vinculado"
 		},
 		"modal": {
 			"createTitle": "Registrar Gasto",

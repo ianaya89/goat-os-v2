@@ -72,7 +72,14 @@
 			"selectEvent": "Select event",
 			"searchEvent": "Search event...",
 			"noEventsFound": "No events found for this athlete",
-			"eventSelected": "Payment linked to event"
+			"eventSelected": "Payment linked to event",
+			"registration": "Registration",
+			"selectRegistration": "Select registration",
+			"summaryTotal": "Total",
+			"summaryPaid": "Paid",
+			"summaryPending": "Pending",
+			"linkedEvent": "Linked event",
+			"owes": "Owes:"
 		},
 		"methods": {
 			"cash": "Cash",
@@ -259,7 +266,8 @@
 			"notesPlaceholder": "Additional notes...",
 			"event": "Event",
 			"selectEvent": "Select event",
-			"noEvent": "No linked event"
+			"noEvent": "No linked event",
+			"linkedEvent": "Linked event"
 		},
 		"modal": {
 			"createTitle": "Record Expense",
