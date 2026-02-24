@@ -1,6 +1,7 @@
 "use client";
 
 import { addMonths, format } from "date-fns";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import {
 	getFrequencyLabel,
 	getShortDayLabel,
+	MAX_RECURRING_SESSIONS,
 	type RecurrenceConfig,
 	RecurrenceFrequency,
 	type WeekDay,
@@ -36,6 +38,7 @@ export function RecurringSessionForm({
 	recurrenceConfig,
 	onRecurrenceConfigChange,
 }: RecurringSessionFormProps) {
+	const t = useTranslations("training.recurring");
 	const [endType, setEndType] = React.useState<"never" | "date" | "count">(
 		recurrenceConfig.endDate
 			? "date"
@@ -101,11 +104,9 @@ export function RecurringSessionForm({
 			<div className="flex items-center justify-between rounded-lg border p-4">
 				<div className="space-y-0.5">
 					<Label htmlFor="recurring-toggle" className="text-base">
-						Recurring Session
+						{t("title")}
 					</Label>
-					<p className="text-muted-foreground text-sm">
-						Create a session that repeats on a schedule
-					</p>
+					<p className="text-muted-foreground text-sm">{t("description")}</p>
 				</div>
 				<Switch
 					id="recurring-toggle"
@@ -118,7 +119,7 @@ export function RecurringSessionForm({
 				<div className="space-y-4 rounded-lg border p-4">
 					{/* Frequency */}
 					<div className="space-y-2">
-						<Label>Repeat</Label>
+						<Label>{t("repeat")}</Label>
 						<Select
 							value={recurrenceConfig.frequency}
 							onValueChange={(value) =>
@@ -141,7 +142,7 @@ export function RecurringSessionForm({
 					{/* Week days selector */}
 					{showWeekDays && (
 						<div className="space-y-2">
-							<Label>On days</Label>
+							<Label>{t("onDays")}</Label>
 							<div className="flex flex-wrap gap-2">
 								{Object.values(WeekDays).map((day) => {
 									const isSelected =
@@ -165,15 +166,19 @@ export function RecurringSessionForm({
 							</div>
 							<p className="text-muted-foreground text-xs">
 								{recurrenceConfig.weekDays?.length
-									? `Selected: ${recurrenceConfig.weekDays.map(getShortDayLabel).join(", ")}`
-									: "Select at least one day"}
+									? t("selected", {
+											days: recurrenceConfig.weekDays
+												.map(getShortDayLabel)
+												.join(", "),
+										})
+									: t("selectAtLeastOneDay")}
 							</p>
 						</div>
 					)}
 
 					{/* End condition */}
 					<div className="space-y-3">
-						<Label>Ends</Label>
+						<Label>{t("ends")}</Label>
 						<div className="space-y-2">
 							<div className="flex items-center gap-2">
 								<Checkbox
@@ -182,7 +187,7 @@ export function RecurringSessionForm({
 									onCheckedChange={() => handleEndTypeChange("never")}
 								/>
 								<Label htmlFor="end-never" className="font-normal">
-									Never
+									{t("never")}
 								</Label>
 							</div>
 
@@ -193,7 +198,7 @@ export function RecurringSessionForm({
 									onCheckedChange={() => handleEndTypeChange("date")}
 								/>
 								<Label htmlFor="end-date" className="font-normal">
-									On date
+									{t("onDate")}
 								</Label>
 								{endType === "date" && (
 									<Input
@@ -217,7 +222,7 @@ export function RecurringSessionForm({
 									onCheckedChange={() => handleEndTypeChange("count")}
 								/>
 								<Label htmlFor="end-count" className="font-normal">
-									After
+									{t("after")}
 								</Label>
 								{endType === "count" && (
 									<>
@@ -229,9 +234,9 @@ export function RecurringSessionForm({
 												handleCountChange(Number.parseInt(e.target.value, 10))
 											}
 											min={1}
-											max={100}
+											max={MAX_RECURRING_SESSIONS}
 										/>
-										<span className="text-sm">occurrences</span>
+										<span className="text-sm">{t("occurrences")}</span>
 									</>
 								)}
 							</div>

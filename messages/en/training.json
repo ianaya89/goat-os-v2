@@ -154,8 +154,31 @@
 		"addPayment": "Add Payment",
 		"recordPayment": "Record Payment"
 	},
+	"recurring": {
+		"title": "Recurring Session",
+		"description": "Create a session that repeats on a schedule",
+		"repeat": "Repeat",
+		"onDays": "On days",
+		"selected": "Selected: {days}",
+		"selectAtLeastOneDay": "Select at least one day",
+		"ends": "Ends",
+		"never": "Never",
+		"onDate": "On date",
+		"after": "After",
+		"occurrences": "occurrences",
+		"preview": {
+			"title": "Review Recurring Sessions",
+			"subtitle": "Review the sessions that will be created before confirming.",
+			"sessionsCount": "{count, plural, one {# session will be created} other {# sessions will be created}}",
+			"limitWarning": "Maximum limit of {max} sessions reached.",
+			"back": "Back",
+			"confirm": "Confirm & Create {count, plural, one {# Session} other {# Sessions}}",
+			"creating": "Creating {count} sessions..."
+		}
+	},
 	"success": {
 		"created": "Session created successfully.",
+		"recurringCreated": "{count, plural, one {# session} other {# sessions}} created successfully.",
 		"updated": "Session updated successfully.",
 		"deleted": "Session deleted successfully.",
 		"cancelled": "Session cancelled successfully.",

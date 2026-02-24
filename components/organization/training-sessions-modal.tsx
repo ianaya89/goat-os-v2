@@ -16,6 +16,7 @@ import * as React from "react";
 import { toast } from "sonner";
 import { ProfileEditSheet } from "@/components/athlete/profile-edit-sheet";
 import { RecurringSessionForm } from "@/components/organization/recurring-session-form";
+import { RecurringSessionPreview } from "@/components/organization/recurring-session-preview";
 import { ServiceSelector } from "@/components/organization/service-selector";
 import { SessionAttachmentUpload } from "@/components/organization/session-attachment-upload";
 import { Badge } from "@/components/ui/badge";
@@ -62,7 +63,11 @@ import {
 	TrainingSessionStatuses,
 } from "@/lib/db/schema/enums";
 import {
+	applyDuration,
 	createRRuleString,
+	getAllOccurrences,
+	getSessionDuration,
+	MAX_RECURRING_SESSIONS,
 	type RecurrenceConfig,
 } from "@/lib/training/rrule-utils";
 import { capitalize, cn } from "@/lib/utils";
@@ -163,6 +168,15 @@ export const TrainingSessionsModal =
 					frequency: "weekly",
 				});
 
+			// Preview state for recurring sessions
+			const [showPreview, setShowPreview] = React.useState(false);
+			const [previewData, setPreviewData] = React.useState<{
+				sessions: Array<{ startTime: Date; endTime: Date }>;
+				total: number;
+				limitReached: boolean;
+				rrule: string;
+			} | null>(null);
+
 			// Duration state (in minutes) - calculate from existing session or default to 60
 			const [duration, setDuration] = React.useState<number>(() => {
 				if (session?.startTime && session?.endTime) {
@@ -221,12 +235,19 @@ export const TrainingSessionsModal =
 
 			const createSessionMutation =
 				trpc.organization.trainingSession.create.useMutation({
-					onSuccess: () => {
-						toast.success(t("success.created"));
+					onSuccess: (data) => {
+						const count = data._recurringCount ?? 1;
+						if (count > 1) {
+							toast.success(t("success.recurringCreated", { count }));
+						} else {
+							toast.success(t("success.created"));
+						}
 						utils.organization.trainingSession.list.invalidate();
 						utils.organization.trainingSession.listForCalendar.invalidate();
 						utils.organization.athleteGroup.get.invalidate();
 						utils.organization.athlete.get.invalidate();
+						setShowPreview(false);
+						setPreviewData(null);
 						modal.handleClose();
 					},
 					onError: (error) => {
@@ -381,6 +402,28 @@ export const TrainingSessionsModal =
 						? createRRuleString(startTime, recurrenceConfig)
 						: undefined;
 
+					// If recurring and not yet previewed, show preview instead of submitting
+					if (isRecurring && rrule && !showPreview) {
+						const allDates = getAllOccurrences(rrule, MAX_RECURRING_SESSIONS);
+						const durationMinutes = getSessionDuration(
+							startTime,
+							calculatedEndTime,
+						);
+						const sessions = applyDuration(allDates, durationMinutes);
+
+						setPreviewData({
+							sessions,
+							total: sessions.length,
+							limitReached: sessions.length >= MAX_RECURRING_SESSIONS,
+							rrule,
+						});
+						setShowPreview(true);
+						return;
+					}
+
+					// Use stored rrule from preview if available
+					const finalRRule = previewData?.rrule ?? rrule;
+
 					createSessionMutation.mutate({
 						...(data as Parameters<typeof createSessionMutation.mutate>[0]),
 						endTime: calculatedEndTime,
@@ -393,7 +436,7 @@ export const TrainingSessionsModal =
 								? (data as { athleteGroupId?: string | null }).athleteGroupId
 								: null,
 						isRecurring,
-						rrule,
+						rrule: finalRRule,
 					});
 				}
 			});
@@ -445,16 +488,24 @@ export const TrainingSessionsModal =
 				<ProfileEditSheet
 					open={modal.visible}
 					onClose={modal.handleClose}
-					title={isEditing ? t("modal.editTitle") : t("modal.createTitle")}
+					title={
+						showPreview
+							? t("recurring.preview.title")
+							: isEditing
+								? t("modal.editTitle")
+								: t("modal.createTitle")
+					}
 					subtitle={
-						isEditing
-							? t("modal.editDescription")
-							: t("modal.createDescription")
+						showPreview
+							? t("recurring.preview.subtitle")
+							: isEditing
+								? t("modal.editDescription")
+								: t("modal.createDescription")
 					}
 					icon={<CalendarDaysIcon className="size-5" />}
 					accentColor="slate"
 					form={form}
-					onSubmit={onSubmit}
+					onSubmit={showPreview ? undefined : onSubmit}
 					isPending={isPending}
 					submitLabel={
 						isEditing ? t("modal.updateSession") : t("modal.createSession")
@@ -462,449 +513,232 @@ export const TrainingSessionsModal =
 					cancelLabel={t("modal.cancelButton")}
 					maxWidth="xl"
 					onAnimationEndCapture={modal.handleAnimationEndCapture}
+					customFooter={showPreview ? <></> : undefined}
 				>
-					<Tabs defaultValue="basic" className="w-full">
-						<TabsList className="mb-4 grid w-auto grid-cols-4">
-							<TabsTrigger value="basic">{t("modal.tabs.basic")}</TabsTrigger>
-							<TabsTrigger value="assignment">
-								{t("modal.tabs.assignment")}
-							</TabsTrigger>
-							<TabsTrigger value="recurring" disabled={isEditing}>
-								<RepeatIcon className="mr-1 size-3" />
-								{t("modal.tabs.repeat")}
-							</TabsTrigger>
-							<TabsTrigger value="content">
-								{t("modal.tabs.content")}
-							</TabsTrigger>
-						</TabsList>
+					{showPreview && previewData ? (
+						<RecurringSessionPreview
+							sessions={previewData.sessions}
+							total={previewData.total}
+							limitReached={previewData.limitReached}
+							sessionTitle={form.getValues("title") as string}
+							onBack={() => {
+								setShowPreview(false);
+							}}
+							onConfirm={() => {
+								onSubmit();
+							}}
+							isPending={isPending}
+						/>
+					) : (
+						<Tabs defaultValue="basic" className="w-full">
+							<TabsList className="mb-4 grid w-auto grid-cols-4">
+								<TabsTrigger value="basic">{t("modal.tabs.basic")}</TabsTrigger>
+								<TabsTrigger value="assignment">
+									{t("modal.tabs.assignment")}
+								</TabsTrigger>
+								<TabsTrigger value="recurring" disabled={isEditing}>
+									<RepeatIcon className="mr-1 size-3" />
+									{t("modal.tabs.repeat")}
+								</TabsTrigger>
+								<TabsTrigger value="content">
+									{t("modal.tabs.content")}
+								</TabsTrigger>
+							</TabsList>
 
-						<TabsContent value="basic" className="space-y-4 py-4">
-							<FormField
-								control={form.control}
-								name="title"
-								render={({ field }) => (
-									<FormItem asChild>
-										<Field>
-											<FormLabel>{t("form.title")}</FormLabel>
-											<FormControl>
-												<Input
-													placeholder={t("modal.titlePlaceholder")}
-													autoComplete="off"
-													{...field}
-												/>
-											</FormControl>
-											<FormMessage />
-										</Field>
-									</FormItem>
-								)}
-							/>
-
-							<FormField
-								control={form.control}
-								name="description"
-								render={({ field }) => (
-									<FormItem asChild>
-										<Field>
-											<FormLabel>{t("form.description")}</FormLabel>
-											<FormControl>
-												<Textarea
-													placeholder={t("modal.descriptionPlaceholder")}
-													className="resize-none"
-													rows={2}
-													{...field}
-													value={field.value ?? ""}
-												/>
-											</FormControl>
-											<FormMessage />
-										</Field>
-									</FormItem>
-								)}
-							/>
-
-							{/* Date Picker */}
-							<FormField
-								control={form.control}
-								name="startTime"
-								render={({ field }) => (
-									<FormItem asChild>
-										<Field>
-											<FormLabel>{t("form.date")}</FormLabel>
-											<Popover>
-												<PopoverTrigger asChild>
-													<FormControl>
-														<Button
-															variant="outline"
-															className={cn(
-																"w-full pl-3 text-left font-normal",
-																!field.value && "text-muted-foreground",
-															)}
-														>
-															{field.value
-																? format(
-																		new Date(
-																			field.value as string | number | Date,
-																		),
-																		"EEE, dd MMM yyyy",
-																	)
-																: t("modal.selectDate")}
-															<CalendarIcon className="ml-auto size-4 opacity-50" />
-														</Button>
-													</FormControl>
-												</PopoverTrigger>
-												<PopoverContent className="w-auto p-0" align="start">
-													<Calendar
-														mode="single"
-														selected={
-															field.value
-																? new Date(
-																		field.value as string | number | Date,
-																	)
-																: undefined
-														}
-														onSelect={(date) => {
-															if (date) {
-																const currentTime = getTimeFromDate(
-																	field.value
-																		? new Date(
-																				field.value as string | number | Date,
-																			)
-																		: undefined,
-																);
-																field.onChange(
-																	combineDateAndTime(date, currentTime),
-																);
-															}
-														}}
-														initialFocus
-													/>
-												</PopoverContent>
-											</Popover>
-											<FormMessage />
-										</Field>
-									</FormItem>
-								)}
-							/>
-
-							{/* Time and Duration row */}
-							<div className="grid grid-cols-2 gap-4">
+							<TabsContent value="basic" className="space-y-4 py-4">
 								<FormField
 									control={form.control}
-									name="startTime"
+									name="title"
 									render={({ field }) => (
 										<FormItem asChild>
 											<Field>
-												<FormLabel>{t("form.time")}</FormLabel>
-												<Select
-													value={getTimeFromDate(
-														field.value
-															? new Date(field.value as string | number | Date)
-															: undefined,
-													)}
-													onValueChange={(time) => {
-														const currentDate = field.value
-															? new Date(field.value as string | number | Date)
-															: new Date();
-														field.onChange(
-															combineDateAndTime(currentDate, time),
-														);
-													}}
-												>
-													<FormControl>
-														<SelectTrigger>
-															<ClockIcon className="mr-2 size-4 text-muted-foreground" />
-															<SelectValue
-																placeholder={t("modal.selectTime")}
-															/>
-														</SelectTrigger>
-													</FormControl>
-													<SelectContent className="max-h-[280px]">
-														{timeOptions.map((option) => (
-															<SelectItem
-																key={option.value}
-																value={option.value}
-															>
-																{option.label}
-															</SelectItem>
-														))}
-													</SelectContent>
-												</Select>
+												<FormLabel>{t("form.title")}</FormLabel>
+												<FormControl>
+													<Input
+														placeholder={t("modal.titlePlaceholder")}
+														autoComplete="off"
+														{...field}
+													/>
+												</FormControl>
 												<FormMessage />
 											</Field>
 										</FormItem>
 									)}
 								/>
 
-								<Field>
-									<FormLabel>{t("form.duration")}</FormLabel>
-									<Select
-										onValueChange={(value) => setDuration(parseInt(value, 10))}
-										value={duration.toString()}
-									>
-										<SelectTrigger className="w-full">
-											<SelectValue placeholder={t("modal.selectDuration")} />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="15">15 min</SelectItem>
-											<SelectItem value="30">30 min</SelectItem>
-											<SelectItem value="45">45 min</SelectItem>
-											<SelectItem value="60">1 hour</SelectItem>
-											<SelectItem value="75">1h 15min</SelectItem>
-											<SelectItem value="90">1h 30min</SelectItem>
-											<SelectItem value="105">1h 45min</SelectItem>
-											<SelectItem value="120">2 hours</SelectItem>
-											<SelectItem value="150">2h 30min</SelectItem>
-											<SelectItem value="180">3 hours</SelectItem>
-										</SelectContent>
-									</Select>
-								</Field>
-							</div>
-
-							<FormField
-								control={form.control}
-								name="locationId"
-								render={({ field }) => (
-									<FormItem asChild>
-										<Field>
-											<FormLabel>{t("form.location")}</FormLabel>
-											<Select
-												onValueChange={(value) =>
-													field.onChange(value === "none" ? null : value)
-												}
-												value={field.value ?? "none"}
-											>
-												<FormControl>
-													<SelectTrigger className="w-full">
-														<SelectValue
-															placeholder={t("modal.selectLocation")}
-														/>
-													</SelectTrigger>
-												</FormControl>
-												<SelectContent>
-													<SelectItem value="none">
-														{t("modal.noLocation")}
-													</SelectItem>
-													{locations.map((location) => (
-														<SelectItem key={location.id} value={location.id}>
-															{location.name}
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
-											<FormMessage />
-										</Field>
-									</FormItem>
-								)}
-							/>
-
-							<FormField
-								control={form.control}
-								name="status"
-								render={({ field }) => (
-									<FormItem asChild>
-										<Field>
-											<FormLabel>{t("form.status")}</FormLabel>
-											<Select
-												onValueChange={field.onChange}
-												value={field.value}
-											>
-												<FormControl>
-													<SelectTrigger className="w-full">
-														<SelectValue
-															placeholder={t("modal.selectStatus")}
-														/>
-													</SelectTrigger>
-												</FormControl>
-												<SelectContent>
-													{TrainingSessionStatuses.map((status) => (
-														<SelectItem key={status} value={status}>
-															{capitalize(status)}
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
-											<FormMessage />
-										</Field>
-									</FormItem>
-								)}
-							/>
-
-							<FormField
-								control={form.control}
-								name="serviceId"
-								render={({ field }) => (
-									<FormItem asChild>
-										<Field>
-											<FormLabel>{t("form.service")}</FormLabel>
-											<FormControl>
-												<ServiceSelector
-													value={field.value ?? null}
-													onValueChange={field.onChange}
-												/>
-											</FormControl>
-											<FormMessage />
-										</Field>
-									</FormItem>
-								)}
-							/>
-						</TabsContent>
-
-						<TabsContent value="assignment" className="space-y-4 py-4">
-							{/* Coaches */}
-							<Field>
-								<FormLabel>{t("modal.coaches")}</FormLabel>
-								<Popover
-									open={coachPopoverOpen}
-									onOpenChange={setCoachPopoverOpen}
-								>
-									<PopoverTrigger asChild>
-										<Button
-											variant="outline"
-											className="w-full justify-start font-normal"
-										>
-											{selectedCoachIds.length > 0
-												? t("modal.coachesSelected", {
-														count: selectedCoachIds.length,
-													})
-												: t("modal.selectCoaches")}
-										</Button>
-									</PopoverTrigger>
-									<PopoverContent className="w-[300px] p-0" align="start">
-										<Command>
-											<CommandInput placeholder={t("modal.searchCoaches")} />
-											<CommandList>
-												{coaches.length === 0 ? (
-													<div className="px-4 py-6 text-center text-muted-foreground text-sm">
-														{t("modal.noCoachesAvailable")}
-													</div>
-												) : (
-													<>
-														<CommandEmpty>
-															{t("modal.noCoachesFound")}
-														</CommandEmpty>
-														<CommandGroup>
-															{coaches.map((coach) => {
-																const isSelected = selectedCoachIds.includes(
-																	coach.id,
-																);
-																return (
-																	<CommandItem
-																		key={coach.id}
-																		value={coach.user?.name ?? coach.id}
-																		onSelect={() => toggleCoach(coach.id)}
-																	>
-																		<div className="flex items-center gap-2">
-																			<div
-																				className={cn(
-																					"flex size-4 items-center justify-center rounded-sm border",
-																					isSelected
-																						? "border-primary bg-primary text-primary-foreground"
-																						: "border-muted-foreground",
-																				)}
-																			>
-																				{isSelected && (
-																					<CheckIcon className="size-3" />
-																				)}
-																			</div>
-																			<UserAvatar
-																				className="size-6"
-																				name={coach.user?.name ?? ""}
-																				src={coach.user?.image ?? undefined}
-																			/>
-																			<span className="truncate">
-																				{coach.user?.name ?? "Unknown"}
-																			</span>
-																		</div>
-																	</CommandItem>
-																);
-															})}
-														</CommandGroup>
-													</>
-												)}
-											</CommandList>
-										</Command>
-									</PopoverContent>
-								</Popover>
-
-								{selectedCoaches.length > 0 && (
-									<div className="mt-2 space-y-2">
-										{selectedCoaches.map((coach) => (
-											<div
-												key={coach.id}
-												className="flex items-center justify-between rounded-md border px-3 py-2"
-											>
-												<div className="flex items-center gap-2">
-													<UserAvatar
-														className="size-6"
-														name={coach.user?.name ?? ""}
-														src={coach.user?.image ?? undefined}
-													/>
-													<span className="text-sm">
-														{coach.user?.name ?? "Unknown"}
-													</span>
-													{primaryCoachId === coach.id && (
-														<Badge variant="secondary" className="text-xs">
-															{t("modal.primary")}
-														</Badge>
-													)}
-												</div>
-												<div className="flex items-center gap-1">
-													{primaryCoachId !== coach.id && (
-														<Button
-															type="button"
-															variant="ghost"
-															size="sm"
-															onClick={() => setPrimaryCoachId(coach.id)}
-														>
-															{t("modal.setPrimary")}
-														</Button>
-													)}
-													<Button
-														type="button"
-														variant="ghost"
-														size="icon"
-														className="size-6"
-														onClick={() => toggleCoach(coach.id)}
-													>
-														<XIcon className="size-4" />
-													</Button>
-												</div>
-											</div>
-										))}
-									</div>
-								)}
-							</Field>
-
-							{/* Athletes assignment type */}
-							<Field>
-								<FormLabel>{t("modal.assignAthletesBy")}</FormLabel>
-								<Select
-									value={assignmentType}
-									onValueChange={(value: "group" | "athletes") =>
-										setAssignmentType(value)
-									}
-								>
-									<SelectTrigger className="w-full">
-										<SelectValue />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="group">
-											{t("modal.athleteGroup")}
-										</SelectItem>
-										<SelectItem value="athletes">
-											{t("modal.individualAthletes")}
-										</SelectItem>
-									</SelectContent>
-								</Select>
-							</Field>
-
-							{assignmentType === "group" ? (
 								<FormField
 									control={form.control}
-									name="athleteGroupId"
+									name="description"
 									render={({ field }) => (
 										<FormItem asChild>
 											<Field>
-												<FormLabel>{t("modal.athleteGroup")}</FormLabel>
+												<FormLabel>{t("form.description")}</FormLabel>
+												<FormControl>
+													<Textarea
+														placeholder={t("modal.descriptionPlaceholder")}
+														className="resize-none"
+														rows={2}
+														{...field}
+														value={field.value ?? ""}
+													/>
+												</FormControl>
+												<FormMessage />
+											</Field>
+										</FormItem>
+									)}
+								/>
+
+								{/* Date Picker */}
+								<FormField
+									control={form.control}
+									name="startTime"
+									render={({ field }) => (
+										<FormItem asChild>
+											<Field>
+												<FormLabel>{t("form.date")}</FormLabel>
+												<Popover>
+													<PopoverTrigger asChild>
+														<FormControl>
+															<Button
+																variant="outline"
+																className={cn(
+																	"w-full pl-3 text-left font-normal",
+																	!field.value && "text-muted-foreground",
+																)}
+															>
+																{field.value
+																	? format(
+																			new Date(
+																				field.value as string | number | Date,
+																			),
+																			"EEE, dd MMM yyyy",
+																		)
+																	: t("modal.selectDate")}
+																<CalendarIcon className="ml-auto size-4 opacity-50" />
+															</Button>
+														</FormControl>
+													</PopoverTrigger>
+													<PopoverContent className="w-auto p-0" align="start">
+														<Calendar
+															mode="single"
+															selected={
+																field.value
+																	? new Date(
+																			field.value as string | number | Date,
+																		)
+																	: undefined
+															}
+															onSelect={(date) => {
+																if (date) {
+																	const currentTime = getTimeFromDate(
+																		field.value
+																			? new Date(
+																					field.value as string | number | Date,
+																				)
+																			: undefined,
+																	);
+																	field.onChange(
+																		combineDateAndTime(date, currentTime),
+																	);
+																}
+															}}
+															initialFocus
+														/>
+													</PopoverContent>
+												</Popover>
+												<FormMessage />
+											</Field>
+										</FormItem>
+									)}
+								/>
+
+								{/* Time and Duration row */}
+								<div className="grid grid-cols-2 gap-4">
+									<FormField
+										control={form.control}
+										name="startTime"
+										render={({ field }) => (
+											<FormItem asChild>
+												<Field>
+													<FormLabel>{t("form.time")}</FormLabel>
+													<Select
+														value={getTimeFromDate(
+															field.value
+																? new Date(
+																		field.value as string | number | Date,
+																	)
+																: undefined,
+														)}
+														onValueChange={(time) => {
+															const currentDate = field.value
+																? new Date(
+																		field.value as string | number | Date,
+																	)
+																: new Date();
+															field.onChange(
+																combineDateAndTime(currentDate, time),
+															);
+														}}
+													>
+														<FormControl>
+															<SelectTrigger>
+																<ClockIcon className="mr-2 size-4 text-muted-foreground" />
+																<SelectValue
+																	placeholder={t("modal.selectTime")}
+																/>
+															</SelectTrigger>
+														</FormControl>
+														<SelectContent className="max-h-[280px]">
+															{timeOptions.map((option) => (
+																<SelectItem
+																	key={option.value}
+																	value={option.value}
+																>
+																	{option.label}
+																</SelectItem>
+															))}
+														</SelectContent>
+													</Select>
+													<FormMessage />
+												</Field>
+											</FormItem>
+										)}
+									/>
+
+									<Field>
+										<FormLabel>{t("form.duration")}</FormLabel>
+										<Select
+											onValueChange={(value) =>
+												setDuration(parseInt(value, 10))
+											}
+											value={duration.toString()}
+										>
+											<SelectTrigger className="w-full">
+												<SelectValue placeholder={t("modal.selectDuration")} />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="15">15 min</SelectItem>
+												<SelectItem value="30">30 min</SelectItem>
+												<SelectItem value="45">45 min</SelectItem>
+												<SelectItem value="60">1 hour</SelectItem>
+												<SelectItem value="75">1h 15min</SelectItem>
+												<SelectItem value="90">1h 30min</SelectItem>
+												<SelectItem value="105">1h 45min</SelectItem>
+												<SelectItem value="120">2 hours</SelectItem>
+												<SelectItem value="150">2h 30min</SelectItem>
+												<SelectItem value="180">3 hours</SelectItem>
+											</SelectContent>
+										</Select>
+									</Field>
+								</div>
+
+								<FormField
+									control={form.control}
+									name="locationId"
+									render={({ field }) => (
+										<FormItem asChild>
+											<Field>
+												<FormLabel>{t("form.location")}</FormLabel>
 												<Select
 													onValueChange={(value) =>
 														field.onChange(value === "none" ? null : value)
@@ -914,18 +748,17 @@ export const TrainingSessionsModal =
 													<FormControl>
 														<SelectTrigger className="w-full">
 															<SelectValue
-																placeholder={t("modal.selectGroup")}
+																placeholder={t("modal.selectLocation")}
 															/>
 														</SelectTrigger>
 													</FormControl>
 													<SelectContent>
 														<SelectItem value="none">
-															{t("modal.noGroup")}
+															{t("modal.noLocation")}
 														</SelectItem>
-														{groups.map((group) => (
-															<SelectItem key={group.id} value={group.id}>
-																{group.name} ({group.memberCount}{" "}
-																{t("modal.members")})
+														{locations.map((location) => (
+															<SelectItem key={location.id} value={location.id}>
+																{location.name}
 															</SelectItem>
 														))}
 													</SelectContent>
@@ -935,181 +768,375 @@ export const TrainingSessionsModal =
 										</FormItem>
 									)}
 								/>
-							) : (
+
+								<FormField
+									control={form.control}
+									name="status"
+									render={({ field }) => (
+										<FormItem asChild>
+											<Field>
+												<FormLabel>{t("form.status")}</FormLabel>
+												<Select
+													onValueChange={field.onChange}
+													value={field.value}
+												>
+													<FormControl>
+														<SelectTrigger className="w-full">
+															<SelectValue
+																placeholder={t("modal.selectStatus")}
+															/>
+														</SelectTrigger>
+													</FormControl>
+													<SelectContent>
+														{TrainingSessionStatuses.map((status) => (
+															<SelectItem key={status} value={status}>
+																{capitalize(status)}
+															</SelectItem>
+														))}
+													</SelectContent>
+												</Select>
+												<FormMessage />
+											</Field>
+										</FormItem>
+									)}
+								/>
+
+								<FormField
+									control={form.control}
+									name="serviceId"
+									render={({ field }) => (
+										<FormItem asChild>
+											<Field>
+												<FormLabel>{t("form.service")}</FormLabel>
+												<FormControl>
+													<ServiceSelector
+														value={field.value ?? null}
+														onValueChange={field.onChange}
+													/>
+												</FormControl>
+												<FormMessage />
+											</Field>
+										</FormItem>
+									)}
+								/>
+							</TabsContent>
+
+							<TabsContent value="assignment" className="space-y-4 py-4">
+								{/* Coaches */}
 								<Field>
-									<FormLabel>{t("form.athletes")}</FormLabel>
+									<FormLabel>{t("modal.coaches")}</FormLabel>
 									<Popover
-										open={athletePopoverOpen}
-										onOpenChange={(open) => {
-											setAthletePopoverOpen(open);
-											if (!open) setAthleteSearchQuery("");
-										}}
+										open={coachPopoverOpen}
+										onOpenChange={setCoachPopoverOpen}
 									>
 										<PopoverTrigger asChild>
 											<Button
 												variant="outline"
 												className="w-full justify-start font-normal"
 											>
-												{selectedAthleteIds.length > 0
-													? t("table.athleteCount", {
-															count: selectedAthleteIds.length,
+												{selectedCoachIds.length > 0
+													? t("modal.coachesSelected", {
+															count: selectedCoachIds.length,
 														})
-													: t("modal.selectAthletes")}
+													: t("modal.selectCoaches")}
 											</Button>
 										</PopoverTrigger>
 										<PopoverContent className="w-[300px] p-0" align="start">
-											<Command shouldFilter={false}>
-												<CommandInput
-													placeholder={t("modal.searchAthletes")}
-													value={athleteSearchQuery}
-													onValueChange={setAthleteSearchQuery}
-												/>
+											<Command>
+												<CommandInput placeholder={t("modal.searchCoaches")} />
 												<CommandList>
-													{!shouldSearchAthletes ? (
+													{coaches.length === 0 ? (
 														<div className="px-4 py-6 text-center text-muted-foreground text-sm">
-															{t("modal.searchAthletesHint")}
+															{t("modal.noCoachesAvailable")}
 														</div>
-													) : isSearchingAthletes ? (
-														<div className="px-4 py-6 text-center text-muted-foreground text-sm">
-															{t("modal.searching")}
-														</div>
-													) : athleteSearchResults.length === 0 ? (
-														<CommandEmpty>
-															{t("modal.noAthletesFound")}
-														</CommandEmpty>
 													) : (
-														<CommandGroup>
-															{athleteSearchResults.map((athlete) => {
-																const isSelected = selectedAthleteIds.includes(
-																	athlete.id,
-																);
-																return (
-																	<CommandItem
-																		key={athlete.id}
-																		value={athlete.id}
-																		onSelect={() => toggleAthlete(athlete.id)}
-																	>
-																		<div className="flex items-center gap-2">
-																			<div
-																				className={cn(
-																					"flex size-4 items-center justify-center rounded-sm border",
-																					isSelected
-																						? "border-primary bg-primary text-primary-foreground"
-																						: "border-muted-foreground",
-																				)}
-																			>
-																				{isSelected && (
-																					<CheckIcon className="size-3" />
-																				)}
+														<>
+															<CommandEmpty>
+																{t("modal.noCoachesFound")}
+															</CommandEmpty>
+															<CommandGroup>
+																{coaches.map((coach) => {
+																	const isSelected = selectedCoachIds.includes(
+																		coach.id,
+																	);
+																	return (
+																		<CommandItem
+																			key={coach.id}
+																			value={coach.user?.name ?? coach.id}
+																			onSelect={() => toggleCoach(coach.id)}
+																		>
+																			<div className="flex items-center gap-2">
+																				<div
+																					className={cn(
+																						"flex size-4 items-center justify-center rounded-sm border",
+																						isSelected
+																							? "border-primary bg-primary text-primary-foreground"
+																							: "border-muted-foreground",
+																					)}
+																				>
+																					{isSelected && (
+																						<CheckIcon className="size-3" />
+																					)}
+																				</div>
+																				<UserAvatar
+																					className="size-6"
+																					name={coach.user?.name ?? ""}
+																					src={coach.user?.image ?? undefined}
+																				/>
+																				<span className="truncate">
+																					{coach.user?.name ?? "Unknown"}
+																				</span>
 																			</div>
-																			<UserAvatar
-																				className="size-6"
-																				name={athlete.user?.name ?? ""}
-																				src={athlete.user?.image ?? undefined}
-																			/>
-																			<span className="truncate">
-																				{athlete.user?.name ?? "Unknown"}
-																			</span>
-																		</div>
-																	</CommandItem>
-																);
-															})}
-														</CommandGroup>
+																		</CommandItem>
+																	);
+																})}
+															</CommandGroup>
+														</>
 													)}
 												</CommandList>
 											</Command>
 										</PopoverContent>
 									</Popover>
 
-									{selectedAthletes.length > 0 && (
-										<div className="mt-2 flex flex-wrap gap-1">
-											{selectedAthletes.map((athlete) => (
-												<Badge
-													key={athlete.id}
-													variant="secondary"
-													className="gap-1"
+									{selectedCoaches.length > 0 && (
+										<div className="mt-2 space-y-2">
+											{selectedCoaches.map((coach) => (
+												<div
+													key={coach.id}
+													className="flex items-center justify-between rounded-md border px-3 py-2"
 												>
-													{athlete.user?.name ?? "Unknown"}
-													<button
-														type="button"
-														onClick={() => toggleAthlete(athlete.id)}
-														className="ml-1 rounded-full hover:bg-muted-foreground/20"
-													>
-														<XIcon className="size-3" />
-													</button>
-												</Badge>
+													<div className="flex items-center gap-2">
+														<UserAvatar
+															className="size-6"
+															name={coach.user?.name ?? ""}
+															src={coach.user?.image ?? undefined}
+														/>
+														<span className="text-sm">
+															{coach.user?.name ?? "Unknown"}
+														</span>
+														{primaryCoachId === coach.id && (
+															<Badge variant="secondary" className="text-xs">
+																{t("modal.primary")}
+															</Badge>
+														)}
+													</div>
+													<div className="flex items-center gap-1">
+														{primaryCoachId !== coach.id && (
+															<Button
+																type="button"
+																variant="ghost"
+																size="sm"
+																onClick={() => setPrimaryCoachId(coach.id)}
+															>
+																{t("modal.setPrimary")}
+															</Button>
+														)}
+														<Button
+															type="button"
+															variant="ghost"
+															size="icon"
+															className="size-6"
+															onClick={() => toggleCoach(coach.id)}
+														>
+															<XIcon className="size-4" />
+														</Button>
+													</div>
+												</div>
 											))}
 										</div>
 									)}
 								</Field>
-							)}
-						</TabsContent>
 
-						<TabsContent value="recurring" className="py-4">
-							<RecurringSessionForm
-								isRecurring={isRecurring}
-								onIsRecurringChange={setIsRecurring}
-								recurrenceConfig={recurrenceConfig}
-								onRecurrenceConfigChange={setRecurrenceConfig}
-							/>
-						</TabsContent>
+								{/* Athletes assignment type */}
+								<Field>
+									<FormLabel>{t("modal.assignAthletesBy")}</FormLabel>
+									<Select
+										value={assignmentType}
+										onValueChange={(value: "group" | "athletes") =>
+											setAssignmentType(value)
+										}
+									>
+										<SelectTrigger className="w-full">
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="group">
+												{t("modal.athleteGroup")}
+											</SelectItem>
+											<SelectItem value="athletes">
+												{t("modal.individualAthletes")}
+											</SelectItem>
+										</SelectContent>
+									</Select>
+								</Field>
 
-						<TabsContent value="content" className="space-y-4 py-4">
-							<FormField
-								control={form.control}
-								name="objectives"
-								render={({ field }) => (
-									<FormItem asChild>
-										<Field>
-											<FormLabel>{t("modal.objectives")}</FormLabel>
-											<FormControl>
-												<Textarea
-													placeholder={t("modal.objectivesPlaceholder")}
-													className="resize-none"
-													rows={3}
-													{...field}
-													value={field.value ?? ""}
-												/>
-											</FormControl>
-											<FormMessage />
-										</Field>
-									</FormItem>
+								{assignmentType === "group" ? (
+									<FormField
+										control={form.control}
+										name="athleteGroupId"
+										render={({ field }) => (
+											<FormItem asChild>
+												<Field>
+													<FormLabel>{t("modal.athleteGroup")}</FormLabel>
+													<Select
+														onValueChange={(value) =>
+															field.onChange(value === "none" ? null : value)
+														}
+														value={field.value ?? "none"}
+													>
+														<FormControl>
+															<SelectTrigger className="w-full">
+																<SelectValue
+																	placeholder={t("modal.selectGroup")}
+																/>
+															</SelectTrigger>
+														</FormControl>
+														<SelectContent>
+															<SelectItem value="none">
+																{t("modal.noGroup")}
+															</SelectItem>
+															{groups.map((group) => (
+																<SelectItem key={group.id} value={group.id}>
+																	{group.name} ({group.memberCount}{" "}
+																	{t("modal.members")})
+																</SelectItem>
+															))}
+														</SelectContent>
+													</Select>
+													<FormMessage />
+												</Field>
+											</FormItem>
+										)}
+									/>
+								) : (
+									<Field>
+										<FormLabel>{t("form.athletes")}</FormLabel>
+										<Popover
+											open={athletePopoverOpen}
+											onOpenChange={(open) => {
+												setAthletePopoverOpen(open);
+												if (!open) setAthleteSearchQuery("");
+											}}
+										>
+											<PopoverTrigger asChild>
+												<Button
+													variant="outline"
+													className="w-full justify-start font-normal"
+												>
+													{selectedAthleteIds.length > 0
+														? t("table.athleteCount", {
+																count: selectedAthleteIds.length,
+															})
+														: t("modal.selectAthletes")}
+												</Button>
+											</PopoverTrigger>
+											<PopoverContent className="w-[300px] p-0" align="start">
+												<Command shouldFilter={false}>
+													<CommandInput
+														placeholder={t("modal.searchAthletes")}
+														value={athleteSearchQuery}
+														onValueChange={setAthleteSearchQuery}
+													/>
+													<CommandList>
+														{!shouldSearchAthletes ? (
+															<div className="px-4 py-6 text-center text-muted-foreground text-sm">
+																{t("modal.searchAthletesHint")}
+															</div>
+														) : isSearchingAthletes ? (
+															<div className="px-4 py-6 text-center text-muted-foreground text-sm">
+																{t("modal.searching")}
+															</div>
+														) : athleteSearchResults.length === 0 ? (
+															<CommandEmpty>
+																{t("modal.noAthletesFound")}
+															</CommandEmpty>
+														) : (
+															<CommandGroup>
+																{athleteSearchResults.map((athlete) => {
+																	const isSelected =
+																		selectedAthleteIds.includes(athlete.id);
+																	return (
+																		<CommandItem
+																			key={athlete.id}
+																			value={athlete.id}
+																			onSelect={() => toggleAthlete(athlete.id)}
+																		>
+																			<div className="flex items-center gap-2">
+																				<div
+																					className={cn(
+																						"flex size-4 items-center justify-center rounded-sm border",
+																						isSelected
+																							? "border-primary bg-primary text-primary-foreground"
+																							: "border-muted-foreground",
+																					)}
+																				>
+																					{isSelected && (
+																						<CheckIcon className="size-3" />
+																					)}
+																				</div>
+																				<UserAvatar
+																					className="size-6"
+																					name={athlete.user?.name ?? ""}
+																					src={athlete.user?.image ?? undefined}
+																				/>
+																				<span className="truncate">
+																					{athlete.user?.name ?? "Unknown"}
+																				</span>
+																			</div>
+																		</CommandItem>
+																	);
+																})}
+															</CommandGroup>
+														)}
+													</CommandList>
+												</Command>
+											</PopoverContent>
+										</Popover>
+
+										{selectedAthletes.length > 0 && (
+											<div className="mt-2 flex flex-wrap gap-1">
+												{selectedAthletes.map((athlete) => (
+													<Badge
+														key={athlete.id}
+														variant="secondary"
+														className="gap-1"
+													>
+														{athlete.user?.name ?? "Unknown"}
+														<button
+															type="button"
+															onClick={() => toggleAthlete(athlete.id)}
+															className="ml-1 rounded-full hover:bg-muted-foreground/20"
+														>
+															<XIcon className="size-3" />
+														</button>
+													</Badge>
+												))}
+											</div>
+										)}
+									</Field>
 								)}
-							/>
+							</TabsContent>
 
-							<FormField
-								control={form.control}
-								name="planning"
-								render={({ field }) => (
-									<FormItem asChild>
-										<Field>
-											<FormLabel>{t("modal.planning")}</FormLabel>
-											<FormControl>
-												<Textarea
-													placeholder={t("modal.planningPlaceholder")}
-													className="resize-none"
-													rows={4}
-													{...field}
-													value={field.value ?? ""}
-												/>
-											</FormControl>
-											<FormMessage />
-										</Field>
-									</FormItem>
-								)}
-							/>
+							<TabsContent value="recurring" className="py-4">
+								<RecurringSessionForm
+									isRecurring={isRecurring}
+									onIsRecurringChange={setIsRecurring}
+									recurrenceConfig={recurrenceConfig}
+									onRecurrenceConfigChange={setRecurrenceConfig}
+								/>
+							</TabsContent>
 
-							{isEditing && (
+							<TabsContent value="content" className="space-y-4 py-4">
 								<FormField
 									control={form.control}
-									name="postSessionNotes"
+									name="objectives"
 									render={({ field }) => (
 										<FormItem asChild>
 											<Field>
-												<FormLabel>{t("modal.postSessionNotes")}</FormLabel>
+												<FormLabel>{t("modal.objectives")}</FormLabel>
 												<FormControl>
 													<Textarea
-														placeholder={t("modal.postNotesPlaceholder")}
+														placeholder={t("modal.objectivesPlaceholder")}
 														className="resize-none"
 														rows={3}
 														{...field}
@@ -1121,26 +1148,72 @@ export const TrainingSessionsModal =
 										</FormItem>
 									)}
 								/>
-							)}
 
-							<Field>
-								<FormLabel>{t("modal.attachment")}</FormLabel>
-								<SessionAttachmentUpload
-									sessionId={session?.id}
-									hasAttachment={!!session?.attachmentKey}
-									onUploadComplete={() => {
-										utils.organization.trainingSession.get.invalidate({
-											id: session?.id,
-										});
-									}}
-									disabled={isPending}
+								<FormField
+									control={form.control}
+									name="planning"
+									render={({ field }) => (
+										<FormItem asChild>
+											<Field>
+												<FormLabel>{t("modal.planning")}</FormLabel>
+												<FormControl>
+													<Textarea
+														placeholder={t("modal.planningPlaceholder")}
+														className="resize-none"
+														rows={4}
+														{...field}
+														value={field.value ?? ""}
+													/>
+												</FormControl>
+												<FormMessage />
+											</Field>
+										</FormItem>
+									)}
 								/>
-								<FormDescription>
-									{t("modal.attachmentDescription")}
-								</FormDescription>
-							</Field>
-						</TabsContent>
-					</Tabs>
+
+								{isEditing && (
+									<FormField
+										control={form.control}
+										name="postSessionNotes"
+										render={({ field }) => (
+											<FormItem asChild>
+												<Field>
+													<FormLabel>{t("modal.postSessionNotes")}</FormLabel>
+													<FormControl>
+														<Textarea
+															placeholder={t("modal.postNotesPlaceholder")}
+															className="resize-none"
+															rows={3}
+															{...field}
+															value={field.value ?? ""}
+														/>
+													</FormControl>
+													<FormMessage />
+												</Field>
+											</FormItem>
+										)}
+									/>
+								)}
+
+								<Field>
+									<FormLabel>{t("modal.attachment")}</FormLabel>
+									<SessionAttachmentUpload
+										sessionId={session?.id}
+										hasAttachment={!!session?.attachmentKey}
+										onUploadComplete={() => {
+											utils.organization.trainingSession.get.invalidate({
+												id: session?.id,
+											});
+										}}
+										disabled={isPending}
+									/>
+									<FormDescription>
+										{t("modal.attachmentDescription")}
+									</FormDescription>
+								</Field>
+							</TabsContent>
+						</Tabs>
+					)}
 				</ProfileEditSheet>
 			);
 		},

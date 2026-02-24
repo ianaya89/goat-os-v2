@@ -154,8 +154,31 @@
 		"addPayment": "Agregar Pago",
 		"recordPayment": "Registrar Pago"
 	},
+	"recurring": {
+		"title": "Sesión Recurrente",
+		"description": "Crear una sesión que se repite en un horario",
+		"repeat": "Repetir",
+		"onDays": "En los días",
+		"selected": "Seleccionados: {days}",
+		"selectAtLeastOneDay": "Seleccioná al menos un día",
+		"ends": "Finaliza",
+		"never": "Nunca",
+		"onDate": "En fecha",
+		"after": "Después de",
+		"occurrences": "ocurrencias",
+		"preview": {
+			"title": "Revisar Sesiones Recurrentes",
+			"subtitle": "Revisá las sesiones que se van a crear antes de confirmar.",
+			"sessionsCount": "{count, plural, one {Se creará # sesión} other {Se crearán # sesiones}}",
+			"limitWarning": "Se alcanzó el límite máximo de {max} sesiones.",
+			"back": "Volver",
+			"confirm": "Confirmar y Crear {count, plural, one {# Sesión} other {# Sesiones}}",
+			"creating": "Creando {count} sesiones..."
+		}
+	},
 	"success": {
 		"created": "Sesión creada correctamente.",
+		"recurringCreated": "{count, plural, one {# sesión creada} other {# sesiones creadas}} correctamente.",
 		"updated": "Sesión actualizada correctamente.",
 		"deleted": "Sesión eliminada correctamente.",
 		"cancelled": "Sesión cancelada correctamente.",

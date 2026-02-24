@@ -37,6 +37,12 @@ import {
 	getSignedUrl,
 } from "@/lib/storage";
 import {
+	applyDuration,
+	getAllOccurrences,
+	getSessionDuration,
+	MAX_RECURRING_SESSIONS,
+} from "@/lib/training/rrule-utils";
+import {
 	bulkDeleteTrainingSessionsSchema,
 	bulkUpdateTrainingSessionsStatusSchema,
 	cancelRecurringOccurrenceSchema,
@@ -507,9 +513,36 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 				}
 			}
 
+			// Expand recurring sessions into individual rows
+			const isRecurringSession = sessionData.isRecurring && sessionData.rrule;
+			let recurringOccurrences: Array<{
+				startTime: Date;
+				endTime: Date;
+			}> = [];
+
+			if (isRecurringSession) {
+				const durationMinutes = getSessionDuration(
+					input.startTime,
+					input.endTime,
+				);
+				const allDates = getAllOccurrences(
+					sessionData.rrule!,
+					MAX_RECURRING_SESSIONS,
+				);
+
+				if (allDates.length === 0) {
+					throw new TRPCError({
+						code: "BAD_REQUEST",
+						message: "No occurrences generated from the recurrence rule",
+					});
+				}
+
+				recurringOccurrences = applyDuration(allDates, durationMinutes);
+			}
+
 			// Use transaction to ensure atomicity of session creation with coaches and athletes
 			const session = await db.transaction(async (tx) => {
-				// Create the session
+				// Create the template session (or the only session if not recurring)
 				const [newSession] = await tx
 					.insert(trainingSessionTable)
 					.values({
@@ -529,33 +562,72 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 					});
 				}
 
-				// Assign coaches (if any provided)
+				// Collect all session IDs that need coaches/athletes assigned
+				const allSessionIds = [newSession.id];
+
+				// Create child sessions for recurring (skip first occurrence since template already has it)
+				if (isRecurringSession && recurringOccurrences.length > 1) {
+					const childValues = recurringOccurrences.slice(1).map((occ) => ({
+						organizationId: ctx.organization.id,
+						createdBy: ctx.user.id,
+						athleteGroupId: athleteGroupId ?? null,
+						serviceId: resolvedServiceId,
+						servicePriceAtCreation,
+						title: sessionData.title,
+						description: sessionData.description,
+						startTime: occ.startTime,
+						endTime: occ.endTime,
+						status: sessionData.status,
+						locationId: sessionData.locationId,
+						objectives: sessionData.objectives,
+						planning: sessionData.planning,
+						isRecurring: false,
+						rrule: null,
+						recurringSessionId: newSession.id,
+					}));
+
+					const childSessions = await tx
+						.insert(trainingSessionTable)
+						.values(childValues)
+						.returning({ id: trainingSessionTable.id });
+
+					for (const child of childSessions) {
+						allSessionIds.push(child.id);
+					}
+				}
+
+				// Assign coaches to all sessions (template + children)
 				if (coachIds && coachIds.length > 0) {
-					await tx.insert(trainingSessionCoachTable).values(
+					const coachValues = allSessionIds.flatMap((sessionId) =>
 						coachIds.map((coachId) => ({
-							sessionId: newSession.id,
+							sessionId,
 							coachId,
 							isPrimary: primaryCoachId
 								? coachId === primaryCoachId
 								: coachIds[0] === coachId,
 						})),
 					);
+					await tx.insert(trainingSessionCoachTable).values(coachValues);
 				}
 
-				// Assign individual athletes if provided (and no group)
+				// Assign individual athletes to all sessions (template + children)
 				if (validAthleteIds.length > 0) {
-					await tx.insert(trainingSessionAthleteTable).values(
+					const athleteValues = allSessionIds.flatMap((sessionId) =>
 						validAthleteIds.map((athleteId) => ({
-							sessionId: newSession.id,
+							sessionId,
 							athleteId,
 						})),
 					);
+					await tx.insert(trainingSessionAthleteTable).values(athleteValues);
 				}
 
 				return newSession;
 			});
 
-			return session;
+			return {
+				...session,
+				_recurringCount: isRecurringSession ? recurringOccurrences.length : 1,
+			};
 		}),
 
 	update: protectedOrganizationProcedure

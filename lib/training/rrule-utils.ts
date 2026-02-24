@@ -99,6 +99,22 @@ export function createRRuleString(
 }
 
 /**
+ * Maximum number of recurring sessions that can be created at once
+ */
+export const MAX_RECURRING_SESSIONS = 52;
+
+/**
+ * Get all occurrences of a recurring rule, capped at maxCount
+ */
+export function getAllOccurrences(
+	rruleString: string,
+	maxCount: number = MAX_RECURRING_SESSIONS,
+): Date[] {
+	const rule = parseRRule(rruleString);
+	return rule.all((_, i) => i < maxCount);
+}
+
+/**
  * Parse an RRule string and return an RRule object
  */
 export function parseRRule(rruleString: string): RRule {
