@@ -1106,6 +1106,41 @@ export type NotificationChannel =
 	(typeof NotificationChannel)[keyof typeof NotificationChannel];
 export const NotificationChannels = Object.values(NotificationChannel);
 
+// ============================================================================
+// AUDIT LOG ENUMS
+// ============================================================================
+
+// Audit log action type
+export const AuditAction = {
+	create: "create",
+	update: "update",
+	delete: "delete",
+	archive: "archive",
+	unarchive: "unarchive",
+	bulkCreate: "bulk_create",
+	bulkUpdate: "bulk_update",
+	bulkDelete: "bulk_delete",
+	bulkArchive: "bulk_archive",
+	bulkUnarchive: "bulk_unarchive",
+} as const;
+export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
+export const AuditActions = Object.values(AuditAction);
+
+// Audit log entity type
+export const AuditEntityType = {
+	athlete: "athlete",
+	trainingSession: "training_session",
+	trainingPayment: "training_payment",
+	coach: "coach",
+	user: "user",
+	member: "member",
+	athleteGroup: "athlete_group",
+	organization: "organization",
+} as const;
+export type AuditEntityType =
+	(typeof AuditEntityType)[keyof typeof AuditEntityType];
+export const AuditEntityTypes = Object.values(AuditEntityType);
+
 export function enumToPgEnum<T extends Record<string, string>>(myEnum: T) {
 	return Object.values(myEnum).map((value) => value) as [
 		T[keyof T],

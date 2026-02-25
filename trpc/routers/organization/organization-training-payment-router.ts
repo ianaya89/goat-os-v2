@@ -18,6 +18,8 @@ import { z } from "zod/v4";
 import { createCashMovementIfCash } from "@/lib/cash-register-helpers";
 import { db } from "@/lib/db";
 import {
+	AuditAction,
+	AuditEntityType,
 	CashMovementReferenceType,
 	CashMovementType,
 	TrainingPaymentStatus,
@@ -60,6 +62,7 @@ import {
 	protectedOrganizationProcedure,
 	protectedOrgStaffProcedure,
 } from "@/trpc/init";
+import { createAuditMiddleware } from "@/trpc/middleware/audit-middleware";
 
 export const organizationTrainingPaymentRouter = createTRPCRouter({
 	list: protectedOrgStaffProcedure
@@ -326,6 +329,13 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 
 	create: protectedOrgStaffProcedure
 		.input(createTrainingPaymentSchema)
+		.use(
+			createAuditMiddleware({
+				entityType: AuditEntityType.trainingPayment,
+				action: AuditAction.create,
+				getEntityId: (result: { id: string }) => result.id,
+			}),
+		)
 		.mutation(async ({ ctx, input }) => {
 			const { sessionIds, ...paymentData } = input;
 
@@ -451,6 +461,14 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 
 	update: protectedOrgStaffProcedure
 		.input(updateTrainingPaymentSchema)
+		.use(
+			createAuditMiddleware({
+				entityType: AuditEntityType.trainingPayment,
+				action: AuditAction.update,
+				getEntityId: (_result: unknown, input: unknown) =>
+					(input as { id: string }).id,
+			}),
+		)
 		.mutation(async ({ ctx, input }) => {
 			const { id, ...data } = input;
 
@@ -500,6 +518,14 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 	// Record a payment (convenience method to mark as paid)
 	recordPayment: protectedOrgStaffProcedure
 		.input(recordPaymentSchema)
+		.use(
+			createAuditMiddleware({
+				entityType: AuditEntityType.trainingPayment,
+				action: AuditAction.update,
+				getEntityId: (_result: unknown, input: unknown) =>
+					(input as { id: string }).id,
+			}),
+		)
 		.mutation(async ({ ctx, input }) => {
 			const { id, ...data } = input;
 
@@ -561,6 +587,14 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 
 	delete: protectedOrgStaffProcedure
 		.input(deleteTrainingPaymentSchema)
+		.use(
+			createAuditMiddleware({
+				entityType: AuditEntityType.trainingPayment,
+				action: AuditAction.delete,
+				getEntityId: (_result: unknown, input: unknown) =>
+					(input as { id: string }).id,
+			}),
+		)
 		.mutation(async ({ ctx, input }) => {
 			const [deletedPayment] = await db
 				.delete(trainingPaymentTable)
@@ -584,6 +618,14 @@ export const organizationTrainingPaymentRouter = createTRPCRouter({
 
 	bulkDelete: protectedOrgStaffProcedure
 		.input(bulkDeleteTrainingPaymentsSchema)
+		.use(
+			createAuditMiddleware({
+				entityType: AuditEntityType.trainingPayment,
+				action: AuditAction.bulkDelete,
+				getEntityId: (_result: unknown, input: unknown) =>
+					(input as { ids: string[] }).ids.join(","),
+			}),
+		)
 		.mutation(async ({ ctx, input }) => {
 			const deleted = await db
 				.delete(trainingPaymentTable)

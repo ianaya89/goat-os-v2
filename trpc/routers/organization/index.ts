@@ -25,6 +25,7 @@ import { organizationAthleteRouter } from "@/trpc/routers/organization/organizat
 import { organizationAthleteSignupLinkRouter } from "@/trpc/routers/organization/organization-athlete-signup-link-router";
 import { organizationAthleteWellnessRouter } from "@/trpc/routers/organization/organization-athlete-wellness-router";
 import { organizationAttendanceRouter } from "@/trpc/routers/organization/organization-attendance-router";
+import { organizationAuditLogRouter } from "@/trpc/routers/organization/organization-audit-log-router";
 import { organizationCashRegisterRouter } from "@/trpc/routers/organization/organization-cash-register-router";
 import { organizationCoachRouter } from "@/trpc/routers/organization/organization-coach-router";
 import { organizationCompetitionRouter } from "@/trpc/routers/organization/organization-competition-router";
@@ -214,6 +215,7 @@ export const organizationRouter = createTRPCRouter({
 
 	// Context-specific sub-routers
 	ai: organizationAiRouter,
+	auditLog: organizationAuditLogRouter,
 	athlete: organizationAthleteRouter,
 	athleteEvaluation: organizationAthleteEvaluationRouter,
 	athleteGroup: organizationAthleteGroupRouter,

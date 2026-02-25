@@ -20,6 +20,8 @@ import {
 	type AchievementScope,
 	type AchievementType,
 	AttendanceStatus,
+	AuditAction,
+	AuditEntityType,
 	MemberRole,
 } from "@/lib/db/schema/enums";
 import {
@@ -78,6 +80,7 @@ import {
 	updatePhysicalMetricsSchema,
 } from "@/schemas/organization-athlete-schemas";
 import { createTRPCRouter, protectedOrganizationProcedure } from "@/trpc/init";
+import { createAuditMiddleware } from "@/trpc/middleware/audit-middleware";
 
 export const organizationAthleteRouter = createTRPCRouter({
 	list: protectedOrganizationProcedure
@@ -552,6 +555,13 @@ export const organizationAthleteRouter = createTRPCRouter({
 
 	create: protectedOrganizationProcedure
 		.input(createAthleteSchema)
+		.use(
+			createAuditMiddleware({
+				entityType: AuditEntityType.athlete,
+				action: AuditAction.create,
+				getEntityId: (result: { athlete: { id: string } }) => result.athlete.id,
+			}),
+		)
 		.mutation(async ({ ctx, input }) => {
 			// Check if user with this email already exists
 			const existingUser = await db.query.userTable.findFirst({
@@ -785,6 +795,13 @@ export const organizationAthleteRouter = createTRPCRouter({
 
 	update: protectedOrganizationProcedure
 		.input(updateAthleteSchema)
+		.use(
+			createAuditMiddleware({
+				entityType: AuditEntityType.athlete,
+				action: AuditAction.update,
+				getEntityId: (result: { id: string }) => result.id,
+			}),
+		)
 		.mutation(async ({ ctx, input }) => {
 			const { id, name, email, ...athleteData } = input;
 
@@ -869,6 +886,14 @@ export const organizationAthleteRouter = createTRPCRouter({
 
 	delete: protectedOrganizationProcedure
 		.input(deleteAthleteSchema)
+		.use(
+			createAuditMiddleware({
+				entityType: AuditEntityType.athlete,
+				action: AuditAction.delete,
+				getEntityId: (_result: unknown, input: unknown) =>
+					(input as { id: string }).id,
+			}),
+		)
 		.mutation(async ({ ctx, input }) => {
 			const [deletedAthlete] = await db
 				.delete(athleteTable)
@@ -896,6 +921,14 @@ export const organizationAthleteRouter = createTRPCRouter({
 
 	bulkDelete: protectedOrganizationProcedure
 		.input(bulkDeleteAthletesSchema)
+		.use(
+			createAuditMiddleware({
+				entityType: AuditEntityType.athlete,
+				action: AuditAction.bulkDelete,
+				getEntityId: (_result: unknown, input: unknown) =>
+					(input as { ids: string[] }).ids.join(","),
+			}),
+		)
 		.mutation(async ({ ctx, input }) => {
 			const deleted = await db
 				.delete(athleteTable)
@@ -930,6 +963,14 @@ export const organizationAthleteRouter = createTRPCRouter({
 	// Archive athlete (soft delete)
 	archive: protectedOrganizationProcedure
 		.input(archiveAthleteSchema)
+		.use(
+			createAuditMiddleware({
+				entityType: AuditEntityType.athlete,
+				action: AuditAction.archive,
+				getEntityId: (_result: unknown, input: unknown) =>
+					(input as { id: string }).id,
+			}),
+		)
 		.mutation(async ({ ctx, input }) => {
 			const [archivedAthlete] = await db
 				.update(athleteTable)
@@ -960,6 +1001,14 @@ export const organizationAthleteRouter = createTRPCRouter({
 	// Unarchive athlete (restore from archive)
 	unarchive: protectedOrganizationProcedure
 		.input(unarchiveAthleteSchema)
+		.use(
+			createAuditMiddleware({
+				entityType: AuditEntityType.athlete,
+				action: AuditAction.unarchive,
+				getEntityId: (_result: unknown, input: unknown) =>
+					(input as { id: string }).id,
+			}),
+		)
 		.mutation(async ({ ctx, input }) => {
 			const [unarchivedAthlete] = await db
 				.update(athleteTable)
@@ -990,6 +1039,14 @@ export const organizationAthleteRouter = createTRPCRouter({
 	// Bulk archive athletes
 	bulkArchive: protectedOrganizationProcedure
 		.input(bulkArchiveAthletesSchema)
+		.use(
+			createAuditMiddleware({
+				entityType: AuditEntityType.athlete,
+				action: AuditAction.bulkArchive,
+				getEntityId: (_result: unknown, input: unknown) =>
+					(input as { ids: string[] }).ids.join(","),
+			}),
+		)
 		.mutation(async ({ ctx, input }) => {
 			const archived = await db
 				.update(athleteTable)
@@ -1013,6 +1070,14 @@ export const organizationAthleteRouter = createTRPCRouter({
 	// Bulk unarchive athletes
 	bulkUnarchive: protectedOrganizationProcedure
 		.input(bulkUnarchiveAthletesSchema)
+		.use(
+			createAuditMiddleware({
+				entityType: AuditEntityType.athlete,
+				action: AuditAction.bulkUnarchive,
+				getEntityId: (_result: unknown, input: unknown) =>
+					(input as { ids: string[] }).ids.join(","),
+			}),
+		)
 		.mutation(async ({ ctx, input }) => {
 			const unarchived = await db
 				.update(athleteTable)

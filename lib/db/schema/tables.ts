@@ -22,6 +22,8 @@ import {
 	AthleteSport,
 	AthleteStatus,
 	AttendanceStatus,
+	AuditAction,
+	AuditEntityType,
 	BillingInterval,
 	CashMovementReferenceType,
 	CashMovementType,
@@ -6086,5 +6088,52 @@ export const userNotificationSettingsTable = pgTable(
 		),
 		index("user_notification_settings_user_idx").on(table.userId),
 		index("user_notification_settings_org_idx").on(table.organizationId),
+	],
+);
+
+// Audit log table - tracks resource mutations across the organization
+export const auditLogTable = pgTable(
+	"audit_log",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		organizationId: uuid("organization_id")
+			.notNull()
+			.references(() => organizationTable.id, { onDelete: "cascade" }),
+		userId: uuid("user_id")
+			.notNull()
+			.references(() => userTable.id, { onDelete: "cascade" }),
+		sessionId: uuid("session_id").references(() => sessionTable.id, {
+			onDelete: "set null",
+		}),
+		action: text("action", { enum: enumToPgEnum(AuditAction) })
+			.$type<AuditAction>()
+			.notNull(),
+		entityType: text("entity_type", { enum: enumToPgEnum(AuditEntityType) })
+			.$type<AuditEntityType>()
+			.notNull(),
+		entityId: text("entity_id").notNull(),
+		changes: jsonb("changes").$type<{
+			before?: Record<string, unknown>;
+			after?: Record<string, unknown>;
+			diff?: Record<string, { from: unknown; to: unknown }>;
+		}>(),
+		metadata: jsonb("metadata").$type<{
+			ipAddress?: string | null;
+			userAgent?: string | null;
+			impersonatedBy?: string | null;
+			procedurePath?: string;
+		}>(),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.notNull()
+			.defaultNow(),
+	},
+	(table) => [
+		index("audit_log_organization_id_idx").on(table.organizationId),
+		index("audit_log_user_id_idx").on(table.userId),
+		index("audit_log_entity_type_created_at_idx").on(
+			table.entityType,
+			table.createdAt,
+		),
+		index("audit_log_created_at_idx").on(table.createdAt),
 	],
 );

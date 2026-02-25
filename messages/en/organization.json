@@ -39,6 +39,7 @@
 		"vendors": "Vendors",
 		"sponsors": "Sponsors",
 		"services": "Services",
+		"auditLog": "Audit Log",
 		"chatbot": "AI Chatbot",
 		"institutions": "Clubs & Teams",
 		"settingsGeneral": "General",
@@ -168,6 +169,10 @@
 		"sponsors": {
 			"title": "Sponsors",
 			"description": "Manage sponsors"
+		},
+		"auditLog": {
+			"title": "Audit Log",
+			"description": "Track changes and activity"
 		},
 		"chatbot": {
 			"title": "AI Chatbot",

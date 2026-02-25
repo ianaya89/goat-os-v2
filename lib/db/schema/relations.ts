@@ -20,6 +20,7 @@ import {
 	athleteTable,
 	athleteWellnessSurveyTable,
 	attendanceTable,
+	auditLogTable,
 	billingEventTable,
 	cashMovementTable,
 	cashRegisterTable,
@@ -2186,3 +2187,19 @@ export const userNotificationSettingsRelations = relations(
 		}),
 	}),
 );
+
+// Audit log relations
+export const auditLogRelations = relations(auditLogTable, ({ one }) => ({
+	organization: one(organizationTable, {
+		fields: [auditLogTable.organizationId],
+		references: [organizationTable.id],
+	}),
+	user: one(userTable, {
+		fields: [auditLogTable.userId],
+		references: [userTable.id],
+	}),
+	session: one(sessionTable, {
+		fields: [auditLogTable.sessionId],
+		references: [sessionTable.id],
+	}),
+}));

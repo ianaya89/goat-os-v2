@@ -39,6 +39,7 @@
 		"vendors": "Proveedores",
 		"sponsors": "Patrocinadores",
 		"services": "Servicios",
+		"auditLog": "Auditoría",
 		"chatbot": "Chatbot IA",
 		"institutions": "Clubes y Selecciones",
 		"settingsGeneral": "General",
@@ -168,6 +169,10 @@
 		"sponsors": {
 			"title": "Patrocinadores",
 			"description": "Gestiona los patrocinadores"
+		},
+		"auditLog": {
+			"title": "Auditoría",
+			"description": "Seguimiento de cambios y actividad"
 		},
 		"chatbot": {
 			"title": "Chatbot IA",

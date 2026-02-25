@@ -22,6 +22,7 @@ import {
 	MedalIcon,
 	PackageIcon,
 	ReceiptIcon,
+	ScrollTextIcon,
 	ShieldIcon,
 	SwordsIcon,
 	TagsIcon,
@@ -391,6 +392,12 @@ export function OrganizationMenuItems(): React.JSX.Element {
 					href: `${basePath}/services`,
 					icon: TicketIcon,
 					feature: OrganizationFeature.services,
+				},
+				{
+					label: t("auditLog"),
+					href: `${basePath}/audit-log`,
+					icon: ScrollTextIcon,
+					// No feature flag - audit log is always available for admins
 				},
 				{
 					label: t("chatbot"),

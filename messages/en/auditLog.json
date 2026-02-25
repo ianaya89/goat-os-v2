@@ -1,0 +1,76 @@
+{
+	"title": "Audit Log",
+	"description": "Track all changes and activity in your organization",
+	"breadcrumb": "Audit Log",
+	"table": {
+		"columns": {
+			"user": "User",
+			"action": "Action",
+			"entityType": "Entity Type",
+			"entityId": "Entity ID",
+			"date": "Date",
+			"details": "Details"
+		},
+		"empty": "No audit log entries found",
+		"emptyDescription": "Activity will appear here as changes are made"
+	},
+	"filters": {
+		"action": "Action",
+		"entityType": "Entity Type",
+		"user": "User",
+		"dateFrom": "From",
+		"dateTo": "To",
+		"allActions": "All Actions",
+		"allEntityTypes": "All Entity Types",
+		"allUsers": "All Users",
+		"clearFilters": "Clear Filters"
+	},
+	"actions": {
+		"create": "Create",
+		"update": "Update",
+		"delete": "Delete",
+		"archive": "Archive",
+		"unarchive": "Unarchive",
+		"bulk_create": "Bulk Create",
+		"bulk_update": "Bulk Update",
+		"bulk_delete": "Bulk Delete",
+		"bulk_archive": "Bulk Archive",
+		"bulk_unarchive": "Bulk Unarchive"
+	},
+	"entityTypes": {
+		"athlete": "Athlete",
+		"training_session": "Training Session",
+		"training_payment": "Payment",
+		"coach": "Coach",
+		"user": "User",
+		"member": "Member",
+		"athlete_group": "Athlete Group",
+		"organization": "Organization"
+	},
+	"detail": {
+		"title": "Audit Log Detail",
+		"action": "Action",
+		"entityType": "Entity Type",
+		"entityId": "Entity ID",
+		"user": "User",
+		"date": "Date",
+		"changes": "Changes",
+		"metadata": "Metadata",
+		"ipAddress": "IP Address",
+		"userAgent": "User Agent",
+		"impersonatedBy": "Impersonated By",
+		"procedurePath": "Procedure",
+		"before": "Before",
+		"after": "After",
+		"diff": "Changes",
+		"field": "Field",
+		"from": "From",
+		"to": "To",
+		"noChanges": "No change details recorded"
+	},
+	"admin": {
+		"title": "Platform Audit Log",
+		"description": "Track all changes across all organizations",
+		"organization": "Organization"
+	}
+}

@@ -420,6 +420,172 @@ const spec = {
 				},
 			},
 		},
+		"/audit-logs": {
+			get: {
+				operationId: "listAuditLogs",
+				summary: "List audit logs",
+				description:
+					"Returns paginated audit log entries for the organization, including user details and change diffs.",
+				parameters: [
+					{
+						name: "action",
+						in: "query",
+						schema: {
+							type: "string",
+							enum: [
+								"create",
+								"update",
+								"delete",
+								"archive",
+								"unarchive",
+								"bulk_create",
+								"bulk_update",
+								"bulk_delete",
+								"bulk_archive",
+								"bulk_unarchive",
+							],
+						},
+						description: "Filter by action type",
+					},
+					{
+						name: "entityType",
+						in: "query",
+						schema: {
+							type: "string",
+							enum: [
+								"athlete",
+								"training_session",
+								"training_payment",
+								"coach",
+								"user",
+								"member",
+								"athlete_group",
+								"organization",
+							],
+						},
+						description: "Filter by entity type",
+					},
+					{
+						name: "userId",
+						in: "query",
+						schema: { type: "string", format: "uuid" },
+						description: "Filter by user who performed the action",
+					},
+					{
+						name: "dateFrom",
+						in: "query",
+						schema: { type: "string", format: "date-time" },
+						description: "Filter logs from this date (ISO 8601)",
+					},
+					{
+						name: "dateTo",
+						in: "query",
+						schema: { type: "string", format: "date-time" },
+						description: "Filter logs up to this date (ISO 8601)",
+					},
+					{
+						name: "limit",
+						in: "query",
+						schema: { type: "integer", default: 50 },
+					},
+					{
+						name: "offset",
+						in: "query",
+						schema: { type: "integer", default: 0 },
+					},
+				],
+				responses: {
+					"200": {
+						description: "Paginated list of audit logs",
+						content: {
+							"application/json": {
+								schema: {
+									type: "object",
+									properties: {
+										data: { type: "array", items: { type: "object" } },
+										total: { type: "integer" },
+										limit: { type: "integer" },
+										offset: { type: "integer" },
+									},
+								},
+							},
+						},
+					},
+					"401": {
+						description: "Unauthorized",
+						content: {
+							"application/json": {
+								schema: { $ref: "#/components/schemas/Error" },
+							},
+						},
+					},
+				},
+			},
+		},
+		"/sessions": {
+			get: {
+				operationId: "listSessions",
+				summary: "List user sessions (login activity)",
+				description:
+					"Returns paginated list of user login sessions for organization members, including IP address and user agent.",
+				parameters: [
+					{
+						name: "userId",
+						in: "query",
+						schema: { type: "string", format: "uuid" },
+						description: "Filter by specific user",
+					},
+					{
+						name: "dateFrom",
+						in: "query",
+						schema: { type: "string", format: "date-time" },
+						description: "Filter sessions from this date (ISO 8601)",
+					},
+					{
+						name: "dateTo",
+						in: "query",
+						schema: { type: "string", format: "date-time" },
+						description: "Filter sessions up to this date (ISO 8601)",
+					},
+					{
+						name: "limit",
+						in: "query",
+						schema: { type: "integer", default: 50 },
+					},
+					{
+						name: "offset",
+						in: "query",
+						schema: { type: "integer", default: 0 },
+					},
+				],
+				responses: {
+					"200": {
+						description: "Paginated list of user sessions",
+						content: {
+							"application/json": {
+								schema: {
+									type: "object",
+									properties: {
+										data: { type: "array", items: { type: "object" } },
+										total: { type: "integer" },
+										limit: { type: "integer" },
+										offset: { type: "integer" },
+									},
+								},
+							},
+						},
+					},
+					"401": {
+						description: "Unauthorized",
+						content: {
+							"application/json": {
+								schema: { $ref: "#/components/schemas/Error" },
+							},
+						},
+					},
+				},
+			},
+		},
 		"/openapi": {
 			get: {
 				operationId: "getOpenApiSpec",

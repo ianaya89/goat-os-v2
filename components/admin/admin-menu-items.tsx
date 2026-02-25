@@ -1,6 +1,11 @@
 "use client";
 
-import { Building2Icon, FileCog2Icon, UsersIcon } from "lucide-react";
+import {
+	Building2Icon,
+	FileCog2Icon,
+	ScrollTextIcon,
+	UsersIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type * as React from "react";
@@ -47,6 +52,11 @@ export function AdminMenuItems(): React.JSX.Element {
 					label: "App Config",
 					href: "/dashboard/admin/app-config",
 					icon: FileCog2Icon,
+				},
+				{
+					label: "Audit Log",
+					href: "/dashboard/admin/audit-log",
+					icon: ScrollTextIcon,
 				},
 			],
 		},

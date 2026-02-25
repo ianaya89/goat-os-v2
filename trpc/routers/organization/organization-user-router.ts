@@ -18,7 +18,12 @@ import { auth } from "@/lib/auth";
 import { getOrganizationPlanLimits } from "@/lib/billing/guards";
 import { syncOrganizationSeats } from "@/lib/billing/seat-sync";
 import { db } from "@/lib/db";
-import { InvitationStatus, MemberRole } from "@/lib/db/schema/enums";
+import {
+	AuditAction,
+	AuditEntityType,
+	InvitationStatus,
+	MemberRole,
+} from "@/lib/db/schema/enums";
 import {
 	athleteTable,
 	coachTable,
@@ -53,6 +58,7 @@ import {
 	updateOrganizationUserSchema,
 } from "@/schemas/organization-user-schemas";
 import { createTRPCRouter, protectedOrganizationProcedure } from "@/trpc/init";
+import { createAuditMiddleware } from "@/trpc/middleware/audit-middleware";
 
 export const organizationUserRouter = createTRPCRouter({
 	// Get current user's profile info (including coach/athlete profiles)
@@ -629,6 +635,14 @@ export const organizationUserRouter = createTRPCRouter({
 
 	updateRole: protectedOrganizationProcedure
 		.input(updateOrganizationUserRoleSchema)
+		.use(
+			createAuditMiddleware({
+				entityType: AuditEntityType.member,
+				action: AuditAction.update,
+				getEntityId: (_result: unknown, input: unknown) =>
+					(input as { userId: string }).userId,
+			}),
+		)
 		.mutation(async ({ ctx, input }) => {
 			// Check if user is owner/admin
 			if (
@@ -714,6 +728,14 @@ export const organizationUserRouter = createTRPCRouter({
 
 	remove: protectedOrganizationProcedure
 		.input(removeOrganizationUserSchema)
+		.use(
+			createAuditMiddleware({
+				entityType: AuditEntityType.member,
+				action: AuditAction.delete,
+				getEntityId: (_result: unknown, input: unknown) =>
+					(input as { userId: string }).userId,
+			}),
+		)
 		.mutation(async ({ ctx, input }) => {
 			// Check if user is owner/admin
 			if (
@@ -942,6 +964,14 @@ export const organizationUserRouter = createTRPCRouter({
 
 	ban: protectedOrganizationProcedure
 		.input(banOrganizationUserSchema)
+		.use(
+			createAuditMiddleware({
+				entityType: AuditEntityType.user,
+				action: AuditAction.update,
+				getEntityId: (_result: unknown, input: unknown) =>
+					(input as { userId: string }).userId,
+			}),
+		)
 		.mutation(async ({ ctx, input }) => {
 			// Check if user is owner/admin
 			if (
@@ -1034,6 +1064,14 @@ export const organizationUserRouter = createTRPCRouter({
 
 	unban: protectedOrganizationProcedure
 		.input(unbanOrganizationUserSchema)
+		.use(
+			createAuditMiddleware({
+				entityType: AuditEntityType.user,
+				action: AuditAction.update,
+				getEntityId: (_result: unknown, input: unknown) =>
+					(input as { userId: string }).userId,
+			}),
+		)
 		.mutation(async ({ ctx, input }) => {
 			// Check if user is owner/admin
 			if (
@@ -1412,6 +1450,14 @@ export const organizationUserRouter = createTRPCRouter({
 
 	bulkRemove: protectedOrganizationProcedure
 		.input(bulkRemoveOrganizationUsersSchema)
+		.use(
+			createAuditMiddleware({
+				entityType: AuditEntityType.member,
+				action: AuditAction.bulkDelete,
+				getEntityId: (_result: unknown, input: unknown) =>
+					(input as { userIds: string[] }).userIds.join(","),
+			}),
+		)
 		.mutation(async ({ ctx, input }) => {
 			// Check if user is owner/admin
 			if (

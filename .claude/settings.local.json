@@ -81,7 +81,8 @@
 			"Bash(git check-ignore:*)",
 			"Bash(docker-compose ps:*)",
 			"Bash(dotenv -e ./.env -- node:*)",
-			"Bash(gsed -i:*)"
+			"Bash(gsed -i:*)",
+			"Bash(wc:*)"
 		]
 	}
 }

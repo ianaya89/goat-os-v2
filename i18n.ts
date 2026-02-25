@@ -59,6 +59,7 @@ export default getRequestConfig(async () => {
 		institutions: (await import(`./messages/${locale}/institutions.json`))
 			.default,
 		myProfile: (await import(`./messages/${locale}/my-profile.json`)).default,
+		auditLog: (await import(`./messages/${locale}/auditLog.json`)).default,
 	};
 
 	return {

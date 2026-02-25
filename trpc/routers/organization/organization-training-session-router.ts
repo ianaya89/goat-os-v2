@@ -15,7 +15,11 @@ import {
 } from "drizzle-orm";
 import { z } from "zod/v4";
 import { db } from "@/lib/db";
-import { TrainingSessionStatus } from "@/lib/db/schema/enums";
+import {
+	AuditAction,
+	AuditEntityType,
+	TrainingSessionStatus,
+} from "@/lib/db/schema/enums";
 import {
 	athleteEvaluationTable,
 	athleteGroupMemberTable,
@@ -65,6 +69,7 @@ import {
 	updateTrainingSessionSchema,
 } from "@/schemas/organization-training-session-schemas";
 import { createTRPCRouter, protectedOrganizationProcedure } from "@/trpc/init";
+import { createAuditMiddleware } from "@/trpc/middleware/audit-middleware";
 
 export const organizationTrainingSessionRouter = createTRPCRouter({
 	list: protectedOrganizationProcedure
@@ -427,6 +432,13 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 
 	create: protectedOrganizationProcedure
 		.input(createTrainingSessionSchema)
+		.use(
+			createAuditMiddleware({
+				entityType: AuditEntityType.trainingSession,
+				action: AuditAction.create,
+				getEntityId: (result: { id: string }) => result.id,
+			}),
+		)
 		.mutation(async ({ ctx, input }) => {
 			const {
 				coachIds,
@@ -636,6 +648,14 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 
 	update: protectedOrganizationProcedure
 		.input(updateTrainingSessionSchema)
+		.use(
+			createAuditMiddleware({
+				entityType: AuditEntityType.trainingSession,
+				action: AuditAction.update,
+				getEntityId: (_result: unknown, input: unknown) =>
+					(input as { id: string }).id,
+			}),
+		)
 		.mutation(async ({ ctx, input }) => {
 			const { id, ...data } = input;
 
@@ -774,6 +794,14 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 
 	delete: protectedOrganizationProcedure
 		.input(deleteTrainingSessionSchema)
+		.use(
+			createAuditMiddleware({
+				entityType: AuditEntityType.trainingSession,
+				action: AuditAction.delete,
+				getEntityId: (_result: unknown, input: unknown) =>
+					(input as { id: string }).id,
+			}),
+		)
 		.mutation(async ({ ctx, input }) => {
 			const [deletedSession] = await db
 				.delete(trainingSessionTable)
@@ -797,6 +825,14 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 
 	bulkDelete: protectedOrganizationProcedure
 		.input(bulkDeleteTrainingSessionsSchema)
+		.use(
+			createAuditMiddleware({
+				entityType: AuditEntityType.trainingSession,
+				action: AuditAction.bulkDelete,
+				getEntityId: (_result: unknown, input: unknown) =>
+					(input as { ids: string[] }).ids.join(","),
+			}),
+		)
 		.mutation(async ({ ctx, input }) => {
 			const deleted = await db
 				.delete(trainingSessionTable)

@@ -1,0 +1,76 @@
+{
+	"title": "Registro de Auditoría",
+	"description": "Seguimiento de todos los cambios y actividad en tu organización",
+	"breadcrumb": "Auditoría",
+	"table": {
+		"columns": {
+			"user": "Usuario",
+			"action": "Acción",
+			"entityType": "Tipo de Entidad",
+			"entityId": "ID de Entidad",
+			"date": "Fecha",
+			"details": "Detalles"
+		},
+		"empty": "No se encontraron registros de auditoría",
+		"emptyDescription": "La actividad aparecerá aquí a medida que se realicen cambios"
+	},
+	"filters": {
+		"action": "Acción",
+		"entityType": "Tipo de Entidad",
+		"user": "Usuario",
+		"dateFrom": "Desde",
+		"dateTo": "Hasta",
+		"allActions": "Todas las Acciones",
+		"allEntityTypes": "Todos los Tipos",
+		"allUsers": "Todos los Usuarios",
+		"clearFilters": "Limpiar Filtros"
+	},
+	"actions": {
+		"create": "Crear",
+		"update": "Actualizar",
+		"delete": "Eliminar",
+		"archive": "Archivar",
+		"unarchive": "Desarchivar",
+		"bulk_create": "Creación masiva",
+		"bulk_update": "Actualización masiva",
+		"bulk_delete": "Eliminación masiva",
+		"bulk_archive": "Archivado masivo",
+		"bulk_unarchive": "Desarchivado masivo"
+	},
+	"entityTypes": {
+		"athlete": "Atleta",
+		"training_session": "Sesión de Entrenamiento",
+		"training_payment": "Pago",
+		"coach": "Entrenador",
+		"user": "Usuario",
+		"member": "Miembro",
+		"athlete_group": "Grupo de Atletas",
+		"organization": "Organización"
+	},
+	"detail": {
+		"title": "Detalle de Auditoría",
+		"action": "Acción",
+		"entityType": "Tipo de Entidad",
+		"entityId": "ID de Entidad",
+		"user": "Usuario",
+		"date": "Fecha",
+		"changes": "Cambios",
+		"metadata": "Metadata",
+		"ipAddress": "Dirección IP",
+		"userAgent": "User Agent",
+		"impersonatedBy": "Suplantado por",
+		"procedurePath": "Procedimiento",
+		"before": "Antes",
+		"after": "Después",
+		"diff": "Cambios",
+		"field": "Campo",
+		"from": "Anterior",
+		"to": "Nuevo",
+		"noChanges": "No se registraron detalles de cambios"
+	},
+	"admin": {
+		"title": "Auditoría de Plataforma",
+		"description": "Seguimiento de todos los cambios en todas las organizaciones",
+		"organization": "Organización"
+	}
+}
