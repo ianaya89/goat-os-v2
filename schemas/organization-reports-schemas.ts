@@ -221,6 +221,13 @@ export const getAttendanceTrendSchema = z.object({
 });
 
 // ============================================================================
+// DEMOGRAPHIC REPORTS SCHEMAS
+// ============================================================================
+
+// Demographics report (no input needed - uses ctx.organization.id)
+export const getDemographicsSchema = z.object({});
+
+// ============================================================================
 // TYPE EXPORTS
 // ============================================================================
 
@@ -273,3 +280,4 @@ export type GetRevenueCompositionInput = z.infer<
 	typeof getRevenueCompositionSchema
 >;
 export type GetPendingSummaryInput = z.infer<typeof getPendingSummarySchema>;
+export type GetDemographicsInput = z.infer<typeof getDemographicsSchema>;

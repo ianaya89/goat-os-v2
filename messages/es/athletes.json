@@ -10,6 +10,13 @@
 	"backToAthletes": "Volver a Atletas",
 	"notFound": "Atleta no encontrado",
 	"yearsOld": "años",
+	"sex": {
+		"label": "Sexo",
+		"male": "Masculino",
+		"female": "Femenino",
+		"other": "Otro",
+		"placeholder": "Seleccionar sexo"
+	},
 	"filters": {
 		"all": "Todos",
 		"active": "Activos",

@@ -57,6 +57,8 @@ import { useZodForm } from "@/hooks/use-zod-form";
 import {
 	AthleteLevel,
 	AthleteLevels,
+	type AthleteSex,
+	AthleteSexes,
 	AthleteSport,
 	AthleteStatus,
 	AthleteStatuses,
@@ -75,6 +77,7 @@ export type AthletesModalProps = NiceModalHocProps & {
 		birthDate?: Date | null;
 		level: string;
 		status: string;
+		sex?: string | null;
 		phone?: string | null;
 		isPublicProfile?: boolean;
 		user?: {
@@ -209,6 +212,7 @@ export const AthletesModal = NiceModal.create<AthletesModalProps>(
 						birthDate: athlete.birthDate ?? undefined,
 						level: athlete.level as AthleteLevel,
 						status: athlete.status as AthleteStatus,
+						sex: (athlete.sex as AthleteSex) ?? undefined,
 						phone: athlete.phone ?? "",
 						isPublicProfile: athlete.isPublicProfile ?? false,
 					}
@@ -722,6 +726,38 @@ export const AthletesModal = NiceModal.create<AthletesModalProps>(
 												</FormItem>
 											);
 										}}
+									/>
+
+									<FormField
+										control={form.control}
+										name="sex"
+										render={({ field }) => (
+											<FormItem asChild>
+												<Field>
+													<FormLabel>{t("sex.label")}</FormLabel>
+													<Select
+														onValueChange={field.onChange}
+														value={field.value ?? ""}
+													>
+														<FormControl>
+															<SelectTrigger className="w-full">
+																<SelectValue
+																	placeholder={t("sex.placeholder")}
+																/>
+															</SelectTrigger>
+														</FormControl>
+														<SelectContent>
+															{AthleteSexes.map((sex) => (
+																<SelectItem key={sex} value={sex}>
+																	{t(`sex.${sex}` as Parameters<typeof t>[0])}
+																</SelectItem>
+															))}
+														</SelectContent>
+													</Select>
+													<FormMessage />
+												</Field>
+											</FormItem>
+										)}
 									/>
 
 									{isEditing && (

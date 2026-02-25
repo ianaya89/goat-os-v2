@@ -10,6 +10,13 @@
 	"backToAthletes": "Back to Athletes",
 	"notFound": "Athlete not found",
 	"yearsOld": "years old",
+	"sex": {
+		"label": "Sex",
+		"male": "Male",
+		"female": "Female",
+		"other": "Other",
+		"placeholder": "Select sex"
+	},
 	"filters": {
 		"all": "All",
 		"active": "Active",

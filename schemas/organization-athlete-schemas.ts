@@ -1,6 +1,7 @@
 import { z } from "zod/v4";
 import {
 	AthleteLevel,
+	AthleteSex,
 	AthleteSport,
 	AthleteStatus,
 	DominantSide,
@@ -59,6 +60,7 @@ export const createAthleteSchema = z.object({
 	birthDate: z.coerce.date().optional(),
 	level: z.nativeEnum(AthleteLevel).default(AthleteLevel.beginner),
 	status: z.nativeEnum(AthleteStatus).default(AthleteStatus.active),
+	sex: z.nativeEnum(AthleteSex).optional(),
 	// Physical attributes (optional on create)
 	height: z.number().int().min(50).max(300).optional(), // cm
 	weight: z.number().int().min(10000).max(300000).optional(), // grams
@@ -115,6 +117,7 @@ export const updateAthleteSchema = z.object({
 	birthDate: z.coerce.date().optional().nullable(),
 	level: z.nativeEnum(AthleteLevel).optional(),
 	status: z.nativeEnum(AthleteStatus).optional(),
+	sex: z.nativeEnum(AthleteSex).optional().nullable(),
 	// Physical attributes
 	height: z.number().int().min(50).max(300).optional().nullable(),
 	weight: z.number().int().min(10000).max(300000).optional().nullable(),

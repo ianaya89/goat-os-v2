@@ -1240,6 +1240,9 @@ export const athleteTable = pgTable(
 			.notNull()
 			.default(AthleteStatus.active),
 
+		// Sex
+		sex: text("sex"), // AthleteSex enum value, optional
+
 		// Physical attributes
 		height: integer("height"), // Height in centimeters
 		weight: integer("weight"), // Weight in grams (e.g., 72500 = 72.5kg)

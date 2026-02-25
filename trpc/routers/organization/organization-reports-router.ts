@@ -1,4 +1,15 @@
-import { and, asc, count, desc, eq, gte, lte, sql, sum } from "drizzle-orm";
+import {
+	and,
+	asc,
+	count,
+	desc,
+	eq,
+	gte,
+	isNull,
+	lte,
+	sql,
+	sum,
+} from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
 	AttendanceStatus,
@@ -10,6 +21,7 @@ import {
 	athleteGroupTable,
 	athleteTable,
 	attendanceTable,
+	clubTable,
 	coachTable,
 	eventRegistrationTable,
 	expenseCategoryTable,
@@ -28,6 +40,7 @@ import {
 	getAttendanceByGroupSchema,
 	getAttendanceTrendSchema,
 	getCashFlowReportSchema,
+	getDemographicsSchema,
 	getExpensesByCategorySchema,
 	getExpensesByPeriodSchema,
 	getFinancialSummarySchema,
@@ -1397,6 +1410,320 @@ export const organizationReportsRouter = createTRPCRouter({
 					totalAmount: trainingAmount + eventAmount,
 					count: trainingCount + eventCount,
 				},
+			};
+		}),
+
+	// ============================================================================
+	// DEMOGRAPHIC REPORTS
+	// ============================================================================
+
+	getDemographics: protectedOrgAdminProcedure
+		.input(getDemographicsSchema)
+		.query(async ({ ctx }) => {
+			const orgId = ctx.organization.id;
+
+			// Base filter: active, non-archived athletes of this org
+			const baseWhere = and(
+				eq(athleteTable.organizationId, orgId),
+				eq(athleteTable.status, "active"),
+				isNull(athleteTable.archivedAt),
+			);
+
+			const [
+				ageData,
+				sexData,
+				clubData,
+				levelData,
+				categoryData,
+				nationalityData,
+				sportData,
+				residenceCityData,
+				dominantFootData,
+				dominantHandData,
+				positionData,
+				experienceData,
+				growthData,
+				totalCount,
+				avgAgeResult,
+				withClubCount,
+			] = await Promise.all([
+				// 1. Age distribution by ranges
+				db
+					.select({
+						range: sql<string>`CASE
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 0 AND 12 THEN '0-12'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 13 AND 17 THEN '13-17'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 18 AND 25 THEN '18-25'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 26 AND 35 THEN '26-35'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) > 35 THEN '36+'
+							ELSE 'N/A'
+						END`,
+						count: count(),
+					})
+					.from(athleteTable)
+					.where(baseWhere)
+					.groupBy(
+						sql`CASE
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 0 AND 12 THEN '0-12'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 13 AND 17 THEN '13-17'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 18 AND 25 THEN '18-25'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 26 AND 35 THEN '26-35'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) > 35 THEN '36+'
+							ELSE 'N/A'
+						END`,
+					),
+
+				// 2. Sex distribution
+				db
+					.select({
+						value: sql<string>`COALESCE(${athleteTable.sex}, 'N/A')`,
+						count: count(),
+					})
+					.from(athleteTable)
+					.where(baseWhere)
+					.groupBy(sql`COALESCE(${athleteTable.sex}, 'N/A')`),
+
+				// 3. Club distribution
+				db
+					.select({
+						value: sql<string>`COALESCE(${clubTable.name}, 'Sin club')`,
+						count: count(),
+					})
+					.from(athleteTable)
+					.leftJoin(clubTable, eq(athleteTable.currentClubId, clubTable.id))
+					.where(baseWhere)
+					.groupBy(sql`COALESCE(${clubTable.name}, 'Sin club')`)
+					.orderBy(desc(count()))
+					.limit(15),
+
+				// 4. Level distribution
+				db
+					.select({
+						value: athleteTable.level,
+						count: count(),
+					})
+					.from(athleteTable)
+					.where(baseWhere)
+					.groupBy(athleteTable.level),
+
+				// 5. Category distribution
+				db
+					.select({
+						value: sql<string>`COALESCE(${athleteTable.category}, 'N/A')`,
+						count: count(),
+					})
+					.from(athleteTable)
+					.where(baseWhere)
+					.groupBy(sql`COALESCE(${athleteTable.category}, 'N/A')`)
+					.orderBy(desc(count()))
+					.limit(15),
+
+				// 6. Nationality distribution
+				db
+					.select({
+						value: sql<string>`COALESCE(${athleteTable.nationality}, 'N/A')`,
+						count: count(),
+					})
+					.from(athleteTable)
+					.where(baseWhere)
+					.groupBy(sql`COALESCE(${athleteTable.nationality}, 'N/A')`)
+					.orderBy(desc(count()))
+					.limit(15),
+
+				// 7. Sport distribution
+				db
+					.select({
+						value: athleteTable.sport,
+						count: count(),
+					})
+					.from(athleteTable)
+					.where(baseWhere)
+					.groupBy(athleteTable.sport)
+					.orderBy(desc(count())),
+
+				// 8. Residence city distribution
+				db
+					.select({
+						value: sql<string>`COALESCE(${athleteTable.residenceCity}, 'N/A')`,
+						count: count(),
+					})
+					.from(athleteTable)
+					.where(baseWhere)
+					.groupBy(sql`COALESCE(${athleteTable.residenceCity}, 'N/A')`)
+					.orderBy(desc(count()))
+					.limit(15),
+
+				// 9. Dominant foot distribution
+				db
+					.select({
+						value: sql<string>`COALESCE(${athleteTable.dominantFoot}, 'N/A')`,
+						count: count(),
+					})
+					.from(athleteTable)
+					.where(baseWhere)
+					.groupBy(sql`COALESCE(${athleteTable.dominantFoot}, 'N/A')`),
+
+				// 10. Dominant hand distribution
+				db
+					.select({
+						value: sql<string>`COALESCE(${athleteTable.dominantHand}, 'N/A')`,
+						count: count(),
+					})
+					.from(athleteTable)
+					.where(baseWhere)
+					.groupBy(sql`COALESCE(${athleteTable.dominantHand}, 'N/A')`),
+
+				// 11. Position distribution
+				db
+					.select({
+						value: sql<string>`COALESCE(${athleteTable.position}, 'N/A')`,
+						count: count(),
+					})
+					.from(athleteTable)
+					.where(baseWhere)
+					.groupBy(sql`COALESCE(${athleteTable.position}, 'N/A')`)
+					.orderBy(desc(count()))
+					.limit(15),
+
+				// 12. Experience by ranges
+				db
+					.select({
+						range: sql<string>`CASE
+							WHEN ${athleteTable.yearsOfExperience} BETWEEN 0 AND 1 THEN '0-1'
+							WHEN ${athleteTable.yearsOfExperience} BETWEEN 2 AND 3 THEN '2-3'
+							WHEN ${athleteTable.yearsOfExperience} BETWEEN 4 AND 5 THEN '4-5'
+							WHEN ${athleteTable.yearsOfExperience} BETWEEN 6 AND 10 THEN '6-10'
+							WHEN ${athleteTable.yearsOfExperience} > 10 THEN '10+'
+							ELSE 'N/A'
+						END`,
+						count: count(),
+					})
+					.from(athleteTable)
+					.where(baseWhere)
+					.groupBy(
+						sql`CASE
+							WHEN ${athleteTable.yearsOfExperience} BETWEEN 0 AND 1 THEN '0-1'
+							WHEN ${athleteTable.yearsOfExperience} BETWEEN 2 AND 3 THEN '2-3'
+							WHEN ${athleteTable.yearsOfExperience} BETWEEN 4 AND 5 THEN '4-5'
+							WHEN ${athleteTable.yearsOfExperience} BETWEEN 6 AND 10 THEN '6-10'
+							WHEN ${athleteTable.yearsOfExperience} > 10 THEN '10+'
+							ELSE 'N/A'
+						END`,
+					),
+
+				// 13. Growth over time (monthly new athletes)
+				db
+					.select({
+						month: sql<string>`TO_CHAR(DATE_TRUNC('month', ${athleteTable.createdAt}), 'YYYY-MM')`,
+						count: count(),
+					})
+					.from(athleteTable)
+					.where(
+						and(
+							eq(athleteTable.organizationId, orgId),
+							isNull(athleteTable.archivedAt),
+						),
+					)
+					.groupBy(sql`DATE_TRUNC('month', ${athleteTable.createdAt})`)
+					.orderBy(asc(sql`DATE_TRUNC('month', ${athleteTable.createdAt})`)),
+
+				// Total count
+				db
+					.select({ count: count() })
+					.from(athleteTable)
+					.where(baseWhere),
+
+				// Average age
+				db
+					.select({
+						avgAge: sql<number>`AVG(DATE_PART('year', AGE(${athleteTable.birthDate})))`,
+					})
+					.from(athleteTable)
+					.where(and(baseWhere, sql`${athleteTable.birthDate} IS NOT NULL`)),
+
+				// Athletes with club
+				db
+					.select({ count: count() })
+					.from(athleteTable)
+					.where(
+						and(baseWhere, sql`${athleteTable.currentClubId} IS NOT NULL`),
+					),
+			]);
+
+			// Compute cumulative growth
+			let cumulative = 0;
+			const growth = growthData.map((item) => {
+				cumulative += Number(item.count);
+				return {
+					month: item.month,
+					newAthletes: Number(item.count),
+					cumulative,
+				};
+			});
+
+			const total = Number(totalCount[0]?.count ?? 0);
+			const avgAge = avgAgeResult[0]?.avgAge
+				? Math.round(Number(avgAgeResult[0].avgAge))
+				: 0;
+			const athletesWithClub = Number(withClubCount[0]?.count ?? 0);
+
+			return {
+				summary: {
+					total,
+					avgAge,
+					withClubCount: athletesWithClub,
+					withClubPercentage:
+						total > 0 ? Math.round((athletesWithClub / total) * 100) : 0,
+				},
+				age: ageData.map((r) => ({
+					range: r.range,
+					count: Number(r.count),
+				})),
+				sex: sexData.map((r) => ({
+					value: r.value,
+					count: Number(r.count),
+				})),
+				club: clubData.map((r) => ({
+					value: r.value,
+					count: Number(r.count),
+				})),
+				level: levelData.map((r) => ({
+					value: r.value,
+					count: Number(r.count),
+				})),
+				category: categoryData.map((r) => ({
+					value: r.value,
+					count: Number(r.count),
+				})),
+				nationality: nationalityData.map((r) => ({
+					value: r.value,
+					count: Number(r.count),
+				})),
+				sport: sportData.map((r) => ({
+					value: r.value,
+					count: Number(r.count),
+				})),
+				residenceCity: residenceCityData.map((r) => ({
+					value: r.value,
+					count: Number(r.count),
+				})),
+				dominantFoot: dominantFootData.map((r) => ({
+					value: r.value,
+					count: Number(r.count),
+				})),
+				dominantHand: dominantHandData.map((r) => ({
+					value: r.value,
+					count: Number(r.count),
+				})),
+				position: positionData.map((r) => ({
+					value: r.value,
+					count: Number(r.count),
+				})),
+				experience: experienceData.map((r) => ({
+					range: r.range,
+					count: Number(r.count),
+				})),
+				growth,
 			};
 		}),
 });

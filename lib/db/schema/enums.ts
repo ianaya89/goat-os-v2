@@ -142,6 +142,15 @@ export type CoachOpportunityType =
 	(typeof CoachOpportunityType)[keyof typeof CoachOpportunityType];
 export const CoachOpportunityTypes = Object.values(CoachOpportunityType);
 
+// Athlete sex enum
+export const AthleteSex = {
+	male: "male",
+	female: "female",
+	other: "other",
+} as const;
+export type AthleteSex = (typeof AthleteSex)[keyof typeof AthleteSex];
+export const AthleteSexes = Object.values(AthleteSex);
+
 // Athlete status enum
 export const AthleteStatus = {
 	active: "active",
@@ -1039,6 +1048,7 @@ export const OrganizationFeature = {
 	financialReports: "financial_reports",
 	sportsReports: "sports_reports",
 	pendingReports: "pending_reports",
+	demographicReports: "demographic_reports",
 
 	// General
 	locations: "locations",

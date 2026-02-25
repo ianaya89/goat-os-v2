@@ -34,6 +34,7 @@
 		"payroll": "Payroll",
 		"financialReports": "Financial",
 		"sportsReports": "Sports",
+		"demographicReports": "Demographics",
 		"locations": "Locations",
 		"users": "Users",
 		"vendors": "Vendors",
@@ -191,6 +192,82 @@
 			"pending": {
 				"title": "Pending Payments",
 				"description": "Training sessions and event registrations pending payment"
+			},
+			"demographics": {
+				"title": "Demographic Reports",
+				"description": "Analysis of the demographic composition of your athletes",
+				"noData": "No data available",
+				"cards": {
+					"totalAthletes": "Total Athletes",
+					"activeAthletes": "Active non-archived athletes",
+					"avgAge": "Average Age",
+					"years": "{count} years",
+					"avgAgeDesc": "Average age of the roster",
+					"withClub": "With Club",
+					"ofTotal": "of {total} athletes",
+					"clubPercentage": "% With Club",
+					"clubPercentageDesc": "Percentage with assigned club"
+				},
+				"charts": {
+					"total": "total",
+					"athletes": "athletes",
+					"age": {
+						"title": "Age Distribution",
+						"description": "Age ranges of athletes",
+						"range": "Range"
+					},
+					"sex": {
+						"title": "Sex Distribution",
+						"description": "Sex distribution of athletes"
+					},
+					"club": {
+						"title": "Club Distribution",
+						"description": "Top clubs of athletes"
+					},
+					"level": {
+						"title": "Level Distribution",
+						"description": "Athlete levels"
+					},
+					"category": {
+						"title": "Category Distribution",
+						"description": "Athlete categories"
+					},
+					"nationality": {
+						"title": "Nationality Distribution",
+						"description": "Athlete nationalities"
+					},
+					"sport": {
+						"title": "Sport Distribution",
+						"description": "Sports practiced"
+					},
+					"residence": {
+						"title": "Residence City",
+						"description": "Distribution by city"
+					},
+					"dominantFoot": {
+						"title": "Dominant Foot",
+						"description": "Dominant foot distribution"
+					},
+					"dominantHand": {
+						"title": "Dominant Hand",
+						"description": "Dominant hand distribution"
+					},
+					"position": {
+						"title": "Position Distribution",
+						"description": "Athlete positions"
+					},
+					"experience": {
+						"title": "Years of Experience",
+						"description": "Distribution by years of experience",
+						"years": "years"
+					},
+					"growth": {
+						"title": "Roster Growth",
+						"description": "Athlete evolution over time",
+						"new": "New",
+						"cumulative": "Cumulative"
+					}
+				}
 			}
 		},
 		"mySessions": {
@@ -335,6 +412,7 @@
 				"financial_reports": "Financial Reports",
 				"sports_reports": "Sports Reports",
 				"pending_reports": "Pending Payments Report",
+				"demographic_reports": "Demographic Reports",
 				"locations": "Locations",
 				"vendors": "Vendors",
 				"sponsors": "Sponsors",

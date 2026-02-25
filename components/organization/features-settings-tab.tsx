@@ -59,6 +59,7 @@ const FEATURE_CATEGORIES = {
 			OrganizationFeature.financialReports,
 			OrganizationFeature.sportsReports,
 			OrganizationFeature.pendingReports,
+			OrganizationFeature.demographicReports,
 		],
 	},
 	general: {

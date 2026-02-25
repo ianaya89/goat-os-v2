@@ -36,6 +36,8 @@ const ROUTE_FEATURE_MAP: Record<string, OrganizationFeature> = {
 		OrganizationFeature.financialReports,
 	"/dashboard/organization/reports/sports": OrganizationFeature.sportsReports,
 	"/dashboard/organization/reports/pending": OrganizationFeature.pendingReports,
+	"/dashboard/organization/reports/demographics":
+		OrganizationFeature.demographicReports,
 
 	// General
 	"/dashboard/organization/locations": OrganizationFeature.locations,

@@ -34,6 +34,7 @@
 		"payroll": "Liquidaciones",
 		"financialReports": "Reportes Financieros",
 		"sportsReports": "Reportes Deportivos",
+		"demographicReports": "Reportes Demográficos",
 		"locations": "Locaciones",
 		"users": "Usuarios",
 		"vendors": "Proveedores",
@@ -191,6 +192,82 @@
 			"pending": {
 				"title": "Pagos Pendientes",
 				"description": "Sesiones de entrenamiento e inscripciones a eventos pendientes de pago"
+			},
+			"demographics": {
+				"title": "Reportes Demográficos",
+				"description": "Análisis de la composición demográfica de tus atletas",
+				"noData": "No hay datos disponibles",
+				"cards": {
+					"totalAthletes": "Total de Atletas",
+					"activeAthletes": "Atletas activos no archivados",
+					"avgAge": "Edad Promedio",
+					"years": "{count} años",
+					"avgAgeDesc": "Promedio de edad del plantel",
+					"withClub": "Con Club",
+					"ofTotal": "de {total} atletas",
+					"clubPercentage": "% Con Club",
+					"clubPercentageDesc": "Porcentaje con club asignado"
+				},
+				"charts": {
+					"total": "total",
+					"athletes": "atletas",
+					"age": {
+						"title": "Distribución por Edad",
+						"description": "Rango de edades de los atletas",
+						"range": "Rango"
+					},
+					"sex": {
+						"title": "Distribución por Sexo",
+						"description": "Distribución de sexo de los atletas"
+					},
+					"club": {
+						"title": "Distribución por Club",
+						"description": "Top clubes de los atletas"
+					},
+					"level": {
+						"title": "Distribución por Nivel",
+						"description": "Niveles de los atletas"
+					},
+					"category": {
+						"title": "Distribución por Categoría",
+						"description": "Categorías de los atletas"
+					},
+					"nationality": {
+						"title": "Distribución por Nacionalidad",
+						"description": "Nacionalidades de los atletas"
+					},
+					"sport": {
+						"title": "Distribución por Deporte",
+						"description": "Deportes practicados"
+					},
+					"residence": {
+						"title": "Ciudad de Residencia",
+						"description": "Distribución por ciudad"
+					},
+					"dominantFoot": {
+						"title": "Pie Dominante",
+						"description": "Distribución de pie dominante"
+					},
+					"dominantHand": {
+						"title": "Mano Dominante",
+						"description": "Distribución de mano dominante"
+					},
+					"position": {
+						"title": "Distribución por Posición",
+						"description": "Posiciones de los atletas"
+					},
+					"experience": {
+						"title": "Años de Experiencia",
+						"description": "Distribución por años de experiencia",
+						"years": "años"
+					},
+					"growth": {
+						"title": "Crecimiento del Plantel",
+						"description": "Evolución de atletas a lo largo del tiempo",
+						"new": "Nuevos",
+						"cumulative": "Acumulado"
+					}
+				}
 			}
 		},
 		"mySessions": {
@@ -335,6 +412,7 @@
 				"financial_reports": "Reportes Financieros",
 				"sports_reports": "Reportes Deportivos",
 				"pending_reports": "Reporte de Pagos Pendientes",
+				"demographic_reports": "Reportes Demográficos",
 				"locations": "Locaciones",
 				"vendors": "Proveedores",
 				"sponsors": "Patrocinadores",
