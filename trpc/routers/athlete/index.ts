@@ -350,6 +350,14 @@ export const athleteRouter = createTRPCRouter({
 				});
 			}
 
+			// If the career entry has a club and is still active (no endDate), sync currentClubId
+			if (input.clubId && !input.endDate) {
+				await db
+					.update(athleteTable)
+					.set({ currentClubId: input.clubId })
+					.where(eq(athleteTable.id, athleteProfile.id));
+			}
+
 			logger.info(
 				{
 					userId: ctx.user.id,
@@ -403,6 +411,21 @@ export const athleteRouter = createTRPCRouter({
 				})
 				.where(eq(athleteCareerHistoryTable.id, id))
 				.returning();
+
+			// If the career entry has a club and is still active (no endDate), sync currentClubId
+			if (updated) {
+				const effectiveClubId =
+					data.clubId !== undefined ? data.clubId : careerEntry.clubId;
+				const effectiveEndDate =
+					data.endDate !== undefined ? data.endDate : careerEntry.endDate;
+
+				if (effectiveClubId && !effectiveEndDate) {
+					await db
+						.update(athleteTable)
+						.set({ currentClubId: effectiveClubId })
+						.where(eq(athleteTable.id, athleteProfile.id));
+				}
+			}
 
 			logger.info(
 				{
