@@ -43,6 +43,7 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -76,6 +77,7 @@ export interface SessionPreviewData {
 	athletes: SessionAthlete[];
 	coaches: SessionCoach[];
 	isRecurring?: boolean;
+	recurringSessionId?: string | null;
 }
 
 interface TrainingSessionPreviewSheetProps {
@@ -85,6 +87,10 @@ interface TrainingSessionPreviewSheetProps {
 	onEdit?: () => void;
 	onDelete?: () => void;
 	isDeleting?: boolean;
+	onDeleteSeries?: () => void;
+	onDeleteFuture?: () => void;
+	onEditSeries?: () => void;
+	isDeletingSeries?: boolean;
 }
 
 export function TrainingSessionPreviewSheet({
@@ -94,6 +100,10 @@ export function TrainingSessionPreviewSheet({
 	onEdit,
 	onDelete,
 	isDeleting,
+	onDeleteSeries,
+	onDeleteFuture,
+	onEditSeries,
+	isDeletingSeries,
 }: TrainingSessionPreviewSheetProps) {
 	const t = useTranslations("training");
 	const tConfirmations = useTranslations("confirmations");
@@ -149,6 +159,8 @@ export function TrainingSessionPreviewSheet({
 	const minutes = duration % 60;
 	const durationText =
 		hours > 0 ? `${hours}h ${minutes > 0 ? `${minutes}m` : ""}` : `${minutes}m`;
+
+	const isPartOfSeries = session.isRecurring || session.recurringSessionId;
 
 	return (
 		<Sheet open={open} onOpenChange={onOpenChange}>
@@ -384,10 +396,39 @@ export function TrainingSessionPreviewSheet({
 									</DropdownMenuContent>
 								</DropdownMenu>
 								{onEdit && (
-									<Button variant="outline" size="sm" onClick={onEdit}>
-										<EditIcon className="size-4" />
-										{t("edit")}
-									</Button>
+									<>
+										{isPartOfSeries ? (
+											<DropdownMenu>
+												<DropdownMenuTrigger asChild>
+													<Button variant="outline" size="sm">
+														<EditIcon className="size-4" />
+														{t("edit")}
+														<ChevronDownIcon className="size-4" />
+													</Button>
+												</DropdownMenuTrigger>
+												<DropdownMenuContent align="start">
+													<DropdownMenuItem onClick={onEdit}>
+														<EditIcon className="size-4" />
+														{t("series.editThis")}
+													</DropdownMenuItem>
+													{onEditSeries && (
+														<>
+															<DropdownMenuSeparator />
+															<DropdownMenuItem onClick={onEditSeries}>
+																<RepeatIcon className="size-4" />
+																{t("series.editSeries")}
+															</DropdownMenuItem>
+														</>
+													)}
+												</DropdownMenuContent>
+											</DropdownMenu>
+										) : (
+											<Button variant="outline" size="sm" onClick={onEdit}>
+												<EditIcon className="size-4" />
+												{t("edit")}
+											</Button>
+										)}
+									</>
 								)}
 								<Button variant="outline" size="sm" asChild>
 									<Link
@@ -398,50 +439,183 @@ export function TrainingSessionPreviewSheet({
 									</Link>
 								</Button>
 								{onDelete && (
-									<AlertDialog>
-										<AlertDialogTrigger asChild>
-											<Button
-												variant="outline"
-												size="sm"
-												className="text-destructive hover:text-destructive"
-												disabled={isDeleting}
-											>
-												{isDeleting ? (
-													<LoaderIcon className="size-4 animate-spin" />
-												) : (
-													<Trash2Icon className="size-4" />
-												)}
-												{t("preview.deleteSession")}
-											</Button>
-										</AlertDialogTrigger>
-										<AlertDialogContent>
-											<AlertDialogHeader>
-												<AlertDialogTitle>
-													{t("preview.deleteTitle")}
-												</AlertDialogTitle>
-												<AlertDialogDescription>
-													{t("preview.deleteDescription", {
-														title: session.title,
-														date: format(session.start, "EEEE, MMM d"),
-														time: format(session.start, "HH:mm"),
-													})}
-												</AlertDialogDescription>
-											</AlertDialogHeader>
-											<AlertDialogFooter>
-												<AlertDialogCancel>
-													{t("preview.deleteCancel")}
-												</AlertDialogCancel>
-												<AlertDialogAction
-													onClick={onDelete}
-													className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-												>
-													{isDeleting
-														? t("preview.deleting")
-														: t("preview.deleteConfirm")}
-												</AlertDialogAction>
-											</AlertDialogFooter>
-										</AlertDialogContent>
-									</AlertDialog>
+									<>
+										{isPartOfSeries ? (
+											<DropdownMenu>
+												<DropdownMenuTrigger asChild>
+													<Button
+														variant="outline"
+														size="sm"
+														className="text-destructive hover:text-destructive"
+														disabled={isDeleting || isDeletingSeries}
+													>
+														{isDeleting || isDeletingSeries ? (
+															<LoaderIcon className="size-4 animate-spin" />
+														) : (
+															<Trash2Icon className="size-4" />
+														)}
+														{t("delete")}
+														<ChevronDownIcon className="size-4" />
+													</Button>
+												</DropdownMenuTrigger>
+												<DropdownMenuContent align="start">
+													<AlertDialog>
+														<AlertDialogTrigger asChild>
+															<DropdownMenuItem
+																onSelect={(e) => e.preventDefault()}
+															>
+																<Trash2Icon className="size-4" />
+																{t("series.deleteThis")}
+															</DropdownMenuItem>
+														</AlertDialogTrigger>
+														<AlertDialogContent>
+															<AlertDialogHeader>
+																<AlertDialogTitle>
+																	{t("preview.deleteTitle")}
+																</AlertDialogTitle>
+																<AlertDialogDescription>
+																	{t("preview.deleteDescription", {
+																		title: session.title,
+																		date: format(session.start, "EEEE, MMM d"),
+																		time: format(session.start, "HH:mm"),
+																	})}
+																</AlertDialogDescription>
+															</AlertDialogHeader>
+															<AlertDialogFooter>
+																<AlertDialogCancel>
+																	{t("preview.deleteCancel")}
+																</AlertDialogCancel>
+																<AlertDialogAction
+																	onClick={onDelete}
+																	className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+																>
+																	{t("preview.deleteConfirm")}
+																</AlertDialogAction>
+															</AlertDialogFooter>
+														</AlertDialogContent>
+													</AlertDialog>
+													<DropdownMenuSeparator />
+													{onDeleteSeries && (
+														<AlertDialog>
+															<AlertDialogTrigger asChild>
+																<DropdownMenuItem
+																	onSelect={(e) => e.preventDefault()}
+																	className="text-destructive focus:text-destructive"
+																>
+																	<Trash2Icon className="size-4" />
+																	{t("series.deleteSeries")}
+																</DropdownMenuItem>
+															</AlertDialogTrigger>
+															<AlertDialogContent>
+																<AlertDialogHeader>
+																	<AlertDialogTitle>
+																		{t("series.deleteSeriesTitle")}
+																	</AlertDialogTitle>
+																	<AlertDialogDescription>
+																		{t("series.deleteSeriesMessage", {
+																			title: session.title,
+																		})}
+																	</AlertDialogDescription>
+																</AlertDialogHeader>
+																<AlertDialogFooter>
+																	<AlertDialogCancel>
+																		{t("preview.deleteCancel")}
+																	</AlertDialogCancel>
+																	<AlertDialogAction
+																		onClick={onDeleteSeries}
+																		className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+																	>
+																		{t("series.deleteSeries")}
+																	</AlertDialogAction>
+																</AlertDialogFooter>
+															</AlertDialogContent>
+														</AlertDialog>
+													)}
+													{onDeleteFuture && (
+														<AlertDialog>
+															<AlertDialogTrigger asChild>
+																<DropdownMenuItem
+																	onSelect={(e) => e.preventDefault()}
+																	className="text-destructive focus:text-destructive"
+																>
+																	<Trash2Icon className="size-4" />
+																	{t("series.deleteFuture")}
+																</DropdownMenuItem>
+															</AlertDialogTrigger>
+															<AlertDialogContent>
+																<AlertDialogHeader>
+																	<AlertDialogTitle>
+																		{t("series.deleteFutureTitle")}
+																	</AlertDialogTitle>
+																	<AlertDialogDescription>
+																		{t("series.deleteFutureMessage", {
+																			title: session.title,
+																		})}
+																	</AlertDialogDescription>
+																</AlertDialogHeader>
+																<AlertDialogFooter>
+																	<AlertDialogCancel>
+																		{t("preview.deleteCancel")}
+																	</AlertDialogCancel>
+																	<AlertDialogAction
+																		onClick={onDeleteFuture}
+																		className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+																	>
+																		{t("series.deleteFuture")}
+																	</AlertDialogAction>
+																</AlertDialogFooter>
+															</AlertDialogContent>
+														</AlertDialog>
+													)}
+												</DropdownMenuContent>
+											</DropdownMenu>
+										) : (
+											<AlertDialog>
+												<AlertDialogTrigger asChild>
+													<Button
+														variant="outline"
+														size="sm"
+														className="text-destructive hover:text-destructive"
+														disabled={isDeleting}
+													>
+														{isDeleting ? (
+															<LoaderIcon className="size-4 animate-spin" />
+														) : (
+															<Trash2Icon className="size-4" />
+														)}
+														{t("preview.deleteSession")}
+													</Button>
+												</AlertDialogTrigger>
+												<AlertDialogContent>
+													<AlertDialogHeader>
+														<AlertDialogTitle>
+															{t("preview.deleteTitle")}
+														</AlertDialogTitle>
+														<AlertDialogDescription>
+															{t("preview.deleteDescription", {
+																title: session.title,
+																date: format(session.start, "EEEE, MMM d"),
+																time: format(session.start, "HH:mm"),
+															})}
+														</AlertDialogDescription>
+													</AlertDialogHeader>
+													<AlertDialogFooter>
+														<AlertDialogCancel>
+															{t("preview.deleteCancel")}
+														</AlertDialogCancel>
+														<AlertDialogAction
+															onClick={onDelete}
+															className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+														>
+															{isDeleting
+																? t("preview.deleting")
+																: t("preview.deleteConfirm")}
+														</AlertDialogAction>
+													</AlertDialogFooter>
+												</AlertDialogContent>
+											</AlertDialog>
+										)}
+									</>
 								)}
 							</div>
 						</div>

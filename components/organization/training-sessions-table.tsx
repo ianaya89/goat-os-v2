@@ -124,6 +124,7 @@ interface TrainingSession {
 	endTime: Date;
 	status: string;
 	isRecurring: boolean;
+	recurringSessionId: string | null;
 	rrule: string | null;
 	location: {
 		id: string;
@@ -446,6 +447,33 @@ export function TrainingSessionsTable({
 				toast.error(t("error.reminderFailed"));
 			},
 		});
+
+	const deleteSeriesMutation =
+		trpc.organization.trainingSession.deleteRecurringSeries.useMutation({
+			onSuccess: (data) => {
+				toast.success(t("series.seriesDeleted", { count: data.count }));
+				invalidateSessionsQuery();
+			},
+			onError: (error) => {
+				toast.error(error.message || t("error.deleteFailed"));
+			},
+		});
+
+	const deleteFutureMutation =
+		trpc.organization.trainingSession.deleteFutureOccurrences.useMutation({
+			onSuccess: (data) => {
+				toast.success(t("series.futureDeleted", { count: data.count }));
+				invalidateSessionsQuery();
+			},
+			onError: (error) => {
+				toast.error(error.message || t("error.deleteFailed"));
+			},
+		});
+
+	const getSeriesTemplateId = (session: TrainingSession): string | null => {
+		if (session.isRecurring) return session.id;
+		return session.recurringSessionId ?? null;
+	};
 
 	const handleSendConfirmation = (
 		session: TrainingSession,
@@ -807,6 +835,60 @@ export function TrainingSessionsTable({
 										<Trash2Icon className="mr-2 size-4" />
 										{t("delete")}
 									</DropdownMenuItem>
+									{/* Series operations for recurring sessions */}
+									{(row.original.isRecurring ||
+										row.original.recurringSessionId) && (
+										<>
+											<DropdownMenuSeparator />
+											<DropdownMenuItem
+												onClick={() => {
+													const templateId = getSeriesTemplateId(row.original);
+													if (!templateId) return;
+													NiceModal.show(ConfirmationModal, {
+														title: t("series.deleteSeriesTitle"),
+														message: t("series.deleteSeriesMessage", {
+															title: row.original.title,
+														}),
+														confirmLabel: t("series.deleteSeries"),
+														destructive: true,
+														onConfirm: () =>
+															deleteSeriesMutation.mutate({
+																recurringSessionId: templateId,
+															}),
+													});
+												}}
+												variant="destructive"
+												disabled={deleteSeriesMutation.isPending}
+											>
+												<RepeatIcon className="mr-2 size-4" />
+												{t("series.deleteSeries")}
+											</DropdownMenuItem>
+											<DropdownMenuItem
+												onClick={() => {
+													const templateId = getSeriesTemplateId(row.original);
+													if (!templateId) return;
+													NiceModal.show(ConfirmationModal, {
+														title: t("series.deleteFutureTitle"),
+														message: t("series.deleteFutureMessage", {
+															title: row.original.title,
+														}),
+														confirmLabel: t("series.deleteFuture"),
+														destructive: true,
+														onConfirm: () =>
+															deleteFutureMutation.mutate({
+																recurringSessionId: templateId,
+																afterDate: row.original.startTime,
+															}),
+													});
+												}}
+												variant="destructive"
+												disabled={deleteFutureMutation.isPending}
+											>
+												<RepeatIcon className="mr-2 size-4" />
+												{t("series.deleteFuture")}
+											</DropdownMenuItem>
+										</>
+									)}
 								</>
 							)}
 						</DropdownMenuContent>

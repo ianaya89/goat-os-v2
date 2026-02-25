@@ -166,6 +166,7 @@ export const TrainingSessionsModal =
 			const [recurrenceConfig, setRecurrenceConfig] =
 				React.useState<RecurrenceConfig>({
 					frequency: "weekly",
+					count: 10,
 				});
 
 			// Preview state for recurring sessions
@@ -1123,6 +1124,13 @@ export const TrainingSessionsModal =
 									onIsRecurringChange={setIsRecurring}
 									recurrenceConfig={recurrenceConfig}
 									onRecurrenceConfigChange={setRecurrenceConfig}
+									startTime={
+										form.getValues("startTime")
+											? new Date(
+													form.getValues("startTime") as string | number | Date,
+												)
+											: new Date()
+									}
 								/>
 							</TabsContent>
 

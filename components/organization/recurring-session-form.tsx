@@ -1,8 +1,10 @@
 "use client";
 
 import { addMonths, format } from "date-fns";
+import { CalendarDaysIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import * as React from "react";
+import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +17,8 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import {
+	createRRuleString,
+	getAllOccurrences,
 	getFrequencyLabel,
 	getShortDayLabel,
 	MAX_RECURRING_SESSIONS,
@@ -30,6 +34,7 @@ interface RecurringSessionFormProps {
 	onIsRecurringChange: (value: boolean) => void;
 	recurrenceConfig: RecurrenceConfig;
 	onRecurrenceConfigChange: (config: RecurrenceConfig) => void;
+	startTime: Date;
 }
 
 export function RecurringSessionForm({
@@ -37,15 +42,24 @@ export function RecurringSessionForm({
 	onIsRecurringChange,
 	recurrenceConfig,
 	onRecurrenceConfigChange,
+	startTime,
 }: RecurringSessionFormProps) {
 	const t = useTranslations("training.recurring");
-	const [endType, setEndType] = React.useState<"never" | "date" | "count">(
-		recurrenceConfig.endDate
-			? "date"
-			: recurrenceConfig.count
-				? "count"
-				: "never",
+	const [endType, setEndType] = React.useState<"date" | "count">(
+		recurrenceConfig.endDate ? "date" : "count",
 	);
+
+	// Compute dynamic occurrence count
+	const occurrenceCount = React.useMemo(() => {
+		if (!isRecurring) return 0;
+		try {
+			const rrule = createRRuleString(startTime, recurrenceConfig);
+			const occurrences = getAllOccurrences(rrule, MAX_RECURRING_SESSIONS);
+			return occurrences.length;
+		} catch {
+			return 0;
+		}
+	}, [isRecurring, startTime, recurrenceConfig]);
 
 	const handleFrequencyChange = (frequency: RecurrenceFrequency) => {
 		onRecurrenceConfigChange({
@@ -71,7 +85,7 @@ export function RecurringSessionForm({
 		});
 	};
 
-	const handleEndTypeChange = (type: "never" | "date" | "count") => {
+	const handleEndTypeChange = (type: "date" | "count") => {
 		setEndType(type);
 		onRecurrenceConfigChange({
 			...recurrenceConfig,
@@ -182,17 +196,6 @@ export function RecurringSessionForm({
 						<div className="space-y-2">
 							<div className="flex items-center gap-2">
 								<Checkbox
-									id="end-never"
-									checked={endType === "never"}
-									onCheckedChange={() => handleEndTypeChange("never")}
-								/>
-								<Label htmlFor="end-never" className="font-normal">
-									{t("never")}
-								</Label>
-							</div>
-
-							<div className="flex items-center gap-2">
-								<Checkbox
 									id="end-date"
 									checked={endType === "date"}
 									onCheckedChange={() => handleEndTypeChange("date")}
@@ -242,6 +245,16 @@ export function RecurringSessionForm({
 							</div>
 						</div>
 					</div>
+
+					{/* Dynamic occurrence count */}
+					{occurrenceCount > 0 && (
+						<div className="flex items-center gap-2 rounded-md bg-muted px-3 py-2">
+							<CalendarDaysIcon className="size-4 text-muted-foreground" />
+							<Badge variant="secondary">
+								{t("sessionsWillBeCreated", { count: occurrenceCount })}
+							</Badge>
+						</div>
+					)}
 				</div>
 			)}
 		</div>

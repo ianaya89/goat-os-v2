@@ -211,6 +211,29 @@ export const getSessionAttachmentDownloadUrlSchema = z.object({
 	sessionId: z.string().uuid(),
 });
 
+// Delete entire recurring series (template + all children)
+export const deleteRecurringSeriesSchema = z.object({
+	recurringSessionId: z.string().uuid(),
+});
+
+// Delete future occurrences of a recurring series
+export const deleteFutureOccurrencesSchema = z.object({
+	recurringSessionId: z.string().uuid(),
+	afterDate: z.coerce.date(),
+});
+
+// Update recurring series (propagate changes to children)
+export const updateRecurringSeriesSchema = z.object({
+	recurringSessionId: z.string().uuid(),
+	title: z.string().trim().min(1).max(200).optional(),
+	description: z.string().trim().max(5000).optional().nullable(),
+	locationId: z.string().uuid().optional().nullable(),
+	objectives: z.string().trim().max(5000).optional().nullable(),
+	planning: z.string().trim().max(10000).optional().nullable(),
+	status: z.nativeEnum(TrainingSessionStatus).optional(),
+	applyToFutureOnly: z.boolean().default(true),
+});
+
 // Type exports
 export type ListTrainingSessionsInput = z.infer<
 	typeof listTrainingSessionsSchema
@@ -257,4 +280,13 @@ export type DeleteSessionAttachmentInput = z.infer<
 >;
 export type GetSessionAttachmentDownloadUrlInput = z.infer<
 	typeof getSessionAttachmentDownloadUrlSchema
+>;
+export type DeleteRecurringSeriesInput = z.infer<
+	typeof deleteRecurringSeriesSchema
+>;
+export type DeleteFutureOccurrencesInput = z.infer<
+	typeof deleteFutureOccurrencesSchema
+>;
+export type UpdateRecurringSeriesInput = z.infer<
+	typeof updateRecurringSeriesSchema
 >;

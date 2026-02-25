@@ -176,6 +176,33 @@ export function TrainingSessionCalendar({
 		},
 	});
 
+	// Series mutations - only available in admin mode
+	const deleteSeriesMutation =
+		trpc.organization.trainingSession.deleteRecurringSeries.useMutation({
+			onSuccess: (data) => {
+				toast.success(t("series.seriesDeleted", { count: data.count }));
+				invalidateSessionsQuery();
+				setIsPreviewOpen(false);
+				setSelectedSession(null);
+			},
+			onError: (error) => {
+				toast.error(error.message || t("error.deleteFailed"));
+			},
+		});
+
+	const deleteFutureMutation =
+		trpc.organization.trainingSession.deleteFutureOccurrences.useMutation({
+			onSuccess: (data) => {
+				toast.success(t("series.futureDeleted", { count: data.count }));
+				invalidateSessionsQuery();
+				setIsPreviewOpen(false);
+				setSelectedSession(null);
+			},
+			onError: (error) => {
+				toast.error(error.message || t("error.deleteFailed"));
+			},
+		});
+
 	// Transform sessions to FullCalendar events with location-based colors
 	const events: EventInput[] = React.useMemo(() => {
 		if (!sessions) return [];
@@ -189,6 +216,7 @@ export function TrainingSessionCalendar({
 				endTime: Date;
 				status: string;
 				isRecurring?: boolean;
+				recurringSessionId?: string | null;
 				location?: { id: string; name: string; color?: string | null } | null;
 				athleteGroup?: {
 					id: string;
@@ -269,6 +297,7 @@ export function TrainingSessionCalendar({
 					coaches: coachesList,
 					primaryCoach,
 					isRecurring: s.isRecurring,
+					recurringSessionId: s.recurringSessionId,
 					textColor,
 				},
 			};
@@ -301,6 +330,7 @@ export function TrainingSessionCalendar({
 			athletes: props.athletes ?? [],
 			coaches: props.coaches ?? [],
 			isRecurring: props.isRecurring,
+			recurringSessionId: props.recurringSessionId,
 		};
 
 		setSelectedSession(sessionData);
@@ -332,6 +362,54 @@ export function TrainingSessionCalendar({
 			deleteMutation.mutate({ id: selectedSession.id });
 		}
 	}, [selectedSession, deleteMutation]);
+
+	// Helper to resolve the template ID for series operations
+	const getSeriesTemplateId = React.useCallback(
+		(session: SessionPreviewData): string | null => {
+			if (session.isRecurring) return session.id;
+			return session.recurringSessionId ?? null;
+		},
+		[],
+	);
+
+	// Handle delete series from preview
+	const handleDeleteSeries = React.useCallback(() => {
+		if (!selectedSession) return;
+		const templateId = getSeriesTemplateId(selectedSession);
+		if (templateId) {
+			deleteSeriesMutation.mutate({ recurringSessionId: templateId });
+		}
+	}, [selectedSession, getSeriesTemplateId, deleteSeriesMutation]);
+
+	// Handle delete future from preview
+	const handleDeleteFuture = React.useCallback(() => {
+		if (!selectedSession) return;
+		const templateId = getSeriesTemplateId(selectedSession);
+		if (templateId) {
+			deleteFutureMutation.mutate({
+				recurringSessionId: templateId,
+				afterDate: selectedSession.start,
+			});
+		}
+	}, [selectedSession, getSeriesTemplateId, deleteFutureMutation]);
+
+	// Handle edit series from preview
+	const handleEditSeries = React.useCallback(() => {
+		if (!selectedSession) return;
+		const templateId = getSeriesTemplateId(selectedSession);
+		if (templateId) {
+			setIsPreviewOpen(false);
+			// Find the template session to pass to modal
+			const templateSession = sessions?.find((s) => s.id === templateId);
+			if (templateSession) {
+				NiceModal.show(TrainingSessionsModal, {
+					session: templateSession as Parameters<
+						typeof TrainingSessionsModal
+					>[0]["session"],
+				});
+			}
+		}
+	}, [selectedSession, getSeriesTemplateId, sessions]);
 
 	// Handle date click - create new session (only in admin mode)
 	const handleDateClick = React.useCallback(
@@ -764,6 +842,14 @@ export function TrainingSessionCalendar({
 				}
 				onDelete={mode === "admin" ? handleDeleteFromPreview : undefined}
 				isDeleting={deleteMutation.isPending}
+				onDeleteSeries={mode === "admin" ? handleDeleteSeries : undefined}
+				onDeleteFuture={mode === "admin" ? handleDeleteFuture : undefined}
+				onEditSeries={
+					mode === "admin" || mode === "coach" ? handleEditSeries : undefined
+				}
+				isDeletingSeries={
+					deleteSeriesMutation.isPending || deleteFutureMutation.isPending
+				}
 			/>
 		</div>
 	);

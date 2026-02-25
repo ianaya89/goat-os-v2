@@ -5,6 +5,7 @@ import {
 	count,
 	desc,
 	eq,
+	gt,
 	gte,
 	ilike,
 	inArray,
@@ -48,6 +49,8 @@ import {
 	cancelRecurringOccurrenceSchema,
 	completeSessionSchema,
 	createTrainingSessionSchema,
+	deleteFutureOccurrencesSchema,
+	deleteRecurringSeriesSchema,
 	deleteSessionAttachmentSchema,
 	deleteTrainingSessionSchema,
 	getSessionAttachmentDownloadUrlSchema,
@@ -55,6 +58,7 @@ import {
 	listTrainingSessionsForCalendarSchema,
 	listTrainingSessionsSchema,
 	modifyRecurringOccurrenceSchema,
+	updateRecurringSeriesSchema,
 	updateSessionAthletesSchema,
 	updateSessionAttachmentSchema,
 	updateSessionCoachesSchema,
@@ -993,6 +997,160 @@ export const organizationTrainingSessionRouter = createTRPCRouter({
 			});
 
 			return replacementSession;
+		}),
+
+	// Delete entire recurring series (template + all children)
+	deleteRecurringSeries: protectedOrganizationProcedure
+		.input(deleteRecurringSeriesSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify template exists and belongs to organization
+			const template = await db.query.trainingSessionTable.findFirst({
+				where: and(
+					eq(trainingSessionTable.id, input.recurringSessionId),
+					eq(trainingSessionTable.organizationId, ctx.organization.id),
+					eq(trainingSessionTable.isRecurring, true),
+				),
+			});
+
+			if (!template) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Recurring session template not found",
+				});
+			}
+
+			// Count children for response
+			const [childCount] = await db
+				.select({ count: count() })
+				.from(trainingSessionTable)
+				.where(
+					eq(trainingSessionTable.recurringSessionId, input.recurringSessionId),
+				);
+
+			const totalCount = (childCount?.count ?? 0) + 1; // +1 for the template
+
+			// Transaction: delete children first, then template
+			await db.transaction(async (tx) => {
+				// Delete all children
+				await tx
+					.delete(trainingSessionTable)
+					.where(
+						eq(
+							trainingSessionTable.recurringSessionId,
+							input.recurringSessionId,
+						),
+					);
+
+				// Delete template (recurringSessionExceptionTable cascades)
+				await tx
+					.delete(trainingSessionTable)
+					.where(eq(trainingSessionTable.id, input.recurringSessionId));
+			});
+
+			return { success: true, count: totalCount };
+		}),
+
+	// Delete future occurrences of a recurring series
+	deleteFutureOccurrences: protectedOrganizationProcedure
+		.input(deleteFutureOccurrencesSchema)
+		.mutation(async ({ ctx, input }) => {
+			// Verify template exists and belongs to organization
+			const template = await db.query.trainingSessionTable.findFirst({
+				where: and(
+					eq(trainingSessionTable.id, input.recurringSessionId),
+					eq(trainingSessionTable.organizationId, ctx.organization.id),
+					eq(trainingSessionTable.isRecurring, true),
+				),
+			});
+
+			if (!template) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Recurring session template not found",
+				});
+			}
+
+			// Delete children with startTime > afterDate
+			const deleted = await db
+				.delete(trainingSessionTable)
+				.where(
+					and(
+						eq(
+							trainingSessionTable.recurringSessionId,
+							input.recurringSessionId,
+						),
+						gt(trainingSessionTable.startTime, input.afterDate),
+					),
+				)
+				.returning({ id: trainingSessionTable.id });
+
+			return { success: true, count: deleted.length };
+		}),
+
+	// Update recurring series (propagate changes to children)
+	updateRecurringSeries: protectedOrganizationProcedure
+		.input(updateRecurringSeriesSchema)
+		.mutation(async ({ ctx, input }) => {
+			const { recurringSessionId, applyToFutureOnly, ...fields } = input;
+
+			// Verify template exists and belongs to organization
+			const template = await db.query.trainingSessionTable.findFirst({
+				where: and(
+					eq(trainingSessionTable.id, recurringSessionId),
+					eq(trainingSessionTable.organizationId, ctx.organization.id),
+					eq(trainingSessionTable.isRecurring, true),
+				),
+			});
+
+			if (!template) {
+				throw new TRPCError({
+					code: "NOT_FOUND",
+					message: "Recurring session template not found",
+				});
+			}
+
+			// Build set object with only provided fields
+			const setData: Record<string, unknown> = {};
+			if (fields.title !== undefined) setData.title = fields.title;
+			if (fields.description !== undefined)
+				setData.description = fields.description;
+			if (fields.locationId !== undefined)
+				setData.locationId = fields.locationId;
+			if (fields.objectives !== undefined)
+				setData.objectives = fields.objectives;
+			if (fields.planning !== undefined) setData.planning = fields.planning;
+			if (fields.status !== undefined) setData.status = fields.status;
+
+			if (Object.keys(setData).length === 0) {
+				return { success: true, count: 0 };
+			}
+
+			const result = await db.transaction(async (tx) => {
+				// Always update the template
+				await tx
+					.update(trainingSessionTable)
+					.set(setData)
+					.where(eq(trainingSessionTable.id, recurringSessionId));
+
+				// Update children based on applyToFutureOnly flag
+				const childConditions = [
+					eq(trainingSessionTable.recurringSessionId, recurringSessionId),
+				];
+
+				if (applyToFutureOnly) {
+					childConditions.push(gt(trainingSessionTable.startTime, new Date()));
+				}
+
+				const updated = await tx
+					.update(trainingSessionTable)
+					.set(setData)
+					.where(and(...childConditions))
+					.returning({ id: trainingSessionTable.id });
+
+				return updated.length + 1; // +1 for template
+			});
+
+			return { success: true, count: result };
 		}),
 
 	// Get sessions for the current user as a coach

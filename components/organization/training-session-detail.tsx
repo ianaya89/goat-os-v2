@@ -25,6 +25,7 @@ import {
 	PhoneIcon,
 	PlusIcon,
 	RefreshCwIcon,
+	RepeatIcon,
 	TargetIcon,
 	Trash2Icon,
 	UserIcon,
@@ -159,6 +160,28 @@ export function TrainingSessionDetail({
 			},
 		});
 
+	const deleteSeriesMutation =
+		trpc.organization.trainingSession.deleteRecurringSeries.useMutation({
+			onSuccess: (data) => {
+				toast.success(t("series.seriesDeleted", { count: data.count }));
+				router.push("/dashboard/organization/training-sessions");
+			},
+			onError: (error) => {
+				toast.error(error.message || t("error.deleteFailed"));
+			},
+		});
+
+	const deleteFutureMutation =
+		trpc.organization.trainingSession.deleteFutureOccurrences.useMutation({
+			onSuccess: (data) => {
+				toast.success(t("series.futureDeleted", { count: data.count }));
+				router.push("/dashboard/organization/training-sessions");
+			},
+			onError: (error) => {
+				toast.error(error.message || t("error.deleteFailed"));
+			},
+		});
+
 	React.useEffect(() => {
 		if (session?.postSessionNotes) {
 			setPostNotes(session.postSessionNotes);
@@ -216,6 +239,41 @@ export function TrainingSessionDetail({
 					channel,
 				});
 			},
+		});
+	};
+
+	const handleDeleteSeries = () => {
+		if (!session) return;
+		const templateId = session.isRecurring
+			? session.id
+			: session.recurringSessionId;
+		if (!templateId) return;
+		NiceModal.show(ConfirmationModal, {
+			title: t("series.deleteSeriesTitle"),
+			message: t("series.deleteSeriesMessage", { title: session.title }),
+			confirmLabel: t("series.deleteSeries"),
+			destructive: true,
+			onConfirm: () =>
+				deleteSeriesMutation.mutate({ recurringSessionId: templateId }),
+		});
+	};
+
+	const handleDeleteFuture = () => {
+		if (!session) return;
+		const templateId = session.isRecurring
+			? session.id
+			: session.recurringSessionId;
+		if (!templateId) return;
+		NiceModal.show(ConfirmationModal, {
+			title: t("series.deleteFutureTitle"),
+			message: t("series.deleteFutureMessage", { title: session.title }),
+			confirmLabel: t("series.deleteFuture"),
+			destructive: true,
+			onConfirm: () =>
+				deleteFutureMutation.mutate({
+					recurringSessionId: templateId,
+					afterDate: session.startTime,
+				}),
 		});
 	};
 
@@ -416,6 +474,27 @@ export function TrainingSessionDetail({
 											<Trash2Icon className="mr-2 size-4" />
 											{t("delete")}
 										</DropdownMenuItem>
+										{/* Series operations for recurring sessions */}
+										{(session.isRecurring || session.recurringSessionId) && (
+											<>
+												<DropdownMenuItem
+													onClick={handleDeleteSeries}
+													variant="destructive"
+													disabled={deleteSeriesMutation.isPending}
+												>
+													<RepeatIcon className="mr-2 size-4" />
+													{t("series.deleteSeries")}
+												</DropdownMenuItem>
+												<DropdownMenuItem
+													onClick={handleDeleteFuture}
+													variant="destructive"
+													disabled={deleteFutureMutation.isPending}
+												>
+													<RepeatIcon className="mr-2 size-4" />
+													{t("series.deleteFuture")}
+												</DropdownMenuItem>
+											</>
+										)}
 									</>
 								)}
 							</DropdownMenuContent>

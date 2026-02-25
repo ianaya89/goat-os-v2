@@ -162,10 +162,10 @@
 		"selected": "Seleccionados: {days}",
 		"selectAtLeastOneDay": "Seleccioná al menos un día",
 		"ends": "Finaliza",
-		"never": "Nunca",
 		"onDate": "En fecha",
 		"after": "Después de",
 		"occurrences": "ocurrencias",
+		"sessionsWillBeCreated": "{count, plural, one {Se creará # sesión} other {Se crearán # sesiones}}",
 		"preview": {
 			"title": "Revisar Sesiones Recurrentes",
 			"subtitle": "Revisá las sesiones que se van a crear antes de confirmar.",
@@ -341,6 +341,24 @@
 		"sendConfirmation": "Enviar Confirmación",
 		"confirmationsSent": "Confirmaciones enviadas: {sent} de {total}",
 		"confirmationsFailed": "Error al enviar confirmaciones"
+	},
+	"series": {
+		"deleteThis": "Eliminar esta sesión",
+		"deleteSeries": "Eliminar toda la serie",
+		"deleteFuture": "Eliminar esta y futuras",
+		"editThis": "Editar esta sesión",
+		"editSeries": "Editar toda la serie",
+		"deleteSeriesTitle": "¿Eliminar toda la serie?",
+		"deleteSeriesMessage": "Se eliminarán todas las sesiones de la serie \"{title}\". Esta acción no se puede deshacer.",
+		"deleteFutureTitle": "¿Eliminar sesiones futuras?",
+		"deleteFutureMessage": "Se eliminarán las sesiones futuras de la serie \"{title}\".",
+		"editSeriesTitle": "Editar Serie Recurrente",
+		"editSeriesSubtitle": "Los cambios se aplicarán a las sesiones de la serie.",
+		"applyToAll": "Aplicar a toda la serie",
+		"applyToFutureOnly": "Aplicar solo a futuras",
+		"seriesUpdated": "{count, plural, one {# sesión actualizada} other {# sesiones actualizadas}} en la serie.",
+		"seriesDeleted": "{count, plural, one {# sesión eliminada} other {# sesiones eliminadas}} de la serie.",
+		"futureDeleted": "{count, plural, one {# sesión futura eliminada} other {# sesiones futuras eliminadas}}."
 	},
 	"bulk": {
 		"changeStatus": "Cambiar estado",
