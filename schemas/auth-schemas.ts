@@ -1,6 +1,11 @@
 import { z } from "zod/v4";
 import { passwordValidator } from "@/lib/auth/utils";
-import { AthleteLevel } from "@/lib/db/schema/enums";
+import {
+	AthleteCategory,
+	AthleteLevel,
+	AthletePosition,
+	AthleteSport,
+} from "@/lib/db/schema/enums";
 
 // Validation messages in Spanish
 const v = {
@@ -114,17 +119,13 @@ export const athleteSignUpSchema = z
 			.max(20, v.maxLength)
 			.regex(/^[+]?[\d\s()-]+$/, v.phoneInvalid),
 		// Athlete required data
-		sport: z.string().trim().min(1, v.sportRequired).max(100, v.maxLength),
+		sport: z.nativeEnum(AthleteSport),
 		birthDate: z.coerce.date(),
 		level: z.nativeEnum(AthleteLevel),
 		// Category (required) - Club is assigned after joining an organization
-		category: z.string().trim().min(1, v.categoryRequired).max(50, v.maxLength),
+		category: z.nativeEnum(AthleteCategory),
 		// Profile information (required)
-		position: z
-			.string()
-			.trim()
-			.min(1, v.positionRequired)
-			.max(100, v.maxLength),
+		position: z.nativeEnum(AthletePosition),
 		// Optional fields
 		jerseyNumber: z.number().int().min(0).max(999).optional(),
 		yearsOfExperience: z.number().int().min(0).max(50).optional(),

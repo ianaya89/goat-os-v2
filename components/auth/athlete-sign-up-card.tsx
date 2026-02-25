@@ -58,7 +58,15 @@ import {
 import { useTurnstile } from "@/hooks/use-turnstile";
 import { useZodForm } from "@/hooks/use-zod-form";
 import { CAPTCHA_RESPONSE_HEADER } from "@/lib/auth/constants";
-import { AthleteLevel } from "@/lib/db/schema/enums";
+import {
+	AthleteCategories,
+	type AthleteCategory,
+	AthleteLevel,
+	type AthletePosition,
+	AthletePositions,
+	type AthleteSport,
+	AthleteSports,
+} from "@/lib/db/schema/enums";
 import { cn } from "@/lib/utils";
 import { athleteSignUpSchema, isMinor } from "@/schemas/auth-schemas";
 
@@ -95,6 +103,75 @@ const athleteLevelLabels: Record<string, string> = {
 	[AthleteLevel.intermediate]: "Intermedio",
 	[AthleteLevel.advanced]: "Avanzado",
 	[AthleteLevel.elite]: "Elite",
+};
+
+const sportLabels: Record<AthleteSport, string> = {
+	soccer: "Fútbol",
+	basketball: "Basketball",
+	volleyball: "Vóley",
+	tennis: "Tenis",
+	swimming: "Natación",
+	athletics: "Atletismo",
+	rugby: "Rugby",
+	hockey: "Hockey",
+	baseball: "Béisbol",
+	handball: "Handball",
+	padel: "Pádel",
+	golf: "Golf",
+	boxing: "Boxeo",
+	martial_arts: "Artes Marciales",
+	gymnastics: "Gimnasia",
+	cycling: "Ciclismo",
+	running: "Running",
+	fitness: "Fitness",
+	crossfit: "CrossFit",
+	other: "Otro",
+};
+
+const categoryLabels: Record<AthleteCategory, string> = {
+	decima: "Décima",
+	novena: "Novena",
+	octava: "Octava",
+	septima: "Séptima",
+	sexta: "Sexta",
+	quinta: "Quinta",
+	cuarta: "Cuarta",
+	tercera: "Tercera",
+	segunda: "Segunda",
+	primera: "Primera",
+	other: "Otra",
+};
+
+const positionLabels: Record<AthletePosition, string> = {
+	// Soccer / Hockey
+	goalkeeper: "Arquero/a",
+	defender: "Defensor/a Central",
+	fullback: "Lateral",
+	midfielder: "Mediocampista",
+	defensive_midfielder: "Volante",
+	playmaker: "Enganche",
+	winger: "Extremo/a",
+	forward: "Delantero/a",
+	// Basketball
+	point_guard: "Base",
+	shooting_guard: "Escolta",
+	small_forward: "Alero",
+	power_forward: "Ala-Pívot",
+	center: "Pívot",
+	// Rugby
+	prop: "Pilar",
+	hooker: "Hooker",
+	lock: "Segunda Línea",
+	flanker: "Ala",
+	number_eight: "Octavo",
+	scrum_half: "Medio Scrum",
+	fly_half: "Apertura",
+	inside_center: "Centro Interior",
+	outside_center: "Centro Exterior",
+	wing: "Wing",
+	fullback_rugby: "Fullback",
+	// Other
+	other: "Otra",
 };
 
 const STEPS = [
@@ -139,10 +216,10 @@ export function AthleteSignUpCard({
 			email: "",
 			password: "",
 			phone: "",
-			sport: "",
+			sport: undefined,
 			level: AthleteLevel.beginner,
-			category: "",
-			position: "",
+			category: undefined,
+			position: undefined,
 			// Parent/guardian fields
 			parentName: "",
 			parentPhone: "",
@@ -583,16 +660,24 @@ export function AthleteSignUpCard({
 													<FormItem asChild>
 														<Field>
 															<FormLabel>Deporte</FormLabel>
-															<FormControl>
-																<Input
-																	disabled={isSubmitting}
-																	maxLength={100}
-																	type="text"
-																	placeholder="Fútbol, Basketball, etc."
-																	className="transition-all duration-200 focus:shadow-md"
-																	{...field}
-																/>
-															</FormControl>
+															<Select
+																disabled={isSubmitting}
+																value={field.value}
+																onValueChange={field.onChange}
+															>
+																<FormControl>
+																	<SelectTrigger className="transition-all duration-200 focus:shadow-md">
+																		<SelectValue placeholder="Seleccionar deporte" />
+																	</SelectTrigger>
+																</FormControl>
+																<SelectContent>
+																	{AthleteSports.map((sport) => (
+																		<SelectItem key={sport} value={sport}>
+																			{sportLabels[sport]}
+																		</SelectItem>
+																	))}
+																</SelectContent>
+															</Select>
 															<FormMessage />
 														</Field>
 													</FormItem>
@@ -612,16 +697,24 @@ export function AthleteSignUpCard({
 													<FormItem asChild>
 														<Field>
 															<FormLabel>Categoría</FormLabel>
-															<FormControl>
-																<Input
-																	disabled={isSubmitting}
-																	maxLength={50}
-																	type="text"
-																	placeholder="Sub-17, Primera, etc."
-																	className="transition-all duration-200 focus:shadow-md"
-																	{...field}
-																/>
-															</FormControl>
+															<Select
+																disabled={isSubmitting}
+																value={field.value}
+																onValueChange={field.onChange}
+															>
+																<FormControl>
+																	<SelectTrigger className="transition-all duration-200 focus:shadow-md">
+																		<SelectValue placeholder="Seleccionar categoría" />
+																	</SelectTrigger>
+																</FormControl>
+																<SelectContent>
+																	{AthleteCategories.map((cat) => (
+																		<SelectItem key={cat} value={cat}>
+																			{categoryLabels[cat]}
+																		</SelectItem>
+																	))}
+																</SelectContent>
+															</Select>
 															<FormMessage />
 														</Field>
 													</FormItem>
@@ -763,16 +856,24 @@ export function AthleteSignUpCard({
 													<FormItem asChild>
 														<Field>
 															<FormLabel>Posición</FormLabel>
-															<FormControl>
-																<Input
-																	disabled={isSubmitting}
-																	maxLength={100}
-																	type="text"
-																	placeholder="Delantero, Base, etc."
-																	className="transition-all duration-200 focus:shadow-md"
-																	{...field}
-																/>
-															</FormControl>
+															<Select
+																disabled={isSubmitting}
+																value={field.value}
+																onValueChange={field.onChange}
+															>
+																<FormControl>
+																	<SelectTrigger className="transition-all duration-200 focus:shadow-md">
+																		<SelectValue placeholder="Seleccionar posición" />
+																	</SelectTrigger>
+																</FormControl>
+																<SelectContent>
+																	{AthletePositions.map((pos) => (
+																		<SelectItem key={pos} value={pos}>
+																			{positionLabels[pos]}
+																		</SelectItem>
+																	))}
+																</SelectContent>
+															</Select>
 															<FormMessage />
 														</Field>
 													</FormItem>

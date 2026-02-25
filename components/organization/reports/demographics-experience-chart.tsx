@@ -7,6 +7,7 @@ import {
 	Bar,
 	BarChart,
 	CartesianGrid,
+	Cell,
 	ResponsiveContainer,
 	Tooltip,
 	XAxis,
@@ -21,6 +22,14 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/trpc/client";
+
+const BAR_COLORS = [
+	"hsl(var(--chart-1))",
+	"hsl(var(--chart-2))",
+	"hsl(var(--chart-3))",
+	"hsl(var(--chart-4))",
+	"hsl(var(--chart-5))",
+];
 
 const EXP_ORDER = ["0-1", "2-3", "4-5", "6-10", "10+", "N/A"];
 
@@ -101,11 +110,14 @@ export function DemographicsExperienceChart(): React.JSX.Element {
 										return null;
 									}}
 								/>
-								<Bar
-									dataKey="count"
-									fill="hsl(var(--chart-2))"
-									radius={[4, 4, 0, 0]}
-								/>
+								<Bar dataKey="count" radius={[4, 4, 0, 0]}>
+									{chartData.map((_, index) => (
+										<Cell
+											key={`cell-${index}`}
+											fill={BAR_COLORS[index % BAR_COLORS.length]}
+										/>
+									))}
+								</Bar>
 							</BarChart>
 						</ResponsiveContainer>
 					</div>

@@ -207,6 +207,60 @@ export const AthleteSport = {
 export type AthleteSport = (typeof AthleteSport)[keyof typeof AthleteSport];
 export const AthleteSports = Object.values(AthleteSport);
 
+// Athlete category enum (competitive divisions)
+export const AthleteCategory = {
+	decima: "decima",
+	novena: "novena",
+	octava: "octava",
+	septima: "septima",
+	sexta: "sexta",
+	quinta: "quinta",
+	cuarta: "cuarta",
+	tercera: "tercera",
+	segunda: "segunda",
+	primera: "primera",
+	other: "other",
+} as const;
+export type AthleteCategory =
+	(typeof AthleteCategory)[keyof typeof AthleteCategory];
+export const AthleteCategories = Object.values(AthleteCategory);
+
+// Athlete position enum (multi-sport positions)
+export const AthletePosition = {
+	// Soccer / Field Hockey
+	goalkeeper: "goalkeeper",
+	defender: "defender",
+	fullback: "fullback",
+	midfielder: "midfielder",
+	defensiveMidfielder: "defensive_midfielder",
+	playmaker: "playmaker",
+	winger: "winger",
+	forward: "forward",
+	// Basketball
+	pointGuard: "point_guard",
+	shootingGuard: "shooting_guard",
+	smallForward: "small_forward",
+	powerForward: "power_forward",
+	center: "center",
+	// Rugby
+	prop: "prop",
+	hooker: "hooker",
+	lock: "lock",
+	flanker: "flanker",
+	numberEight: "number_eight",
+	scrumHalf: "scrum_half",
+	flyHalf: "fly_half",
+	insideCenter: "inside_center",
+	outsideCenter: "outside_center",
+	wing: "wing",
+	fullbackRugby: "fullback_rugby",
+	// Other
+	other: "other",
+} as const;
+export type AthletePosition =
+	(typeof AthletePosition)[keyof typeof AthletePosition];
+export const AthletePositions = Object.values(AthletePosition);
+
 // Dominant side enum (for foot/hand preference)
 export const DominantSide = {
 	right: "right",

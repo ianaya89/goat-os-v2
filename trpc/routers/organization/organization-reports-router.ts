@@ -1447,14 +1447,21 @@ export const organizationReportsRouter = createTRPCRouter({
 				avgAgeResult,
 				withClubCount,
 			] = await Promise.all([
-				// 1. Age distribution by ranges
+				// 1. Age distribution by 2-year ranges
 				db
 					.select({
 						range: sql<string>`CASE
-							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 0 AND 12 THEN '0-12'
-							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 13 AND 17 THEN '13-17'
-							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 18 AND 25 THEN '18-25'
-							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 26 AND 35 THEN '26-35'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 5 AND 6 THEN '5-6'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 7 AND 8 THEN '7-8'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 9 AND 10 THEN '9-10'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 11 AND 12 THEN '11-12'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 13 AND 14 THEN '13-14'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 15 AND 16 THEN '15-16'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 17 AND 18 THEN '17-18'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 19 AND 20 THEN '19-20'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 21 AND 25 THEN '21-25'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 26 AND 30 THEN '26-30'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 31 AND 35 THEN '31-35'
 							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) > 35 THEN '36+'
 							ELSE 'N/A'
 						END`,
@@ -1464,10 +1471,17 @@ export const organizationReportsRouter = createTRPCRouter({
 					.where(baseWhere)
 					.groupBy(
 						sql`CASE
-							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 0 AND 12 THEN '0-12'
-							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 13 AND 17 THEN '13-17'
-							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 18 AND 25 THEN '18-25'
-							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 26 AND 35 THEN '26-35'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 5 AND 6 THEN '5-6'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 7 AND 8 THEN '7-8'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 9 AND 10 THEN '9-10'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 11 AND 12 THEN '11-12'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 13 AND 14 THEN '13-14'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 15 AND 16 THEN '15-16'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 17 AND 18 THEN '17-18'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 19 AND 20 THEN '19-20'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 21 AND 25 THEN '21-25'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 26 AND 30 THEN '26-30'
+							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) BETWEEN 31 AND 35 THEN '31-35'
 							WHEN DATE_PART('year', AGE(${athleteTable.birthDate})) > 35 THEN '36+'
 							ELSE 'N/A'
 						END`,

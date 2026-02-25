@@ -7,6 +7,7 @@ import {
 	Bar,
 	BarChart,
 	CartesianGrid,
+	Cell,
 	ResponsiveContainer,
 	Tooltip,
 	XAxis,
@@ -22,7 +23,29 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/trpc/client";
 
-const AGE_ORDER = ["0-12", "13-17", "18-25", "26-35", "36+", "N/A"];
+const BAR_COLORS = [
+	"hsl(var(--chart-1))",
+	"hsl(var(--chart-2))",
+	"hsl(var(--chart-3))",
+	"hsl(var(--chart-4))",
+	"hsl(var(--chart-5))",
+];
+
+const AGE_ORDER = [
+	"5-6",
+	"7-8",
+	"9-10",
+	"11-12",
+	"13-14",
+	"15-16",
+	"17-18",
+	"19-20",
+	"21-25",
+	"26-30",
+	"31-35",
+	"36+",
+	"N/A",
+];
 
 export function DemographicsAgeChart(): React.JSX.Element {
 	const t = useTranslations("organization.pages.reports.demographics");
@@ -104,11 +127,14 @@ export function DemographicsAgeChart(): React.JSX.Element {
 										return null;
 									}}
 								/>
-								<Bar
-									dataKey="count"
-									fill="hsl(var(--chart-1))"
-									radius={[0, 4, 4, 0]}
-								/>
+								<Bar dataKey="count" radius={[0, 4, 4, 0]}>
+									{chartData.map((_, index) => (
+										<Cell
+											key={`cell-${index}`}
+											fill={BAR_COLORS[index % BAR_COLORS.length]}
+										/>
+									))}
+								</Bar>
 							</BarChart>
 						</ResponsiveContainer>
 					</div>
