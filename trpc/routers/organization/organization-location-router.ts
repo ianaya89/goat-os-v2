@@ -116,6 +116,7 @@ export const organizationLocationRouter = createTRPCRouter({
 				name: true,
 				address: true,
 				city: true,
+				color: true,
 			},
 		});
 

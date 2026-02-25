@@ -540,10 +540,7 @@ export function TrainingSessionCalendar({
 									<div
 										className="size-2.5 rounded-full shrink-0"
 										style={{
-											backgroundColor: getLocationColor(
-												loc.id,
-												(loc as { color?: string | null }).color,
-											),
+											backgroundColor: getLocationColor(loc.id, loc.color),
 										}}
 									/>
 									{loc.name}
@@ -812,10 +809,7 @@ export function TrainingSessionCalendar({
 									<span
 										className="size-2 rounded-full"
 										style={{
-											backgroundColor: getLocationColor(
-												loc.id,
-												(loc as { color?: string | null }).color,
-											),
+											backgroundColor: getLocationColor(loc.id, loc.color),
 										}}
 									/>
 									<span>{loc.name}</span>
