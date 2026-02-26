@@ -15,6 +15,7 @@ import { useTranslations } from "next-intl";
 import * as React from "react";
 import { toast } from "sonner";
 import { ProfileImageUpload } from "@/components/organization/profile-image-upload";
+import { InstitutionSelector } from "@/components/shared/institution-selector";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -79,6 +80,7 @@ export type AthletesModalProps = NiceModalHocProps & {
 		status: string;
 		sex?: string | null;
 		phone?: string | null;
+		currentClubId?: string | null;
 		isPublicProfile?: boolean;
 		user?: {
 			id: string;
@@ -214,6 +216,7 @@ export const AthletesModal = NiceModal.create<AthletesModalProps>(
 						status: athlete.status as AthleteStatus,
 						sex: (athlete.sex as AthleteSex) ?? undefined,
 						phone: athlete.phone ?? "",
+						currentClubId: athlete.currentClubId ?? undefined,
 						isPublicProfile: athlete.isPublicProfile ?? false,
 					}
 				: {
@@ -754,6 +757,26 @@ export const AthletesModal = NiceModal.create<AthletesModalProps>(
 															))}
 														</SelectContent>
 													</Select>
+													<FormMessage />
+												</Field>
+											</FormItem>
+										)}
+									/>
+
+									<FormField
+										control={form.control}
+										name="currentClubId"
+										render={({ field }) => (
+											<FormItem asChild>
+												<Field>
+													<FormLabel>{t("form.currentClub")}</FormLabel>
+													<FormControl>
+														<InstitutionSelector
+															type="club"
+															value={field.value ?? null}
+															onChange={(val) => field.onChange(val)}
+														/>
+													</FormControl>
 													<FormMessage />
 												</Field>
 											</FormItem>

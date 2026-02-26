@@ -94,6 +94,8 @@ export const createAthleteSchema = z.object({
 	// Residence information
 	residenceCity: z.string().trim().max(100).optional(),
 	residenceCountry: z.string().trim().max(100).optional(),
+	// Club
+	currentClubId: z.string().uuid().optional().nullable(),
 });
 
 // Update athlete
@@ -153,6 +155,8 @@ export const updateAthleteSchema = z.object({
 	// Residence information
 	residenceCity: z.string().trim().max(100).optional().nullable(),
 	residenceCountry: z.string().trim().max(100).optional().nullable(),
+	// Club
+	currentClubId: z.string().uuid().optional().nullable(),
 	// Public profile settings
 	isPublicProfile: z.boolean().optional(),
 });
