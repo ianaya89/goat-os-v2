@@ -75,12 +75,12 @@ export function DemographicsGrowthChart(): React.JSX.Element {
 									>
 										<stop
 											offset="5%"
-											stopColor="hsl(var(--chart-1))"
+											stopColor="var(--chart-1)"
 											stopOpacity={0.3}
 										/>
 										<stop
 											offset="95%"
-											stopColor="hsl(var(--chart-1))"
+											stopColor="var(--chart-1)"
 											stopOpacity={0}
 										/>
 									</linearGradient>
@@ -124,7 +124,7 @@ export function DemographicsGrowthChart(): React.JSX.Element {
 								<Area
 									type="monotone"
 									dataKey="cumulative"
-									stroke="hsl(var(--chart-1))"
+									stroke="var(--chart-1)"
 									fill="url(#growthGradient)"
 									strokeWidth={2}
 								/>

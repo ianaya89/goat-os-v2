@@ -16,11 +16,11 @@ import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/client";
 
 const COLORS = [
-	{ fill: "hsl(var(--chart-1))", bg: "bg-chart-1" },
-	{ fill: "hsl(var(--chart-2))", bg: "bg-chart-2" },
-	{ fill: "hsl(var(--chart-3))", bg: "bg-chart-3" },
-	{ fill: "hsl(var(--chart-4))", bg: "bg-chart-4" },
-	{ fill: "hsl(var(--chart-5))", bg: "bg-chart-5" },
+	{ fill: "var(--chart-1)", bg: "bg-chart-1" },
+	{ fill: "var(--chart-2)", bg: "bg-chart-2" },
+	{ fill: "var(--chart-3)", bg: "bg-chart-3" },
+	{ fill: "var(--chart-4)", bg: "bg-chart-4" },
+	{ fill: "var(--chart-5)", bg: "bg-chart-5" },
 ];
 
 export function DemographicsSportChart(): React.JSX.Element {

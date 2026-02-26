@@ -82,7 +82,12 @@
 			"Bash(docker-compose ps:*)",
 			"Bash(dotenv -e ./.env -- node:*)",
 			"Bash(gsed -i:*)",
-			"Bash(wc:*)"
+			"Bash(wc:*)",
+			"Bash(for f in components/organization/reports/demographics-*.tsx)",
+			"Bash(do sed -i '' 's/hsl\\(var\\(--chart-/var\\(--chart-/g; s/\\)\\)\"\"/\\)\"\"/' \"$f\")",
+			"Bash(done)",
+			"Bash(do sed -i '' 's|hsl\\(var\\(--chart-\\\\\\([0-9]\\\\\\)\\)\\)|var\\(--chart-\\\\1\\)|g' \"$f\")",
+			"Bash(do gsed -i 's/hsl\\(var\\(--chart-\\\\\\([0-9]\\\\\\)\\)\\)/var\\(--chart-\\\\1\\)/g' \"$f\")"
 		]
 	}
 }

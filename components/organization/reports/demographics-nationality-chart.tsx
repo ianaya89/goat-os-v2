@@ -24,11 +24,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/trpc/client";
 
 const BAR_COLORS = [
-	"hsl(var(--chart-1))",
-	"hsl(var(--chart-2))",
-	"hsl(var(--chart-3))",
-	"hsl(var(--chart-4))",
-	"hsl(var(--chart-5))",
+	"var(--chart-1)",
+	"var(--chart-2)",
+	"var(--chart-3)",
+	"var(--chart-4)",
+	"var(--chart-5)",
 ];
 
 export function DemographicsNationalityChart(): React.JSX.Element {
