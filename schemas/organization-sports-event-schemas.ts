@@ -626,6 +626,14 @@ export const publicEventRegistrationSchema = z.object({
 	parentEmail: z.string().trim().email().max(255).optional(),
 	parentRelationship: z.string().trim().max(100).optional(),
 
+	// Athlete profile fields
+	dni: z.string().trim().max(20).optional(),
+	position: z.string().trim().max(100).optional(),
+	currentClub: z.string().trim().max(200).optional(),
+	division: z.string().trim().max(100).optional(),
+	shirtSize: z.string().trim().max(10).optional(),
+	dietaryRestrictions: z.string().trim().max(500).optional(),
+
 	// Age category
 	ageCategoryId: z.string().uuid().optional(),
 

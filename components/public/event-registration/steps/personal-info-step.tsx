@@ -25,6 +25,7 @@ import {
 interface PersonalInfoStepProps {
 	defaultValues: {
 		fullName: string;
+		dni?: string;
 		birthDate?: Date;
 		phone: string;
 		nationality?: string;
@@ -89,6 +90,25 @@ export function PersonalInfoStep({
 											autoComplete="name"
 											{...field}
 										/>
+									</FormControl>
+									<FormMessage />
+								</Field>
+							</FormItem>
+						)}
+					/>
+
+					<FormField
+						control={form.control}
+						name="dni"
+						render={({ field }) => (
+							<FormItem asChild>
+								<Field>
+									<FieldLabel>
+										DNI{" "}
+										<span className="text-muted-foreground">(opcional)</span>
+									</FieldLabel>
+									<FormControl>
+										<Input placeholder="12345678" {...field} />
 									</FormControl>
 									<FormMessage />
 								</Field>

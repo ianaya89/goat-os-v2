@@ -1320,6 +1320,11 @@ export const athleteTable = pgTable(
 		}),
 		gpa: numeric("gpa", { precision: 4, scale: 2 }), // Grade point average (0-10 scale)
 
+		// Identification
+		dni: text("dni"), // National ID number (DNI)
+		shirtSize: text("shirt_size"), // T-shirt size (XS, S, M, L, XL, XXL, etc.)
+		currentClubName: text("current_club_name"), // Free-text club name (for public registration)
+
 		// Health & dietary information
 		dietaryRestrictions: text("dietary_restrictions"), // Vegetarian, vegan, gluten-free, etc.
 		allergies: text("allergies"), // Food and medical allergies

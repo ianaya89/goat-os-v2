@@ -1,7 +1,7 @@
 import * as p from "@clack/prompts";
 import { and, eq } from "drizzle-orm";
 import { getDb, schema } from "../db";
-import { seedRealLifeEventCampusFeb } from "./real-life-event-campus-feb";
+// import { seedRealLifeEventCampusFeb } from "./real-life-event-campus-feb";
 import {
 	METROPOLITANO_CLUBS,
 	METROPOLITANO_CLUBS_COUNT,
@@ -108,7 +108,15 @@ const AGE_CATEGORY_SUB16_ID = "20000000-0000-4000-8000-000000000113";
 const AGE_CATEGORY_SUB18_ID = "20000000-0000-4000-8000-000000000114";
 
 // Events
-const EVENT_CAMPUS_VERANO_FEB_ID = "20000000-0000-4000-8000-000000000121";
+// const EVENT_CAMPUS_VERANO_FEB_ID = "20000000-0000-4000-8000-000000000121";
+const EVENT_MGRC_SEMANA_SANTA_ID = "20000000-0000-4000-8000-000000000122";
+
+// Pricing tiers and discounts for MGRC Semana Santa
+const MGRC_PRICING_TIER_ID = "62000000-0000-4000-8000-000000000002";
+const MGRC_DISCOUNT_MEMBER_ID = "63000000-0000-4000-8000-000000000005";
+const MGRC_DISCOUNT_SIBLINGS_ID = "63000000-0000-4000-8000-000000000006";
+const MGRC_DISCOUNT_SIBLINGS_MEMBER_ID = "63000000-0000-4000-8000-000000000007";
+const MGRC_DISCOUNT_GROUP_ID = "63000000-0000-4000-8000-000000000008";
 
 // Services
 const SERVICE_HOCKEY_PERSONALIZADO_ID = "20000000-0000-4000-8000-000000000130";
@@ -340,22 +348,39 @@ interface RealLifeEvent {
 }
 
 const EVENTS: RealLifeEvent[] = [
+	// {
+	// 	id: EVENT_CAMPUS_VERANO_FEB_ID,
+	// 	title: "Campus de Verano Febrero 2026",
+	// 	slug: "campus-verano-febrero-2026",
+	// 	description:
+	// 		"Campus de verano de hockey GOAT Academy - Edición Febrero. Dos días intensivos de entrenamiento con los mejores coaches. Incluye preparación física, técnica individual, táctica grupal y partidos.",
+	// 	eventType: "campus",
+	// 	status: "completed",
+	// 	startDate: new Date(2026, 1, 16), // February 16, 2026
+	// 	endDate: new Date(2026, 1, 17), // February 17, 2026
+	// 	registrationOpenDate: new Date(2026, 0, 10), // January 10, 2026
+	// 	registrationCloseDate: new Date(2026, 1, 14), // February 14, 2026
+	// 	locationId: LOCATION_CAMPO_VERDE_ID,
+	// 	maxCapacity: 100,
+	// 	venueDetails:
+	// 		"Campo Verde - Canchas 1 y 2. Vestuarios disponibles. Cantina con servicio de almuerzo.",
+	// },
 	{
-		id: EVENT_CAMPUS_VERANO_FEB_ID,
-		title: "Campus de Verano Febrero 2026",
-		slug: "campus-verano-febrero-2026",
+		id: EVENT_MGRC_SEMANA_SANTA_ID,
+		title: "MGRC Semana Santa 2026",
+		slug: "mgrc-semana-santa-2026",
 		description:
-			"Campus de verano de hockey GOAT Academy - Edición Febrero. Dos días intensivos de entrenamiento con los mejores coaches. Incluye preparación física, técnica individual, táctica grupal y partidos.",
+			"MGRC Semana Santa 2026 - Dos días intensivos de entrenamiento de hockey (2 y 3 de abril, de 9 a 13hs). Incluye preparación física, técnica individual, táctica grupal y partidos.",
 		eventType: "campus",
-		status: "completed",
-		startDate: new Date(2026, 1, 16), // February 16, 2026
-		endDate: new Date(2026, 1, 17), // February 17, 2026
-		registrationOpenDate: new Date(2026, 0, 10), // January 10, 2026
-		registrationCloseDate: new Date(2026, 1, 14), // February 14, 2026
+		status: "registration_open",
+		startDate: new Date(2026, 3, 2), // April 2, 2026
+		endDate: new Date(2026, 3, 3), // April 3, 2026
+		registrationOpenDate: new Date(2026, 2, 1), // March 1, 2026
+		registrationCloseDate: new Date(2026, 2, 31), // March 31, 2026
 		locationId: LOCATION_CAMPO_VERDE_ID,
 		maxCapacity: 100,
 		venueDetails:
-			"Campo Verde - Canchas 1 y 2. Vestuarios disponibles. Cantina con servicio de almuerzo.",
+			"Campo Verde - Canchas 1 y 2. Horario: 9 a 13hs. Vestuarios disponibles.",
 	},
 ];
 
@@ -882,6 +907,88 @@ export async function runRealLifeSeed(): Promise<void> {
 			: "Events already exist",
 	);
 
+	// 8a. Create pricing tier and discounts for MGRC Semana Santa 2026
+	const mgrcSpinner = p.spinner();
+	mgrcSpinner.start(
+		"Setting up MGRC Semana Santa 2026 pricing and discounts...",
+	);
+
+	const existingMgrcTier = await db.query.eventPricingTierTable.findFirst({
+		where: eq(schema.eventPricingTierTable.id, MGRC_PRICING_TIER_ID),
+	});
+
+	if (!existingMgrcTier) {
+		await db
+			.insert(schema.eventPricingTierTable)
+			.values({
+				id: MGRC_PRICING_TIER_ID,
+				eventId: EVENT_MGRC_SEMANA_SANTA_ID,
+				name: "General",
+				description: "Precio general MGRC Semana Santa 2026",
+				tierType: "date_based",
+				price: 20000000, // $200,000 ARS in centavos
+				currency: "ARS",
+				validFrom: new Date(2026, 2, 1),
+				validUntil: new Date(2026, 2, 31),
+				isActive: true,
+				sortOrder: 1,
+			})
+			.onConflictDoNothing();
+	}
+
+	const mgrcDiscounts = [
+		{
+			id: MGRC_DISCOUNT_MEMBER_ID,
+			name: "Jugadoras GOAT (10%)",
+			description: "Descuento jugadoras GOAT (10%)",
+			discountValue: 10,
+		},
+		{
+			id: MGRC_DISCOUNT_SIBLINGS_ID,
+			name: "Hermanos (10%)",
+			description: "Descuento por hermanos (10%)",
+			discountValue: 10,
+		},
+		{
+			id: MGRC_DISCOUNT_SIBLINGS_MEMBER_ID,
+			name: "Hermanos + GOAT (15%)",
+			description: "Descuento por hermanos + jugadora GOAT (15%)",
+			discountValue: 15,
+		},
+		{
+			id: MGRC_DISCOUNT_GROUP_ID,
+			name: "Grupo grande (10%)",
+			description: "Descuento por grupo grande (10%)",
+			discountValue: 10,
+		},
+	];
+
+	for (const discount of mgrcDiscounts) {
+		const existing = await db.query.eventDiscountTable.findFirst({
+			where: eq(schema.eventDiscountTable.id, discount.id),
+		});
+
+		if (!existing) {
+			await db
+				.insert(schema.eventDiscountTable)
+				.values({
+					id: discount.id,
+					eventId: EVENT_MGRC_SEMANA_SANTA_ID,
+					organizationId,
+					name: discount.name,
+					description: discount.description,
+					discountMode: "automatic",
+					discountValueType: "percentage",
+					discountValue: discount.discountValue,
+					isActive: true,
+					priority: 1,
+				})
+				.onConflictDoNothing();
+		}
+	}
+
+	mgrcSpinner.stop("MGRC Semana Santa 2026 pricing and discounts configured");
+
 	// 8b. Create services (check by name + org to be resilient)
 	const serviceSpinner = p.spinner();
 	serviceSpinner.start("Setting up services...");
@@ -1097,7 +1204,7 @@ export async function runRealLifeSeed(): Promise<void> {
 	);
 
 	// 10. Create Campus de Verano Febrero 2026 registrations and payments
-	await seedRealLifeEventCampusFeb();
+	// await seedRealLifeEventCampusFeb();
 
 	// Summary
 	p.note(
@@ -1108,12 +1215,12 @@ Admin users: ${ADMIN_USER_G_EMAIL}, ${ADMIN_USER_S_EMAIL}, ${ADMIN_USER_C_EMAIL}
 Locations: Campo Verde, Campo Azul
 Groups: Pretemporada Hockey 2026, Sub 10 Hockey
 Age Categories: Sub 10, Sub 12, Sub 14, Sub 16, Sub 18
-Events: Campus Verano Febrero 2026 (85 registrations)
+Events: MGRC Semana Santa 2026 (2-3 abril, 9-13hs)
 Services: Hockey Personalizado, Pretemporada de Hockey, Físico 30m/60m, Academia
 Clubs: ${METROPOLITANO_CLUBS_COUNT} clubs (Torneo Metropolitano de Hockey)
 National Teams: ${NATIONAL_TEAMS_COUNT} seleccionados (nacionales y provinciales)
 Coaches: Pilar, Santi, Ignacio, Manuel, Sasha, Santiago, Tomas (password: ${COACH_PASSWORD})
-Campus Febrero: 85 registrations with event payments`,
+Campus Febrero: DISABLED`,
 		"Real-Life Seed Summary",
 	);
 }

@@ -183,6 +183,7 @@ export function EventRegistrationWizard({
 			// Pre-fill form with existing data
 			const preFillData: Partial<FullRegistrationWizardInput> = {
 				fullName: existingUser.name,
+				dni: existingAthlete.dni ?? undefined,
 				birthDate: existingAthlete.birthDate ?? undefined,
 				phone: existingAthlete.phone ?? undefined,
 				nationality: existingAthlete.nationality ?? undefined,
@@ -190,7 +191,13 @@ export function EventRegistrationWizard({
 				level: existingAthlete.level as FullRegistrationWizardInput["level"],
 				position: existingAthlete.position ?? undefined,
 				secondaryPosition: existingAthlete.secondaryPosition ?? undefined,
-				currentClub: existingAthlete.currentClub?.name ?? undefined,
+				currentClub:
+					existingAthlete.currentClub?.name ??
+					existingAthlete.currentClubName ??
+					undefined,
+				division: existingAthlete.category ?? undefined,
+				shirtSize: existingAthlete.shirtSize ?? undefined,
+				dietaryRestrictions: existingAthlete.dietaryRestrictions ?? undefined,
 				jerseyNumber: existingAthlete.jerseyNumber ?? undefined,
 				yearsOfExperience: existingAthlete.yearsOfExperience ?? undefined,
 			};
@@ -220,6 +227,13 @@ export function EventRegistrationWizard({
 			parentPhone: formData.parentPhone,
 			parentEmail: formData.parentEmail,
 			parentRelationship: formData.parentRelationship,
+			// Athlete profile fields
+			dni: formData.dni,
+			position: formData.position,
+			currentClub: formData.currentClub,
+			division: formData.division,
+			shirtSize: formData.shirtSize,
+			dietaryRestrictions: formData.dietaryRestrictions,
 			ageCategoryId: matchedAgeCategory?.id,
 			notes: formData.notes,
 			acceptTerms: true as const,
@@ -254,9 +268,11 @@ export function EventRegistrationWizard({
 					<PersonalInfoStep
 						defaultValues={{
 							fullName: formData.fullName ?? "",
+							dni: formData.dni,
 							birthDate: formData.birthDate,
 							phone: formData.phone ?? "",
 							nationality: formData.nationality,
+							dietaryRestrictions: formData.dietaryRestrictions,
 						}}
 						matchedAgeCategory={matchedAgeCategory}
 						onBirthDateChange={calculateAgeCategory}
@@ -276,6 +292,8 @@ export function EventRegistrationWizard({
 							position: formData.position ?? "",
 							secondaryPosition: formData.secondaryPosition,
 							currentClub: formData.currentClub,
+							division: formData.division,
+							shirtSize: formData.shirtSize,
 							jerseyNumber: formData.jerseyNumber,
 							yearsOfExperience: formData.yearsOfExperience,
 						}}

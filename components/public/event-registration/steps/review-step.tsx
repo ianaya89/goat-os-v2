@@ -137,6 +137,12 @@ export function ReviewStep({
 							<span className="text-muted-foreground">Teléfono</span>
 							<span className="font-medium">{formData.phone}</span>
 						</div>
+						{formData.dni && (
+							<div className="flex justify-between">
+								<span className="text-muted-foreground">DNI</span>
+								<span className="font-medium">{formData.dni}</span>
+							</div>
+						)}
 						{formData.birthDate && (
 							<div className="flex justify-between">
 								<span className="text-muted-foreground">
@@ -180,6 +186,28 @@ export function ReviewStep({
 							<div className="flex justify-between">
 								<span className="text-muted-foreground">Club</span>
 								<span className="font-medium">{formData.currentClub}</span>
+							</div>
+						)}
+						{formData.division && (
+							<div className="flex justify-between">
+								<span className="text-muted-foreground">División</span>
+								<span className="font-medium">{formData.division}</span>
+							</div>
+						)}
+						{formData.shirtSize && (
+							<div className="flex justify-between">
+								<span className="text-muted-foreground">Talle de remera</span>
+								<span className="font-medium">{formData.shirtSize}</span>
+							</div>
+						)}
+						{formData.dietaryRestrictions && (
+							<div className="flex justify-between">
+								<span className="text-muted-foreground">
+									Restricciones alimentarias
+								</span>
+								<span className="font-medium">
+									{formData.dietaryRestrictions}
+								</span>
 							</div>
 						)}
 					</div>

@@ -162,6 +162,13 @@
       "when": 1772053064877,
       "tag": "20260225205744_steep_phalanx",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1772827513853,
+      "tag": "20260306200513_friendly_shaman",
+      "breakpoints": true
     }
   ]
 }

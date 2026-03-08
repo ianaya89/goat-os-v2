@@ -40,6 +40,7 @@ export const personalInfoStepSchema = z.object({
 		.trim()
 		.min(2, "El nombre debe tener al menos 2 caracteres")
 		.max(200, "El nombre es muy largo"),
+	dni: z.string().trim().max(20, "El DNI es muy largo").optional(),
 	birthDate: z.coerce.date("La fecha de nacimiento es requerida"),
 	phone: z
 		.string()
@@ -103,6 +104,8 @@ export const athleteProfileStepSchema = z.object({
 		.trim()
 		.max(200, "El nombre del club es muy largo")
 		.optional(),
+	division: z.string().trim().max(100, "La división es muy larga").optional(),
+	shirtSize: z.string().trim().max(10, "El talle es muy largo").optional(),
 	jerseyNumber: z
 		.number()
 		.int("El número debe ser entero")
@@ -275,8 +278,13 @@ export interface ExistingAthleteData {
 	phone: string | null;
 	nationality: string | null;
 	currentClub: { id: string; name: string } | null;
+	currentClubName: string | null;
 	jerseyNumber: number | null;
 	yearsOfExperience: number | null;
+	dni: string | null;
+	shirtSize: string | null;
+	category: string | null;
+	dietaryRestrictions: string | null;
 }
 
 export interface ExistingUserData {

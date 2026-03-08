@@ -505,6 +505,11 @@ export const publicEventRouter = createTRPCRouter({
 					nationality: true,
 					jerseyNumber: true,
 					yearsOfExperience: true,
+					dni: true,
+					shirtSize: true,
+					currentClubName: true,
+					category: true,
+					dietaryRestrictions: true,
 				},
 				with: {
 					currentClub: true,
@@ -530,8 +535,13 @@ export const publicEventRouter = createTRPCRouter({
 							phone: existingAthlete.phone,
 							nationality: existingAthlete.nationality,
 							currentClub: existingAthlete.currentClub,
+							currentClubName: existingAthlete.currentClubName,
 							jerseyNumber: existingAthlete.jerseyNumber,
 							yearsOfExperience: existingAthlete.yearsOfExperience,
+							dni: existingAthlete.dni,
+							shirtSize: existingAthlete.shirtSize,
+							category: existingAthlete.category,
+							dietaryRestrictions: existingAthlete.dietaryRestrictions,
 						}
 					: null,
 			};
@@ -675,6 +685,26 @@ export const publicEventRouter = createTRPCRouter({
 
 					if (existingAthlete) {
 						athleteId = existingAthlete.id;
+
+						// Update athlete with new fields if provided
+						const athleteUpdates: Record<string, unknown> = {};
+						if (input.dni) athleteUpdates.dni = input.dni;
+						if (input.position) athleteUpdates.position = input.position;
+						if (input.currentClub)
+							athleteUpdates.currentClubName = input.currentClub;
+						if (input.division) athleteUpdates.category = input.division;
+						if (input.shirtSize) athleteUpdates.shirtSize = input.shirtSize;
+						if (input.dietaryRestrictions)
+							athleteUpdates.dietaryRestrictions = input.dietaryRestrictions;
+						if (input.registrantBirthDate)
+							athleteUpdates.birthDate = input.registrantBirthDate;
+
+						if (Object.keys(athleteUpdates).length > 0) {
+							await tx
+								.update(athleteTable)
+								.set(athleteUpdates)
+								.where(eq(athleteTable.id, existingAthlete.id));
+						}
 					} else {
 						// Create athlete for this organization
 						const [newAthlete] = await tx
@@ -684,6 +714,12 @@ export const publicEventRouter = createTRPCRouter({
 								userId,
 								sport: "general",
 								birthDate: input.registrantBirthDate,
+								dni: input.dni,
+								position: input.position,
+								currentClubName: input.currentClub,
+								category: input.division,
+								shirtSize: input.shirtSize,
+								dietaryRestrictions: input.dietaryRestrictions,
 							})
 							.returning();
 						if (!newAthlete) {
@@ -731,6 +767,12 @@ export const publicEventRouter = createTRPCRouter({
 							userId,
 							sport: "general",
 							birthDate: input.registrantBirthDate,
+							dni: input.dni,
+							position: input.position,
+							currentClubName: input.currentClub,
+							category: input.division,
+							shirtSize: input.shirtSize,
+							dietaryRestrictions: input.dietaryRestrictions,
 						})
 						.returning();
 					if (!newAthlete) {

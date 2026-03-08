@@ -39,6 +39,8 @@ interface AthleteProfileStepProps {
 		position: string;
 		secondaryPosition?: string;
 		currentClub?: string;
+		division?: string;
+		shirtSize?: string;
 		jerseyNumber?: number;
 		yearsOfExperience?: number;
 	};
@@ -170,6 +172,46 @@ export function AthleteProfileStep({
 							</FormItem>
 						)}
 					/>
+
+					<div className="grid gap-4 sm:grid-cols-2">
+						<FormField
+							control={form.control}
+							name="division"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FieldLabel>
+											División{" "}
+											<span className="text-muted-foreground">(opcional)</span>
+										</FieldLabel>
+										<FormControl>
+											<Input placeholder="Sub-17, Primera..." {...field} />
+										</FormControl>
+										<FormMessage />
+									</Field>
+								</FormItem>
+							)}
+						/>
+
+						<FormField
+							control={form.control}
+							name="shirtSize"
+							render={({ field }) => (
+								<FormItem asChild>
+									<Field>
+										<FieldLabel>
+											Talle de remera{" "}
+											<span className="text-muted-foreground">(opcional)</span>
+										</FieldLabel>
+										<FormControl>
+											<Input placeholder="S, M, L, XL..." {...field} />
+										</FormControl>
+										<FormMessage />
+									</Field>
+								</FormItem>
+							)}
+						/>
+					</div>
 
 					<div className="grid gap-4 sm:grid-cols-2">
 						<FormField
