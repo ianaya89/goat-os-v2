@@ -7,6 +7,7 @@ import {
 	DiscountValueType,
 	EventRegistrationStatus,
 	EventStatus,
+	MemberRole,
 	PricingTierType,
 } from "@/lib/db/schema/enums";
 import {
@@ -18,6 +19,7 @@ import {
 	eventDiscountUsageTable,
 	eventPricingTierTable,
 	eventRegistrationTable,
+	memberTable,
 	organizationTable,
 	sportsEventTable,
 	userTable,
@@ -884,6 +886,24 @@ export const publicEventRouter = createTRPCRouter({
 						});
 					}
 					athleteId = newAthlete.id;
+				}
+
+				// Ensure user is a member of the organization
+				if (userId) {
+					const existingMember = await tx.query.memberTable.findFirst({
+						where: and(
+							eq(memberTable.organizationId, organization.id),
+							eq(memberTable.userId, userId),
+						),
+					});
+
+					if (!existingMember) {
+						await tx.insert(memberTable).values({
+							organizationId: organization.id,
+							userId,
+							role: MemberRole.member,
+						});
+					}
 				}
 
 				// Create registration

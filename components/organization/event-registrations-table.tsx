@@ -11,6 +11,7 @@ import {
 	CreditCardIcon,
 	EyeIcon,
 	MoreHorizontalIcon,
+	UserIcon,
 	XCircleIcon,
 } from "lucide-react";
 import {
@@ -24,6 +25,7 @@ import * as React from "react";
 import { toast } from "sonner";
 import { ConfirmationModal } from "@/components/confirmation-modal";
 import { PaymentsModal } from "@/components/organization/payments-modal";
+import { RegistrationDetailSheet } from "@/components/organization/registration-detail-sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -237,14 +239,22 @@ export function EventRegistrationsTable({
 				<SortableColumnHeader column={column} title="Nombre" />
 			),
 			cell: ({ row }) => (
-				<div className="max-w-[180px]">
-					<p className="font-medium text-foreground truncate">
+				<button
+					type="button"
+					className="max-w-[180px] text-left hover:opacity-70 transition-opacity"
+					onClick={() => {
+						NiceModal.show(RegistrationDetailSheet, {
+							registrationId: row.original.id,
+						});
+					}}
+				>
+					<p className="font-medium text-foreground truncate underline underline-offset-2 decoration-muted-foreground/40">
 						{row.original.registrantName}
 					</p>
 					<p className="text-sm text-muted-foreground truncate">
 						{row.original.registrantEmail}
 					</p>
-				</div>
+				</button>
 			),
 		},
 		{
@@ -325,13 +335,24 @@ export function EventRegistrationsTable({
 						<DropdownMenuContent align="end">
 							<DropdownMenuItem
 								onClick={() => {
-									// TODO: View registration details
-									toast.info("Función próximamente disponible");
+									NiceModal.show(RegistrationDetailSheet, {
+										registrationId: row.original.id,
+									});
 								}}
 							>
 								<EyeIcon className="mr-2 size-4" />
 								Ver detalles
 							</DropdownMenuItem>
+							{row.original.athleteId && (
+								<DropdownMenuItem
+									onClick={() => {
+										window.location.href = `/dashboard/organization/athletes/${row.original.athleteId}`;
+									}}
+								>
+									<UserIcon className="mr-2 size-4" />
+									Ver atleta
+								</DropdownMenuItem>
+							)}
 							{row.original.price > row.original.paidAmount && (
 								<DropdownMenuItem
 									onClick={() => {
