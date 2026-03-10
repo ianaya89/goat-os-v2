@@ -637,6 +637,9 @@ export const publicEventRegistrationSchema = z.object({
 	// Age category
 	ageCategoryId: z.string().uuid().optional(),
 
+	// Discount code
+	discountCode: z.string().trim().max(50).optional(),
+
 	// Notes
 	notes: z.string().trim().max(2000).optional(),
 
