@@ -3,6 +3,8 @@ import { and, asc, count, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { db } from "@/lib/db";
 import {
+	DiscountMode,
+	DiscountValueType,
 	EventRegistrationStatus,
 	EventStatus,
 	PricingTierType,
@@ -12,6 +14,8 @@ import {
 	ageCategoryTable,
 	athleteTable,
 	eventAgeCategoryTable,
+	eventDiscountTable,
+	eventDiscountUsageTable,
 	eventPricingTierTable,
 	eventRegistrationTable,
 	organizationTable,
@@ -664,6 +668,104 @@ export const publicEventRouter = createTRPCRouter({
 					input.ageCategoryId ?? null,
 				);
 
+				// Apply discount code if provided
+				let appliedDiscountId: string | null = null;
+				let discountAmount = 0;
+
+				if (input.discountCode) {
+					const code = input.discountCode.toUpperCase();
+					const now = new Date();
+
+					const discount = await tx.query.eventDiscountTable.findFirst({
+						where: and(
+							eq(eventDiscountTable.eventId, event.id),
+							eq(eventDiscountTable.code, code),
+							eq(eventDiscountTable.discountMode, DiscountMode.code),
+							eq(eventDiscountTable.isActive, true),
+						),
+					});
+
+					if (!discount) {
+						throw new TRPCError({
+							code: "BAD_REQUEST",
+							message: "Código de descuento no válido",
+						});
+					}
+
+					if (discount.validFrom && now < discount.validFrom) {
+						throw new TRPCError({
+							code: "BAD_REQUEST",
+							message: "Este código aún no está activo",
+						});
+					}
+
+					if (discount.validUntil && now > discount.validUntil) {
+						throw new TRPCError({
+							code: "BAD_REQUEST",
+							message: "Este código ha expirado",
+						});
+					}
+
+					if (discount.maxUses && discount.currentUses >= discount.maxUses) {
+						throw new TRPCError({
+							code: "BAD_REQUEST",
+							message: "Este código ha alcanzado su límite de uso",
+						});
+					}
+
+					if (discount.maxUsesPerUser) {
+						const [userUsage] = await tx
+							.select({ count: count() })
+							.from(eventDiscountUsageTable)
+							.where(
+								and(
+									eq(eventDiscountUsageTable.discountId, discount.id),
+									eq(eventDiscountUsageTable.userEmail, email),
+								),
+							);
+
+						if (userUsage && userUsage.count >= discount.maxUsesPerUser) {
+							throw new TRPCError({
+								code: "BAD_REQUEST",
+								message:
+									"Ya has usado este código el máximo de veces permitido",
+							});
+						}
+					}
+
+					if (
+						discount.minPurchaseAmount &&
+						priceResult.price < discount.minPurchaseAmount
+					) {
+						throw new TRPCError({
+							code: "BAD_REQUEST",
+							message: `El monto mínimo de compra es ${discount.minPurchaseAmount / 100}`,
+						});
+					}
+
+					// Calculate discount
+					if (discount.discountValueType === DiscountValueType.percentage) {
+						discountAmount = Math.round(
+							(priceResult.price * discount.discountValue) / 100,
+						);
+					} else {
+						discountAmount = Math.min(
+							discount.discountValue,
+							priceResult.price,
+						);
+					}
+
+					appliedDiscountId = discount.id;
+
+					// Increment usage counter
+					await tx
+						.update(eventDiscountTable)
+						.set({
+							currentUses: sql`${eventDiscountTable.currentUses} + 1`,
+						})
+						.where(eq(eventDiscountTable.id, discount.id));
+				}
+
 				// Check if user exists
 				let userId: string | null = null;
 				let athleteId: string | null = null;
@@ -785,6 +887,8 @@ export const publicEventRouter = createTRPCRouter({
 				}
 
 				// Create registration
+				const finalPrice = Math.max(0, priceResult.price - discountAmount);
+
 				const [registration] = await tx
 					.insert(eventRegistrationTable)
 					.values({
@@ -804,7 +908,9 @@ export const publicEventRouter = createTRPCRouter({
 						status,
 						waitlistPosition,
 						appliedPricingTierId: priceResult.tierId,
-						price: priceResult.price,
+						appliedDiscountId,
+						price: finalPrice,
+						discountAmount,
 						currency: event.currency,
 						notes: input.notes,
 						termsAcceptedAt: new Date(),
@@ -816,6 +922,16 @@ export const publicEventRouter = createTRPCRouter({
 					throw new TRPCError({
 						code: "INTERNAL_SERVER_ERROR",
 						message: "Failed to create registration",
+					});
+				}
+
+				// Record discount usage
+				if (appliedDiscountId) {
+					await tx.insert(eventDiscountUsageTable).values({
+						discountId: appliedDiscountId,
+						registrationId: registration.id,
+						userEmail: email,
+						discountAmount,
 					});
 				}
 
@@ -846,7 +962,9 @@ export const publicEventRouter = createTRPCRouter({
 
 				return {
 					registration,
-					price: priceResult.price,
+					originalPrice: priceResult.price,
+					discountAmount,
+					price: finalPrice,
 					tierName: priceResult.tierName,
 					isWaitlist: status === EventRegistrationStatus.waitlist,
 					waitlistPosition,
@@ -857,6 +975,8 @@ export const publicEventRouter = createTRPCRouter({
 				success: true,
 				registrationId: result.registration.id,
 				registrationNumber: result.registration.registrationNumber,
+				originalPrice: result.originalPrice,
+				discountAmount: result.discountAmount,
 				price: result.price,
 				currency: event.currency,
 				tierName: result.tierName,
